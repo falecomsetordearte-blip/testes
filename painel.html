@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Painel - Setor de Arte</title>
+    <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+    <div class="app-layout">
+        <header class="app-header">
+            <div class="container header-content">
+                <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte" class="app-logo">
+                <div class="user-menu">
+                    <span id="user-greeting">Olá!</span>
+                    <button id="logout-button">Sair</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-painel">
+            <div class="container">
+                
+                <div id="trial-banner-placeholder"></div>
+
+                <section class="saldo-section">
+                    <div class="saldo-box">
+                        <span class="saldo-label">Meu Saldo de Créditos</span>
+                        <span id="saldo-valor" class="saldo-valor">R$ 0,00</span>
+                    </div>
+                    <div class="acoes-box">
+                        <button class="btn-acao btn-add-credito">Adicionar Créditos</button>
+                        <button class="btn-acao btn-novo-pedido"><strong>+</strong> Novo Pedido</button>
+                    </div>
+                </section>
+
+                <section class="pedidos-section">
+                    <div class="pedidos-header-bar">
+                        <h2>Meus Pedidos</h2>
+                        <div class="filtros-pedidos">
+                            <input type="text" placeholder="Buscar por título ou ID..." id="search-input">
+                            <select id="status-filter">
+                                <option value="todos">Todos os Status</option>
+                                <option value="pagamento">Aguardando Pagamento</option>
+                                <option value="andamento">Em Andamento</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pedidos-list-header">
+                        <div class="col-id">ID</div>
+                        <div class="col-titulo">Título</div>
+                        <div class="col-status">Status</div>
+                        <div class="col-valor">Valor</div>
+                        <div class="col-acoes">Ações</div>
+                    </div>
+                    <div id="pedidos-list-body" class="pedidos-list-body">
+                        <div class="loading-pedidos">
+                            <div class="spinner"></div>
+                            <span>Carregando seus pedidos...</span>
+                        </div>
+                    </div>
+                    
+                    <div id="pagination-container" class="pagination-container hidden">
+                        <div class="pagination-info">
+                            <span id="pagination-info-text"></span>
+                        </div>
+                        <div class="pagination-controls">
+                            <button id="btn-first-page" class="pagination-btn" title="Primeira página">«</button>
+                            <button id="btn-prev-page" class="pagination-btn" title="Página anterior">‹</button>
+                            <span id="pagination-pages" class="pagination-pages"></span>
+                            <button id="btn-next-page" class="pagination-btn" title="Próxima página">›</button>
+                            <button id="btn-last-page" class="pagination-btn" title="Última página">»</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="modal-novo-pedido">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3>Criar um Novo Pedido de Arte</h3>
+                <button class="close-modal" title="Fechar">×</button>
+            </div>
+            <form id="novo-pedido-form" class="modal-body-scrollable">
+                <div class="form-grid-modified">
+                    <div id="pedido-form-error" class="form-feedback error hidden full-width"></div>
+                    
+                    <div class="form-row-four">
+                        <div class="form-group">
+                            <label for="pedido-titulo">Título do Pedido</label>
+                            <input type="text" id="pedido-titulo" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cliente-final-nome">Nome do Cliente Final</label>
+                            <input type="text" id="cliente-final-nome" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cliente-final-wpp">WhatsApp do Cliente Final</label>
+                            <input type="tel" id="cliente-final-wpp" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="pedido-valor">Valor para o Designer (R$)</label>
+                            <input type="number" id="pedido-valor" min="35" step="5" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="pedido-briefing">Briefing Completo</label>
+                        <textarea id="pedido-briefing" rows="5" required></textarea>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="pedido-formato">Formato Desejado</label>
+                        <input type="text" id="pedido-formato" placeholder="Ex: PDF, CDR, AI" required>
+                    </div>
+
+                    <button type="submit" class="btn-submit full-width">Criar Pedido</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-adquirir-creditos">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Adicionar Créditos</h3>
+                <button class="close-modal" title="Fechar">×</button>
+            </div>
+            
+            <form id="adquirir-creditos-form">
+                <div class="modal-body">
+                    <div id="creditos-form-error" class="form-feedback error hidden"></div>
+                    <div class="form-group">
+                        <label for="creditos-valor">Valor (R$)</label>
+                        <input type="number" id="creditos-valor" min="5" step="5" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn-pagar">Gerar Cobrança</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="https://unpkg.com/imask"></script>
+    <script src="script.js"></script>
+
+</body>
+</html>
+

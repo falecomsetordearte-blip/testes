@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crie sua Conta - Setor de Arte</title>
+    <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-container large">
+            <div id="form-wrapper">
+                <div class="auth-header">
+                    <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte">
+                    <h1>Inicie seu Teste Gratuito (Desenvolvimento)</h1>
+                    <p>Preencha os dados abaixo para iniciar seu teste de 30 dias.</p>
+                </div>
+                <form id="cadastro-form" class="cadastro-form-grid">
+                    <div id="form-error-feedback" class="form-feedback error hidden"></div>
+                    
+                    <h3>Dados da Empresa</h3>
+                    <div class="form-group"><label for="nome_empresa">Nome da Empresa</label><input type="text" id="nome_empresa" required></div>
+                    <div class="form-group"><label for="cnpj">CNPJ</label><input type="text" id="cnpj" required></div>
+                    <div class="form-group">
+                        <label for="telefone_empresa">WhatsApp Principal da Empresa</label>
+                        <input type="tel" id="telefone_empresa" placeholder="(xx) xxxxx-xxxx" required>
+                    </div>
+
+                    <h3>Dados do Responsável (para Acesso)</h3>
+                    <div class="form-group"><label for="nome_responsavel">Seu Nome Completo</label><input type="text" id="nome_responsavel" required></div>
+                    <div class="form-group"><label for="email">Seu E-mail de Login</label><input type="email" id="email" required></div>
+                    <div class="form-group-flex">
+                        <div class="form-group"><label for="senha">Crie uma Senha</label><input type="password" id="senha" required></div>
+                        <div class="form-group"><label for="confirmar-senha">Confirme a Senha</label><input type="password" id="confirmar-senha" required></div>
+                    </div>
+
+                    <div class="form-group-terms">
+                        <input type="checkbox" id="termos-aceite" name="termos" required>
+                        <label for="termos-aceite">
+                            Eu li e concordo com os <a href="https://setordearte.com.br/termos-de-uso/" target="_blank">Termos de Uso</a> e a <a href="https://setordearte.com.br/politica-de-privacidade/" target="_blank">Política de Privacidade</a>.
+                        </label>
+                    </div>
+
+                    <div style="grid-column: 1 / -1; text-align: center; margin-bottom: 15px; padding: 10px; background-color: #f4f8fa; border-radius: 8px;">
+                        <p style="margin: 0; font-size: 14px; color: var(--cinza-texto);">
+                            Você será redirecionado para nosso ambiente de pagamento seguro. <strong>Nenhuma cobrança será feita hoje.</strong>
+                        </p>
+                    </div>
+                    <button type="submit" class="btn-submit">Continuar para o Pagamento</button>
+                </form>
+                   
+                <div class="auth-footer"><p>Já tem uma conta? <a href="login.html">Faça Login</a></p></div>
+            </div>
+            
+            <div id="loading-feedback" class="feedback-container hidden">
+                <div class="spinner"></div>
+                <p>Criando seu perfil e preparando o checkout seguro...</p>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
