@@ -464,5 +464,65 @@ document.addEventListener("DOMContentLoaded", () => {
         inicializarPainel();
     }
 });
+// --- LÓGICA PARA O MODAL DE ADICIONAR CRÉDITOS ---
+    const modalCreditos = document.getElementById("modal-adquirir-creditos"); // ID do seu modal
+    const btnOpenModalCreditos = document.querySelector(".btn-add-credito");  // Classe do seu botão
+    const btnCloseModalCreditos = modalCreditos.querySelector(".close-modal");
+    const formCreditos = document.getElementById("adquirir-creditos-form");   // ID do seu formulário
+
+    // Listener para ABRIR o modal de créditos
+    if (btnOpenModalCreditos) {
+        btnOpenModalCreditos.addEventListener("click", () => modalCreditos.classList.add("active")); // Use a classe 'active' se for seu padrão
+    }
+    
+    // Listener para FECHAR o modal de créditos (no botão 'X')
+    btnCloseModalCreditos.addEventListener("click", () => modalCreditos.classList.remove("active"));
+
+    // Listener para o ENVIO do formulário de créditos
+    formCreditos.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const submitButton = formCreditos.querySelector("button[type='submit']");
+        const valorInput = document.getElementById("creditos-valor"); // ID do seu input de valor
+        hideFeedback("creditos-form-error"); // ID do seu container de erro
+
+        const valor = valorInput.value;
+        const sessionToken = localStorage.getItem("sessionToken");
+
+        if (!valor || parseFloat(valor) < 5) { // O min do seu input é 5
+            showFeedback("creditos-form-error", "Por favor, insira um valor de no mínimo R$ 5,00.", true);
+            return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.textContent = "Gerando...";
+
+        try {
+            const response = await fetch('/api/addCredit', {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: sessionToken, valor: valor })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Erro desconhecido ao gerar cobrança.");
+            }
+
+            // Sucesso! Abre a URL de pagamento em uma nova aba.
+            window.open(data.url, '_blank');
+
+            // Feedback para o usuário e reset do modal
+            modalCreditos.classList.remove("active");
+            formCreditos.reset();
+            alert("Sua cobrança foi gerada! Conclua o pagamento na nova aba que foi aberta.");
+
+        } catch (error) {
+            showFeedback("creditos-form-error", error.message, true);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = "Gerar Cobrança";
+        }
+    });
 
 
