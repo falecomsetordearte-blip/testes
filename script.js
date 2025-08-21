@@ -406,7 +406,50 @@ function inicializarPainel() {
     
     // Listener para FECHAR o modal (apenas no botão 'X')
     btnCloseModalNovoPedido.addEventListener("click", () => modalNovoPedido.classList.remove("active"));
+// 2. Adicionar máscara ao campo de WhatsApp
+    const wppInput = document.getElementById('cliente-final-wpp');
+    if (wppInput) {
+        const phoneMask = IMask(wppInput, {
+            mask: '(00) 00000-0000'
+        });
+    }
 
+    // 1. Lógica para mostrar/esconder o vídeo explicativo
+    const videoToggle = document.getElementById('video-explicativo-toggle');
+    const videoContainer = document.getElementById('video-explicativo-container');
+    videoToggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        videoContainer.classList.toggle('hidden');
+        if (videoContainer.classList.contains('hidden')) {
+            videoToggle.textContent = 'Assistir Vídeo Explicativo';
+        } else {
+            videoToggle.textContent = 'Fechar Vídeo';
+        }
+    });
+
+    // 5. Lógica para adicionar novos materiais dinamicamente
+    const btnAddMaterial = document.getElementById('btn-add-material');
+    const materiaisContainer = document.getElementById('materiais-container');
+    
+    btnAddMaterial.addEventListener('click', () => {
+        const itemCount = materiaisContainer.querySelectorAll('.material-item').length;
+        const newItemNumber = itemCount + 1;
+
+        const newItemDiv = document.createElement('div');
+        newItemDiv.classList.add('material-item');
+        newItemDiv.innerHTML = `
+            <label class="item-label">Item ${newItemNumber}</label>
+            <div class="form-group">
+                <label for="material-descricao-${newItemNumber}">Descreva o Material</label>
+                <input type="text" id="material-descricao-${newItemNumber}" class="material-descricao" placeholder="Ex. Cartão de Visita 1000 unidades" required>
+            </div>
+            <div class="form-group">
+                <label for="material-detalhes-${newItemNumber}">Como o cliente deseja a arte?</label>
+                <textarea id="material-detalhes-${newItemNumber}" class="material-detalhes" rows="3" required></textarea>
+            </div>
+        `;
+        materiaisContainer.appendChild(newItemDiv);
+    });
     // Listener para o ENVIO do formulário
     formNovoPedido.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -524,5 +567,6 @@ document.addEventListener("DOMContentLoaded", () => {
             submitButton.textContent = "Gerar Cobrança";
         }
     });
+
 
 
