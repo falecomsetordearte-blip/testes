@@ -451,46 +451,82 @@ function inicializarPainel() {
         materiaisContainer.appendChild(newItemDiv);
     });
     // Listener para o ENVIO do formulário
-    formNovoPedido.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const submitButton = formNovoPedido.querySelector("button[type='submit']");
-        submitButton.disabled = true;
-        submitButton.textContent = "Criando...";
-        hideFeedback("pedido-form-error");
+    function resetMateriaisForm() {
+    const materiaisContainer = document.getElementById('materiais-container');
+    materiaisContainer.innerHTML = `
+        <div class="material-item">
+            <label class="item-label">Item 1</label>
+            <div class="form-group">
+                <label for="material-descricao-1">Descreva o Material</label>
+                <input type="text" id="material-descricao-1" class="material-descricao" placeholder="Ex. Banner 60x100 3 unidades" required>
+            </div>
+            <div class="form-group">
+                <label for="material-detalhes-1">Como o cliente deseja a arte?</label>
+                <textarea id="material-detalhes-1" class="material-detalhes" rows="3" required></textarea>
+            </div>
+        </div>
+    `;
+}
 
-        const pedidoData = {
-            token: sessionToken,
-            titulo: document.getElementById("pedido-titulo").value,
-            cliente_nome: document.getElementById("cliente-final-nome").value,
-            cliente_wpp: document.getElementById("cliente-final-wpp").value,
-            briefing: document.getElementById("pedido-briefing").value,
-            valor: document.getElementById("pedido-valor").value,
-            formato: document.getElementById("pedido-formato").value,
-            // O campo de link de arquivos não está no seu HTML, mas se estivesse, seria adicionado aqui.
-        };
+// Listener para o ENVIO do formulário
+formNovoPedido.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const submitButton = formNovoPedido.querySelector("button[type='submit']");
+    submitButton.disabled = true;
+    submitButton.textContent = "Criando...";
+    hideFeedback("pedido-form-error");
 
-        try {
-            // AINDA USA O WEBHOOK ANTIGO DO MAKE.COM
-            const response = await fetch(CRIAR_PEDIDO_WEBHOOK_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(pedidoData)
-            });
-            const data = await response.json();
-            if (!response.ok) { throw new Error(data.message || "Erro ao criar pedido."); }
-
-            alert("Pedido criado! Ele aparecerá na sua lista como 'Aguardando Pagamento'.");
-            modalNovoPedido.classList.remove("active");
-            formNovoPedido.reset();
-            await atualizarDadosPainel(); // Recarrega os dados do painel
-
-        } catch (error) {
-            showFeedback("pedido-form-error", error.message, true);
-        } finally {
-            submitButton.disabled = false;
-            submitButton.textContent = "Criar Pedido";
-        }
+    // Coletar dados dos materiais dinâmicos
+    const todosOsItens = document.querySelectorAll('#materiais-container .material-item');
+    let briefingFormatado = '';
+    todosOsItens.forEach((item, index) => {
+        const descricao = item.querySelector('.material-descricao').value;
+        const detalhes = item.querySelector('.material-detalhes').value;
+        
+        briefingFormatado += `--- Item ${index + 1} ---\n`;
+        briefingFormatado += `Material: ${descricao}\n`;
+        briefingFormatado += `Detalhes da Arte: ${detalhes}\n\n`;
     });
+
+    const formato = document.getElementById("pedido-formato").value;
+    briefingFormatado += `--- Formato de Entrega ---\n${formato}`;
+    // (Anotação: Não há campo de "Link" no HTML, então ele não foi incluído aqui)
+
+    // Montar o objeto de dados para enviar à API
+    const pedidoData = {
+        sessionToken: localStorage.getItem("sessionToken"),
+        titulo: document.getElementById("pedido-titulo").value,
+        valorDesigner: document.getElementById("pedido-valor").value,
+        nomeCliente: document.getElementById("cliente-final-nome").value,
+        wppCliente: document.getElementById("cliente-final-wpp").value,
+        briefingFormatado: briefingFormatado,
+    };
+
+    try {
+        const response = await fetch('/api/createDeal', {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(pedidoData)
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || "Erro ao criar pedido.");
+        }
+
+        // SUCESSO! Fecha o modal, reseta o formulário e atualiza o painel
+        modalNovoPedido.classList.remove("active");
+        formNovoPedido.reset();
+        resetMateriaisForm(); // Reseta os campos dinâmicos
+        await atualizarDadosPainel(); // Recarrega os dados do painel para mostrar o novo pedido
+
+    } catch (error) {
+        showFeedback("pedido-form-error", error.message, true);
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Criar Pedido";
+    }
+});
     document.getElementById("logout-button").addEventListener("click", () => {
         localStorage.clear();
         window.location.href = "login.html";
@@ -567,6 +603,7 @@ document.addEventListener("DOMContentLoaded", () => {
             submitButton.textContent = "Gerar Cobrança";
         }
     });
+
 
 
 
