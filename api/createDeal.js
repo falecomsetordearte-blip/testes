@@ -59,7 +59,7 @@ module.exports = async (req, res) => {
         };
 
         // ETAPA 3: Criar o Negócio no Bitrix24
-        const createDealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.add.json`, {
+       const createDealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.add.json`, {
             fields: dealFields
         });
         
