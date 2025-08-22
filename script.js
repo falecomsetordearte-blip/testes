@@ -339,37 +339,7 @@ async function atualizarDadosPainel() {
 }
 
 function renderizarPedidos() {
-    const pedidosListBody = document.getElementById("pedidos-list-body");
-    pedidosListBody.innerHTML = "";
-    if (pedidosFiltrados && pedidosFiltrados.length > 0) {
-        const indiceInicio = (paginaAtual - 1) * itensPorPagina;
-        const indiceFim = indiceInicio + itensPorPagina;
-        const pedidosPagina = pedidosFiltrados.slice(indiceInicio, indiceFim);
-        let pedidosHtml = "";
-        pedidosPagina.forEach(pedido => {
-            let statusInfo = { texto: "Desconhecido", classe: "" };
-            let notificacaoHtml = '';
-            if (pedido.notificacao === true) {
-                notificacaoHtml = '<span class="notificacao-badge"><i class="fa-solid fa-circle"></i></span>';
-            }
-            let acaoHtml = `<a href="pedido.html?id=${pedido.ID}" class="btn-ver-pedido">Ver Detalhes${notificacaoHtml}</a>`;
-            const stageId = pedido.STAGE_ID || "";
-            if (stageId.includes("NEW")) {
-                statusInfo = { texto: "Aguardando Pagamento", classe: "status-pagamento" };
-                acaoHtml = `<div class="dropdown-pagamento"><button class="btn-pagar" data-deal-id="${pedido.ID}">Pagar Agora</button><div class="dropdown-content"><button class="btn-pagar-saldo" data-deal-id="${pedido.ID}">Usar Saldo</button><button class="btn-gerar-cobranca" data-deal-id="${pedido.ID}">PIX</button></div></div>`;
-            } else if (stageId.includes("LOSE")) {
-                statusInfo = { texto: "Cancelado", classe: "status-cancelado" };
-            } else {
-                statusInfo = { texto: "Em Andamento", classe: "status-andamento" };
-            }
-            const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(pedido.OPPORTUNITY) || 0);
-            pedidosHtml += `<div class="pedido-item"><div class="col-id"><strong>#${pedido.ID}</strong></div><div class="col-titulo">${pedido.TITLE}</div><div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div><div class="col-valor">${valorFormatado}</div><div class="col-acoes">${acaoHtml}</div></div>`;
-        });
-        pedidosListBody.innerHTML = pedidosHtml;
-    } else {
-        pedidosListBody.innerHTML = `<div class="loading-pedidos" style="padding: 50px 20px;">Nenhum pedido encontrado.</div>`;
-    }
-}
+    
 
 function aplicarFiltros() {
     const searchInput = document.getElementById("search-input");
@@ -656,6 +626,7 @@ document.addEventListener("DOMContentLoaded", () => {
             submitButton.textContent = "Gerar Cobrança";
         }
     });
+
 
 
 
