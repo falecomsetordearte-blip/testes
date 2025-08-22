@@ -1,3 +1,5 @@
+// /script.js - VERSÃO COMPLETA E CORRIGIDA
+
 async function handleAuthError(response) {
     if (response.status === 401 || response.status === 403) {
         localStorage.clear();
@@ -339,7 +341,37 @@ async function atualizarDadosPainel() {
 }
 
 function renderizarPedidos() {
-    
+    const pedidosListBody = document.getElementById("pedidos-list-body");
+    pedidosListBody.innerHTML = "";
+    if (pedidosFiltrados && pedidosFiltrados.length > 0) {
+        const indiceInicio = (paginaAtual - 1) * itensPorPagina;
+        const indiceFim = indiceInicio + itensPorPagina;
+        const pedidosPagina = pedidosFiltrados.slice(indiceInicio, indiceFim);
+        let pedidosHtml = "";
+        pedidosPagina.forEach(pedido => {
+            let statusInfo = { texto: "Desconhecido", classe: "" };
+            let notificacaoHtml = '';
+            if (pedido.notificacao === true) {
+                notificacaoHtml = '<span class="notificacao-badge"><i class="fa-solid fa-circle"></i></span>';
+            }
+            let acaoHtml = `<a href="pedido.html?id=${pedido.ID}" class="btn-ver-pedido">Ver Detalhes${notificacaoHtml}</a>`;
+            const stageId = pedido.STAGE_ID || "";
+            if (stageId.includes("NEW")) {
+                statusInfo = { texto: "Aguardando Pagamento", classe: "status-pagamento" };
+                acaoHtml = `<div class="dropdown-pagamento"><button class="btn-pagar" data-deal-id="${pedido.ID}">Pagar Agora</button><div class="dropdown-content"><button class="btn-pagar-saldo" data-deal-id="${pedido.ID}">Usar Saldo</button><button class="btn-gerar-cobranca" data-deal-id="${pedido.ID}">PIX</button></div></div>`;
+            } else if (stageId.includes("LOSE")) {
+                statusInfo = { texto: "Cancelado", classe: "status-cancelado" };
+            } else {
+                statusInfo = { texto: "Em Andamento", classe: "status-andamento" };
+            }
+            const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(pedido.OPPORTUNITY) || 0);
+            pedidosHtml += `<div class="pedido-item"><div class="col-id"><strong>#${pedido.ID}</strong></div><div class="col-titulo">${pedido.TITLE}</div><div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div><div class="col-valor">${valorFormatado}</div><div class="col-acoes">${acaoHtml}</div></div>`;
+        });
+        pedidosListBody.innerHTML = pedidosHtml;
+    } else {
+        pedidosListBody.innerHTML = `<div class="loading-pedidos" style="padding: 50px 20px;">Nenhum pedido encontrado.</div>`;
+    }
+}
 
 function aplicarFiltros() {
     const searchInput = document.getElementById("search-input");
@@ -365,18 +397,15 @@ function inicializarPainel() {
         return;
     }
     document.getElementById("user-greeting").textContent = `Olá, ${userName}!`;
-        // --- LÓGICA PARA O MODAL DE NOVO PEDIDO ---
+
     const modalNovoPedido = document.getElementById("modal-novo-pedido");
     const btnOpenModalNovoPedido = document.querySelector(".btn-novo-pedido");
     const btnCloseModalNovoPedido = modalNovoPedido.querySelector(".close-modal");
     const formNovoPedido = document.getElementById("novo-pedido-form");
 
-    // Listener para ABRIR o modal
     btnOpenModalNovoPedido.addEventListener("click", () => modalNovoPedido.classList.add("active"));
-    
-    // Listener para FECHAR o modal (apenas no botão 'X')
     btnCloseModalNovoPedido.addEventListener("click", () => modalNovoPedido.classList.remove("active"));
-// 2. Adicionar máscara ao campo de WhatsApp
+    
     const wppInput = document.getElementById('cliente-final-wpp');
     if (wppInput) {
         const phoneMask = IMask(wppInput, {
@@ -384,7 +413,6 @@ function inicializarPainel() {
         });
     }
 
-    // 1. Lógica para mostrar/esconder o vídeo explicativo
     const videoToggle = document.getElementById('video-explicativo-toggle');
     const videoContainer = document.getElementById('video-explicativo-container');
     videoToggle.addEventListener('click', (e) => {
@@ -397,7 +425,6 @@ function inicializarPainel() {
         }
     });
 
-    // 5. Lógica para adicionar novos materiais dinamicamente
     const btnAddMaterial = document.getElementById('btn-add-material');
     const materiaisContainer = document.getElementById('materiais-container');
     
@@ -420,176 +447,100 @@ function inicializarPainel() {
         `;
         materiaisContainer.appendChild(newItemDiv);
     });
-    // Listener para o ENVIO do formulário
+    
     function resetMateriaisForm() {
-    const materiaisContainer = document.getElementById('materiais-container');
-    materiaisContainer.innerHTML = `
-        <div class="material-item">
-            <label class="item-label">Item 1</label>
-            <div class="form-group">
-                <label for="material-descricao-1">Descreva o Material</label>
-                <input type="text" id="material-descricao-1" class="material-descricao" placeholder="Ex. Banner 60x100 3 unidades" required>
+        const materiaisContainer = document.getElementById('materiais-container');
+        materiaisContainer.innerHTML = `
+            <div class="material-item">
+                <label class="item-label">Item 1</label>
+                <div class="form-group">
+                    <label for="material-descricao-1">Descreva o Material</label>
+                    <input type="text" id="material-descricao-1" class="material-descricao" placeholder="Ex. Banner 60x100 3 unidades" required>
+                </div>
+                <div class="form-group">
+                    <label for="material-detalhes-1">Como o cliente deseja a arte?</label>
+                    <textarea id="material-detalhes-1" class="material-detalhes" rows="3" required></textarea>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="material-detalhes-1">Como o cliente deseja a arte?</label>
-                <textarea id="material-detalhes-1" class="material-detalhes" rows="3" required></textarea>
-            </div>
-        </div>
-    `;
-}
+        `;
+    }
 
-// Listener para o ENVIO do formulário
-const pedidosListBody = document.getElementById('pedidos-list-body');
+    formNovoPedido.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const submitButton = formNovoPedido.querySelector("button[type='submit']");
+        submitButton.disabled = true;
+        submitButton.textContent = "Criando...";
+        hideFeedback("pedido-form-error");
 
-    pedidosListBody.addEventListener('click', async function(event) {
-        const target = event.target;
-        const dropdown = target.closest('.dropdown-pagamento');
-
-        if (target.classList.contains('btn-pagar')) {
-            document.querySelectorAll('.dropdown-pagamento.active').forEach(d => d !== dropdown && d.classList.remove('active'));
-            dropdown.classList.toggle('active');
-            return;
-        }
-
-        if (target.classList.contains('btn-pagar-saldo')) {
-            const dealId = target.dataset.dealId;
-            if (!confirm('Tem certeza que deseja usar seu saldo para pagar este pedido?')) return;
-
-            target.disabled = true;
-            target.textContent = 'Processando...';
-
-            try {
-                const response = await fetch('/api/payWithBalance', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), dealId: dealId })
-                });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message);
-                
-                alert('Pedido pago com sucesso!');
-                await atualizarDadosPainel();
-            } catch (error) {
-                alert(`Erro: ${error.message}`);
-                target.disabled = false;
-                target.textContent = 'Usar Saldo';
-            }
-        }
-
-        if (target.classList.contains('btn-gerar-cobranca')) {
-            const dealId = target.dataset.dealId;
-            target.disabled = true;
-            target.textContent = 'Gerando...';
-
-            try {
-                const response = await fetch('/api/generatePixForDeal', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), dealId: dealId })
-                });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message);
-
-                window.open(data.url, '_blank');
-                dropdown.classList.remove('active');
-            } catch (error) {
-                alert(`Erro: ${error.message}`);
-            } finally {
-                target.disabled = false;
-                target.textContent = 'PIX';
-            }
-        }
-    });
-
-    window.addEventListener('click', function(event) {
-        if (!event.target.closest('.dropdown-pagamento')) {
-            document.querySelectorAll('.dropdown-pagamento.active').forEach(dropdown => {
-                dropdown.classList.remove('active');
-            });
-        }
-    });
-
-    const formato = document.getElementById("pedido-formato").value;
-    briefingFormatado += `--- Formato de Entrega ---\n${formato}`;
-    // (Anotação: Não há campo de "Link" no HTML, então ele não foi incluído aqui)
-
-    // Montar o objeto de dados para enviar à API
-    const pedidoData = {
-        sessionToken: localStorage.getItem("sessionToken"),
-        titulo: document.getElementById("pedido-titulo").value,
-        valorDesigner: document.getElementById("pedido-valor").value,
-        nomeCliente: document.getElementById("cliente-final-nome").value,
-        wppCliente: document.getElementById("cliente-final-wpp").value,
-        briefingFormatado: briefingFormatado,
-    };
-
-    try {
-        const response = await fetch('/api/createDeal', {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(pedidoData)
+        const todosOsItens = document.querySelectorAll('#materiais-container .material-item');
+        let briefingFormatado = '';
+        todosOsItens.forEach((item, index) => {
+            const descricao = item.querySelector('.material-descricao').value;
+            const detalhes = item.querySelector('.material-detalhes').value;
+            
+            briefingFormatado += `--- Item ${index + 1} ---\n`;
+            briefingFormatado += `Material: ${descricao}\n`;
+            briefingFormatado += `Detalhes da Arte: ${detalhes}\n\n`;
         });
 
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.message || "Erro ao criar pedido.");
+        const formato = document.getElementById("pedido-formato").value;
+        briefingFormatado += `--- Formato de Entrega ---\n${formato}`;
+
+        const pedidoData = {
+            sessionToken: localStorage.getItem("sessionToken"),
+            titulo: document.getElementById("pedido-titulo").value,
+            valorDesigner: document.getElementById("pedido-valor").value,
+            nomeCliente: document.getElementById("cliente-final-nome").value,
+            wppCliente: document.getElementById("cliente-final-wpp").value,
+            briefingFormatado: briefingFormatado,
+        };
+
+        try {
+            const response = await fetch('/api/createDeal', {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(pedidoData)
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || "Erro ao criar pedido.");
+            }
+
+            modalNovoPedido.classList.remove("active");
+            formNovoPedido.reset();
+            resetMateriaisForm();
+            await atualizarDadosPainel();
+
+        } catch (error) {
+            showFeedback("pedido-form-error", error.message, true);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = "Criar Pedido";
         }
-
-        // SUCESSO! Fecha o modal, reseta o formulário e atualiza o painel
-        modalNovoPedido.classList.remove("active");
-        formNovoPedido.reset();
-        resetMateriaisForm(); // Reseta os campos dinâmicos
-        await atualizarDadosPainel(); // Recarrega os dados do painel para mostrar o novo pedido
-
-    } catch (error) {
-        showFeedback("pedido-form-error", error.message, true);
-    } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = "Criar Pedido";
-    }
-});
-    
-    document.getElementById("logout-button").addEventListener("click", () => {
-        localStorage.clear();
-        window.location.href = "login.html";
     });
-    const searchInput = document.getElementById("search-input");
-    if (searchInput) {
-        searchInput.addEventListener("input", aplicarFiltros);
-    }
-    atualizarDadosPainel();
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    if (document.querySelector(".main-painel")) {
-        inicializarPainel();
-    }
-});
-// --- LÓGICA PARA O MODAL DE ADICIONAR CRÉDITOS ---
-    const modalCreditos = document.getElementById("modal-adquirir-creditos"); // ID do seu modal
-    const btnOpenModalCreditos = document.querySelector(".btn-add-credito");  // Classe do seu botão
+    
+    const modalCreditos = document.getElementById("modal-adquirir-creditos");
+    const btnOpenModalCreditos = document.querySelector(".btn-add-credito");
     const btnCloseModalCreditos = modalCreditos.querySelector(".close-modal");
-    const formCreditos = document.getElementById("adquirir-creditos-form");   // ID do seu formulário
+    const formCreditos = document.getElementById("adquirir-creditos-form");
 
-    // Listener para ABRIR o modal de créditos
     if (btnOpenModalCreditos) {
-        btnOpenModalCreditos.addEventListener("click", () => modalCreditos.classList.add("active")); // Use a classe 'active' se for seu padrão
+        btnOpenModalCreditos.addEventListener("click", () => modalCreditos.classList.add("active"));
     }
     
-    // Listener para FECHAR o modal de créditos (no botão 'X')
     btnCloseModalCreditos.addEventListener("click", () => modalCreditos.classList.remove("active"));
 
-    // Listener para o ENVIO do formulário de créditos
     formCreditos.addEventListener('submit', async (event) => {
         event.preventDefault();
         const submitButton = formCreditos.querySelector("button[type='submit']");
-        const valorInput = document.getElementById("creditos-valor"); // ID do seu input de valor
-        hideFeedback("creditos-form-error"); // ID do seu container de erro
+        const valorInput = document.getElementById("creditos-valor");
+        hideFeedback("creditos-form-error");
 
         const valor = valorInput.value;
         const sessionToken = localStorage.getItem("sessionToken");
 
-        if (!valor || parseFloat(valor) < 5) { // O min do seu input é 5
+        if (!valor || parseFloat(valor) < 5) {
             showFeedback("creditos-form-error", "Por favor, insira um valor de no mínimo R$ 5,00.", true);
             return;
         }
@@ -610,10 +561,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error(data.message || "Erro desconhecido ao gerar cobrança.");
             }
 
-            // Sucesso! Abre a URL de pagamento em uma nova aba.
             window.open(data.url, '_blank');
-
-            // Feedback para o usuário e reset do modal
             modalCreditos.classList.remove("active");
             formCreditos.reset();
             alert("Sua cobrança foi gerada! Conclua o pagamento na nova aba que foi aberta.");
@@ -626,11 +574,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    document.getElementById("logout-button").addEventListener("click", () => {
+        localStorage.clear();
+        window.location.href = "login.html";
+    });
+    
+    const searchInput = document.getElementById("search-input");
+    if (searchInput) {
+        searchInput.addEventListener("input", aplicarFiltros);
+    }
+    
+    atualizarDadosPainel();
+}
 
-
-
-
-
-
-
-
+document.addEventListener("DOMContentLoaded", () => {
+    if (document.querySelector(".main-painel")) {
+        inicializarPainel();
+    }
+});
