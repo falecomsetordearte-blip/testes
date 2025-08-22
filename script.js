@@ -550,7 +550,6 @@ const pedidosListBody = document.getElementById('pedidos-list-body');
 });
     
     document.getElementById("logout-button").addEventListener("click", () => {
-    document.getElementById("logout-button").addEventListener("click", () => {
         localStorage.clear();
         window.location.href = "login.html";
     });
@@ -626,6 +625,7 @@ document.addEventListener("DOMContentLoaded", () => {
             submitButton.textContent = "Gerar Cobrança";
         }
     });
+
 
 
 
