@@ -372,7 +372,77 @@ function renderizarPedidos() {
         pedidosListBody.innerHTML = `<div class="loading-pedidos" style="padding: 50px 20px;">Nenhum pedido encontrado.</div>`;
     }
 }
+function ativarDropdownsDePagamento() {
+    const pedidosListBody = document.getElementById('pedidos-list-body');
 
+    pedidosListBody.addEventListener('click', async function(event) {
+        const target = event.target;
+        const dropdown = target.closest('.dropdown-pagamento');
+
+        if (target.classList.contains('btn-pagar')) {
+            document.querySelectorAll('.dropdown-pagamento.active').forEach(d => d !== dropdown && d.classList.remove('active'));
+            dropdown.classList.toggle('active');
+            return;
+        }
+
+        if (target.classList.contains('btn-pagar-saldo')) {
+            const dealId = target.dataset.dealId;
+            if (!confirm('Tem certeza que deseja usar seu saldo para pagar este pedido?')) return;
+
+            target.disabled = true;
+            target.textContent = 'Processando...';
+
+            try {
+                const response = await fetch('/api/payWithBalance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), dealId: dealId })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message);
+                
+                alert('Pedido pago com sucesso!');
+                await atualizarDadosPainel();
+            } catch (error) {
+                alert(`Erro: ${error.message}`);
+                target.disabled = false;
+                target.textContent = 'Usar Saldo';
+            }
+        }
+
+        if (target.classList.contains('btn-gerar-cobranca')) {
+            const dealId = target.dataset.dealId;
+            target.disabled = true;
+            target.textContent = 'Gerando...';
+
+            try {
+                const response = await fetch('/api/generatePixForDeal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), dealId: dealId })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message);
+
+                window.open(data.url, '_blank');
+                dropdown.classList.remove('active');
+            } catch (error) {
+                alert(`Erro: ${error.message}`);
+            } finally {
+                target.disabled = false;
+                target.textContent = 'PIX';
+            }
+        }
+    });
+
+    window.addEventListener('click', function(event) {
+        if (!event.target.closest('.dropdown-pagamento')) {
+            document.querySelectorAll('.dropdown-pagamento.active').forEach(dropdown => {
+                dropdown.classList.remove('active');
+            });
+        }
+    });
+}
 function aplicarFiltros() {
     const searchInput = document.getElementById("search-input");
     const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
@@ -592,3 +662,4 @@ document.addEventListener("DOMContentLoaded", () => {
         inicializarPainel();
     }
 });
+
