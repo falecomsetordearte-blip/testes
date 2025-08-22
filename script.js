@@ -527,6 +527,36 @@ formNovoPedido.addEventListener('submit', async (event) => {
         submitButton.textContent = "Criar Pedido";
     }
 });
+    // --- LÓGICA PARA O DROPDOWN DE PAGAMENTO NOS PEDIDOS ---
+    const pedidosListBody = document.getElementById('pedidos-list-body');
+
+    pedidosListBody.addEventListener('click', function(event) {
+        // Verifica se o clique foi no botão 'Pagar Agora'
+        if (event.target.classList.contains('btn-pagar')) {
+            const dropdown = event.target.closest('.dropdown-pagamento');
+            
+            // Fecha todos os outros dropdowns abertos
+            document.querySelectorAll('.dropdown-pagamento.active').forEach(openDropdown => {
+                if (openDropdown !== dropdown) {
+                    openDropdown.classList.remove('active');
+                }
+            });
+
+            // Alterna a classe 'active' no dropdown clicado
+            dropdown.classList.toggle('active');
+        }
+    });
+
+    // Fecha o dropdown se o usuário clicar fora dele
+    window.addEventListener('click', function(event) {
+        if (!event.target.closest('.dropdown-pagamento')) {
+            document.querySelectorAll('.dropdown-pagamento.active').forEach(dropdown => {
+                dropdown.classList.remove('active');
+            });
+        }
+    });
+
+    document.getElementById("logout-button").addEventListener("click", () => {
     document.getElementById("logout-button").addEventListener("click", () => {
         localStorage.clear();
         window.location.href = "login.html";
@@ -603,6 +633,7 @@ document.addEventListener("DOMContentLoaded", () => {
             submitButton.textContent = "Gerar Cobrança";
         }
     });
+
 
 
 
