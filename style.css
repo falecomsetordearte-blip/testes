@@ -2026,4 +2026,42 @@ form { text-align: left; }
 .status-verificado { background-color: #e0e0e0; color: #424242; }
 
 
+.dropdown-pagamento {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-pagamento .dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: #ffffff;
+    min-width: 140px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.15);
+    z-index: 10;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.dropdown-pagamento.active .dropdown-content {
+    display: block;
+}
+
+.dropdown-pagamento .dropdown-content button {
+    color: var(--cinza-escuro);
+    background-color: transparent;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.dropdown-pagamento .dropdown-content button:hover {
+    background-color: #f1f1f1;
+}
 
