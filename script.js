@@ -653,7 +653,7 @@ function inicializarPainel() {
     if (searchInput) {
         searchInput.addEventListener("input", aplicarFiltros);
     }
-    
+    ativarDropdownsDePagamento();
     atualizarDadosPainel();
 }
 
@@ -662,4 +662,5 @@ document.addEventListener("DOMContentLoaded", () => {
         inicializarPainel();
     }
 });
+
 
