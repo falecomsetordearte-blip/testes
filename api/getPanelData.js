@@ -74,7 +74,7 @@ module.exports = async (req, res) => {
         // ETAPA FINAL: Montar e enviar a resposta completa
         return res.status(200).json({
             status: 'success',
-            saldo: user.UF_CRM_SALDO || 0,
+            saldo: saldoDaEmpresa,
             pedidos: pedidos
         });
 
