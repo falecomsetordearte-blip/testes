@@ -65,7 +65,7 @@ module.exports = async (req, res) => {
                 ID: pedido.ID,
                 TITLE: pedido.TITLE,
                 STAGE_ID: pedido.STAGE_ID,
-                OPPORTUNITY: pedido.OPPORTUNITY,
+                OPPORTUNITY: parseFloat(pedido.OPPORTUNITY) / 0.9,
                 COMMENTS: pedido.COMMENTS,
                 notificacao: temNotificacao
             };
