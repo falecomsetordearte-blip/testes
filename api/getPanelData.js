@@ -23,7 +23,17 @@ module.exports = async (req, res) => {
         if (!user) {
             return res.status(401).json({ message: 'Sessão inválida ou expirada.' });
         }
-        
+        // NOVA ETAPA: Buscar os dados da Empresa para pegar o saldo correto
+        let saldoDaEmpresa = 0;
+        if (user.COMPANY_ID) {
+            const companyResponse = await axios.post(`${BITRIX24_API_URL}crm.company.get.json`, {
+                id: user.COMPANY_ID
+            });
+            const company = companyResponse.data.result;
+            if (company) {
+                saldoDaEmpresa = company['UF_CRM_1751913325'] || 0; // Campo de saldo da EMPRESA
+            }
+        }
         // ETAPA 2: Buscar os Deals (Pedidos) vinculados à Company do contato
         const dealsResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
             filter: { 'COMPANY_ID': user.COMPANY_ID },
