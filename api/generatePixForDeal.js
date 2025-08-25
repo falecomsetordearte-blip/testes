@@ -42,7 +42,7 @@ module.exports = async (req, res) => {
         const paymentData = {
             customer: asaasCustomerId,
             billingType: 'PIX',
-            value: parseFloat(deal.OPPORTUNITY),
+            value: parseFloat(deal.OPPORTUNITY || 0) / 0.9,
             dueDate: new Date().toISOString().split('T')[0],
             description: `Pagamento referente ao pedido #${deal.ID}: ${deal.TITLE}`,
             externalReference: `Pedido ${deal.ID}` // Referência para o webhook
