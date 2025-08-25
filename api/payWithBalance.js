@@ -35,7 +35,7 @@ module.exports = async (req, res) => {
         ]);
 
         const saldoAtual = parseFloat(companyData.data.result[COMPANY_SALDO_FIELD] || 0);
-        const valorPedido = parseFloat(dealData.data.result.OPPORTUNITY);
+        const valorPedido = parseFloat(dealData.data.result.OPPORTUNITY || 0) / 0.9;
 
         // ETAPA 3: Validar se o saldo é suficiente
         if (saldoAtual < valorPedido) {
