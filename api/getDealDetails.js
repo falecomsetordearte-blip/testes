@@ -1,4 +1,4 @@
-// /api/getDealDetails.js
+// /api/getDealDetails.js - VERSÃO COM DEPURAÇÃO DO DESIGNER
 
 const axios = require('axios');
 
@@ -15,7 +15,6 @@ module.exports = async (req, res) => {
             return res.status(400).json({ message: 'Token e ID do pedido são obrigatórios.' });
         }
 
-        // ETAPA 1: Validar o token de sessão e obter o COMPANY_ID
         const userSearch = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken },
             select: ['COMPANY_ID']
@@ -26,45 +25,62 @@ module.exports = async (req, res) => {
             return res.status(401).json({ message: 'Sessão inválida ou usuário não associado a uma empresa.' });
         }
         
-        // ETAPA 2: Buscar os dados do negócio (deal) específico
         const dealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.get.json`, {
             id: dealId
         });
         const deal = dealResponse.data.result;
 
-        // Validação de segurança: garantir que o negócio pertence à empresa do usuário
         if (!deal || deal.COMPANY_ID != user.COMPANY_ID) {
             return res.status(403).json({ message: 'Acesso negado a este pedido.' });
         }
-        // ETAPA 3: Buscar os dados do designer responsável (funcionário)
+
+        // --- INÍCIO DO BLOCO DE DEPURAÇÃO DO DESIGNER ---
+        console.log(`[DEBUG] Buscando designer. ID do Responsável no Deal: ${deal.RESPONSIBLE_ID}`);
+
         let designerInfo = {
             nome: 'Setor de Arte',
-            avatar: 'https://setordearte.com.br/images/logo-redonda.svg' // Fallback padrão
+            avatar: 'https://setordearte.com.br/images/logo-redonda.svg'
         };
 
         if (deal.RESPONSIBLE_ID) {
-            const designerResponse = await axios.post(`${BITRIX24_API_URL}user.get.json`, {
-                ID: deal.RESPONSIBLE_ID
-            });
-            const designer = designerResponse.data.result[0];
+            try {
+                console.log(`[DEBUG] Realizando chamada user.get para o ID: ${deal.RESPONSIBLE_ID}`);
+                const designerResponse = await axios.post(`${BITRIX24_API_URL}user.get.json`, {
+                    ID: deal.RESPONSIBLE_ID
+                });
+                
+                console.log('[DEBUG] Resposta completa da API user.get:', designerResponse.data);
+                const designer = designerResponse.data.result[0];
 
-            if (designer) {
-                designerInfo = {
-                    nome: `${designer.NAME} ${designer.LAST_NAME}`.trim(),
-                    avatar: designer.PERSONAL_PHOTO || designerInfo.avatar // Usa o avatar padrão se não houver foto
-                };
+                if (designer) {
+                    console.log('[DEBUG] Designer encontrado:', designer);
+                    designerInfo = {
+                        nome: `${designer.NAME} ${designer.LAST_NAME}`.trim(),
+                        avatar: designer.PERSONAL_PHOTO || designerInfo.avatar
+                    };
+                } else {
+                    console.warn('[AVISO] A API user.get retornou um resultado vazio. Usando fallback.');
+                }
+            } catch (userGetError) {
+                console.error('[ERRO] A chamada para user.get falhou:', userGetError.response ? userGetError.response.data : userGetError.message);
+                console.warn('[AVISO] Devido ao erro acima, usando fallback para "Setor de Arte".');
             }
+        } else {
+            console.warn('[AVISO] O campo RESPONSIBLE_ID do negócio está vazio ou nulo. Usando fallback.');
         }
-        // ETAPA 3: Montar e enviar a resposta com os dados necessários
+        
+        console.log('[DEBUG] Informações finais do designer que serão enviadas:', designerInfo);
+        // --- FIM DO BLOCO DE DEPURAÇÃO DO DESIGNER ---
+        
         return res.status(200).json({
             status: 'success',
             pedido: {
                 ID: deal.ID,
                 TITLE: deal.TITLE,
                 STAGE_ID: deal.STAGE_ID,
-                OPPORTUNITY: parseFloat(deal.OPPORTUNITY || 0) / 0.9, // Já envia o valor corrigido
-                NOME_CLIENTE_FINAL: deal.UF_CRM_1741273407628, // Campo final 628
-                LINK_ATENDIMENTO: deal.UF_CRM_1752712769666, // Campo final 666
+                OPPORTUNITY: parseFloat(deal.OPPORTUNITY || 0) / 0.9,
+                NOME_CLIENTE_FINAL: deal.UF_CRM_1741273407628,
+                LINK_ATENDIMENTO: deal.UF_CRM_1752712769666,
                 LINK_ARQUIVO_FINAL: deal.UF_CRM_1748277308731,
                 designerInfo: designerInfo
             }
