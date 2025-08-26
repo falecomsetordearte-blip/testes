@@ -63,7 +63,7 @@ module.exports = async (req, res) => {
                 await axios.post(`${BITRIX24_API_URL}crm.deal.update.json`, {
                     id: dealId,
                     fields: { 
-                        'STAGE_ID': 'C17:1' // Etapa de "Pago" ou "Em Andamento"
+                        'STAGE_ID': 'C17:PREPARATION' // Etapa de "Pago" ou "Em Andamento"
                     }
                 });
                 console.log(`[SUCESSO] Pedido ID ${dealId} movido para a etapa de pago.`);
