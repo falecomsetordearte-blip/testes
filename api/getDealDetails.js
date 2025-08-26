@@ -26,7 +26,7 @@ module.exports = async (req, res) => {
         }
         
         const dealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.get.json`, {
-            id: dealId
+            id: dealId,
             select: ["*", "UF_*"]
         });
         const deal = dealResponse.data.result;
