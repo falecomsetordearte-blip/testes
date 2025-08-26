@@ -47,6 +47,7 @@ module.exports = async (req, res) => {
                 OPPORTUNITY: parseFloat(deal.OPPORTUNITY || 0) / 0.9, // Já envia o valor corrigido
                 NOME_CLIENTE_FINAL: deal.UF_CRM_1741273407628, // Campo final 628
                 LINK_ATENDIMENTO: deal.UF_CRM_1752712769666, // Campo final 666
+                LINK_ARQUIVO_FINAL: deal.UF_CRM_1748277308731
             }
         });
 
