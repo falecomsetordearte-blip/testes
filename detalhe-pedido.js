@@ -143,7 +143,13 @@
                         btnCancelar.disabled = true;
                         btnCancelar.textContent = "Pedido Finalizado";
                     }
-
+                    // Renderiza o histórico de mensagens
+                    mensagensContainer.innerHTML = '';
+                    if (pedido.historicoMensagens && pedido.historicoMensagens.length > 0) {
+                        pedido.historicoMensagens.forEach(adicionarMensagemNaTela);
+                    } else {
+                        mensagensContainer.innerHTML = '<p class="info-text">Nenhuma mensagem ainda. Seja o primeiro a enviar!</p>';
+                    }
                 } catch (error) {
                     console.error("Falha ao carregar detalhes do pedido:", error);
                     document.getElementById("detalhes-wrapper").innerHTML = `<h1>Erro ao carregar dados</h1><p>${error.message}</p>`;
@@ -242,11 +248,49 @@
                     }
                 });
             }
+            // Adiciona o evento de envio de mensagem
+            if (formMensagem) {
+                formMensagem.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const mensagem = inputMensagem.value.trim();
+                    if (!mensagem) return;
+
+                    const textoOriginal = mensagem;
+                    inputMensagem.value = ''; 
+                    btnEnviar.disabled = true;
+                    
+                    adicionarMensagemNaTela({ texto: textoOriginal, remetente: 'cliente' });
+
+                    try {
+                        const response = await fetch('/api/sendMessage', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                sessionToken: sessionToken,
+                                dealId: pedidoId,
+                                message: textoOriginal
+                            })
+                        });
+                        if (!response.ok) throw new Error('Falha ao enviar mensagem.');
+                    } catch (error) {
+                        console.error('Erro ao enviar mensagem:', error);
+                        alert('Houve um erro ao enviar sua mensagem. Por favor, tente novamente.');
+                        // Devolve a mensagem ao input em caso de erro
+                        const ultimaMsg = mensagensContainer.lastChild;
+                        if (ultimaMsg) ultimaMsg.remove();
+                        inputMensagem.value = textoOriginal;
+                    } finally {
+                        btnEnviar.disabled = false;
+                        inputMensagem.focus();
+                    }
+                });
+            }
         } catch (e) {
             console.error("Ocorreu um erro inesperado no script de detalhe do pedido:", e);
         }
     });
 })();
+
 
 
 
