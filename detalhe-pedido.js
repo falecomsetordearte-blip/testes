@@ -18,6 +18,7 @@
             const btnVerAtendimento = document.getElementById('btn-ver-atendimento');
             const arquivosBox = document.getElementById('arquivos-box');
             const btnMarcarVerificado = document.getElementById('btn-marcar-verificado');
+            const btnCancelar = document.getElementById('btn-cancelar');
 
             if (!sessionToken) {
                 window.location.href = 'login';
@@ -120,6 +121,18 @@
                         btnMarcarVerificado.style.display = 'none'; // Esconde o botão
                     }
                     console.log('[DEBUG] Lógica do botão de download concluída.');
+                    // Lógica para desabilitar o botão de cancelar
+                    const isAprovadoOuVerificado = (
+                        (stageId.includes("WON") && stageId !== "C17:WON") || 
+                        stageId === "C17:1" || 
+                        stageId === "C17:WON" || 
+                        stageId.includes("C19")
+                    );
+
+                    if (btnCancelar && isAprovadoOuVerificado) {
+                        btnCancelar.disabled = true;
+                        btnCancelar.textContent = "Pedido Finalizado";
+                    }
 
                 } catch (error) {
                     console.error("Falha ao carregar detalhes do pedido:", error);
@@ -165,4 +178,5 @@
         }
     });
 })();
+
 
