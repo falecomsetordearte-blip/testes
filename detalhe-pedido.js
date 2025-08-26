@@ -17,6 +17,7 @@
             const statusEl = document.getElementById('pedido-status-detalhe');
             const btnVerAtendimento = document.getElementById('btn-ver-atendimento');
             const arquivosBox = document.getElementById('arquivos-box');
+            const btnMarcarVerificado = document.getElementById('btn-marcar-verificado');
 
             if (!sessionToken) {
                 window.location.href = 'login';
@@ -104,6 +105,20 @@
                     } else {
                         arquivosBox.innerHTML = `<p class="info-text">O arquivo para download estará disponível aqui quando o pedido for finalizado.</p>`;
                     }
+                    // Lógica para exibir e controlar o botão "Marcar como Verificado"
+                    if (isFinalizado) {
+                        btnMarcarVerificado.style.display = 'block'; // Mostra o botão
+                        
+                        if (stageId === "C17:WON" || stageId.includes("C19")) {
+                            btnMarcarVerificado.disabled = true;
+                            btnMarcarVerificado.textContent = "Verificado";
+                        } else {
+                            btnMarcarVerificado.disabled = false;
+                            btnMarcarVerificado.textContent = "Marcar como Verificado";
+                        }
+                    } else {
+                        btnMarcarVerificado.style.display = 'none'; // Esconde o botão
+                    }
                     console.log('[DEBUG] Lógica do botão de download concluída.');
 
                 } catch (error) {
@@ -113,9 +128,41 @@
             }
 
             carregarDetalhesPedido();
+// Adiciona o evento de clique para o botão
+            if (btnMarcarVerificado) {
+                btnMarcarVerificado.addEventListener('click', async () => {
+                    if (!confirm('Tem certeza que deseja marcar este pedido como verificado? Esta ação não pode ser desfeita e liberará o pagamento para o designer.')) {
+                        return;
+                    }
 
+                    btnMarcarVerificado.disabled = true;
+                    btnMarcarVerificado.textContent = 'Verificando...';
+
+                    try {
+                        const response = await fetch('/api/markAsVerified', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ sessionToken: sessionToken, dealId: pedidoId })
+                        });
+                        
+                        const data = await response.json();
+                        if (!response.ok) {
+                            throw new Error(data.message);
+                        }
+                        
+                        // Recarrega os dados para mostrar o novo status "Verificado"
+                        await carregarDetalhesPedido();
+
+                    } catch (error) {
+                        alert(`Erro: ${error.message}`);
+                        btnMarcarVerificado.disabled = false;
+                        btnMarcarVerificado.textContent = 'Marcar como Verificado';
+                    }
+                });
+            }
         } catch (e) {
             console.error("Ocorreu um erro inesperado no script de detalhe do pedido:", e);
         }
     });
 })();
+
