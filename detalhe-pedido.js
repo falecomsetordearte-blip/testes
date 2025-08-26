@@ -91,7 +91,7 @@
                     }
                     // --- FIM DO BLOCO DE DEPURAÇÃO DE STATUS ---
                     
-                    statusEl.innerHTML = `<span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span>`;
+                    statusEl.innerHTML = `<span class="status-badge ${statusInfo.classe}" data-stage-id="${stageId}">${statusInfo.texto}</span>`;
                     
                     console.log('[DEBUG] Iniciando lógica de exibição do botão de download...');
                     const linkDownload = pedido.LINK_ARQUIVO_FINAL;
@@ -223,6 +223,7 @@
         }
     });
 })();
+
 
 
 
