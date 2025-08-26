@@ -173,10 +173,56 @@
                     }
                 });
             }
+            // Adiciona o evento de clique para o botão de cancelar
+            if (btnCancelar) {
+                btnCancelar.addEventListener('click', async () => {
+                    const stageId = statusEl.querySelector('.status-badge').dataset.stageId || "";
+                    let confirmacao = false;
+                    
+                    // Verifica se o status requer confirmação extra
+                    const precisaConfirmar = (
+                        !stageId.includes("NEW") && 
+                        stageId !== "C17:UC_2OEE24" // Não é "Aguardando Pagamento" nem "Em Análise"
+                    );
+
+                    if (precisaConfirmar) {
+                        confirmacao = confirm("O atendimento deste pedido já pode ter começado. O valor pago pode não ser reembolsável. Deseja cancelar mesmo assim?");
+                    } else {
+                        confirmacao = confirm("Tem certeza que deseja cancelar este pedido?");
+                    }
+
+                    if (confirmacao) {
+                        btnCancelar.disabled = true;
+                        btnCancelar.textContent = 'Cancelando...';
+
+                        try {
+                            const response = await fetch('/api/cancelDeal', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ sessionToken: sessionToken, dealId: pedidoId })
+                            });
+                            
+                            const data = await response.json();
+                            if (!response.ok) {
+                                throw new Error(data.message);
+                            }
+                            
+                            // Recarrega os dados para mostrar o novo status "Cancelado"
+                            await carregarDetalhesPedido();
+
+                        } catch (error) {
+                            alert(`Erro: ${error.message}`);
+                            btnCancelar.disabled = false;
+                            btnCancelar.textContent = 'Cancelar Pedido';
+                        }
+                    }
+                });
+            }
         } catch (e) {
             console.error("Ocorreu um erro inesperado no script de detalhe do pedido:", e);
         }
     });
 })();
+
 
 
