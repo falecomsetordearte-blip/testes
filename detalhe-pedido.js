@@ -64,17 +64,13 @@
                         btnVerAtendimento.classList.remove('disabled');
                     }
 
-                   // Define o status visual (Lógica sincronizada com o painel principal)
-                    let statusInfo = { texto: 'Desconhecido', classe: '' };
-                    const stageId = pedido.STAGE_ID || "";
-
-                    if (stageId.includes("NEW")) {
-                        statusInfo = { texto: "Aguardando Pagamento", classe: "status-pagamento" };
-                    } else if (stageId.includes("LOSE")) {
-                        statusInfo = { texto: "Cancelado", classe: "status-cancelado" };
-                    } else {
-                        statusInfo = { texto: "Em Andamento", classe: "status-andamento" };
-                    }
+                   // Define o status visual
+                    let statusInfo = { texto: 'Em Andamento', classe: 'status-andamento' };
+                    if (pedido.STAGE_ID.includes("NEW")) {
+                        statusInfo = { texto: 'Aguardando Pagamento', classe: 'status-pagamento' };
+                    } else if (pedido.STAGE_ID.includes("LOSE")) {
+                        statusInfo = { texto: 'Cancelado', classe: 'status-cancelado' };
+                    } // Adicione mais lógicas de status aqui se necessário
                     
                     statusEl.innerHTML = `<span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span>`;
                     // Lógica para exibir o botão de download
@@ -106,6 +102,7 @@
         }
     });
 })();
+
 
 
 
