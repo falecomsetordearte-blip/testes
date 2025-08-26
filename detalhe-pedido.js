@@ -73,6 +73,20 @@
                     } // Adicione mais lógicas de status aqui se necessário
                     
                     statusEl.innerHTML = `<span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span>`;
+                    // Lógica para exibir o botão de download
+                    const stageId = pedido.STAGE_ID || "";
+                    const linkDownload = pedido.LINK_ARQUIVO_FINAL;
+                    const isFinalizado = (stageId.includes("WON") || stageId === "C17:1" || stageId.includes("C19"));
+
+                    if (isFinalizado) {
+                        if (linkDownload) {
+                            arquivosBox.innerHTML = `<a href="${linkDownload}" target="_blank" class="btn-acao btn-download">Baixar Arquivo Final</a>`;
+                        } else {
+                            arquivosBox.innerHTML = `<p class="info-text">O arquivo final ainda não foi disponibilizado.</p>`;
+                        }
+                    } else {
+                        arquivosBox.innerHTML = `<p class="info-text">O arquivo para download estará disponível aqui quando o pedido for finalizado.</p>`;
+                    }
 
                 } catch (error) {
                     console.error("Falha ao carregar detalhes do pedido:", error);
@@ -88,4 +102,5 @@
         }
     });
 })();
+
 
