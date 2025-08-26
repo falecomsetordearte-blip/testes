@@ -24,15 +24,52 @@ module.exports = async (req, res) => {
         }
         console.log("[SUCESSO] Token validado.");
 
-        // PONTO DE VERIFICAÇÃO 2: DADOS RECEBIDOS
-        const { event, payment } = req.body;
-        console.log("[DEBUG] Dados recebidos do Asaas:", { event, externalReference: payment ? payment.externalReference : 'N/A' });
-        
-        // PONTO DE VERIFICAÇÃO 3: CONDIÇÃO PRINCIPAL
-        if (event === 'PAYMENT_RECEIVED' && payment && payment.externalReference === 'Créditos') {
-            console.log("[SUCESSO] Condições atendidas para processar pagamento de créditos.");
-            
-            const asaasCustomerId = payment.customer;
+        // CASO 1: Pagamento para adicionar créditos ao saldo
+            if (payment.externalReference === 'Créditos') {
+                console.log("[INFO] Processando pagamento de ADIÇÃO DE CRÉDITOS.");
+                const asaasCustomerId = payment.customer;
+                const valorRecebido = parseFloat(payment.value);
+
+                const contactSearchResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
+                    filter: { [ASAAS_CUSTOMER_ID_FIELD]: asaasCustomerId },
+                    select: ['ID', 'COMPANY_ID']
+                });
+                const contact = contactSearchResponse.data.result[0];
+
+                if (contact && contact.COMPANY_ID) {
+                    const companyId = contact.COMPANY_ID;
+                    const companyGetResponse = await axios.post(`${BITRIX24_API_URL}crm.company.get.json`, { id: companyId });
+                    const company = companyGetResponse.data.result;
+
+                    if (company) {
+                        const saldoAtual = parseFloat(company[BITRIX_SALDO_FIELD] || 0);
+                        const novoSaldo = saldoAtual + valorRecebido;
+                        await axios.post(`${BITRIX24_API_URL}crm.company.update.json`, {
+                            id: companyId,
+                            fields: { [BITRIX_SALDO_FIELD]: novoSaldo.toFixed(2) }
+                        });
+                        console.log(`[SUCESSO] Saldo da EMPRESA ID ${companyId} atualizado para R$ ${novoSaldo.toFixed(2)}.`);
+                    }
+                }
+            }
+            // CASO 2: Pagamento de um pedido específico
+            else if (payment.externalReference && payment.externalReference.startsWith('Pedido ')) {
+                console.log("[INFO] Processando pagamento de PEDIDO ESPECÍFICO.");
+                const dealId = payment.externalReference.replace('Pedido ', ''); // Extrai o ID do pedido
+                console.log(`[INFO] ID do Pedido identificado: ${dealId}`);
+
+                // Simplesmente muda a etapa do negócio para "Pago/Em Andamento"
+                await axios.post(`${BITRIX24_API_URL}crm.deal.update.json`, {
+                    id: dealId,
+                    fields: { 
+                        'STAGE_ID': 'C17:1' // IMPORTANTE: Etapa de "Pago" ou "Em Andamento"
+                    }
+                });
+                console.log(`[SUCESSO] Pedido ID ${dealId} movido para a etapa de pago.`);
+            }
+        }
+
+        return res.status(200).send('Webhook recebido com sucesso.');
             const valorRecebido = parseFloat(payment.value);
             console.log(`[INFO] Processando R$ ${valorRecebido} para Asaas Customer ID: ${asaasCustomerId}`);
 
