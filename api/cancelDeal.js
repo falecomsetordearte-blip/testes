@@ -39,7 +39,7 @@ module.exports = async (req, res) => {
         const updateResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.update.json`, {
             id: dealId,
             fields: { 
-                'STAGE_ID': 'LOSE'
+                'STAGE_ID': 'C17:LOSE'
             }
         });
 
