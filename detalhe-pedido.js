@@ -21,6 +21,10 @@
             const btnCancelar = document.getElementById('btn-cancelar');
             const designerAvatarEl = document.querySelector('.designer-avatar');
             const designerNomeEl = document.querySelector('.designer-details h4');
+            const formMensagem = document.getElementById('form-mensagem');
+            const inputMensagem = document.getElementById('input-mensagem');
+            const btnEnviar = document.getElementById('btn-enviar-mensagem');
+            const mensagensContainer = document.getElementById('mensagens-container');
 
             if (!sessionToken) {
                 window.location.href = 'login';
@@ -145,7 +149,21 @@
                     document.getElementById("detalhes-wrapper").innerHTML = `<h1>Erro ao carregar dados</h1><p>${error.message}</p>`;
                 }
             }
-
+            function adicionarMensagemNaTela(msg) {
+                const infoText = mensagensContainer.querySelector('.info-text');
+                if (infoText) infoText.remove();
+                
+                const divMensagem = document.createElement('div');
+                const classe = msg.remetente === 'cliente' ? 'mensagem-cliente' : 'mensagem-designer';
+                divMensagem.classList.add('mensagem', classe);
+                
+                // Remove o prefixo "[Mensagem do Cliente]\n--------------------\n" se existir
+                const textoLimpo = msg.texto.replace(/^\[Mensagem do Cliente\]\n-+\n/, '');
+                divMensagem.textContent = textoLimpo;
+                
+                mensagensContainer.appendChild(divMensagem);
+                mensagensContainer.scrollTop = mensagensContainer.scrollHeight;
+            }
             carregarDetalhesPedido();
 // Adiciona o evento de clique para o botão
             if (btnMarcarVerificado) {
@@ -229,6 +247,7 @@
         }
     });
 })();
+
 
 
 
