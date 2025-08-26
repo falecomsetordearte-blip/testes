@@ -36,7 +36,25 @@ module.exports = async (req, res) => {
         if (!deal || deal.COMPANY_ID != user.COMPANY_ID) {
             return res.status(403).json({ message: 'Acesso negado a este pedido.' });
         }
+        // ETAPA 3: Buscar os dados do designer responsável (funcionário)
+        let designerInfo = {
+            nome: 'Setor de Arte',
+            avatar: 'https://setordearte.com.br/images/logo-redonda.svg' // Fallback padrão
+        };
 
+        if (deal.RESPONSIBLE_ID) {
+            const designerResponse = await axios.post(`${BITRIX24_API_URL}user.get.json`, {
+                ID: deal.RESPONSIBLE_ID
+            });
+            const designer = designerResponse.data.result[0];
+
+            if (designer) {
+                designerInfo = {
+                    nome: `${designer.NAME} ${designer.LAST_NAME}`.trim(),
+                    avatar: designer.PERSONAL_PHOTO || designerInfo.avatar // Usa o avatar padrão se não houver foto
+                };
+            }
+        }
         // ETAPA 3: Montar e enviar a resposta com os dados necessários
         return res.status(200).json({
             status: 'success',
