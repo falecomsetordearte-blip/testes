@@ -16,6 +16,7 @@
             const idEl = document.getElementById('info-id');
             const statusEl = document.getElementById('pedido-status-detalhe');
             const btnVerAtendimento = document.getElementById('btn-ver-atendimento');
+            const arquivosBox = document.getElementById('arquivos-box');
 
             // --- VERIFICAÇÃO DE LOGIN E ID DO PEDIDO ---
             if (!sessionToken) {
@@ -87,3 +88,4 @@
         }
     });
 })();
+
