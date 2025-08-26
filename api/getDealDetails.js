@@ -25,16 +25,16 @@ module.exports = async (req, res) => {
             return res.status(401).json({ message: 'Sessão inválida ou usuário não associado a uma empresa.' });
         }
         
-        const dealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
+         const dealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
             filter: { 'ID': dealId },
             select: [
-                "ID", "TITLE", "STAGE_ID", "OPPORTUNITY", "COMPANY_ID", "RESPONSIBLE_ID",
-                "UF_CRM_1741273407628", // NOME_CLIENTE_FINAL
-                "UF_CRM_1752712769666", // LINK_ATENDIMENTO
-                "UF_CRM_1748277308731"  // LINK_ARQUIVO_FINAL
+                "ID", "TITLE", "STAGE_ID", "OPPORTUNITY", "COMPANY_ID", "ASSIGNED_BY_ID", // <-- MUDANÇA AQUI
+                "UF_CRM_1741273407628", 
+                "UF_CRM_1752712769666", 
+                "UF_CRM_1748277308731"
             ]
         });
-        const deal = dealResponse.data.result[0]; // Pegamos o primeiro (e único) resultado do array
+        const deal = dealResponse.data.result[0];
 
         if (!deal || deal.COMPANY_ID != user.COMPANY_ID) {
             return res.status(403).json({ message: 'Acesso negado a este pedido.' });
