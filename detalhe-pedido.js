@@ -19,6 +19,8 @@
             const arquivosBox = document.getElementById('arquivos-box');
             const btnMarcarVerificado = document.getElementById('btn-marcar-verificado');
             const btnCancelar = document.getElementById('btn-cancelar');
+            const designerAvatarEl = document.querySelector('.designer-avatar');
+            const designerNomeEl = document.querySelector('.designer-details h4');
 
             if (!sessionToken) {
                 window.location.href = 'login';
@@ -62,7 +64,11 @@
                         btnVerAtendimento.target = '_blank';
                         btnVerAtendimento.classList.remove('disabled');
                     }
-
+                    // Atualiza dinamicamente as informações do designer
+                    if (pedido.designerInfo) {
+                        if (designerAvatarEl) designerAvatarEl.src = pedido.designerInfo.avatar;
+                        if (designerNomeEl) designerNomeEl.textContent = pedido.designerInfo.nome;
+                    }
                     // --- INÍCIO DO BLOCO DE DEPURAÇÃO DE STATUS ---
                     console.log(`[DEBUG] Verificando STAGE_ID recebido: '${pedido.STAGE_ID}' (Tipo: ${typeof pedido.STAGE_ID})`);
 
@@ -223,6 +229,7 @@
         }
     });
 })();
+
 
 
 
