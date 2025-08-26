@@ -63,7 +63,19 @@ module.exports = async (req, res) => {
         } else {
             console.warn('[AVISO] O campo ASSIGNED_BY_ID do negócio está vazio ou nulo. Usando fallback.');
         }
-        
+        // ETAPA 4: Buscar o histórico de mensagens (comentários da timeline)
+        const commentsResponse = await axios.post(`${BITRIX24_API_URL}crm.timeline.comment.list`, {
+            filter: {
+                ENTITY_ID: dealId,
+                ENTITY_TYPE: "deal"
+            },
+            order: { "CREATED": "ASC" } // Ordena do mais antigo para o mais novo
+        });
+
+        const historicoMensagens = (commentsResponse.data.result || []).map(comment => ({
+            texto: comment.COMMENT,
+            remetente: comment.AUTHOR_ID == 1 ? 'cliente' : 'designer' // Se o autor for o Sistema, é o cliente. Senão, é o designer.
+        }));
         return res.status(200).json({
             status: 'success',
             pedido: {
@@ -74,7 +86,8 @@ module.exports = async (req, res) => {
                 NOME_CLIENTE_FINAL: deal.UF_CRM_1741273407628,
                 LINK_ATENDIMENTO: deal.UF_CRM_1752712769666,
                 LINK_ARQUIVO_FINAL: deal.UF_CRM_1748277308731,
-                designerInfo: designerInfo
+                designerInfo: designerInfo,
+                historicoMensagens: historicoMensagens
             }
         });
 
