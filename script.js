@@ -356,13 +356,20 @@ function renderizarPedidos() {
             }
             let acaoHtml = `<a href="pedido.html?id=${pedido.ID}" class="btn-ver-pedido">Ver Detalhes${notificacaoHtml}</a>`;
             const stageId = pedido.STAGE_ID || "";
+            // Lógica de status completa e unificada
             if (stageId.includes("NEW")) {
-                statusInfo = { texto: "Aguardando Pagamento", classe: "status-pagamento" };
+                statusInfo = { texto: 'Aguardando Pagamento', classe: 'status-pagamento' };
                 acaoHtml = `<div class="dropdown-pagamento"><button class="btn-pagar" data-deal-id="${pedido.ID}">Pagar Agora</button><div class="dropdown-content"><button class="btn-pagar-saldo" data-deal-id="${pedido.ID}">Usar Saldo</button><button class="btn-gerar-cobranca" data-deal-id="${pedido.ID}">PIX</button></div></div>`;
             } else if (stageId.includes("LOSE")) {
-                statusInfo = { texto: "Cancelado", classe: "status-cancelado" };
+                statusInfo = { texto: 'Cancelado', classe: 'status-cancelado' };
+            } else if (stageId === "C17:UC_2OEE24") {
+                statusInfo = { texto: 'Em Análise', classe: 'status-analise' };
+            } else if ((stageId.includes("WON") && stageId !== "C17:WON") || stageId === "C17:1") {
+                statusInfo = { texto: "Aprovado", classe: "status-aprovado" };
+            } else if (stageId === "C17:WON" || stageId.includes("C19")) {
+                statusInfo = { texto: "Verificado", classe: "status-verificado" };
             } else {
-                statusInfo = { texto: "Em Andamento", classe: "status-andamento" };
+                statusInfo = { texto: 'Em Andamento', classe: 'status-andamento' };
             }
             const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(pedido.OPPORTUNITY) || 0);
             pedidosHtml += `<div class="pedido-item"><div class="col-id"><strong>#${pedido.ID}</strong></div><div class="col-titulo">${pedido.TITLE}</div><div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div><div class="col-valor">${valorFormatado}</div><div class="col-acoes">${acaoHtml}</div></div>`;
@@ -662,5 +669,6 @@ document.addEventListener("DOMContentLoaded", () => {
         inicializarPainel();
     }
 });
+
 
 
