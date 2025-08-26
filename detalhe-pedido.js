@@ -64,13 +64,23 @@
                         btnVerAtendimento.classList.remove('disabled');
                     }
 
-                   // Define o status visual
-                    let statusInfo = { texto: 'Em Andamento', classe: 'status-andamento' };
-                    if (pedido.STAGE_ID.includes("NEW")) {
+                   // Define o status visual (Lógica completa e unificada)
+                    let statusInfo = { texto: 'Desconhecido', classe: '' };
+                    const stageId = pedido.STAGE_ID || "";
+
+                    if (stageId.includes("NEW")) {
                         statusInfo = { texto: 'Aguardando Pagamento', classe: 'status-pagamento' };
-                    } else if (pedido.STAGE_ID.includes("LOSE")) {
+                    } else if (stageId.includes("LOSE")) {
                         statusInfo = { texto: 'Cancelado', classe: 'status-cancelado' };
-                    } // Adicione mais lógicas de status aqui se necessário
+                    } else if (stageId === "C17:UC_2OEE24") {
+                        statusInfo = { texto: 'Em Análise', classe: 'status-analise' };
+                    } else if ((stageId.includes("WON") && stageId !== "C17:WON") || stageId === "C17:1") {
+                        statusInfo = { texto: "Aprovado", classe: "status-aprovado" };
+                    } else if (stageId === "C17:WON" || stageId.includes("C19")) {
+                        statusInfo = { texto: "Verificado", classe: "status-verificado" };
+                    } else {
+                        statusInfo = { texto: 'Em Andamento', classe: 'status-andamento' };
+                    }
                     
                     statusEl.innerHTML = `<span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span>`;
                     // Lógica para exibir o botão de download
@@ -102,6 +112,7 @@
         }
     });
 })();
+
 
 
 
