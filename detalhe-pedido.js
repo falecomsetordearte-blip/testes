@@ -1,4 +1,4 @@
-// /detalhe-pedido.js - VERSÃO SIMPLIFICADA
+// /detalhe-pedido.js - VERSÃO COM DEPURAÇÃO DETALHADA
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
@@ -18,7 +18,6 @@
             const btnVerAtendimento = document.getElementById('btn-ver-atendimento');
             const arquivosBox = document.getElementById('arquivos-box');
 
-            // --- VERIFICAÇÃO DE LOGIN E ID DO PEDIDO ---
             if (!sessionToken) {
                 window.location.href = 'login';
                 return;
@@ -28,16 +27,15 @@
                 return;
             }
             
-            // --- INICIALIZAÇÃO DA PÁGINA ---
             document.getElementById('user-greeting').textContent = `Olá, ${userName}!`;
             document.getElementById('logout-button').addEventListener('click', () => {
                 localStorage.clear();
                 window.location.href = 'login';
             });
 
-            // --- FUNÇÃO PRINCIPAL PARA BUSCAR E EXIBIR OS DADOS ---
             async function carregarDetalhesPedido() {
                 try {
+                    console.log('[DEBUG] Iniciando busca de detalhes para o pedido ID:', pedidoId);
                     const response = await fetch('/api/getDealDetails', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -50,41 +48,50 @@
                     }
                     
                     const pedido = data.pedido;
+                    console.log('[DEBUG] Dados do pedido recebidos da API:', pedido);
 
-                    // Preenche os elementos do HTML com os dados recebidos
                     tituloEl.textContent = `Pedido #${pedido.ID}: ${pedido.TITLE}`;
                     idEl.textContent = `#${pedido.ID}`;
                     valorEl.textContent = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(pedido.OPPORTUNITY);
                     clienteEl.textContent = pedido.NOME_CLIENTE_FINAL || 'Não informado';
 
-                    // Define o link do botão "Ver Atendimento"
                     if (btnVerAtendimento && pedido.LINK_ATENDIMENTO) {
                         btnVerAtendimento.href = pedido.LINK_ATENDIMENTO;
                         btnVerAtendimento.target = '_blank';
                         btnVerAtendimento.classList.remove('disabled');
                     }
 
-                   // Define o status visual (Lógica completa e unificada)
-                    let statusInfo = { texto: 'Desconhecido', classe: '' };
-                    const stageId = pedido.STAGE_ID || "";
+                    // --- INÍCIO DO BLOCO DE DEPURAÇÃO DE STATUS ---
+                    console.log(`[DEBUG] Verificando STAGE_ID recebido: '${pedido.STAGE_ID}' (Tipo: ${typeof pedido.STAGE_ID})`);
 
-                    if (stageId.includes("NEW")) {
-                        statusInfo = { texto: 'Aguardando Pagamento', classe: 'status-pagamento' };
-                    } else if (stageId.includes("LOSE")) {
-                        statusInfo = { texto: 'Cancelado', classe: 'status-cancelado' };
-                    } else if (stageId === "C17:UC_2OEE24") {
-                        statusInfo = { texto: 'Em Análise', classe: 'status-analise' };
-                    } else if ((stageId.includes("WON") && stageId !== "C17:WON") || stageId === "C17:1") {
-                        statusInfo = { texto: "Aprovado", classe: "status-aprovado" };
-                    } else if (stageId === "C17:WON" || stageId.includes("C19")) {
-                        statusInfo = { texto: "Verificado", classe: "status-verificado" };
-                    } else {
-                        statusInfo = { texto: 'Em Andamento', classe: 'status-andamento' };
+                    let statusInfo = { texto: 'Desconhecido', classe: '' };
+                    const stageId = pedido.STAGE_ID || ""; // Garante que stageId seja sempre uma string
+
+                    try {
+                        console.log('[DEBUG] Entrando na lógica de definição de status...');
+                        if (stageId.includes("NEW")) {
+                            statusInfo = { texto: 'Aguardando Pagamento', classe: 'status-pagamento' };
+                        } else if (stageId.includes("LOSE")) {
+                            statusInfo = { texto: 'Cancelado', classe: 'status-cancelado' };
+                        } else if (stageId === "C17:UC_2OEE24") {
+                            statusInfo = { texto: 'Em Análise', classe: 'status-analise' };
+                        } else if ((stageId.includes("WON") && stageId !== "C17:WON") || stageId === "C17:1") {
+                            statusInfo = { texto: "Aprovado", classe: "status-aprovado" };
+                        } else if (stageId === "C17:WON" || stageId.includes("C19")) {
+                            statusInfo = { texto: "Verificado", classe: "status-verificado" };
+                        } else {
+                            statusInfo = { texto: 'Em Andamento', classe: 'status-andamento' };
+                        }
+                        console.log('[DEBUG] Lógica de status concluída. Status definido como:', statusInfo);
+                    } catch (statusError) {
+                        console.error("[ERRO FATAL] Erro dentro do bloco de lógica de status:", statusError);
+                        statusInfo = { texto: 'Erro de Status', classe: 'status-cancelado' };
                     }
+                    // --- FIM DO BLOCO DE DEPURAÇÃO DE STATUS ---
                     
                     statusEl.innerHTML = `<span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span>`;
-                    // Lógica para exibir o botão de download
-                    const stageId = pedido.STAGE_ID || "";
+                    
+                    console.log('[DEBUG] Iniciando lógica de exibição do botão de download...');
                     const linkDownload = pedido.LINK_ARQUIVO_FINAL;
                     const isFinalizado = (stageId.includes("WON") || stageId === "C17:1" || stageId.includes("C19"));
 
@@ -97,6 +104,7 @@
                     } else {
                         arquivosBox.innerHTML = `<p class="info-text">O arquivo para download estará disponível aqui quando o pedido for finalizado.</p>`;
                     }
+                    console.log('[DEBUG] Lógica do botão de download concluída.');
 
                 } catch (error) {
                     console.error("Falha ao carregar detalhes do pedido:", error);
@@ -104,7 +112,6 @@
                 }
             }
 
-            // Executa a função principal para carregar os dados
             carregarDetalhesPedido();
 
         } catch (e) {
@@ -112,8 +119,3 @@
         }
     });
 })();
-
-
-
-
-
