@@ -1,4 +1,4 @@
-// /api/paymentWebhook.js - VERSÃO CORRIGIDA E FINAL
+// /api/paymentWebhook.js - VERSÃO CORRIGIDA E FINA
 
 const axios = require('axios');
 
