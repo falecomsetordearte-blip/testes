@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login do Designer - Setor de Arte</title>
+    <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
+    <!-- Reutilizando o mesmo CSS da área do cliente -->
+    <link rel="stylesheet" href="../style.css"> 
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-container">
+            <div class="auth-header">
+                <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte">
+                <h1>Painel do Designer</h1>
+                <p>Acesse com suas credenciais do Bitrix24.</p>
+            </div>
+            <form id="designer-login-form">
+                <div id="form-error-feedback" class="form-feedback error hidden"></div>
+                <div class="form-group">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="senha">Senha</label>
+                    <input type="password" id="senha" required>
+                </div>
+                <button type="submit" class="btn-submit">Entrar</button>
+            </form>
+        </div>
+    </div>
+    <!-- Usaremos um script dedicado para o designer -->
+    <script src="designer-script.js"></script> 
+</body>
+</html>
