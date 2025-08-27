@@ -17,7 +17,6 @@ module.exports = async (req, res) => {
             return res.status(400).json({ message: 'E-mail é obrigatório.' });
         }
 
-        // 1. Encontrar o usuário no Bitrix24
         const userSearch = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { 'EMAIL': email, 'EMAIL_VALUE_TYPE': 'WORK' },
             select: ['ID', 'NAME']
@@ -25,25 +24,20 @@ module.exports = async (req, res) => {
 
         const user = userSearch.data.result[0];
         if (!user) {
-            // Não informamos ao usuário se o email existe ou não por segurança
             return res.status(200).json({ message: 'Se um e-mail correspondente for encontrado, um link será enviado.' });
         }
 
-        // 2. Gerar token de reset e data de expiração
         const resetToken = randomBytes(32).toString('hex');
         const resetTokenExpires = new Date(Date.now() + 3600000).toISOString(); // Expira em 1 hora
 
-        // 3. Salvar o token e a expiração no contato do Bitrix24
-        // (Você precisa criar esses dois campos customizados no Bitrix24 para Contatos)
         await axios.post(`${BITRIX24_API_URL}crm.contact.update.json`, {
             id: user.ID,
             fields: {
-                'UF_CRM_1756285759050': resetToken, // Campo de texto para o token
-                'UF_CRM_1756285813385': resetTokenExpires // Campo de Data/Hora para a expiração
+                'UF_CRM_1756285759050': resetToken, // Campo RESET TOKEN atualizado
+                'UF_CRM_1756285813385': resetTokenExpires // Campo RESET EXPIRES atualizado
             }
         });
 
-        // 4. Enviar o email
         const resetUrl = `${FRONTEND_URL}/redefinir-senha.html?token=${resetToken}`;
         
         const transporter = nodemailer.createTransport({
@@ -63,7 +57,7 @@ module.exports = async (req, res) => {
             html: `
                 <p>Olá ${user.NAME},</p>
                 <p>Você solicitou a redefinição da sua senha. Clique no link abaixo para criar uma nova senha:</p>
-                <a href="${resetUrl}">Redefinir Minha Senha</a>
+                <a href="${resetUrl}" style="background-color: #38a9f4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Redefinir Minha Senha</a>
                 <p>Este link expirará em 1 hora.</p>
                 <p>Se você não solicitou isso, por favor, ignore este e-mail.</p>
             `,
