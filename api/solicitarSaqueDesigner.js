@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
         const valorSaque = new Decimal(valor);
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        const designerId = decoded.designerId;
+        const designerId = parseInt(decoded.designerId, 10);
 
         // Precisamos do nome do designer para o título do negócio
         const designerInfo = JSON.parse(req.headers['x-designer-info'] || '{}');
