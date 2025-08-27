@@ -142,10 +142,6 @@ if (cadastroForm) {
             if (!response.ok) {
                 throw new Error(data.message || 'Ocorreu um erro desconhecido.');
             }
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || 'Ocorreu um erro desconhecido.');
-            }
             
             console.log('[DEBUG] Cadastro bem-sucedido. Salvando dados e redirecionando para assinatura.html');
             
@@ -685,6 +681,7 @@ document.addEventListener("DOMContentLoaded", () => {
         inicializarPainel();
     }
 });
+
 
 
 
