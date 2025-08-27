@@ -142,7 +142,23 @@ if (cadastroForm) {
             if (!response.ok) {
                 throw new Error(data.message || 'Ocorreu um erro desconhecido.');
             }
-            window.location.href = data.checkoutUrl;
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'Ocorreu um erro desconhecido.');
+            }
+            
+            console.log('[DEBUG] Cadastro bem-sucedido. Salvando dados e redirecionando para assinatura.html');
+            
+            const registrationData = {
+                contactId: data.contactId,
+                companyId: data.companyId,
+                asaasCustomerId: data.asaasCustomerId,
+                companyName: document.getElementById('nome_empresa').value,
+                responsibleName: document.getElementById('nome_responsavel').value
+            };
+            localStorage.setItem('pendingRegistration', JSON.stringify(registrationData));
+
+            window.location.href = 'assinatura.html';
         } catch (error) {
             loadingFeedback.classList.add('hidden');
             formWrapper.classList.remove('hidden');
@@ -669,6 +685,7 @@ document.addEventListener("DOMContentLoaded", () => {
         inicializarPainel();
     }
 });
+
 
 
 
