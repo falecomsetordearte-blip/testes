@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        const designerId = decoded.designerId;
+        const designerId = parseInt(decoded.designerId, 10);
 
         let financeiro = await prisma.designerFinanceiro.findUnique({
             where: { designer_id: designerId },
