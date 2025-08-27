@@ -17,8 +17,8 @@ module.exports = async (req, res) => {
 
         // 1. Encontrar o usuário pelo token de reset
         const userSearch = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-            filter: { 'UF_CRM_RESET_TOKEN': token },
-            select: ['ID', 'UF_CRM_RESET_EXPIRES']
+            filter: { 'UF_CRM_1756285759050': token },
+            select: ['ID', 'UF_CRM_1756285813385']
         });
 
         const user = userSearch.data.result[0];
