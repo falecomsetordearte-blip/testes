@@ -19,8 +19,23 @@
         </header>
         <main class="main-painel">
             <div class="container">
-                <h1>Bem-vindo(a) ao seu Painel!</h1>
-                <p>Próximas funcionalidades em breve.</p>
+                <section class="pedidos-section">
+                    <div class="pedidos-header-bar">
+                        <h2>Meus Pedidos Atribuídos</h2>
+                    </div>
+                    <div class="pedidos-list-header">
+                        <div class="col-id">ID</div>
+                        <div class="col-titulo">Título</div>
+                        <div class="col-status">Status</div>
+                        <div class="col-valor">Sua Comissão</div>
+                    </div>
+                    <div id="designer-pedidos-list" class="pedidos-list-body">
+                        <div class="loading-pedidos">
+                            <div class="spinner"></div>
+                            <span>Carregando seus pedidos...</span>
+                        </div>
+                    </div>
+                </section>
             </div>
         </main>
     </div>
