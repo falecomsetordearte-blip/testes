@@ -130,6 +130,47 @@ if (document.querySelector('main.main-painel')) {
         
         // Chama a função para carregar os dados
         carregarPainelDesigner();
+
+        // Lógica para o botão de Solicitar Saque
+        const btnSaque = document.getElementById('btn-solicitar-saque');
+        if (btnSaque) {
+            btnSaque.addEventListener('click', async () => {
+                const valor = prompt("Digite o valor que deseja sacar (ex: 50.00):");
+                if (!valor || isNaN(valor) || Number(valor) <= 0) {
+                    alert("Por favor, insira um valor numérico válido.");
+                    return;
+                }
+                
+                btnSaque.disabled = true;
+                btnSaque.textContent = "Processando...";
+                
+                try {
+                    const response = await fetch('/api/solicitarSaqueDesigner', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${designerToken}`,
+                            'x-designer-info': designerInfoString
+                        },
+                        body: JSON.stringify({ valor: Number(valor) })
+                    });
+                    
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.message);
+                    }
+                    
+                    alert("Sua solicitação de saque foi enviada com sucesso!");
+                    window.location.reload(); // Recarrega para atualizar o saldo e a lista de pedidos
+
+                } catch (error) {
+                    alert(`Erro: ${error.message}`);
+                } finally {
+                    btnSaque.disabled = false;
+                    btnSaque.textContent = "Solicitar Saque";
+                }
+            });
+        }
+
     }
 }
-    
