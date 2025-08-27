@@ -47,4 +47,4 @@ module.exports = async (req, res) => {
         // Mesmo em caso de erro, respondemos 200 para não pausar a fila de automação do Bitrix
         res.status(200).send("OK");
     }
-};
+}; 
