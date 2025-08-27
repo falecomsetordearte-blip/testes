@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
         const dealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.get.json`, { id: dealId });
             const deal = dealResponse.data.result;
             
-            const designerId = deal.ASSIGNED_BY_ID;
+            const designerId = parseInt(deal.ASSIGNED_BY_ID, 10);
             const comissao = new Decimal(deal.OPPORTUNITY || 0);
         
         if (designerId && comissao.gt(0)) {
