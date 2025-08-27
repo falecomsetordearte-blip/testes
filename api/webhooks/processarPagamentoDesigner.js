@@ -13,10 +13,10 @@ module.exports = async (req, res) => {
         
         // Buscamos os dados do negócio para saber o responsável e o valor
         const dealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.get.json`, { id: dealId });
-        const deal = dealResponse.data.result;
-        
-        const designerId = deal.ASSIGNED_BY_ID;
-        const comissao = new Decimal(deal.OPPORTUNITY || 0);
+            const deal = dealResponse.data.result;
+            
+            const designerId = deal.ASSIGNED_BY_ID;
+            const comissao = new Decimal(deal.OPPORTUNITY || 0);
         
         if (designerId && comissao.gt(0)) {
             // 'upsert' é uma operação segura:
