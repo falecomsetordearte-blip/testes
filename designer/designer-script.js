@@ -107,26 +107,41 @@ if (document.querySelector('main.main-painel')) {
 
         // Função principal para carregar os dados do painel do designer
         async function carregarPainelDesigner() {
-            try {
-                const response = await fetch('/api/getDesignerDeals', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: designerToken })
-                });
-                
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.message || 'Erro ao carregar pedidos.');
-                }
+    try {
+        // Busca os pedidos e o saldo em paralelo para mais eficiência
+        const [dealsResponse, saldoResponse] = await Promise.all([
+            fetch('/api/getDesignerDeals', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: designerToken })
+            }),
+            fetch('/api/getDesignerSaldo', {
+                method: 'GET', // Método GET conforme definido na API
+                headers: { 'Authorization': `Bearer ${designerToken}` }
+            })
+        ]);
+        
+        const dealsData = await dealsResponse.json();
+        const saldoData = await saldoResponse.json();
 
-                renderizarPedidosDesigner(data.deals);
+        if (!dealsResponse.ok) throw new Error(dealsData.message || 'Erro ao carregar pedidos.');
+        if (!saldoResponse.ok) throw new Error(saldoData.message || 'Erro ao buscar saldo.');
 
-            } catch (error) {
-                console.error('Erro ao carregar painel do designer:', error);
-                const container = document.getElementById('designer-pedidos-list');
-                if (container) container.innerHTML = `<div class="loading-pedidos" style="color: var(--erro);">${error.message}</div>`;
-            }
+        // Renderiza o saldo
+        const saldoEl = document.getElementById('designer-saldo');
+        if (saldoEl) {
+            saldoEl.textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(saldoData.saldo_disponivel || 0);
         }
+
+        // Renderiza os pedidos
+        renderizarPedidosDesigner(dealsData.deals);
+
+    } catch (error) {
+        console.error('Erro ao carregar painel do designer:', error);
+        const container = document.getElementById('designer-pedidos-list');
+        if (container) container.innerHTML = `<div class="loading-pedidos" style="color: var(--erro);">${error.message}</div>`;
+    }
+}
         
         // Chama a função para carregar os dados
         carregarPainelDesigner();
