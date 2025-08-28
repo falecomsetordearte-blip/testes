@@ -1,60 +1,188 @@
-<!-- SUBSTITUA O CONTEÚDO DA TAG <main> EM designer/painel.html -->
-<main class="main-painel">
-    <div class="container">
+// /designer/designer-script.js - VERSÃO FINAL COM DASHBOARD
 
-        <!-- Cards de Resumo -->
-        <div class="dashboard-grid">
-            <div class="dash-card">
-                <div class="card-header"><span class="card-title">Saldo Disponível</span></div>
-                <div class="card-body"><span id="designer-saldo-disponivel" class="card-value">Carregando...</span></div>
-                <div class="card-footer"><button id="btn-solicitar-saque" class="card-button">Solicitar Saque</button></div>
-            </div>
-            <div class="dash-card">
-                <div class="card-header"><span class="card-title">Aguardando Depósito</span></div>
-                <div class="card-body"><span id="designer-saldo-pendente" class="card-value">Carregando...</span></div>
-                <div class="card-footer"><span>Saques solicitados</span></div>
-            </div>
-            <div class="dash-card">
-                <div class="card-header"><span class="card-title">Pedidos Ativos</span></div>
-                <div class="card-body"><span id="designer-pedidos-ativos" class="card-value">...</span></div>
-                <div class="card-footer"><span>Trabalhos em andamento</span></div>
-            </div>
-        </div>
+(function() {
+    // Função para exibir feedback nos formulários de login/senha
+    function showFeedback(containerId, message, isError = true) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.textContent = message;
+        container.className = `form-feedback ${isError ? 'error' : 'success'}`;
+        container.classList.remove('hidden');
+    }
 
-        <!-- Sistema de Abas -->
-        <div class="tabs-container">
-            <div class="tab-buttons">
-                <button class="tab-btn active" data-tab="atendimentos">Meus Atendimentos</button>
-                <button class="tab-btn" data-tab="saques">Histórico de Saques</button>
-            </div>
-            <div class="tab-content">
-                <!-- Conteúdo da Aba 1: Atendimentos -->
-                <div id="atendimentos" class="tab-pane active">
-                    <div class="pedidos-list-header">
-                        <div class="col-id">ID</div>
-                        <div class="col-titulo">Título</div>
-                        <div class="col-status">Status</div>
-                        <div class="col-valor">Comissão</div>
-                        <div class="col-acoes">Ações</div>
-                    </div>
-                    <div id="atendimentos-list" class="pedidos-list-body">
-                        <div class="loading-pedidos"><div class="spinner"></div></div>
-                    </div>
-                </div>
-                <!-- Conteúdo da Aba 2: Saques -->
-                <div id="saques" class="tab-pane">
-                     <div class="pedidos-list-header">
-                        <div class="col-id">ID</div>
-                        <div class="col-titulo">Título</div>
-                        <div class="col-status">Status</div>
-                        <div class="col-valor">Valor</div>
-                    </div>
-                    <div id="saques-list" class="pedidos-list-body">
-                         <div class="loading-pedidos"><div class="spinner"></div></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    // --- LÓGICA DE LOGIN E REDEFINIÇÃO DE SENHA ---
+    
+    // (A lógica para os formulários de login, esqueci-senha e redefinir-senha permanece aqui,
+    // mas está omitida por brevidade, já que ela funciona em páginas separadas)
 
-    </div>
-</main>
+
+    // --- LÓGICA DA PÁGINA DO PAINEL ---
+    if (document.querySelector('main.main-painel')) {
+        const designerToken = localStorage.getItem('designerToken');
+        const designerInfoString = localStorage.getItem('designerInfo');
+
+        if (!designerToken || !designerInfoString) {
+            localStorage.clear();
+            window.location.href = 'login.html';
+            return;
+        }
+        
+        const designerInfo = JSON.parse(designerInfoString);
+        
+        document.getElementById('designer-greeting').textContent = `Olá, ${designerInfo.name}!`;
+        document.getElementById('logout-button').addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        });
+
+        // --- FUNÇÕES DE RENDERIZAÇÃO DA DASHBOARD ---
+
+        function renderizarCards(data) {
+            document.getElementById('designer-saldo-disponivel').textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.saldoDisponivel || 0);
+            document.getElementById('designer-saldo-pendente').textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.saldoPendente || 0);
+            document.getElementById('designer-pedidos-ativos').textContent = data.pedidosAtivos;
+        }
+
+        function renderizarListaAtendimentos(pedidos) {
+            const container = document.getElementById('atendimentos-list');
+            if (!pedidos || pedidos.length === 0) {
+                container.innerHTML = `<div class="loading-pedidos" style="padding: 50px 20px;">Nenhum atendimento encontrado.</div>`;
+                return;
+            }
+            let html = "";
+            pedidos.forEach(pedido => {
+                let statusInfo = { texto: 'Desconhecido', classe: '' };
+                const stageId = pedido.STAGE_ID || "";
+
+                if (stageId.includes("NEW")) statusInfo = { texto: 'Aguardando Pagamento', classe: 'status-pagamento' };
+                else if (stageId.includes("LOSE")) statusInfo = { texto: 'Cancelado', classe: 'status-cancelado' };
+                else if (stageId === "C17:UC_2OEE24") statusInfo = { texto: 'Em Análise', classe: 'status-analise' };
+                else if ((stageId.includes("WON") && stageId !== "C17:WON") || stageId === "C17:1") statusInfo = { texto: "Aprovado", classe: "status-aprovado" };
+                else if (stageId === "C17:WON" || stageId.includes("C19")) statusInfo = { texto: "Verificado", classe: "status-verificado" };
+                else statusInfo = { texto: 'Em Andamento', classe: 'status-andamento' };
+
+                const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(pedido.OPPORTUNITY) || 0);
+                
+                html += `
+                    <div class="pedido-item">
+                        <div class="col-id"><strong>#${pedido.ID}</strong></div>
+                        <div class="col-titulo">${pedido.TITLE}</div>
+                        <div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div>
+                        <div class="col-valor">${valorFormatado}</div>
+                        <div class="col-acoes"><a href="../pedido.html?id=${pedido.ID}" class="btn-ver-pedido">Ver Detalhes</a></div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderizarListaSaques(saques) {
+            const container = document.getElementById('saques-list');
+             if (!saques || saques.length === 0) {
+                container.innerHTML = `<div class="loading-pedidos" style="padding: 50px 20px;">Nenhuma solicitação de saque encontrada.</div>`;
+                return;
+            }
+            let html = "";
+            saques.forEach(saque => {
+                // Lógica de status para saques (pode ser aprimorada)
+                let statusInfo = { texto: 'Solicitado', classe: 'status-analise' };
+                const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(saque.OPPORTUNITY) || 0);
+                html += `
+                    <div class="pedido-item">
+                        <div class="col-id"><strong>#${saque.ID}</strong></div>
+                        <div class="col-titulo">${saque.TITLE}</div>
+                        <div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div>
+                        <div class="col-valor">${valorFormatado}</div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        async function carregarDashboard() {
+            try {
+                const response = await fetch('/api/getDesignerDashboard', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: designerToken })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message);
+
+                renderizarCards(data);
+                renderizarListaAtendimentos(data.pedidosArte);
+                renderizarListaSaques(data.solicitacoesSaque);
+
+            } catch (error) {
+                console.error('Erro ao carregar dashboard:', error);
+                document.querySelector('.container').innerHTML = `<h1>Erro ao carregar dados</h1><p>${error.message}</p>`;
+            }
+        }
+
+        function ativarLogicaAbas() {
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    
+                    const targetTab = button.dataset.tab;
+                    tabPanes.forEach(pane => {
+                        if (pane.id === targetTab) {
+                            pane.classList.add('active');
+                        } else {
+                            pane.classList.remove('active');
+                        }
+                    });
+                });
+            });
+        }
+        
+        // --- INICIALIZAÇÃO E EVENT LISTENERS ---
+
+        carregarDashboard();
+        ativarLogicaAbas();
+        
+        const btnSaque = document.getElementById('btn-solicitar-saque');
+        if (btnSaque) {
+            btnSaque.addEventListener('click', async () => {
+                const valor = prompt("Digite o valor que deseja sacar (ex: 50.00):");
+                if (!valor || isNaN(valor) || Number(valor) <= 0) {
+                    alert("Por favor, insira um valor numérico válido.");
+                    return;
+                }
+                
+                btnSaque.disabled = true;
+                btnSaque.textContent = "Processando...";
+                
+                try {
+                    const response = await fetch('/api/solicitarSaqueDesigner', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${designerToken}`,
+                            'x-designer-info': designerInfoString
+                        },
+                        body: JSON.stringify({ valor: Number(valor) })
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message);
+                    
+                    alert("Sua solicitação de saque foi enviada com sucesso!");
+                    carregarDashboard(); // Apenas recarrega os dados sem refresh da página
+
+                } catch (error) {
+                    alert(`Erro: ${error.message}`);
+                } finally {
+                    btnSaque.disabled = false;
+                    btnSaque.textContent = "Solicitar Saque";
+                }
+            });
+        }
+    }
+
+    // Adicione aqui a lógica de login, esqueci-senha, etc. que você já tem...
+    
+})();
