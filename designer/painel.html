@@ -19,15 +19,22 @@
         </header>
         <main class="main-painel">
             <div class="container">
+
                 <section class="saldo-section">
                     <div class="saldo-box">
-                        <span class="saldo-label">Saldo Disponível para Saque</span>
-                        <span id="designer-saldo" class="saldo-valor">R$ 0,00</span>
+                        <span class="saldo-label">Saldo Disponível</span>
+                        <span id="designer-saldo-disponivel" class="saldo-valor">R$ 0,00</span>
+                    </div>
+                    <!-- NOVO CARD -->
+                    <div class="saldo-box">
+                        <span class="saldo-label">Aguardando Depósito</span>
+                        <span id="designer-saldo-pendente" class="saldo-valor">R$ 0,00</span>
                     </div>
                     <div class="acoes-box">
                         <button id="btn-solicitar-saque" class="btn-acao btn-novo-pedido">Solicitar Saque</button>
                     </div>
                 </section>
+
                 <section class="pedidos-section">
                     <div class="pedidos-header-bar">
                         <h2>Meus Pedidos Atribuídos</h2>
