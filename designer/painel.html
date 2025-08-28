@@ -1,1 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel do Designer - Setor de Arte</title>
+    <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
+    <link rel="stylesheet" href="../style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="app-layout">
+        <header class="app-header">
+            <div class="container header-content">
+                <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte" class="app-logo">
+                <div class="user-menu">
+                    <span id="designer-greeting">Carregando...</span>
+                    <button id="logout-button">Sair</button>
+                </div>
+            </div>
+        </header>
+        
+        <main class="main-painel">
+            <div class="container">
 
+                <!-- Cards de Resumo -->
+                <div class="dashboard-grid">
+                    <div class="dash-card">
+                        <div class="card-header">
+                            <span class="card-title">Saldo Disponível</span>
+                            <i class="fas fa-wallet card-icon"></i>
+                        </div>
+                        <div class="card-body"><span id="designer-saldo-disponivel" class="card-value">Carregando...</span></div>
+                        <div class="card-footer"><button id="btn-solicitar-saque" class="card-button">Solicitar Saque</button></div>
+                    </div>
+                    <div class="dash-card">
+                        <div class="card-header">
+                            <span class="card-title">Aguardando Depósito</span>
+                            <i class="fas fa-hourglass-half card-icon"></i>
+                        </div>
+                        <div class="card-body"><span id="designer-saldo-pendente" class="card-value">Carregando...</span></div>
+                        <div class="card-footer"><span>Saques solicitados</span></div>
+                    </div>
+                    <div class="dash-card">
+                        <div class="card-header">
+                            <span class="card-title">Pedidos Ativos</span>
+                            <i class="fas fa-tasks card-icon"></i>
+                        </div>
+                        <div class="card-body"><span id="designer-pedidos-ativos" class="card-value">...</span></div>
+                        <div class="card-footer"><span>Trabalhos em andamento</span></div>
+                    </div>
+                </div>
+
+                <!-- Sistema de Abas -->
+                <div class="tabs-container">
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" data-tab="atendimentos">Meus Atendimentos</button>
+                        <button class="tab-btn" data-tab="saques">Histórico de Saques</button>
+                    </div>
+                    <div class="tab-content">
+                        <!-- Conteúdo da Aba 1: Atendimentos -->
+                        <div id="atendimentos" class="tab-pane active">
+                            <div class="pedidos-list-header">
+                                <div class="col-id">ID</div>
+                                <div class="col-titulo">Título</div>
+                                <div class="col-status">Status</div>
+                                <div class="col-valor">Comissão</div>
+                                <div class="col-acoes">Ações</div>
+                            </div>
+                            <div id="atendimentos-list" class="pedidos-list-body">
+                                <div class="loading-pedidos"><div class="spinner"></div></div>
+                            </div>
+                        </div>
+                        <!-- Conteúdo da Aba 2: Saques -->
+                        <div id="saques" class="tab-pane">
+                             <div class="pedidos-list-header">
+                                <div class="col-id">ID</div>
+                                <div class="col-titulo">Título</div>
+                                <div class="col-status">Status</div>
+                                <div class="col-valor">Valor</div>
+                            </div>
+                            <div id="saques-list" class="pedidos-list-body">
+                                 <div class="loading-pedidos"><div class="spinner"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+    <script src="designer-script.js"></script>
+</body>
+</html>
