@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Redefinir Senha - Painel do Designer</title>
+    <link rel="stylesheet" href="../style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-container">
+            <div class="auth-header">
+                <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte">
+                <h1>Crie uma Nova Senha</h1>
+            </div>
+            <form id="designer-redefinir-senha-form">
+                <div id="form-error-feedback" class="form-feedback error hidden"></div>
+                <div class="form-group">
+                    <label for="nova-senha">Nova Senha</label>
+                    <input type="password" id="nova-senha" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmar-senha">Confirmar Nova Senha</label>
+                    <input type="password" id="confirmar-senha" required>
+                </div>
+                <button type="submit" class="btn-submit">Salvar Nova Senha</button>
+            </form>
+        </div>
+    </div>
+    <script src="designer-script.js"></script>
+</body>
+</html>
