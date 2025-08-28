@@ -32,6 +32,7 @@ module.exports = async (req, res) => {
 
         res.status(200).json({ 
             saldo_disponivel: financeiro.saldo_disponivel,
+            saldo_pendente: financeiro.saldo_pendente,
             ultimo_saque_em: financeiro.ultimo_saque_em 
         });
 
