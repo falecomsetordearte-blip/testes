@@ -46,7 +46,41 @@ if (designerLoginForm) {
         }
     });
 }
+// LÓGICA DA PÁGINA DE REDEFINIR SENHA
+const redefinirSenhaForm = document.getElementById('designer-redefinir-senha-form');
+if (redefinirSenhaForm) {
+    redefinirSenhaForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const novaSenha = document.getElementById('nova-senha').value;
+        const confirmarSenha = document.getElementById('confirmar-senha').value;
+        const submitButton = redefinirSenhaForm.querySelector('button[type="submit"]');
+        
+        if (novaSenha.length < 6) return showFeedback('form-error-feedback', 'A senha deve ter no mínimo 6 caracteres.');
+        if (novaSenha !== confirmarSenha) return showFeedback('form-error-feedback', 'As senhas não coincidem.');
 
+        submitButton.disabled = true;
+        submitButton.textContent = 'Salvando...';
+
+        const token = new URLSearchParams(window.location.search).get('token');
+        
+        try {
+            const response = await fetch('/api/designer/resetPassword', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, novaSenha })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message);
+            
+            alert('Senha redefinida com sucesso! Você já pode fazer o login.');
+            window.location.href = 'login.html';
+        } catch (error) {
+            showFeedback('form-error-feedback', error.message);
+            submitButton.disabled = false;
+            submitButton.textContent = 'Salvar Nova Senha';
+        }
+    });
+}
 // LÓGICA DA PÁGINA DO PAINEL
 if (document.querySelector('main.main-painel')) {
     const designerToken = localStorage.getItem('designerToken');
