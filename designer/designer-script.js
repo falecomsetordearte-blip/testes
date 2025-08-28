@@ -46,6 +46,44 @@ if (designerLoginForm) {
         }
     });
 }
+// LÓGICA DA PÁGINA DE "ESQUECI A SENHA"
+const esqueciSenhaForm = document.getElementById('designer-esqueci-senha-form');
+if (esqueciSenhaForm) {
+    const formWrapper = document.getElementById('form-wrapper');
+    esqueciSenhaForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const btn = event.target.querySelector('button');
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
+
+        try {
+            const response = await fetch('/api/designer/forgotPassword', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: document.getElementById('email').value })
+            });
+            const data = await response.json();
+            if (!response.ok) { throw new Error(data.message); }
+
+            // Exibe mensagem de sucesso
+            formWrapper.innerHTML = `
+                <div class="auth-header">
+                    <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte">
+                    <h1>Link Enviado!</h1>
+                    <p>${data.message || 'Se um e-mail correspondente for encontrado, um link para redefinição de senha será enviado.'}</p>
+                </div>`;
+        } catch (error) {
+            // Exibe mensagem de erro
+            formWrapper.innerHTML = `
+                <div class="auth-header">
+                    <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte">
+                    <h1>Ocorreu um Erro</h1>
+                    <p>${error.message || 'Não foi possível processar a solicitação. Tente novamente mais tarde.'}</p>
+                </div>`;
+        }
+    });
+}
+
 // LÓGICA DA PÁGINA DE REDEFINIR SENHA
 const redefinirSenhaForm = document.getElementById('designer-redefinir-senha-form');
 if (redefinirSenhaForm) {
