@@ -48,10 +48,15 @@ module.exports = async (req, res) => {
 
         const novoSaldo = financeiro.saldo_disponivel.minus(valorSaque);
         
-        await prisma.designerFinanceiro.update({
+         await prisma.designerFinanceiro.update({
             where: { designer_id: designerId },
             data: {
-                saldo_disponivel: novoSaldo,
+                saldo_disponivel: {
+                    decrement: valorSaque, // Subtrai do disponível
+                },
+                saldo_pendente: {
+                    increment: valorSaque, // Adiciona ao pendente
+                },
                 ultimo_saque_em: new Date(),
             },
         });
