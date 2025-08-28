@@ -127,10 +127,15 @@ if (document.querySelector('main.main-painel')) {
         if (!dealsResponse.ok) throw new Error(dealsData.message || 'Erro ao carregar pedidos.');
         if (!saldoResponse.ok) throw new Error(saldoData.message);
 
-        // Renderiza o saldo
-        const saldoEl = document.getElementById('designer-saldo');
-        if (saldoEl) {
-            saldoEl.textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(saldoData.saldo_disponivel || 0);
+        // Renderiza os saldos
+        const saldoDisponivelEl = document.getElementById('designer-saldo-disponivel');
+        const saldoPendenteEl = document.getElementById('designer-saldo-pendente');
+        
+        if (saldoDisponivelEl) {
+            saldoDisponivelEl.textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(saldoData.saldo_disponivel || 0);
+        }
+        if (saldoPendenteEl) {
+            saldoPendenteEl.textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(saldoData.saldo_pendente || 0);
         }
 
         // Renderiza os pedidos
