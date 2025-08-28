@@ -1,7 +1,7 @@
-// /designer/designer-script.js - VERSÃO FINAL COM DASHBOARD
+// /designer/designer-script.js - VERSÃO COMPLETA E FINAL
 
 (function() {
-    // Função para exibir feedback nos formulários de login/senha
+    // Função para exibir feedback nos formulários
     function showFeedback(containerId, message, isError = true) {
         const container = document.getElementById(containerId);
         if (!container) return;
@@ -10,13 +10,116 @@
         container.classList.remove('hidden');
     }
 
-    // --- LÓGICA DE LOGIN E REDEFINIÇÃO DE SENHA ---
-    
-    // (A lógica para os formulários de login, esqueci-senha e redefinir-senha permanece aqui,
-    // mas está omitida por brevidade, já que ela funciona em páginas separadas)
+    // --- LÓGICA DA PÁGINA DE LOGIN ---
+    const designerLoginForm = document.getElementById('designer-login-form');
+    if (designerLoginForm) {
+        designerLoginForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const submitButton = designerLoginForm.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Entrando...';
 
+            try {
+                const response = await fetch('/api/designerLogin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('email').value,
+                        senha: document.getElementById('senha').value
+                    })
+                });
+                
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.message || 'Erro desconhecido.');
+                }
+                
+                localStorage.setItem('designerToken', data.token);
+                localStorage.setItem('designerInfo', JSON.stringify(data.designer));
+                
+                window.location.href = 'painel.html';
 
-    // --- LÓGICA DA PÁGINA DO PAINEL ---
+            } catch (error) {
+                showFeedback('form-error-feedback', error.message);
+                submitButton.disabled = false;
+                submitButton.textContent = 'Entrar';
+            }
+        });
+    }
+
+    // --- LÓGICA DA PÁGINA DE "ESQUECI A SENHA" ---
+    const esqueciSenhaForm = document.getElementById('designer-esqueci-senha-form');
+    if (esqueciSenhaForm) {
+        const formWrapper = document.getElementById('form-wrapper');
+        esqueciSenhaForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const btn = event.target.querySelector('button');
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+
+            try {
+                const response = await fetch('/api/designer/forgotPassword', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: document.getElementById('email').value })
+                });
+                const data = await response.json();
+                if (!response.ok) { throw new Error(data.message); }
+
+                formWrapper.innerHTML = `
+                    <div class="auth-header">
+                        <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte">
+                        <h1>Link Enviado!</h1>
+                        <p>${data.message || 'Se um e-mail correspondente for encontrado, um link para redefinição de senha será enviado.'}</p>
+                    </div>`;
+            } catch (error) {
+                formWrapper.innerHTML = `
+                    <div class="auth-header">
+                        <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte">
+                        <h1>Ocorreu um Erro</h1>
+                        <p>${error.message || 'Não foi possível processar a solicitação. Tente novamente mais tarde.'}</p>
+                    </div>`;
+            }
+        });
+    }
+
+    // --- LÓGICA DA PÁGINA DE REDEFINIR SENHA ---
+    const redefinirSenhaForm = document.getElementById('designer-redefinir-senha-form');
+    if (redefinirSenhaForm) {
+        redefinirSenhaForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const novaSenha = document.getElementById('nova-senha').value;
+            const confirmarSenha = document.getElementById('confirmar-senha').value;
+            const submitButton = redefinirSenhaForm.querySelector('button[type="submit"]');
+            
+            if (novaSenha.length < 6) return showFeedback('form-error-feedback', 'A senha deve ter no mínimo 6 caracteres.');
+            if (novaSenha !== confirmarSenha) return showFeedback('form-error-feedback', 'As senhas não coincidem.');
+
+            submitButton.disabled = true;
+            submitButton.textContent = 'Salvando...';
+
+            const token = new URLSearchParams(window.location.search).get('token');
+            
+            try {
+                const response = await fetch('/api/designer/resetPassword', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, novaSenha })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message);
+                
+                alert('Senha redefinida com sucesso! Você já pode fazer o login.');
+                window.location.href = 'login.html';
+            } catch (error) {
+                showFeedback('form-error-feedback', error.message);
+                submitButton.disabled = false;
+                submitButton.textContent = 'Salvar Nova Senha';
+            }
+        });
+    }
+
+    // --- LÓGICA DA PÁGINA DO PAINEL (DASHBOARD) ---
     if (document.querySelector('main.main-painel')) {
         const designerToken = localStorage.getItem('designerToken');
         const designerInfoString = localStorage.getItem('designerInfo');
@@ -34,8 +137,6 @@
             localStorage.clear();
             window.location.href = 'login.html';
         });
-
-        // --- FUNÇÕES DE RENDERIZAÇÃO DA DASHBOARD ---
 
         function renderizarCards(data) {
             document.getElementById('designer-saldo-disponivel').textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.saldoDisponivel || 0);
@@ -69,7 +170,7 @@
                         <div class="col-titulo">${pedido.TITLE}</div>
                         <div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div>
                         <div class="col-valor">${valorFormatado}</div>
-                        <div class="col-acoes"><a href="../pedido.html?id=${pedido.ID}" class="btn-ver-pedido">Ver Detalhes</a></div>
+                        <div class="col-acoes"><a href="../pedido.html?id=${pedido.ID}" class="btn-ver-pedido" target="_blank">Ver Detalhes</a></div>
                     </div>
                 `;
             });
@@ -84,8 +185,7 @@
             }
             let html = "";
             saques.forEach(saque => {
-                // Lógica de status para saques (pode ser aprimorada)
-                let statusInfo = { texto: 'Solicitado', classe: 'status-analise' };
+                let statusInfo = { texto: 'Solicitado', classe: 'status-analise' }; // Pode ser aprimorado com stages do pipeline C31
                 const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(saque.OPPORTUNITY) || 0);
                 html += `
                     <div class="pedido-item">
@@ -140,11 +240,6 @@
             });
         }
         
-        // --- INICIALIZAÇÃO E EVENT LISTENERS ---
-
-        carregarDashboard();
-        ativarLogicaAbas();
-        
         const btnSaque = document.getElementById('btn-solicitar-saque');
         if (btnSaque) {
             btnSaque.addEventListener('click', async () => {
@@ -171,7 +266,7 @@
                     if (!response.ok) throw new Error(data.message);
                     
                     alert("Sua solicitação de saque foi enviada com sucesso!");
-                    carregarDashboard(); // Apenas recarrega os dados sem refresh da página
+                    carregarDashboard();
 
                 } catch (error) {
                     alert(`Erro: ${error.message}`);
@@ -181,8 +276,8 @@
                 }
             });
         }
-    }
 
-    // Adicione aqui a lógica de login, esqueci-senha, etc. que você já tem...
-    
+        carregarDashboard();
+        ativarLogicaAbas();
+    }
 })();
