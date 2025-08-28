@@ -125,7 +125,7 @@ if (document.querySelector('main.main-painel')) {
         const saldoData = await saldoResponse.json();
 
         if (!dealsResponse.ok) throw new Error(dealsData.message || 'Erro ao carregar pedidos.');
-        if (!saldoResponse.ok) throw new Error(saldoData.message || 'Erro ao buscar saldo.');
+        if (!saldoResponse.ok) throw new Error(saldoData.message);
 
         // Renderiza o saldo
         const saldoEl = document.getElementById('designer-saldo');
