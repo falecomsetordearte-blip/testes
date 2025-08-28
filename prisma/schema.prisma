@@ -19,6 +19,7 @@ model DesignerFinanceiro {
   ultimo_saque_em     DateTime?
   criado_em           DateTime  @default(now())
   atualizado_em    DateTime  @updatedAt
+  chave_pix          String?
 
   @@map("designers_financeiro")
 }
