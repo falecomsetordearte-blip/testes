@@ -2160,5 +2160,64 @@ form { text-align: left; }
 .dropdown-pagamento .dropdown-content button:hover {
     background-color: #f1f1f1;
 }
+/* ===================================== */
+/* ===    ESTRUTURA DE ABAS (TABS)    ==== */
+/* ===================================== */
+
+.tabs-container {
+    background-color: var(--branco);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    border: 1px solid var(--borda);
+    overflow: hidden; /* Garante que os cantos arredondados sejam mantidos */
+}
+
+.tab-buttons {
+    display: flex;
+    border-bottom: 1px solid var(--borda);
+    background-color: #f8f9fa;
+}
+
+.tab-btn {
+    padding: 15px 25px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--cinza-texto);
+    position: relative;
+    transition: color 0.2s ease;
+}
+
+.tab-btn:hover {
+    color: var(--texto-escuro);
+}
+
+.tab-btn.active {
+    color: var(--azul-principal);
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background-color: var(--azul-principal);
+}
+
+.tab-content {
+    padding: 25px;
+}
+
+.tab-pane {
+    display: none; /* Esconde todas as abas por padrão */
+}
+
+.tab-pane.active {
+    display: block; /* Mostra apenas a aba ativa */
+}
 
 
