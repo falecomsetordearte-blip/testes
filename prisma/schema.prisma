@@ -12,6 +12,7 @@ datasource db {
 model DesignerFinanceiro {
   designer_id      Int       @id
   saldo_disponivel Decimal   @default(0.00) @db.Decimal(10, 2)
+  saldo_pendente   Decimal   @default(0.00) @db.Decimal(10, 2)
   ultimo_saque_em  DateTime?
   criado_em        DateTime  @default(now())
   atualizado_em    DateTime  @updatedAt
