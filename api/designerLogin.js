@@ -1,13 +1,15 @@
-// /api/designerLogin.js - VERSÃO COM DEPURAÇÃO DETALHADA
+// /api/designerLogin.js - VERSÃO CORRETA E FINAL (USA NEON DB)
 
+const { PrismaClient } = require('@prisma/client');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
+const prisma = new PrismaClient();
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 module.exports = async (req, res) => {
-    console.log("--- [LOGIN DESIGNER] Nova tentativa de login ---");
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Método não permitido' });
     }
@@ -17,63 +19,56 @@ module.exports = async (req, res) => {
         if (!email || !senha) {
             return res.status(400).json({ message: 'E-mail e senha são obrigatórios.' });
         }
-        console.log(`[DEBUG] Tentando autenticar com o e-mail: ${email}`);
 
-        // ETAPA 1: Tentar autenticar no Bitrix24
-        const authString = Buffer.from(`${email}:${senha}`).toString('base64');
+        // ETAPA 1: Encontrar o designer no Bitrix24 pelo e-mail para obter o ID
+        const userSearchResponse = await axios.post(`${BITRIX24_API_URL}user.get.json`, {
+            FILTER: { "EMAIL": email }
+        });
+
+        const designerBitrix = userSearchResponse.data.result[0];
+        if (!designerBitrix) {
+            return res.status(401).json({ message: 'E-mail ou senha inválidos.' });
+        }
+        const designerId = parseInt(designerBitrix.ID, 10);
         
-        let profileData;
-        try {
-            console.log("[DEBUG] Enviando requisição para profile.json...");
-            const profileResponse = await axios.get(`${BITRIX24_API_URL}profile.json`, {
-                headers: { 'Authorization': `Basic ${authString}` }
-            });
-            profileData = profileResponse.data.result;
-            console.log("[DEBUG] Autenticação no Bitrix24 bem-sucedida. Perfil recebido:", profileData);
+        // ETAPA 2: Buscar o registro financeiro (e a senha) no nosso banco de dados Neon
+        const designerFinanceiro = await prisma.designerFinanceiro.findUnique({
+            where: { designer_id: designerId },
+        });
 
-        } catch (authError) {
-            // PONTO DE VERIFICAÇÃO CRÍTICO: O QUE O BITRIX24 RESPONDEU?
-            console.error("[ERRO DE AUTENTICAÇÃO] A chamada para profile.json falhou.");
-            if (authError.response) {
-                // Se o Bitrix24 respondeu, logamos o status e os dados
-                console.error(`[DEBUG] Status da resposta de erro: ${authError.response.status}`);
-                console.error("[DEBUG] Corpo da resposta de erro:", authError.response.data);
-            } else {
-                // Se foi um erro de rede ou outro, logamos a mensagem
-                console.error("[DEBUG] Erro sem resposta do servidor:", authError.message);
-            }
+        const storedHash = designerFinanceiro?.senha_hash;
+        if (!storedHash) {
+            return res.status(401).json({ message: 'Este usuário não possui uma senha configurada. Por favor, use a opção "Esqueci minha senha".' });
+        }
 
-            // A lógica de falha de login deve estar AQUI DENTRO do catch
+        // ETAPA 3: Comparar a senha fornecida com o hash armazenado
+        const isMatch = await bcrypt.compare(senha, storedHash);
+        if (!isMatch) {
             return res.status(401).json({ message: 'E-mail ou senha inválidos.' });
         }
 
-        // Se o código chegou até aqui, a autenticação foi um sucesso.
-        // ETAPA 2: Criar token de sessão JWT
-        console.log("[DEBUG] Criando token JWT para o designer ID:", profileData.ID);
-        const designer = {
-            id: profileData.ID,
-            name: profileData.NAME,
-            lastName: profileData.LAST_NAME,
-            email: profileData.EMAIL,
-            avatar: profileData.PERSONAL_PHOTO
+        // ETAPA 4: Se a senha estiver correta, criar o token JWT
+        const designerData = {
+            id: designerBitrix.ID,
+            name: designerBitrix.NAME,
+            lastName: designerBitrix.LAST_NAME,
+            email: designerBitrix.EMAIL,
+            avatar: designerBitrix.PERSONAL_PHOTO
         };
 
         const sessionToken = jwt.sign(
-            { designerId: designer.id, name: designer.name }, // Adicionando o nome ao token
+            { designerId: designerData.id, name: designerData.name },
             JWT_SECRET, 
             { expiresIn: '1d' }
         );
 
-        console.log("--- [LOGIN DESIGNER] Login bem-sucedido ---");
         return res.status(200).json({ 
             token: sessionToken,
-            designer: designer
+            designer: designerData
         });
 
     } catch (error) {
-        // Este catch pega erros inesperados, não erros de autenticação
-        console.error('--- [ERRO CRÍTICO] Erro inesperado no fluxo de login do designer ---');
-        console.error(error);
+        console.error('Erro no login do designer:', error.response ? error.response.data : error.message);
         return res.status(500).json({ message: 'Ocorreu um erro interno. Tente novamente.' });
     }
 };
