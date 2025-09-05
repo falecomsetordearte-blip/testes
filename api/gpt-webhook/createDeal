@@ -12,7 +12,6 @@ module.exports = async (req, res) => {
     if (GPTMAKER_WEBHOOK_TOKEN && providedToken !== GPTMAKER_WEBHOOK_TOKEN) {
         return res.status(401).json({ error: 'Acesso não autorizado.' });
     }
-
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Método não permitido.' });
     }
