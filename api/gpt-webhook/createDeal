@@ -1,0 +1,75 @@
+// /api/gpt-webhook/createDeal.js
+
+const axios = require('axios');
+
+const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
+// Recomendação: Crie um token secreto para este webhook para maior segurança
+const GPTMAKER_WEBHOOK_TOKEN = process.env.GPTMAKER_WEBHOOK_TOKEN;
+
+module.exports = async (req, res) => {
+    // Validação de segurança (opcional, mas altamente recomendado)
+    const providedToken = req.headers['x-auth-token'];
+    if (GPTMAKER_WEBHOOK_TOKEN && providedToken !== GPTMAKER_WEBHOOK_TOKEN) {
+        return res.status(401).json({ error: 'Acesso não autorizado.' });
+    }
+
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Método não permitido.' });
+    }
+
+    try {
+        const { whatsapp } = req.body;
+        if (!whatsapp) {
+            return res.status(400).json({ error: 'O campo "whatsapp" é obrigatório.' });
+        }
+
+        // ETAPA 1: Encontrar o contato no Bitrix24 pelo telefone
+        // Usamos '%' para indicar que o número pode estar em qualquer parte do campo
+        console.log(`[INFO] Procurando contato com telefone contendo: ${whatsapp}`);
+        const searchContactResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
+            filter: { '%PHONE': whatsapp },
+            select: ['ID', 'NAME']
+        });
+
+        const contact = searchContactResponse.data.result[0];
+
+        if (!contact) {
+            console.warn(`[AVISO] Contato com telefone "${whatsapp}" não encontrado.`);
+            // Mesmo não encontrando, podemos criar um lead para não perder o atendimento
+            const leadTitle = `Atendimento via IA - Contato não encontrado (${whatsapp})`;
+            await axios.post(`${BITRIX24_API_URL}crm.lead.add.json`, {
+                fields: {
+                    TITLE: leadTitle,
+                    PHONE: [{ "VALUE": whatsapp, "VALUE_TYPE": "WORK" }]
+                }
+            });
+            return res.status(201).json({ message: 'Contato não encontrado, mas um lead foi criado.' });
+        }
+
+        const contactId = contact.ID;
+        console.log(`[INFO] Contato encontrado: ${contact.NAME} (ID: ${contactId})`);
+
+        // ETAPA 2: Criar um negócio no pipeline principal (ID 0)
+        const dealTitle = `Novo Pedido via Atendimento IA - ${contact.NAME}`;
+        
+        const createDealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.add.json`, {
+            fields: {
+                TITLE: dealTitle,
+                CATEGORY_ID: 0, // Pipeline principal
+                CONTACT_ID: contactId
+            }
+        });
+
+        const newDealId = createDealResponse.data.result;
+        if (!newDealId) {
+            throw new Error('Falha ao criar o negócio no Bitrix24.');
+        }
+
+        console.log(`[SUCESSO] Negócio ${newDealId} criado e vinculado ao contato ${contactId}.`);
+        return res.status(200).json({ success: true, dealId: newDealId });
+
+    } catch (error) {
+        console.error('Erro no webhook do GPT Maker:', error.response ? error.response.data : error.message);
+        return res.status(500).json({ error: 'Ocorreu um erro interno.' });
+    }
+};
