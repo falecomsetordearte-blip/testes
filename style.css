@@ -2296,3 +2296,47 @@ form { text-align: left; }
     background-color: #2c89c8;
 }
 
+/* ================================ */
+/* ===         FOOTER             === */
+/* ================================ */
+
+.app-footer {
+    padding: 25px 0;
+    background-color: var(--fundo-pagina);
+    border-top: 1px solid var(--borda);
+    margin-top: 40px; /* Adiciona um espaço acima do rodapé */
+}
+
+.footer-content-wrapper {
+    text-align: center;
+    font-size: 14px;
+    color: var(--cinza-texto);
+}
+
+.footer-content-wrapper p {
+    margin: 5px 0; /* Espaçamento vertical entre as linhas de texto */
+}
+
+.footer-content-wrapper a {
+    color: var(--azul-principal);
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.footer-content-wrapper a:hover {
+    color: #2c89c8;
+    text-decoration: underline;
+}
+
+@media (min-width: 768px) {
+    .footer-content-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap; /* Permite quebrar linha se necessário */
+    }
+    .footer-content-wrapper p {
+        margin: 0;
+    }
+}
