@@ -14,9 +14,9 @@
     <div class="app-layout">
         <header class="app-header">
             <div class="container header-content">
-                <img src="https://i.imgur.com/GzBv9B6.png" alt="Logo Setor de Arte" class="app-logo">
+                <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte" class="app-logo">
                 <div class="user-menu">
-                    <span id="user-greeting">Olá, KLEITON!</span>
+                    <span id="user-greeting">Olá!</span>
                     <button id="logout-button">Sair</button>
                 </div>
             </div>
@@ -30,7 +30,7 @@
                 <section class="saldo-section">
                     <div class="saldo-box">
                         <span class="saldo-label">Meu Saldo de Créditos</span>
-                        <span id="saldo-valor" class="saldo-valor">-R$ 515,00</span>
+                        <span id="saldo-valor" class="saldo-valor">R$ 0,00</span>
                     </div>
                     <div class="acoes-box">
                         <button class="btn-acao btn-add-credito">Adicionar Créditos</button>
@@ -59,29 +59,9 @@
                         <div class="col-acoes">Ações</div>
                     </div>
                     <div id="pedidos-list-body" class="pedidos-list-body">
-                         <!-- Pedido 1 -->
-                        <div class="pedido-item">
-                            <div class="col-id">#54323</div>
-                            <div class="col-titulo">2954</div>
-                            <div class="col-status"><span class="status-badge status-andamento">Em Andamento</span></div>
-                            <div class="col-valor">R$ 40,00</div>
-                            <div class="col-acoes"><a href="#" class="btn-ver-pedido">Ver Detalhes</a></div>
-                        </div>
-                        <!-- Pedido 2 -->
-                        <div class="pedido-item">
-                            <div class="col-id">#54245</div>
-                            <div class="col-titulo">2951</div>
-                            <div class="col-status"><span class="status-badge status-aprovado">Aprovado</span></div>
-                            <div class="col-valor">R$ 40,00</div>
-                            <div class="col-acoes"><a href="#" class="btn-ver-pedido">Ver Detalhes</a></div>
-                        </div>
-                        <!-- Pedido 3 -->
-                        <div class="pedido-item">
-                            <div class="col-id">#54203</div>
-                            <div class="col-titulo">2949</div>
-                            <div class="col-status"><span class="status-badge status-aprovado">Aprovado</span></div>
-                            <div class="col-valor">R$ 40,00</div>
-                            <div class="col-acoes"><a href="#" class="btn-ver-pedido">Ver Detalhes</a></div>
+                        <div class="loading-pedidos">
+                            <div class="spinner"></div>
+                            <span>Carregando seus pedidos...</span>
                         </div>
                     </div>
                     
@@ -204,3 +184,5 @@
 
 </body>
 </html>
+
+
