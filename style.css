@@ -2417,6 +2417,15 @@ form { text-align: left; }
     scrollbar-color: #bdc3c7 #f4f8fa; /* Cor do "polegar" e do "trilho" */
 }
 
+/* --- Chrome, Edge, Safari (Webkit) --- */
+.column-cards::-webkit-scrollbar {
+    width: 8px; /* Largura da barra de rolagem */
+}
+
+.column-cards::-webkit-scrollbar-track {
+    background: #f4f8fa; /* Cor de fundo do trilho (quase invisível) */
+    border-radius: 10px;
+}
 
 .column-cards::-webkit-scrollbar-thumb {
     background-color: #bdc3c7; /* Cor do "polegar" (a parte que você arrasta) */
