@@ -66,8 +66,8 @@
                 <div class="financial-actions-group">
                     <a href="${verifyLink}" target="_blank" class="btn-verificar">Ver Detalhes</a>
                     <div class="radio-group" data-deal-id="${deal.ID}">
-                        <label><input type="radio" name="status_${deal.ID}" value="PAGO"> Pago</label>
-                        <label><input type="radio" name="status_${deal.ID}" value="DEVEDOR"> Devedor</label>
+                        <label><input type="radio" name="status_${deal.ID}" value="PAGO" ${isPago ? 'checked' : ''}> Pago</label>
+                        <label><input type="radio" name="status_${deal.ID}" value="DEVEDOR" ${isDevedor ? 'checked' : ''}> Devedor</label>
                     </div>
                 </div>
             `;
