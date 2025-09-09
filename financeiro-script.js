@@ -61,6 +61,10 @@
                 statusInfo = { texto: 'Devedor', classe: 'status-cancelado' };
             }
             
+            // Define as variáveis para controlar o estado 'checked' dos botões de rádio
+            const isPago = deal.STAGE_ID === 'C11:UC_4SNWR7';
+            const isDevedor = deal.STAGE_ID === 'C11:UC_W0DCSV';
+
             // Monta as ações, que agora sempre incluem os botões de rádio
             actionsHtml = `
                 <div class="financial-actions-group">
@@ -71,6 +75,7 @@
                     </div>
                 </div>
             `;
+
 
             html += `
                 <div class="pedido-item" id="deal-${deal.ID}">
