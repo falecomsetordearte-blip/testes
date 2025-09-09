@@ -5,9 +5,9 @@ const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 const ITEMS_PER_COLUMN = 10;
 
 const STAGES = {
-    contato_inicial: 'UC_Z087DH',
-    orcamento_enviado: 'UC_56HAVY',
-    aguardando_pagamento: 'UC_XF49AO'
+    contato_inicial: 'C0:UC_Z087DH',
+    orcamento_enviado: 'C0:UC_56HAVY',
+    aguardando_pagamento: 'C0:UC_XF49AO'
 };
 
 module.exports = async (req, res) => {
