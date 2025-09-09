@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Setor de Arte</title>
+    <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="app-layout">
+        <header class="app-header">
+            <div class="container header-content">
+                <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte" class="app-logo">
+                <div class="user-menu">
+                    <!-- A saudação pode ser adicionada via JS se esta for uma área logada -->
+                    <span id="user-greeting">Olá!</span>
+                    <button id="logout-button">Sair</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-painel">
+            <div class="container">
+                <div class="dashboard-header">
+                    <h1>Bem-vindo(a) ao seu Painel de Controle</h1>
+                    <p>Selecione uma das opções abaixo para começar.</p>
+                </div>
+
+                <div class="dashboard-nav-grid">
+                    <!-- Card de Navegação 1 -->
+                    <a href="painel.html" class="nav-card">
+                        <div class="nav-card-icon"><i class="fas fa-list-alt"></i></div>
+                        <h2>Painel de Pedidos</h2>
+                        <p>Acompanhe seus pedidos de arte, envie novas solicitações e interaja com os designers.</p>
+                    </a>
+
+                    <!-- Card de Navegação 2 -->
+                    <a href="financeiro.html" class="nav-card">
+                        <div class="nav-card-icon"><i class="fas fa-dollar-sign"></i></div>
+                        <h2>Painel Financeiro</h2>
+                        <p>Gerencie pendências financeiras e visualize status de pagamentos.</p>
+                    </a>
+
+                    <!-- Card de Navegação 3 (Exemplo futuro) -->
+                    <a href="#" class="nav-card disabled">
+                        <div class="nav-card-icon"><i class="fas fa-user-cog"></i></div>
+                        <h2>Meu Perfil</h2>
+                        <p>Atualize suas informações de contato e dados da empresa. (Em breve)</p>
+                    </a>
+
+                    <!-- Card de Navegação 4 (Exemplo futuro) -->
+                    <a href="#" class="nav-card disabled">
+                        <div class="nav-card-icon"><i class="fas fa-question-circle"></i></div>
+                        <h2>Central de Ajuda</h2>
+                        <p>Encontre respostas para suas dúvidas ou entre em contato. (Em breve)</p>
+                    </a>
+                </div>
+            </div>
+        </main>
+    </div>
+    <!-- Script principal pode ser usado para logout e saudação -->
+    <script src="script.js"></script>
+</body>
+</html>
