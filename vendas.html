@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Vendas - Setor de Arte</title>
+    <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="app-layout">
+        <header class="app-header">
+            <div class="container header-content">
+                <a href="dashboard.html"><img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte" class="app-logo"></a>
+                <!-- Menu de usuário aqui -->
+            </div>
+        </header>
+
+        <main class="main-kanban">
+            <div class="kanban-header">
+                <h1>Painel de Vendas</h1>
+                <!-- Filtros serão adicionados aqui no futuro -->
+            </div>
+
+            <div class="kanban-board">
+                <!-- Coluna 1: Contato Inicial -->
+                <div class="kanban-column" data-stage-id="UC_Z087DH">
+                    <div class="column-header">
+                        <span class="column-title">Contato Inicial</span>
+                        <span class="column-total" id="total-contato_inicial">R$ 0,00</span>
+                    </div>
+                    <div class="column-cards" id="cards-contato_inicial">
+                        <!-- Cards serão inseridos aqui pelo JS -->
+                        <div class="loading-pedidos"><div class="spinner"></div></div>
+                    </div>
+                    <button class="load-more-btn" data-column="contato_inicial">Carregar Mais</button>
+                </div>
+
+                <!-- Coluna 2: Orçamento Enviado -->
+                <div class="kanban-column" data-stage-id="UC_56HAVY">
+                    <div class="column-header">
+                        <span class="column-title">Orçamento Enviado</span>
+                        <span class="column-total" id="total-orcamento_enviado">R$ 0,00</span>
+                    </div>
+                    <div class="column-cards" id="cards-orcamento_enviado">
+                        <div class="loading-pedidos"><div class="spinner"></div></div>
+                    </div>
+                    <button class="load-more-btn" data-column="orcamento_enviado">Carregar Mais</button>
+                </div>
+
+                <!-- Coluna 3: Aguardando Pagamento -->
+                <div class="kanban-column" data-stage-id="UC_XF49AO">
+                    <div class="column-header">
+                        <span class="column-title">Aguardando Pagamento</span>
+                        <span class="column-total" id="total-aguardando_pagamento">R$ 0,00</span>
+                    </div>
+                    <div class="column-cards" id="cards-aguardando_pagamento">
+                        <div class="loading-pedidos"><div class="spinner"></div></div>
+                    </div>
+                    <button class="load-more-btn" data-column="aguardando_pagamento">Carregar Mais</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Biblioteca para o Drag and Drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    
+    <!-- Script dedicado para esta página -->
+    <script src="vendas-script.js"></script>
+</body>
+</html>
