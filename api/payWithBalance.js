@@ -42,7 +42,7 @@ module.exports = async (req, res) => {
             return res.status(402).json({ message: `Saldo insuficiente. Você tem R$ ${saldoAtual.toFixed(2)} e o pedido custa R$ ${valorPedido.toFixed(2)}.` });
         }
 
-        // ETAPA 4: Calcular novo saldo e atualizar a empresa e o negócio
+        // ETdAPA 4: Calcular novo saldo e atualizar a empresa e o negócio
         const novoSaldo = saldoAtual - valorPedido;
 
         await Promise.all([
