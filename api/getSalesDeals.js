@@ -32,18 +32,18 @@ module.exports = async (req, res) => {
 
         console.log("[DEBUG] Enviando chamada BATCH para o Bitrix24...");
         const batchResponse = await axios.post(`${BITRIX24_API_URL}batch`, { cmd: batchCommands });
-        const results = batchResponse.data.result;
+        const results = batchResponse.data.result.result;
         console.log("[DEBUG] Resposta BATCH recebida do Bitrix24.");
 
         // Log para ver o que cada coluna retornou
         console.log("[DEBUG] Resultados por coluna:", {
-            contato_inicial: results.result.contato_inicial?.length || 0,
-            orcamento_enviado: results.result.orcamento_enviado?.length || 0,
-            aguardando_pagamento: results.result.aguardando_pagamento?.length || 0,
+            contato_inicial: results.contato_inicial?.length || 0,
+            orcamento_enviado: results.orcamento_enviado?.length || 0,
+            aguardando_pagamento: results.aguardando_pagamento?.length || 0,
         });
 
         let contactIds = [];
-        Object.values(results.result).forEach(column => {
+        Object.values(results).forEach(column => {
             (column || []).forEach(deal => {
                 if (deal.CONTACT_ID) contactIds.push(deal.CONTACT_ID);
             });
