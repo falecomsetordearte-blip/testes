@@ -2547,3 +2547,35 @@ form { text-align: left; }
     background-color: var(--borda);
     color: var(--texto-escuro);
 }
+/* ===================================== */
+/* ===  ESTILO DA BARRA DE ROLAGEM   ==== */
+/* ===   PARA O QUADRO KANBAN        ==== */
+/* ===================================== */
+
+/* Aplica-se apenas a elementos com a classe .column-cards */
+.column-cards {
+    /* --- Firefox --- */
+    scrollbar-width: thin; /* Barra de rolagem fina */
+    scrollbar-color: #bdc3c7 #f4f8fa; /* Cor do "polegar" e do "trilho" */
+}
+
+/* --- Chrome, Edge, Safari (Webkit) --- */
+.column-cards::-webkit-scrollbar {
+    width: 8px; /* Largura da barra de rolagem */
+}
+
+.column-cards::-webkit-scrollbar-track {
+    background: #f4f8fa; /* Cor de fundo do trilho (quase invisível) */
+    border-radius: 10px;
+}
+
+.column-cards::-webkit-scrollbar-thumb {
+    background-color: #bdc3c7; /* Cor do "polegar" (a parte que você arrasta) */
+    border-radius: 10px;
+    border: 2px solid #f4f8fa; /* Cria um preenchimento ao redor do polegar */
+    background-clip: content-box;
+}
+
+.column-cards::-webkit-scrollbar-thumb:hover {
+    background-color: #95a5a6; /* Cor do polegar ao passar o mouse */
+}
