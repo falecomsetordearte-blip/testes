@@ -53,18 +53,18 @@
             if (deal.STAGE_ID === 'C11:UC_YYHPKI') { // Verificar Pendência
                 statusInfo = { texto: 'Verificar Pendência', classe: 'status-analise' };
                 actionsHtml = `
-                    <div class="financial-actions-group">
-                        <a href="${verifyLink}" target="_blank" class="btn-verificar">Verificar</a>
-                        <div class="radio-group" data-deal-id="${deal.ID}">
-                            <label><input type="radio" name="status_${deal.ID}" value="PAGO"> Pago</label>
+                    <a href="${verifyLink}" target="_blank" class="btn-acao btn-verificar">Verificar</a>
+                    <div class="radio-group" data-deal-id="${deal.ID}">
+                        <label><input type="radio" name="status_${deal.ID}" value="PAGO"> Pago</label>
+                        <label><input type="radio" name="status_${deal.ID}" value="DEVEDOR"> Devedor</label>
                     </div>
                 `;
             } else if (deal.STAGE_ID === 'C11:UC_4SNWR7') {
                 statusInfo = { texto: 'Pago', classe: 'status-aprovado' };
-                actionsHtml = `<div class="financial-actions-group"><a href="${verifyLink}" target="_blank" class="btn-verificar">Ver Detalhes</a></div>`;
+                actionsHtml = `<a href="${verifyLink}" target="_blank" class="btn-acao btn-verificar">Ver Detalhes</a>`;
             } else if (deal.STAGE_ID === 'C11:UC_W0DCSV') {
                 statusInfo = { texto: 'Devedor', classe: 'status-cancelado' };
-                actionsHtml = `<div class="financial-actions-group"><a href="${verifyLink}" target="_blank" class="btn-verificar">Ver Detalhes</a></div>`;
+                actionsHtml = `<a href="${verifyLink}" target="_blank" class="btn-acao btn-verificar">Ver Detalhes</a>`;
             }
 
             html += `
