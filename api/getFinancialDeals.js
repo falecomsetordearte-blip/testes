@@ -12,13 +12,16 @@ module.exports = async (req, res) => {
 
     try {
         // A página e o filtro são recebidos do frontend
-        const { page = 0, statusFilter } = req.body;
+        const { page = 0, statusFilter, nameFilter } = req.body;
 
         // ETAPA 1: Construir o objeto de filtro dinamicamente
         const filterParams = {
             'CATEGORY_ID': 11,
         };
-
+        // Adiciona o filtro de nome se ele for fornecido
+        if (nameFilter && nameFilter.trim() !== '') {
+            filterParams['%TITLE'] = nameFilter.trim();
+        }
         // Adiciona o filtro de status apenas se um específico for selecionado
         if (statusFilter && statusFilter !== 'todos') {
             filterParams['STAGE_ID'] = statusFilter;

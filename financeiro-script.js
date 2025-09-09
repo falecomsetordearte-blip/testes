@@ -10,6 +10,7 @@
     const btnNext = document.getElementById('btn-next-page');
     const statusFilterSelect = document.getElementById('status-filter');
     const btnBuscar = document.getElementById('btn-buscar');
+    const nameFilterInput = document.getElementById('name-filter-input');
 
     let currentPage = 0;
     let totalPages = 1;
@@ -18,12 +19,13 @@
     async function fetchFinancialDeals(page = 0) {
         listBody.innerHTML = `<div class="loading-pedidos"><div class="spinner"></div><span>Carregando...</span></div>`;
         const statusFilter = statusFilterSelect.value;
+        const nameFilter = nameFilterInput.value;
         
         try {
             const response = await fetch('/api/getFinancialDeals', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ page: page, statusFilter: statusFilter })
+                body: JSON.stringify({ page: page, statusFilter: statusFilter, nameFilter: nameFilter })
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message);
