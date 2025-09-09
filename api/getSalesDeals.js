@@ -16,28 +16,21 @@ module.exports = async (req, res) => {
 
     try {
         const { pages = {} } = req.body;
+        console.log("[DEBUG] Páginas recebidas:", pages);
 
         const batchCommands = {
             contato_inicial: `crm.deal.list?` + new URLSearchParams({
-                order: 'ID:DESC',
-                filter: { CATEGORY_ID: 17, STAGE_ID: 'C17:NEW' }, // <-- Alterado para Pipeline 17 e Stage de exemplo
-                select: 'ID,TITLE,OPPORTUNITY,CONTACT_ID',
-                start: (pages.contato_inicial || 0) * ITEMS_PER_COLUMN
+                order: 'ID:DESC', filter: { CATEGORY_ID: 0, STAGE_ID: STAGES.contato_inicial }, select: 'ID,TITLE,OPPORTUNITY,CONTACT_ID', start: (pages.contato_inicial || 0) * ITEMS_PER_COLUMN
             }),
             orcamento_enviado: `crm.deal.list?` + new URLSearchParams({
-                order: 'ID:DESC',
-                filter: { CATEGORY_ID: 17, STAGE_ID: 'C17:UC_2OEE24' }, // <-- Alterado para Pipeline 17 e Stage de exemplo
-                select: 'ID,TITLE,OPPORTUNITY,CONTACT_ID',
-                start: (pages.orcamento_enviado || 0) * ITEMS_PER_COLUMN
+                order: 'ID:DESC', filter: { CATEGORY_ID: 0, STAGE_ID: STAGES.orcamento_enviado }, select: 'ID,TITLE,OPPORTUNITY,CONTACT_ID', start: (pages.orcamento_enviado || 0) * ITEMS_PER_COLUMN
             }),
             aguardando_pagamento: `crm.deal.list?` + new URLSearchParams({
-                order: 'ID:DESC',
-                filter: { CATEGORY_ID: 17, STAGE_ID: 'C17:PREPARATION' }, // <-- Alterado para Pipeline 17 e Stage de exemplo
-                select: 'ID,TITLE,OPPORTUNITY,CONTACT_ID',
-                start: (pages.aguardando_pagamento || 0) * ITEMS_PER_COLUMN
+                order: 'ID:DESC', filter: { CATEGORY_ID: 0, STAGE_ID: STAGES.aguardando_pagamento }, select: 'ID,TITLE,OPPORTUNITY,CONTACT_ID', start: (pages.aguardando_pagamento || 0) * ITEMS_PER_COLUMN
             })
         };
 
+        console.log("[DEBUG] Enviando chamada BATCH para o Bitrix24...");
         const batchResponse = await axios.post(`${BITRIX24_API_URL}batch`, { cmd: batchCommands });
         const results = batchResponse.data.result.result;
         console.log("[DEBUG] Resposta BATCH recebida do Bitrix24.");
