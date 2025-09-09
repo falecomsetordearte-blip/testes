@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Financeiro - Setor de Arte</title>
+    <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Adicionaremos um CSS customizado para esta página se necessário -->
+    <style>
+        .radio-group label { margin-right: 15px; cursor: pointer; }
+        .btn-verificar { padding: 5px 10px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <header class="app-header">
+            <div class="container header-content">
+                <a href="painel.html"><img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte" class="app-logo"></a>
+                <!-- Podemos adicionar aqui o menu de usuário se for um ambiente logado -->
+            </div>
+        </header>
+
+        <main class="main-painel">
+            <div class="container">
+                <section class="pedidos-section">
+                    <div class="pedidos-header-bar">
+                        <h2>Painel Financeiro</h2>
+                        <!-- Filtros podem ser adicionados aqui no futuro -->
+                    </div>
+
+                    <!-- Cabeçalho da Lista -->
+                    <div class="pedidos-list-header">
+                        <div class="col-id">ID</div>
+                        <div class="col-titulo">Título do Pedido</div>
+                        <div class="col-status">Status Atual</div>
+                        <div class="col-acoes" style="flex-grow: 1.5; text-align: center;">Ações</div>
+                    </div>
+
+                    <!-- Corpo da Lista -->
+                    <div id="financeiro-list-body" class="pedidos-list-body">
+                        <div class="loading-pedidos">
+                            <div class="spinner"></div>
+                            <span>Carregando pendências...</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Controles de Paginação -->
+                    <div id="pagination-container" class="pagination-container hidden">
+                        <div class="pagination-info">
+                            <span id="pagination-info-text"></span>
+                        </div>
+                        <div class="pagination-controls">
+                            <button id="btn-prev-page" class="pagination-btn">Anterior</button>
+                            <span id="page-indicator"></span>
+                            <button id="btn-next-page" class="pagination-btn">Próxima</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Script dedicado para esta página -->
+    <script src="financeiro-script.js"></script>
+</body>
+</html>
