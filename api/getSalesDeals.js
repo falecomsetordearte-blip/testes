@@ -1,4 +1,5 @@
-// /api/getSalesDeals.js - VERSÃO COM DEPURAÇÃO
+// /api/getSalesDeals.js - VERSÃO SIMPLIFICADA E ROBUSTA
+
 const axios = require('axios');
 
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
@@ -10,50 +11,39 @@ const STAGES = {
     aguardando_pagamento: 'UC_XF49AO'
 };
 
-module.exports = async (req, res) => {
-    console.log("--- [getSalesDeals] API INICIADA ---");
-    if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido.' });
+// Função auxiliar para buscar uma coluna específica
+async function fetchColumn(stageKey, page) {
+    const response = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
+        filter: { 
+            CATEGORY_ID: 0,
+            STAGE_ID: STAGES[stageKey]
+        },
+        order: { 'ID': 'DESC' },
+        select: ['ID', 'TITLE', 'OPPORTUNITY', 'CONTACT_ID'],
+        start: page * ITEMS_PER_COLUMN
+    });
+    return response.data.result || [];
+}
 
+module.exports = async (req, res) => {
     try {
         const { pages = {} } = req.body;
-        console.log("[DEBUG] Páginas recebidas:", pages);
 
-        const batchCommands = {
-            contato_inicial: `crm.deal.list?` + new URLSearchParams({
-                order: 'ID:DESC', filter: { CATEGORY_ID: 0, STAGE_ID: STAGES.contato_inicial }, select: 'ID,TITLE,OPPORTUNITY,CONTACT_ID', start: (pages.contato_inicial || 0) * ITEMS_PER_COLUMN
-            }),
-            orcamento_enviado: `crm.deal.list?` + new URLSearchParams({
-                order: 'ID:DESC', filter: { CATEGORY_ID: 0, STAGE_ID: STAGES.orcamento_enviado }, select: 'ID,TITLE,OPPORTUNITY,CONTACT_ID', start: (pages.orcamento_enviado || 0) * ITEMS_PER_COLUMN
-            }),
-            aguardando_pagamento: `crm.deal.list?` + new URLSearchParams({
-                order: 'ID:DESC', filter: { CATEGORY_ID: 0, STAGE_ID: STAGES.aguardando_pagamento }, select: 'ID,TITLE,OPPORTUNITY,CONTACT_ID', start: (pages.aguardando_pagamento || 0) * ITEMS_PER_COLUMN
-            })
-        };
-
-        console.log("[DEBUG] Enviando chamada BATCH para o Bitrix24...");
-        const batchResponse = await axios.post(`${BITRIX24_API_URL}batch`, { cmd: batchCommands });
-        const results = batchResponse.data.result.result;
-        console.log("[DEBUG] Resposta BATCH recebida do Bitrix24.");
-
-        // Log para ver o que cada coluna retornou
-        console.log("[DEBUG] Resultados por coluna:", {
-            contato_inicial: results.contato_inicial?.length || 0,
-            orcamento_enviado: results.orcamento_enviado?.length || 0,
-            aguardando_pagamento: results.aguardando_pagamento?.length || 0,
-        });
-
-        let contactIds = [];
-        Object.values(results).forEach(column => {
-            (column || []).forEach(deal => {
-                if (deal.CONTACT_ID) contactIds.push(deal.CONTACT_ID);
-            });
-        });
-        console.log(`[DEBUG] Total de IDs de contato a serem buscados: ${contactIds.length}`);
+        // ETAPA 1: Buscar os dados de cada coluna em paralelo
+        const [contato_inicial, orcamento_enviado, aguardando_pagamento] = await Promise.all([
+            fetchColumn('contato_inicial', pages.contato_inicial || 0),
+            fetchColumn('orcamento_enviado', pages.orcamento_enviado || 0),
+            fetchColumn('aguardando_pagamento', pages.aguardando_pagamento || 0)
+        ]);
         
+        const allDeals = [...contato_inicial, ...orcamento_enviado, ...aguardando_pagamento];
+
+        // ETAPA 2: Buscar nomes dos contatos (lógica existente e correta)
+        let contactIds = allDeals.map(deal => deal.CONTACT_ID).filter(Boolean);
         let contacts = {};
+
         if (contactIds.length > 0) {
             const uniqueContactIds = [...new Set(contactIds)];
-            console.log(`[DEBUG] Buscando informações para ${uniqueContactIds.length} contatos únicos...`);
             const contactResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list`, {
                 filter: { ID: uniqueContactIds },
                 select: ['ID', 'NAME', 'LAST_NAME']
@@ -61,27 +51,19 @@ module.exports = async (req, res) => {
             (contactResponse.data.result || []).forEach(c => {
                 contacts[c.ID] = `${c.NAME || ''} ${c.LAST_NAME || ''}`.trim();
             });
-            console.log("[DEBUG] Informações de contatos carregadas.");
         }
         
-        const finalData = {};
-        for (const key in results.result) {
-            finalData[key] = (results.result[key] || []).map(deal => ({
-                ...deal,
-                CONTACT_NAME: contacts[deal.CONTACT_ID] || 'Contato não encontrado'
-            }));
-        }
+        // ETAPA 3: Combinar dados e enviar resposta
+        const finalData = {
+            contato_inicial: contato_inicial.map(deal => ({ ...deal, CONTACT_NAME: contacts[deal.CONTACT_ID] || 'N/A' })),
+            orcamento_enviado: orcamento_enviado.map(deal => ({ ...deal, CONTACT_NAME: contacts[deal.CONTACT_ID] || 'N/A' })),
+            aguardando_pagamento: aguardando_pagamento.map(deal => ({ ...deal, CONTACT_NAME: contacts[deal.CONTACT_ID] || 'N/A' }))
+        };
 
-        console.log("--- [getSalesDeals] API CONCLUÍDA COM SUCESSO ---");
         res.status(200).json(finalData);
 
     } catch (error) {
-        console.error('--- [ERRO] em getSalesDeals ---');
-        if (error.response) {
-            console.error("ERRO DETALHADO DA API:", JSON.stringify(error.response.data, null, 2));
-        } else {
-            console.error("Erro geral:", error.message);
-        }
+        console.error('Erro ao buscar negócios de vendas:', error.response ? error.response.data : error.message);
         res.status(500).json({ message: 'Ocorreu um erro ao buscar os dados.' });
     }
 };
