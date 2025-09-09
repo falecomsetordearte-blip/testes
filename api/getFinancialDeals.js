@@ -11,19 +11,29 @@ module.exports = async (req, res) => {
     }
 
     try {
-        // A página é recebida do frontend, o padrão é a primeira página (página 0)
-        const { page = 0 } = req.body;
+        // A página e o filtro são recebidos do frontend
+        const { page = 0, statusFilter } = req.body;
 
-        // ETAPA 1: Buscar os negócios no Bitrix24
+        // ETAPA 1: Construir o objeto de filtro dinamicamente
+        const filterParams = {
+            'CATEGORY_ID': 11,
+        };
+
+        // Adiciona o filtro de status apenas se um específico for selecionado
+        if (statusFilter && statusFilter !== 'todos') {
+            filterParams['STAGE_ID'] = statusFilter;
+        } else {
+            // Caso contrário, busca em todos os status relevantes do pipeline 11
+            filterParams['STAGE_ID'] = [
+                'C11:UC_YYHPKI',
+                'C11:UC_4SNWR7',
+                'C11:UC_W0DCSV'
+            ];
+        }
+
+        // ETAPA 2: Buscar os negócios no Bitrix24 usando o filtro construído
         const response = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
-            filter: {
-                'CATEGORY_ID': 11, // Apenas pipeline 11
-                'STAGE_ID': [
-                    'C11:UC_YYHPKI', // Verificar Pendência
-                    'C11:UC_4SNWR7', // PAGO
-                    'C11:UC_W0DCSV'  // DEVEDOR
-                ]
-            },
+            filter: filterParams,
             order: { 'ID': 'DESC' }, // Ordena pelos mais recentes
             select: ['ID', 'TITLE', 'STAGE_ID', 'OPPORTUNITY', 'CONTACT_ID', 'COMPANY_ID'],
             start: page * ITEMS_PER_PAGE // Ponto de partida para a paginação
@@ -32,7 +42,7 @@ module.exports = async (req, res) => {
         const deals = response.data.result || [];
         const total = response.data.total || 0;
 
-        // ETAPA 2: Montar a resposta com os dados e informações de paginação
+        // ETAPA 3: Montar a resposta com os dados e informações de paginação
         return res.status(200).json({
             deals: deals,
             pagination: {

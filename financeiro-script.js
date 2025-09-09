@@ -8,6 +8,8 @@
     const pageIndicator = document.getElementById('page-indicator');
     const btnPrev = document.getElementById('btn-prev-page');
     const btnNext = document.getElementById('btn-next-page');
+    const statusFilterSelect = document.getElementById('status-filter');
+    const btnBuscar = document.getElementById('btn-buscar');
 
     let currentPage = 0;
     let totalPages = 1;
@@ -15,12 +17,13 @@
     // --- FUNÇÃO PARA BUSCAR OS DADOS ---
     async function fetchFinancialDeals(page = 0) {
         listBody.innerHTML = `<div class="loading-pedidos"><div class="spinner"></div><span>Carregando...</span></div>`;
+        const statusFilter = statusFilterSelect.value;
         
         try {
             const response = await fetch('/api/getFinancialDeals', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ page: page })
+                body: JSON.stringify({ page: page, statusFilter: statusFilter })
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message);
@@ -39,7 +42,7 @@
     // --- FUNÇÃO PARA RENDERIZAR A LISTA ---
     function renderDeals(deals) {
         if (!deals || deals.length === 0) {
-            listBody.innerHTML = `<div class="loading-pedidos" style="padding: 20px;">Nenhuma pendência encontrada.</div>`;
+            listBody.innerHTML = `<div class="loading-pedidos" style="padding: 20px;">Nenhuma pendência encontrada para os filtros selecionados.</div>`;
             return;
         }
 
@@ -53,18 +56,20 @@
             if (deal.STAGE_ID === 'C11:UC_YYHPKI') { // Verificar Pendência
                 statusInfo = { texto: 'Verificar Pendência', classe: 'status-analise' };
                 actionsHtml = `
-                    <a href="${verifyLink}" target="_blank" class="btn-acao btn-verificar">Verificar</a>
-                    <div class="radio-group" data-deal-id="${deal.ID}">
-                        <label><input type="radio" name="status_${deal.ID}" value="PAGO"> Pago</label>
-                        <label><input type="radio" name="status_${deal.ID}" value="DEVEDOR"> Devedor</label>
+                    <div class="financial-actions-group">
+                        <a href="${verifyLink}" target="_blank" class="btn-verificar">Verificar</a>
+                        <div class="radio-group" data-deal-id="${deal.ID}">
+                            <label><input type="radio" name="status_${deal.ID}" value="PAGO"> Pago</label>
+                            <label><input type="radio" name="status_${deal.ID}" value="DEVEDOR"> Devedor</label>
+                        </div>
                     </div>
                 `;
             } else if (deal.STAGE_ID === 'C11:UC_4SNWR7') {
                 statusInfo = { texto: 'Pago', classe: 'status-aprovado' };
-                actionsHtml = `<a href="${verifyLink}" target="_blank" class="btn-acao btn-verificar">Ver Detalhes</a>`;
+                actionsHtml = `<div class="financial-actions-group"><a href="${verifyLink}" target="_blank" class="btn-verificar">Ver Detalhes</a></div>`;
             } else if (deal.STAGE_ID === 'C11:UC_W0DCSV') {
                 statusInfo = { texto: 'Devedor', classe: 'status-cancelado' };
-                actionsHtml = `<a href="${verifyLink}" target="_blank" class="btn-acao btn-verificar">Ver Detalhes</a>`;
+                actionsHtml = `<div class="financial-actions-group"><a href="${verifyLink}" target="_blank" class="btn-verificar">Ver Detalhes</a></div>`;
             }
 
             html += `
@@ -95,7 +100,7 @@
     // --- FUNÇÃO PARA ATUALIZAR O STATUS DE UM NEGÓCIO ---
     async function updateStatus(dealId, status, radioElement) {
         const itemRow = document.getElementById(`deal-${dealId}`);
-        itemRow.style.opacity = '0.5'; // Feedback visual imediato
+        itemRow.style.opacity = '0.5';
 
         try {
             const response = await fetch('/api/updateFinancialDealStatus', {
@@ -109,21 +114,19 @@
                 throw new Error(data.message);
             }
 
-            // Ação rápida: simplesmente remove o item da lista para indicar sucesso
             itemRow.style.transition = 'all 0.5s ease';
             itemRow.style.transform = 'translateX(100%)';
             setTimeout(() => itemRow.remove(), 500);
 
         } catch (error) {
             alert(`Erro ao atualizar status: ${error.message}`);
-            itemRow.style.opacity = '1'; // Reverte o feedback visual em caso de erro
-            radioElement.checked = false; // Desmarca o radio
+            itemRow.style.opacity = '1';
+            radioElement.checked = false;
         }
     }
     
     // --- EVENT LISTENERS ---
     
-    // Listener para os botões de rádio
     listBody.addEventListener('change', (event) => {
         if (event.target.type === 'radio') {
             const dealId = event.target.closest('.radio-group').dataset.dealId;
@@ -132,7 +135,6 @@
         }
     });
 
-    // Listeners para a paginação
     btnPrev.addEventListener('click', () => {
         if (currentPage > 0) {
             fetchFinancialDeals(currentPage - 1);
@@ -143,6 +145,10 @@
         if (currentPage + 1 < totalPages) {
             fetchFinancialDeals(currentPage + 1);
         }
+    });
+
+    btnBuscar.addEventListener('click', () => {
+        fetchFinancialDeals(0); // Ao buscar, sempre volta para a primeira página
     });
 
     // --- EXECUÇÃO INICIAL ---
