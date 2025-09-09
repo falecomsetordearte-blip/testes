@@ -53,24 +53,24 @@
 
             const verifyLink = `https://www.visiva.com.br/admin/?imprimastore=pedidos/detalhes&id=${deal.TITLE}`;
 
-            if (deal.STAGE_ID === 'C11:UC_YYHPKI') { // Verificar Pendência
+            if (deal.STAGE_ID === 'C11:UC_YYHPKI') {
                 statusInfo = { texto: 'Verificar Pendência', classe: 'status-analise' };
-                actionsHtml = `
-                    <div class="financial-actions-group">
-                        <a href="${verifyLink}" target="_blank" class="btn-verificar">Verificar</a>
-                        <div class="radio-group" data-deal-id="${deal.ID}">
-                            <label><input type="radio" name="status_${deal.ID}" value="PAGO"> Pago</label>
-                            <label><input type="radio" name="status_${deal.ID}" value="DEVEDOR"> Devedor</label>
-                        </div>
-                    </div>
-                `;
             } else if (deal.STAGE_ID === 'C11:UC_4SNWR7') {
                 statusInfo = { texto: 'Pago', classe: 'status-aprovado' };
-                actionsHtml = `<div class="financial-actions-group"><a href="${verifyLink}" target="_blank" class="btn-verificar">Ver Detalhes</a></div>`;
             } else if (deal.STAGE_ID === 'C11:UC_W0DCSV') {
                 statusInfo = { texto: 'Devedor', classe: 'status-cancelado' };
-                actionsHtml = `<div class="financial-actions-group"><a href="${verifyLink}" target="_blank" class="btn-verificar">Ver Detalhes</a></div>`;
             }
+            
+            // Monta as ações, que agora sempre incluem os botões de rádio
+            actionsHtml = `
+                <div class="financial-actions-group">
+                    <a href="${verifyLink}" target="_blank" class="btn-verificar">Ver Detalhes</a>
+                    <div class="radio-group" data-deal-id="${deal.ID}">
+                        <label><input type="radio" name="status_${deal.ID}" value="PAGO"> Pago</label>
+                        <label><input type="radio" name="status_${deal.ID}" value="DEVEDOR"> Devedor</label>
+                    </div>
+                </div>
+            `;
 
             html += `
                 <div class="pedido-item" id="deal-${deal.ID}">
