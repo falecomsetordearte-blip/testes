@@ -604,20 +604,19 @@ form { text-align: left; }
 .tab-pane { display: none; }
 .tab-pane.active { display: block; }
 
-/* ===================================== */
+* ===================================== */
 /* ===    PAINEL DE VENDAS (KANBAN)   ==== */
 /* ===================================== */
 
 .main-kanban {
     display: flex;
     flex-direction: column;
-    /* Força o 'main' a ocupar a altura restante da tela */
-    height: calc(100vh - 76px); /* Ajuste 76px se a altura do seu header for diferente */
+    height: calc(100vh - 76px); /* Altura da tela menos o cabeçalho. */
     padding: 20px;
 }
 
 .kanban-header {
-    flex-shrink: 0; /* Impede que o cabeçalho encolha */
+    flex-shrink: 0;
     margin-bottom: 20px;
 }
 
@@ -626,25 +625,23 @@ form { text-align: left; }
     margin: 0;
 }
 
+/* A MUDANÇA PRINCIPAL ESTÁ AQUI */
 .kanban-board {
-    display: grid;
-    /* Cria 3 colunas que tentam ocupar o mesmo espaço */
-    grid-template-columns: repeat(3, 1fr); 
+    display: flex; /* MUDADO PARA FLEX */
     gap: 20px;
-    flex-grow: 1; /* Faz o quadro ocupar todo o espaço vertical do 'main' */
-    /* IMPORTANTE: Impede que o quadro cresça além do seu container */
-    overflow-y: hidden; 
-    overflow-x: auto; /* Permite rolagem horizontal se as colunas não couberem em telas menores */
+    flex-grow: 1;
+    overflow-x: auto; /* Permite rolagem horizontal do quadro */
+    overflow-y: hidden; /* Impede a rolagem vertical do quadro */
 }
 
 .kanban-column {
     background-color: #f8f9fa;
     border-radius: 12px;
-    /* IMPORTANTE: Transforma a coluna em um container flex vertical */
     display: flex;
     flex-direction: column;
-    /* Garante que a coluna não passe da altura do quadro */
-    max-height: 100%; 
+    /* Define uma largura fixa para cada coluna */
+    width: 320px;
+    flex-shrink: 0; /* Impede que as colunas encolham */
 }
 
 .column-header {
@@ -653,23 +650,15 @@ form { text-align: left; }
     align-items: center;
     padding: 15px;
     border-bottom: 2px solid var(--borda);
-    flex-shrink: 0; /* Impede que o cabeçalho da coluna encolha */
+    flex-shrink: 0;
 }
 
-.column-title {
-    font-weight: 600;
-}
+/* O resto do CSS permanece o mesmo... */
 
-.column-total {
-    font-weight: 700;
-}
-
-/* A MÁGICA DA ROLAGEM INDIVIDUAL */
 .column-cards {
-    flex-grow: 1;      /* Faz a área dos cards ocupar todo o espaço vertical restante */
-    overflow-y: auto;  /* CRIA A BARRA DE ROLAGEM VERTICAL QUANDO NECESSÁRIO */
+    flex-grow: 1;
+    overflow-y: auto;
     padding: 15px;
-    /* Estilos da barra de rolagem */
     scrollbar-width: thin;
     scrollbar-color: #bdc3c7 #f8f9fa;
 }
