@@ -1,37 +1,50 @@
-// /vendas-script.js - VERSÃO COMPLETA COM DEPURAÇÃO DETALHADA
+// /vendas-script.js - VERSÃO COMPLETA E CORRIGIDA COM AJUSTE DE ALTURA
 
 (function() {
-    console.log("[DEBUG] Script vendas-script.js iniciado.");
-    
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log("[DEBUG] DOM completamente carregado.");
 
-        // PONTO DE VERIFICAÇÃO 1: Autenticação
+    // --- FUNÇÃO PARA AJUSTAR A ALTURA DO QUADRO KANBAN ---
+    function setKanbanHeight() {
+        const header = document.querySelector('.app-header');
+        const kanbanHeader = document.querySelector('.kanban-header');
+        const kanbanBoard = document.querySelector('.kanban-board');
+
+        if (header && kanbanHeader && kanbanBoard) {
+            const headerHeight = header.offsetHeight;
+            const kanbanHeaderHeight = kanbanHeader.offsetHeight;
+            const extraPadding = 40; // 20px de padding em cima e 20px em baixo no .main-kanban
+
+            // Calcula a altura restante na tela
+            const availableHeight = window.innerHeight - headerHeight - kanbanHeaderHeight - extraPadding;
+            
+            // Define a altura do quadro Kanban
+            kanbanBoard.style.height = `${availableHeight}px`;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // --- AUTENTICAÇÃO E INICIALIZAÇÃO BÁSICA ---
         const sessionToken = localStorage.getItem('sessionToken');
         const userName = localStorage.getItem('userName');
 
         if (!sessionToken) {
-            console.error("[ERRO FATAL] Token de sessão não encontrado. Esta página requer login.");
-            // Se esta página for para usuários logados, descomente a linha abaixo para redirecionar.
-            // window.location.href = 'login.html'; 
+            console.error("[ERRO FATAL] Token de sessão não encontrado.");
+            window.location.href = 'login.html'; 
             return;
         }
-        console.log("[DEBUG] Token de sessão encontrado.");
 
-        const greetingEl = document.getElementById('user-greeting'); // Assumindo que o cabeçalho tem esse ID
+        const greetingEl = document.getElementById('user-greeting');
         if (greetingEl && userName) {
             greetingEl.textContent = `Olá, ${userName}!`;
-            console.log(`[DEBUG] Saudação preenchida para: ${userName}`);
         }
-
-        // --- CONSTANTES E ELEMENTOS DO DOM ---
+        
+        // --- CONSTANTES E ESTADO ---
         const STAGES = {
-            contato_inicial: 'UC_Z087DH',      // CONFIRME ESTES VALORES
-            orcamento_enviado: 'UC_56HAVY',    // CONFIRME ESTES VALORES
-            aguardando_pagamento: 'UC_XF49AO', // CONFIRME ESTES VALORES
+            contato_inicial: 'UC_Z087DH',
+            orcamento_enviado: 'UC_56HAVY',
+            aguardando_pagamento: 'UC_XF49AO',
             produzir: 'WON'
         };
-
         const columnPages = {
             contato_inicial: 0,
             orcamento_enviado: 0,
@@ -55,8 +68,6 @@
 
         // --- FUNÇÃO PARA BUSCAR E RENDERIZAR DADOS ---
         async function fetchAndRenderDeals(columnKey = null, loadMore = false) {
-            console.log(`[DEBUG] Iniciando fetchAndRenderDeals. Coluna: ${columnKey || 'todas'}, LoadMore: ${loadMore}`);
-            
             if (columnKey) {
                 columnPages[columnKey]++;
             } else {
@@ -70,14 +81,10 @@
                     body: JSON.stringify({ pages: columnPages })
                 });
 
-                console.log(`[DEBUG] Resposta da API /api/getSalesDeals recebida com status: ${response.status}`);
-                
                 const data = await response.json();
                 if (!response.ok) {
                     throw new Error(data.message || `Erro de servidor ${response.status}`);
                 }
-                
-                console.log("[DEBUG] Dados recebidos da API:", data);
 
                 for (const key in data) {
                     const container = document.getElementById(`cards-${key}`);
@@ -109,7 +116,6 @@
         
         // --- FUNÇÃO PARA ATUALIZAR ETAPA DE UM NEGÓCIO ---
         async function updateDealStage(dealId, newStageId) {
-            console.log(`[DEBUG] Tentando mover o deal ${dealId} para a etapa ${newStageId}`);
             try {
                 const response = await fetch('/api/updateDealStage', {
                     method: 'POST',
@@ -120,7 +126,6 @@
                     const data = await response.json();
                     throw new Error(data.message);
                 }
-                console.log(`[SUCESSO] Negócio ${dealId} movido.`);
             } catch (error) {
                 console.error('Erro ao atualizar etapa:', error);
                 alert(`Erro ao mover o card: ${error.message}. A página será recarregada para reverter.`);
@@ -145,7 +150,6 @@
                     }
                 });
             });
-            console.log("[DEBUG] Kanban (Drag and Drop) inicializado.");
         }
 
         // --- EVENT LISTENERS ---
@@ -164,7 +168,9 @@
         });
 
         // --- EXECUÇÃO INICIAL ---
-        console.log("[DEBUG] Chamando fetchAndRenderDeals e initializeKanban.");
+        setKanbanHeight();
+        window.addEventListener('resize', setKanbanHeight);
+        
         fetchAndRenderDeals();
         initializeKanban(); 
     });
