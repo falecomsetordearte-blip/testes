@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
 
         return res.status(200).json(filters);
 
-    } catch (error) . {
+    } catch (error) {
         console.error('Erro ao buscar opções de filtros:', error.response ? error.response.data : error.message);
         return res.status(500).json({ message: 'Ocorreu um erro ao carregar os filtros.' });
     }

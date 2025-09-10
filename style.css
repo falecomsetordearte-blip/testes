@@ -604,14 +604,14 @@ form { text-align: left; }
 .tab-pane { display: none; }
 .tab-pane.active { display: block; }
 
-* ===================================== */
+/* ===================================== */
 /* ===    PAINEL DE VENDAS (KANBAN)   ==== */
 /* ===================================== */
 
 .main-kanban {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 76px); /* Altura da tela menos o cabeçalho. */
+    height: calc(100vh - 76px);
     padding: 20px;
 }
 
@@ -625,13 +625,12 @@ form { text-align: left; }
     margin: 0;
 }
 
-/* A MUDANÇA PRINCIPAL ESTÁ AQUI */
 .kanban-board {
-    display: flex; /* MUDADO PARA FLEX */
+    display: flex;
     gap: 20px;
     flex-grow: 1;
-    overflow-x: auto; /* Permite rolagem horizontal do quadro */
-    overflow-y: hidden; /* Impede a rolagem vertical do quadro */
+    overflow-x: auto;
+    overflow-y: hidden;
 }
 
 .kanban-column {
@@ -639,9 +638,8 @@ form { text-align: left; }
     border-radius: 12px;
     display: flex;
     flex-direction: column;
-    /* Define uma largura fixa para cada coluna */
     width: 320px;
-    flex-shrink: 0; /* Impede que as colunas encolham */
+    flex-shrink: 0;
 }
 
 .column-header {
@@ -653,7 +651,13 @@ form { text-align: left; }
     flex-shrink: 0;
 }
 
-/* O resto do CSS permanece o mesmo... */
+.column-title {
+    font-weight: 600;
+}
+
+.column-total {
+    font-weight: 700;
+}
 
 .column-cards {
     flex-grow: 1;
@@ -678,7 +682,6 @@ form { text-align: left; }
 .column-cards::-webkit-scrollbar-thumb:hover {
     background-color: #95a5a6;
 }
-/* FIM DA MÁGICA */
 
 .kanban-card {
     background-color: var(--branco);
@@ -691,10 +694,10 @@ form { text-align: left; }
 }
 .kanban-card:active { cursor: grabbing; }
 
-.card-title { font-weight: 600; margin-bottom: 5px; }
-.card-contact { font-size: 0.9rem; color: var(--cinza-texto); margin-bottom: 15px; }
-.card-footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
-.card-value { font-weight: 700; }
+.kanban-card .card-title { font-weight: 600; margin-bottom: 5px; }
+.kanban-card .card-contact { font-size: 0.9rem; color: var(--cinza-texto); margin-bottom: 15px; }
+.kanban-card .card-footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+.kanban-card .card-value { font-weight: 700; }
 
 .card-button-produzir {
     background-color: var(--sucesso);
