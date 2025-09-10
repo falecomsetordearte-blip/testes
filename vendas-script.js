@@ -23,7 +23,23 @@
             greetingEl.textContent = `Olá, ${userName}!`;
             console.log(`[DEBUG] Saudação preenchida para: ${userName}`);
         }
+        function setKanbanHeight() {
+        const header = document.querySelector('.app-header');
+        const kanbanHeader = document.querySelector('.kanban-header');
+        const kanbanBoard = document.querySelector('.kanban-board');
 
+        if (header && kanbanHeader && kanbanBoard) {
+            const headerHeight = header.offsetHeight;
+            const kanbanHeaderHeight = kanbanHeader.offsetHeight;
+            const extraPadding = 40; // 20px de padding em cima e 20px em baixo no .main-kanban
+
+            // Calcula a altura restante na tela
+            const availableHeight = window.innerHeight - headerHeight - kanbanHeaderHeight - extraPadding;
+            
+            // Define a altura do quadro Kanban
+            kanbanBoard.style.height = `${availableHeight}px`;
+        }
+    }
         // --- CONSTANTES E ELEMENTOS DO DOM ---
         const STAGES = {
             contato_inicial: 'UC_Z087DH',      // CONFIRME ESTES VALORES
