@@ -4,6 +4,11 @@
     console.log("[DEBUG] Script vendas-script.js iniciado.");
     
     document.addEventListener('DOMContentLoaded', () => {
+        / Define a altura do quadro Kanban
+        setKanbanHeight();
+        // E recalcula a altura se a janela for redimensionada
+        window.addEventListener('resize', setKanbanHeight);
+        
         console.log("[DEBUG] DOM completamente carregado.");
 
         // PONTO DE VERIFICAÇÃO 1: Autenticação
