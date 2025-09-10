@@ -186,7 +186,7 @@ if (loginForm) {
             }
             localStorage.setItem('sessionToken', data.token);
             localStorage.setItem('userName', data.userName);
-            window.location.href = 'painel.html';
+            window.location.href = 'dashboard.html';
         } catch (error) {
             showFeedback('form-error-feedback', error.message, true);
             submitButton.disabled = false;
