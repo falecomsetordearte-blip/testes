@@ -677,7 +677,35 @@ function inicializarPainel() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    if (document.querySelector(".main-painel")) {
+    const sessionToken = localStorage.getItem("sessionToken");
+    const userName = localStorage.getItem("userName");
+
+    // Lógica de proteção genérica para todas as páginas logadas
+    if (document.querySelector(".app-layout")) { // .app-layout está em todas as páginas internas
+        console.log("[DEBUG] Página logada detectada.");
+        console.log("[DEBUG] Verificando sessão: Token=", sessionToken, "UserName=", userName);
+        
+        if (!sessionToken || !userName) {
+            console.error("[AUTH] Sessão inválida. Redirecionando para login.");
+            localStorage.clear();
+            window.location.href = "login.html";
+            return;
+        }
+        
+        // Preenche a saudação em todas as páginas logadas
+        const greetingEl = document.getElementById('user-greeting');
+        if(greetingEl) greetingEl.textContent = `Olá, ${userName}!`;
+        
+        const logoutButton = document.getElementById('logout-button');
+        if(logoutButton) logoutButton.addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        });
+    }
+
+    // Lógica específica para a página do painel de pedidos
+    if (document.getElementById('pedidos-list-body')) {
+        console.log("[DEBUG] Inicializando Painel de Pedidos...");
         inicializarPainel();
     }
 });
