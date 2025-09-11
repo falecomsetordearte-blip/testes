@@ -1,0 +1,203 @@
+/* /detalhe-pedido.css */
+
+/* --- LAYOUT DA PÁGINA DE DETALHES --- */
+.detalhe-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr; /* Coluna principal maior, coluna lateral menor */
+    gap: 30px;
+    align-items: start; /* Alinha os itens no topo de suas células de grid */
+}
+
+.detalhe-col-principal, .detalhe-col-lateral {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+/* Remove a margem inferior do último card para alinhar melhor */
+.card-detalhe:last-child {
+    margin-bottom: 0;
+}
+
+/* --- BANNER DE AVISO "EM ANÁLISE" --- */
+.aviso-banner {
+    background-color: #fffbe6; /* Amarelo claro para alerta */
+    border: 1px solid #ffe58f;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    padding: 20px;
+    color: #8a6d3b;
+}
+.aviso-banner-content .aviso-principal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+}
+.aviso-icon {
+    cursor: pointer;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+.aviso-detalhes {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #ffe58f;
+    font-size: 0.9em;
+    line-height: 1.6;
+}
+.aviso-detalhes p {
+    margin: 0 0 10px 0;
+}
+
+/* --- PERFIL DO DESIGNER --- */
+.designer-profile {
+    background-color: var(--branco);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    padding: 20px;
+}
+.designer-profile-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.designer-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.designer-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.designer-details h4 {
+    margin: 0 0 5px 0;
+    font-size: 1.1em;
+}
+.designer-details p {
+    margin: 0;
+    color: var(--cinza-texto);
+    font-size: 0.9em;
+}
+.designer-actions {
+    display: flex;
+    gap: 10px;
+}
+.btn-like, .btn-dislike {
+    background-color: #f0f2f5;
+    border: 1px solid #dcdfe3;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.btn-like:hover { background-color: #e0f0ff; border-color: #b3d7ff; }
+.btn-dislike:hover { background-color: #ffe0e0; border-color: #ffb3b3; }
+
+/* --- BOTÃO VER ATENDIMENTO --- */
+.btn-ver-atendimento {
+    background-color: var(--branco);
+    border: 1px solid var(--borda);
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--texto-escuro);
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+.btn-ver-atendimento:hover { background-color: #f8f9fa; }
+.btn-ver-atendimento.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
+}
+.tag-em-breve {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background-color: var(--alerta);
+    color: var(--texto-escuro);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+}
+
+
+/* --- CHAT E BOTÕES --- */
+#input-mensagem {
+    flex: 1;
+    height: 50px;
+    padding: 0 20px;
+    border: 2px solid #a8d5f3;
+    border-radius: 50px;
+    font-size: 16px;
+    background-color: #f7fcff;
+    outline: none;
+    transition: border-color 0.2s;
+}
+#input-mensagem:focus {
+    border-color: #3498db;
+}
+#btn-enviar-mensagem {
+    width: 50px;
+    height: 50px;
+    flex-shrink: 0;
+}
+.aviso-envio-arquivos {
+    font-size: 13px;
+    color: var(--cinza-texto);
+    text-align: center;
+    margin-top: 15px;
+}
+.btn-adicionar-credito {
+    padding: 4px 8px;
+    font-size: 12px;
+    margin-left: 10px;
+    background-color: #eaf6ff;
+    color: #3498db;
+    border: 1px solid #bde0fe;
+}
+.btn-verificado {
+    width: 100%;
+    margin-top: 15px;
+    background-color: var(--sucesso);
+    color: var(--branco);
+}
+.btn-verificado:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+}
+
+/* --- BOTÃO CANCELAR --- */
+.cancelar-container {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    text-align: right;
+}
+.btn-cancelar {
+    background-color: #e74c3c;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background-color 0.2s, opacity 0.2s;
+}
+.btn-cancelar:hover {
+    background-color: #c0392b;
+}
+.btn-cancelar:disabled {
+    background-color: #95a5a6;
+    opacity: 0.7;
+    cursor: not-allowed;
+}

@@ -5,218 +5,8 @@
     <title>Detalhes do Pedido - Setor de Arte</title>
     <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
     <link rel="stylesheet" href="style.css?v=1.1">
+    <link rel="stylesheet" href="detalhe-pedido.css?v=1.1">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        .cancelar-container {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            text-align: right;
-        }
-        .btn-cancelar {
-            background-color: #e74c3c;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            transition: background-color 0.2s, opacity 0.2s;
-        }
-        .btn-cancelar:hover {
-            background-color: #c0392b;
-        }
-        .btn-cancelar:disabled {
-            background-color: #95a5a6;
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        /* Estilos para o modal de feedback */
-        .feedback-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .feedback-modal-content {
-            background: white;
-            border-radius: 8px;
-            padding: 0;
-            max-width: 500px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .feedback-modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 24px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .feedback-modal-header h3 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .feedback-close {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #999;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .feedback-close:hover {
-            color: #666;
-        }
-
-        .feedback-type-indicator {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 16px 24px;
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #eee;
-            font-weight: 500;
-        }
-
-        .feedback-type-indicator span:first-child {
-            font-size: 20px;
-        }
-
-        .feedback-form {
-            padding: 24px;
-        }
-
-        .feedback-form textarea {
-            width: 100%;
-            min-height: 100px;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-family: inherit;
-            font-size: 14px;
-            resize: vertical;
-            margin-bottom: 16px;
-        }
-
-        .feedback-form textarea:focus {
-            outline: none;
-            border-color: #3498db;
-        }
-
-        .feedback-checkbox-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-
-        .feedback-checkbox-container input[type="checkbox"] {
-            margin: 0;
-        }
-
-        .feedback-checkbox-container label {
-            font-size: 14px;
-            color: #666;
-            cursor: pointer;
-        }
-
-        .feedback-buttons {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-
-        .feedback-btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .feedback-btn-cancel {
-            background-color: #f8f9fa;
-            color: #666;
-            border: 1px solid #ddd;
-        }
-
-        .feedback-btn-cancel:hover {
-            background-color: #e9ecef;
-        }
-
-        .feedback-btn-submit {
-            background-color: #3498db;
-            color: white;
-        }
-
-        .feedback-btn-submit:hover {
-            background-color: #2980b9;
-        }
-
-        /* Remover a tag "Em Breve" dos botões de avaliação */
-        .designer-actions .tag-em-breve {
-            display: none;
-        }
-
-        /* Ativar os botões de avaliação */
-        .btn-like, .btn-dislike {
-            cursor: pointer;
-            opacity: 1;
-            pointer-events: auto;
-        }
-        #form-mensagem {
-    display: flex; /* Garante que o input e o botão fiquem na mesma linha */
-    align-items: center; /* Alinha verticalmente */
-    gap: 10px; /* Espaço entre o input e o botão */
-}
-
-#input-mensagem {
-    flex: 1; /* Faz o input ocupar todo o espaço disponível */
-    height: 50px; /* Altura do campo */
-    padding: 0 20px; /* Espaçamento interno (vertical | horizontal) */
-    border: 2px solid #a8d5f3; /* Borda azul clara como na sua imagem */
-    border-radius: 50px; /* Bordas completamente arredondadas */
-    font-size: 16px;
-    background-color: #f7fcff;
-    outline: none; /* Remove a borda de foco padrão do navegador */
-    transition: border-color 0.2s;
-}
-
-#input-mensagem:focus {
-    border-color: #3498db; /* Borda fica mais escura quando o campo está focado */
-}
-
-/* Ajuste no botão para combinar com a altura do input */
-#btn-enviar-mensagem {
-    width: 50px;
-    height: 50px;
-    flex-shrink: 0; /* Impede que o botão encolha */
-    </style>
 </head>
 <body>
 
@@ -297,7 +87,7 @@
                                         <div class="loading-pedidos"><div class="spinner"></div></div>
                                     </div>
                                     <form id="form-mensagem" class="form-mensagem">
-                                        <input type="text" id="input-mensagem" name="mensagem" placeholder="Digite sua mensagem para o designer..." required></textarea>
+                                        <input type="text" id="input-mensagem" name="mensagem" placeholder="Digite sua mensagem para o designer..." required>
                                         <button type="submit" id="btn-enviar-mensagem" title="Enviar Mensagem">
                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
                                         </button>
@@ -307,7 +97,6 @@
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="vertical-align: middle; margin-left: 4px;">
                 <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
             </svg>
-        </a>
     </p>
                                 </div>
                             </div>
@@ -397,4 +186,3 @@
 
 </body>
 </html>
-
