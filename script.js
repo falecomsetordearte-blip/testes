@@ -1,9 +1,5 @@
 // /script.js - VERSÃO COMPLETA E REESTRUTURADA
 
-// =================================================================================
-// === FUNÇÕES GLOBAIS DE AJUDA (Usadas em várias partes do script)
-// =================================================================================
-
 async function handleAuthError(response) {
     if (response.status === 401 || response.status === 403) {
         localStorage.clear();
@@ -36,13 +32,8 @@ function exibirAlertaSessaoSubstituida() {
         modal.innerHTML = `
             <div class="modal-overlay">
                 <div class="modal-content sessao-substituida">
-                    <div class="modal-body">
-                        <h3>Sessão Expirada</h3>
-                        <p>Entre novamente.</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button id="btn-ok-login" class="btn btn-primary">OK</button>
-                    </div>
+                    <div class="modal-body"><h3>Sessão Expirada</h3><p>Entre novamente.</p></div>
+                    <div class="modal-footer"><button id="btn-ok-login" class="btn btn-primary">OK</button></div>
                 </div>
             </div>
         `;
@@ -65,12 +56,11 @@ function exibirAlertaSessaoSubstituida() {
         }
     }
     modal.style.display = 'block';
-    const btnOk = document.getElementById('btn-ok-login');
-    btnOk.onclick = () => {
+    document.getElementById('btn-ok-login').onclick = () => {
         localStorage.clear();
         window.location.href = "login.html";
     };
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             localStorage.clear();
             window.location.href = "login.html";
@@ -91,32 +81,21 @@ function hideFeedback(containerId) {
     if (container) container.classList.add('hidden');
 }
 
-// =================================================================================
-// === ROTINA PRINCIPAL DE INICIALIZAÇÃO (Executada quando a página carrega)
-// =================================================================================
-
 document.addEventListener("DOMContentLoaded", () => {
     const path = window.location.pathname;
+    const isAuthPage = ['/login.html', '/esqueci-senha.html', '/redefinir-senha.html', '/cadastro.html', '/verificacao.html'].some(p => path.endsWith(p));
 
-    // Roda a lógica para páginas de autenticação (públicas)
-    if (path.includes('/login.html') || path.includes('/esqueci-senha.html') || path.includes('/redefinir-senha.html') || path.includes('/cadastro.html') || path.includes('/verificacao.html')) {
+    if (isAuthPage) {
         initializeAuthPages();
-    } 
-    // Roda a lógica para páginas internas (protegidas)
-    else if (document.querySelector(".app-layout")) {
+    } else if (document.querySelector(".app-layout")) {
         initializeProtectedPage();
     }
 });
 
-// =================================================================================
-// === INICIALIZADOR DE PÁGINAS PÚBLICAS (LOGIN, CADASTRO, ETC.)
-// =================================================================================
-
 function initializeAuthPages() {
     const path = window.location.pathname;
 
-    // --- Lógica específica para a página de LOGIN ---
-    if (path.includes('/login.html')) {
+    if (path.endsWith('/login.html')) {
         const loginForm = document.getElementById('login-form');
         if (loginForm) {
             loginForm.addEventListener('submit', async (event) => {
@@ -146,8 +125,6 @@ function initializeAuthPages() {
                 }
             });
         }
-        
-        // Exibe mensagens de sucesso (reset de senha, verificação de email)
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('verified') === 'true') {
             showFeedback('form-error-feedback', 'E-mail verificado com sucesso! Você já pode fazer o login.', false);
@@ -156,132 +133,130 @@ function initializeAuthPages() {
              showFeedback('form-error-feedback', 'Senha redefinida com sucesso! Você já pode fazer o login com a nova senha.', false);
         }
     }
-    
-    const cadastroForm = document.getElementById('cadastro-form');
-    if (cadastroForm) {
-        cadastroForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const formWrapper = document.getElementById('form-wrapper');
-            const loadingFeedback = document.getElementById('loading-feedback');
-            const submitButton = cadastroForm.querySelector('button[type="submit"]');
-            const senha = document.getElementById('senha').value;
-            const confirmarSenha = document.getElementById('confirmar-senha').value;
-            const aceiteTermos = document.getElementById('termos-aceite').checked;
 
-            hideFeedback('form-error-feedback');
-            if (!aceiteTermos) return showFeedback('form-error-feedback', 'Você precisa aceitar os Termos para continuar.', true);
-            if (senha.length < 6) return showFeedback('form-error-feedback', 'Sua senha precisa ter no mínimo 6 caracteres.', true);
-            if (senha !== confirmarSenha) return showFeedback('form-error-feedback', 'As senhas não coincidem.', true);
+    if (path.endsWith('/cadastro.html')) {
+        const cadastroForm = document.getElementById('cadastro-form');
+        if (cadastroForm) {
+            cadastroForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const formWrapper = document.getElementById('form-wrapper');
+                const loadingFeedback = document.getElementById('loading-feedback');
+                const submitButton = cadastroForm.querySelector('button[type="submit"]');
+                const senha = document.getElementById('senha').value;
+                const confirmarSenha = document.getElementById('confirmar-senha').value;
+                const aceiteTermos = document.getElementById('termos-aceite').checked;
 
-            submitButton.disabled = true;
-            formWrapper.classList.add('hidden');
-            loadingFeedback.classList.remove('hidden');
+                hideFeedback('form-error-feedback');
+                if (!aceiteTermos) return showFeedback('form-error-feedback', 'Você precisa aceitar os Termos para continuar.', true);
+                if (senha.length < 6) return showFeedback('form-error-feedback', 'Sua senha precisa ter no mínimo 6 caracteres.', true);
+                if (senha !== confirmarSenha) return showFeedback('form-error-feedback', 'As senhas não coincidem.', true);
 
-            const empresaData = {
-                nomeEmpresa: document.getElementById('nome_empresa').value,
-                cnpj: document.getElementById('cnpj').value,
-                telefoneEmpresa: document.getElementById('telefone_empresa').value,
-                nomeResponsavel: document.getElementById('nome_responsavel').value,
-                email: document.getElementById('email').value,
-                senha: senha
-            };
-            try {
-                const response = await fetch('/api/registerUser', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(empresaData)
-                });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message || 'Ocorreu um erro desconhecido.');
+                submitButton.disabled = true;
+                formWrapper.classList.add('hidden');
+                loadingFeedback.classList.remove('hidden');
 
-                const registrationData = {
-                    contactId: data.contactId,
-                    companyId: data.companyId,
-                    asaasCustomerId: data.asaasCustomerId,
-                    companyName: empresaData.nomeEmpresa,
-                    responsibleName: empresaData.nomeResponsavel
+                const empresaData = {
+                    nomeEmpresa: document.getElementById('nome_empresa').value,
+                    cnpj: document.getElementById('cnpj').value,
+                    telefoneEmpresa: document.getElementById('telefone_empresa').value,
+                    nomeResponsavel: document.getElementById('nome_responsavel').value,
+                    email: document.getElementById('email').value,
+                    senha: senha
                 };
-                localStorage.setItem('pendingRegistration', JSON.stringify(registrationData));
-                window.location.href = 'assinatura.html';
-            } catch (error) {
-                loadingFeedback.classList.add('hidden');
-                formWrapper.classList.remove('hidden');
-                showFeedback('form-error-feedback', error.message, true);
-                submitButton.disabled = false;
-            }
-        });
+                try {
+                    const response = await fetch('/api/registerUser', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(empresaData)
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message || 'Ocorreu um erro desconhecido.');
+
+                    const registrationData = {
+                        contactId: data.contactId, companyId: data.companyId,
+                        asaasCustomerId: data.asaasCustomerId, companyName: empresaData.nomeEmpresa,
+                        responsibleName: empresaData.nomeResponsavel
+                    };
+                    localStorage.setItem('pendingRegistration', JSON.stringify(registrationData));
+                    window.location.href = 'assinatura.html';
+                } catch (error) {
+                    loadingFeedback.classList.add('hidden');
+                    formWrapper.classList.remove('hidden');
+                    showFeedback('form-error-feedback', error.message, true);
+                    submitButton.disabled = false;
+                }
+            });
+        }
     }
 
-    const esqueciSenhaForm = document.getElementById('esqueci-senha-form');
-    if (esqueciSenhaForm) {
-        const formWrapper = document.getElementById('form-wrapper');
-        esqueciSenhaForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const btn = event.target.querySelector('button');
-            btn.disabled = true;
-            btn.textContent = 'Enviando...';
-            try {
-                const response = await fetch('/api/forgotPassword', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: document.getElementById('email').value })
-                });
-                const data = await response.json();
-                if (!response.ok) { throw new Error(data.message); }
-                formWrapper.innerHTML = `<div class="auth-header"><img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte"><h1>Link Enviado!</h1><p>${data.message || 'Se um e-mail correspondente for encontrado em nosso sistema, um link para redefinição de senha será enviado.'}</p></div>`;
-            } catch (error) {
-                formWrapper.innerHTML = `<div class="auth-header"><img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte"><h1>Ocorreu um Erro</h1><p>${error.message || 'Não foi possível processar a solicitação. Por favor, tente novamente mais tarde.'}</p></div>`;
-            }
-        });
+    if (path.endsWith('/esqueci-senha.html')) {
+        const esqueciSenhaForm = document.getElementById('esqueci-senha-form');
+        if (esqueciSenhaForm) {
+            const formWrapper = document.getElementById('form-wrapper');
+            esqueciSenhaForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const btn = event.target.querySelector('button');
+                btn.disabled = true;
+                btn.textContent = 'Enviando...';
+                try {
+                    const response = await fetch('/api/forgotPassword', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: document.getElementById('email').value })
+                    });
+                    const data = await response.json();
+                    if (!response.ok) { throw new Error(data.message); }
+                    formWrapper.innerHTML = `<div class="auth-header"><img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte"><h1>Link Enviado!</h1><p>${data.message || 'Se um e-mail correspondente for encontrado em nosso sistema, um link para redefinição de senha será enviado.'}</p></div>`;
+                } catch (error) {
+                    formWrapper.innerHTML = `<div class="auth-header"><img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte"><h1>Ocorreu um Erro</h1><p>${error.message || 'Não foi possível processar a solicitação. Por favor, tente novamente mais tarde.'}</p></div>`;
+                }
+            });
+        }
     }
 
-    const redefinirSenhaForm = document.getElementById('redefinir-senha-form');
-    if (redefinirSenhaForm) {
-        redefinirSenhaForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const novaSenha = document.getElementById('nova-senha').value;
-            const confirmarSenha = document.getElementById('confirmar-senha').value;
-            const submitButton = redefinirSenhaForm.querySelector('button[type="submit"]');
-            hideFeedback('form-error-feedback');
-            if (novaSenha.length < 6) return showFeedback('form-error-feedback', 'Sua senha precisa ter no mínimo 6 caracteres.', true);
-            if (novaSenha !== confirmarSenha) return showFeedback('form-error-feedback', 'As senhas não coincidem.', true);
-            
-            submitButton.disabled = true;
-            submitButton.textContent = 'Salvando...';
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
-            if (!token) {
-                showFeedback('form-error-feedback', 'Token de redefinição não encontrado. Link inválido.', true);
-                submitButton.disabled = false;
-                submitButton.textContent = 'Salvar Nova Senha';
-                return;
-            }
-            try {
-                const response = await fetch('/api/resetPassword', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: token, novaSenha: novaSenha })
-                });
-                const data = await response.json();
-                if (!response.ok) { throw new Error(data.message); }
-                window.location.href = `login.html?reset=success`;
-            } catch (error) {
-                showFeedback('form-error-feedback', error.message, true);
-                submitButton.disabled = false;
-                submitButton.textContent = 'Salvar Nova Senha';
-            }
-        });
+    if (path.endsWith('/redefinir-senha.html')) {
+        const redefinirSenhaForm = document.getElementById('redefinir-senha-form');
+        if (redefinirSenhaForm) {
+            redefinirSenhaForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const novaSenha = document.getElementById('nova-senha').value;
+                const confirmarSenha = document.getElementById('confirmar-senha').value;
+                const submitButton = redefinirSenhaForm.querySelector('button[type="submit"]');
+                hideFeedback('form-error-feedback');
+                if (novaSenha.length < 6) return showFeedback('form-error-feedback', 'Sua senha precisa ter no mínimo 6 caracteres.', true);
+                if (novaSenha !== confirmarSenha) return showFeedback('form-error-feedback', 'As senhas não coincidem.', true);
+                
+                submitButton.disabled = true;
+                submitButton.textContent = 'Salvando...';
+                const token = new URLSearchParams(window.location.search).get('token');
+                if (!token) {
+                    showFeedback('form-error-feedback', 'Token de redefinição não encontrado. Link inválido.', true);
+                    submitButton.disabled = false;
+                    return;
+                }
+                try {
+                    const response = await fetch('/api/resetPassword', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: token, novaSenha: novaSenha })
+                    });
+                    const data = await response.json();
+                    if (!response.ok) { throw new Error(data.message); }
+                    window.location.href = `login.html?reset=success`;
+                } catch (error) {
+                    showFeedback('form-error-feedback', error.message, true);
+                    submitButton.disabled = false;
+                }
+            });
+        }
     }
 
-    if (window.location.pathname.endsWith('/verificacao.html')) {
+    if (path.endsWith('/verificacao.html')) {
         const feedbackText = document.getElementById('feedback-text');
-        const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get('token');
+        const token = new URLSearchParams(window.location.search).get('token');
         (async () => {
-            if (!token) {
-                feedbackText.textContent = 'Link de verificação inválido ou incompleto.';
-                return;
-            }
+            if (!token || !feedbackText) return;
+            feedbackText.textContent = 'Verificando...';
             try {
                 const response = await fetch('/api/verifyEmail', {
                     method: 'POST',
@@ -289,37 +264,20 @@ function initializeAuthPages() {
                     body: JSON.stringify({ token: token })
                 });
                 const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.message);
-                }
+                if (!response.ok) { throw new Error(data.message); }
                 window.location.href = 'login.html?verified=true';
             } catch (error) {
                 feedbackText.textContent = `Erro: ${error.message || 'Não foi possível verificar seu e-mail.'}`;
             }
         })();
     }
-    
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('verified') === 'true') {
-        showFeedback('form-error-feedback', 'E-mail verificado com sucesso! Você já pode fazer o login.', false);
-    }
-    if (urlParams.get('reset') === 'success') {
-         showFeedback('form-error-feedback', 'Senha redefinida com sucesso! Você já pode fazer o login com a nova senha.', false);
-    }
 }
-
-// =================================================================================
-// === INICIALIZADOR DE PÁGINAS PROTEGIDAS (DASHBOARD, PAINEL, ETC.)
-// =================================================================================
 
 function initializeProtectedPage() {
     const sessionToken = localStorage.getItem("sessionToken");
     const userName = localStorage.getItem("userName");
 
-    console.log("[DEBUG] Verificando sessão: Token=", sessionToken, "UserName=", userName);
-
     if (!sessionToken || !userName) {
-        console.error("[AUTH] Sessão inválida. Redirecionando para login.");
         localStorage.clear();
         window.location.href = "login.html";
         return;
@@ -335,14 +293,9 @@ function initializeProtectedPage() {
     });
 
     if (document.getElementById('pedidos-list-body')) {
-        console.log("[DEBUG] Inicializando Painel de Pedidos...");
         inicializarPainelDePedidos();
     }
 }
-
-// =================================================================================
-// === FUNÇÕES ESPECÍFICAS DO PAINEL DE PEDIDOS (PAINEL.HTML)
-// =================================================================================
 
 let todosPedidos = [];
 let paginaAtual = 1;
@@ -383,7 +336,7 @@ function renderizarPedidos() {
         const indiceInicio = (paginaAtual - 1) * itensPorPagina;
         const indiceFim = indiceInicio + itensPorPagina;
         const pedidosPagina = pedidosFiltrados.slice(indiceInicio, indiceFim);
-        let pedidosHtml = "";
+        let html = "";
         pedidosPagina.forEach(pedido => {
             let statusInfo = { texto: "Desconhecido", classe: "" };
             let notificacaoHtml = '';
@@ -407,9 +360,9 @@ function renderizarPedidos() {
                 statusInfo = { texto: 'Em Andamento', classe: 'status-andamento' };
             }
             const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(pedido.OPPORTUNITY) || 0);
-            pedidosHtml += `<div class="pedido-item"><div class="col-id"><strong>#${pedido.ID}</strong></div><div class="col-titulo">${pedido.TITLE}</div><div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div><div class="col-valor">${valorFormatado}</div><div class="col-acoes">${acaoHtml}</div></div>`;
+            html += `<div class="pedido-item"><div class="col-id"><strong>#${pedido.ID}</strong></div><div class="col-titulo">${pedido.TITLE}</div><div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div><div class="col-valor">${valorFormatado}</div><div class="col-acoes">${acaoHtml}</div></div>`;
         });
-        pedidosListBody.innerHTML = pedidosHtml;
+        pedidosListBody.innerHTML = html;
     } else {
         pedidosListBody.innerHTML = `<div class="loading-pedidos" style="padding: 50px 20px;">Nenhum pedido encontrado.</div>`;
     }
@@ -418,26 +371,23 @@ function renderizarPedidos() {
 function aplicarFiltros() {
     const searchInput = document.getElementById("search-input");
     const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
-    if (searchTerm) {
-        pedidosFiltrados = todosPedidos.filter(pedido =>
-            (pedido.TITLE || "").toLowerCase().includes(searchTerm) ||
-            (pedido.ID || "").toString().includes(searchTerm)
-        );
-    } else {
-        pedidosFiltrados = todosPedidos;
-    }
+    pedidosFiltrados = searchTerm 
+        ? todosPedidos.filter(p => (p.TITLE || "").toLowerCase().includes(searchTerm) || (p.ID || "").toString().includes(searchTerm))
+        : todosPedidos;
     paginaAtual = 1;
     renderizarPedidos();
 }
 
 function ativarDropdownsDePagamento() {
     const pedidosListBody = document.getElementById('pedidos-list-body');
+    if (!pedidosListBody) return;
+    
     pedidosListBody.addEventListener('click', async function(event) {
         const target = event.target;
         const dropdown = target.closest('.dropdown-pagamento');
         if (target.classList.contains('btn-pagar')) {
             document.querySelectorAll('.dropdown-pagamento.active').forEach(d => d !== dropdown && d.classList.remove('active'));
-            dropdown.classList.toggle('active');
+            if(dropdown) dropdown.classList.toggle('active');
             return;
         }
         if (target.classList.contains('btn-pagar-saldo')) {
@@ -474,7 +424,7 @@ function ativarDropdownsDePagamento() {
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.message);
                 window.open(data.url, '_blank');
-                dropdown.classList.remove('active');
+                if(dropdown) dropdown.classList.remove('active');
             } catch (error) {
                 alert(`Erro: ${error.message}`);
             } finally {
@@ -501,9 +451,7 @@ function inicializarPainelDePedidos() {
     btnCloseModalNovoPedido.addEventListener("click", () => modalNovoPedido.classList.remove("active"));
     
     const wppInput = document.getElementById('cliente-final-wpp');
-    if (wppInput) {
-        const phoneMask = IMask(wppInput, { mask: '(00) 00000-0000' });
-    }
+    if (wppInput) IMask(wppInput, { mask: '(00) 00000-0000' });
 
     const videoToggle = document.getElementById('video-explicativo-toggle');
     const videoContainer = document.getElementById('video-explicativo-container');
@@ -523,18 +471,12 @@ function inicializarPainelDePedidos() {
         newItemDiv.innerHTML = `
             <label class="item-label">Item ${newItemNumber}</label>
             <div class="form-group"><label for="material-descricao-${newItemNumber}">Descreva o Material</label><input type="text" id="material-descricao-${newItemNumber}" class="material-descricao" required></div>
-            <div class="form-group"><label for="material-detalhes-${newItemNumber}">Como o cliente deseja a arte?</label><textarea id="material-detalhes-${newItemNumber}" class="material-detalhes" rows="3" required></textarea></div>
-        `;
+            <div class="form-group"><label for="material-detalhes-${newItemNumber}">Como o cliente deseja a arte?</label><textarea id="material-detalhes-${newItemNumber}" class="material-detalhes" rows="3" required></textarea></div>`;
         materiaisContainer.appendChild(newItemDiv);
     });
     
     function resetMateriaisForm() {
-        materiaisContainer.innerHTML = `
-            <div class="material-item">
-                <label class="item-label">Item 1</label>
-                <div class="form-group"><label for="material-descricao-1">Descreva o Material</label><input type="text" id="material-descricao-1" class="material-descricao" required></div>
-                <div class="form-group"><label for="material-detalhes-1">Como o cliente deseja a arte?</label><textarea id="material-detalhes-1" class="material-detalhes" rows="3" required></textarea></div>
-            </div>`;
+        materiaisContainer.innerHTML = `<div class="material-item"><label class="item-label">Item 1</label><div class="form-group"><label for="material-descricao-1">Descreva o Material</label><input type="text" id="material-descricao-1" class="material-descricao" required></div><div class="form-group"><label for="material-detalhes-1">Como o cliente deseja a arte?</label><textarea id="material-detalhes-1" class="material-detalhes" rows="3" required></textarea></div></div>`;
     }
 
     formNovoPedido.addEventListener('submit', async (event) => {
@@ -586,16 +528,13 @@ function inicializarPainelDePedidos() {
     const btnOpenModalCreditos = document.querySelector(".btn-add-credito");
     const btnCloseModalCreditos = modalCreditos.querySelector(".close-modal");
     const formCreditos = document.getElementById("adquirir-creditos-form");
-
     if (btnOpenModalCreditos) btnOpenModalCreditos.addEventListener("click", () => modalCreditos.classList.add("active"));
     if (btnCloseModalCreditos) btnCloseModalCreditos.addEventListener("click", () => modalCreditos.classList.remove("active"));
-
     formCreditos.addEventListener('submit', async (event) => {
         event.preventDefault();
         const submitButton = formCreditos.querySelector("button[type='submit']");
         const valorInput = document.getElementById("creditos-valor");
         hideFeedback("creditos-form-error");
-
         const valor = valorInput.value;
         const sessionToken = localStorage.getItem("sessionToken");
         if (!valor || parseFloat(valor) < 5) return showFeedback("creditos-form-error", "Por favor, insira um valor de no mínimo R$ 5,00.", true);
