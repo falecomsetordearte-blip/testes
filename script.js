@@ -113,35 +113,48 @@ document.addEventListener("DOMContentLoaded", () => {
 // =================================================================================
 
 function initializeAuthPages() {
-    
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const submitButton = loginForm.querySelector('button[type="submit"]');
-            submitButton.disabled = true;
-            submitButton.textContent = 'Entrando...';
-            try {
-                const response = await fetch('/api/loginUser', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: document.getElementById('email').value,
-                        senha: document.getElementById('senha').value
-                    })
-                });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message || 'Erro desconhecido.');
-                
-                localStorage.setItem('sessionToken', data.token);
-                localStorage.setItem('userName', data.userName);
-                window.location.href = 'dashboard.html';
-            } catch (error) {
-                showFeedback('form-error-feedback', error.message, true);
-                submitButton.disabled = false;
-                submitButton.textContent = 'Entrar';
-            }
-        });
+    const path = window.location.pathname;
+
+    // --- Lógica específica para a página de LOGIN ---
+    if (path.includes('/login.html')) {
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const submitButton = loginForm.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                submitButton.textContent = 'Entrando...';
+                try {
+                    const response = await fetch('/api/loginUser', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: document.getElementById('email').value,
+                            senha: document.getElementById('senha').value
+                        })
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message || 'Erro desconhecido.');
+                    
+                    localStorage.setItem('sessionToken', data.token);
+                    localStorage.setItem('userName', data.userName);
+                    window.location.href = 'dashboard.html';
+                } catch (error) {
+                    showFeedback('form-error-feedback', error.message, true);
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Entrar';
+                }
+            });
+        }
+        
+        // Exibe mensagens de sucesso (reset de senha, verificação de email)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('verified') === 'true') {
+            showFeedback('form-error-feedback', 'E-mail verificado com sucesso! Você já pode fazer o login.', false);
+        }
+        if (urlParams.get('reset') === 'success') {
+             showFeedback('form-error-feedback', 'Senha redefinida com sucesso! Você já pode fazer o login com a nova senha.', false);
+        }
     }
     
     const cadastroForm = document.getElementById('cadastro-form');
