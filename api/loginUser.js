@@ -59,8 +59,14 @@ module.exports = async (req, res) => {
         // ETAPA FINAL: Enviar o novo token
         return res.status(200).json({ 
             token: newSessionToken, 
-            userName: user.NAME 
+            userName: user.NAME || email 
         });
+
+    } catch (error) {
+        console.error('Erro no processo de login:', error.response ? error.response.data : error.message);
+        return res.status(500).json({ message: 'Ocorreu um erro interno. Tente novamente mais tarde.' });
+    }
+
 
     } catch (error) {
         console.error('Erro no processo de login:', error.response ? error.response.data : error.message);
