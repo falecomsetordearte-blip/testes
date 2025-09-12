@@ -1,10 +1,12 @@
 // /api/submitDesignerReview.js
 const axios = require('axios');
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
 // Constantes dos campos para facilitar a manutenção
 const FIELD_JA_AVALIADO = 'UF_CRM_1753383576795';
-const FIELD_PONTUACAO = 'UF_USR_1744662446097';
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
@@ -12,16 +14,13 @@ module.exports = async (req, res) => {
     }
 
     try {
-        console.log('[DEBUG] API /submitDesignerReview INICIADA.');
         const { sessionToken, dealId, avaliacao, comentario } = req.body;
-        
-        // --- LOG DE DEBUG ---
-        console.log(`[DEBUG] Dados recebidos: dealId=${dealId}, avaliacao=${avaliacao}, temComentario=${!!comentario}`);
 
         if (!sessionToken || !dealId || !avaliacao) {
             return res.status(400).json({ message: 'Dados insuficientes para a avaliação.' });
         }
         
+        // --- ETAPA 1: VALIDAÇÃO DE SEGURANÇA ---
         const userSearch = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken },
             select: ['COMPANY_ID']
@@ -35,76 +34,44 @@ module.exports = async (req, res) => {
         const dealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.get`, { id: dealId });
         const deal = dealResponse.data.result;
 
-        if (!deal) {
-            return res.status(404).json({ message: 'Pedido não encontrado.' });
-        }
-        
-        if (deal.COMPANY_ID != user.COMPANY_ID) {
-            return res.status(403).json({ message: 'Acesso negado. Você não tem permissão para avaliar este pedido.' });
-        }
-
-        if (deal[FIELD_JA_AVALIADO] === true || deal[FIELD_JA_AVALIADO] === '1') {
-            console.warn(`[AVISO] Tentativa de avaliar pedido já avaliado: ${dealId}`);
-            return res.status(409).json({ message: 'Este pedido já foi avaliado.' });
-        }
+        if (!deal) { return res.status(404).json({ message: 'Pedido não encontrado.' }); }
+        if (deal.COMPANY_ID != user.COMPANY_ID) { return res.status(403).json({ message: 'Acesso negado a este pedido.' }); }
+        if (deal[FIELD_JA_AVALIADO] === true || deal[FIELD_JA_AVALIADO] === '1') { return res.status(409).json({ message: 'Este pedido já foi avaliado.' }); }
 
         const designerId = deal.ASSIGNED_BY_ID;
-        // --- LOG DE DEBUG ---
-        console.log(`[DEBUG] ID do Designer (ASSIGNED_BY_ID): ${designerId}`);
-        if (!designerId) {
-             throw new Error('O pedido não tem um designer responsável (ASSIGNED_BY_ID está vazio).');
-        }
+        if (!designerId) { throw new Error('O pedido não tem um designer responsável (ASSIGNED_BY_ID está vazio).'); }
 
-        const designerResponse = await axios.post(`${BITRIX24_API_URL}user.get`, { ID: designerId });
-        const designer = designerResponse.data.result[0];
-        
-        const pontuacaoAtual = parseInt(designer[FIELD_PONTUACAO] || '0', 10);
-        const novaPontuacao = pontuacaoAtual + (avaliacao === 'positiva' ? 1 : -1);
-        
-        // --- LOG DE DEBUG ---
-        console.log(`[DEBUG] Pontuação do Designer: Atual=${pontuacaoAtual}, Nova=${novaPontuacao}`);
+        // --- ETAPA 2: ATUALIZAR A PONTUAÇÃO NO NEON DB USANDO PRISMA ---
+        // Usamos as operações atômicas 'increment' e 'decrement' do Prisma, que são seguras.
+        await prisma.designerFinanceiro.update({
+            where: { designer_id: designerId },
+            data: {
+                pontuacao: {
+                    [avaliacao === 'positiva' ? 'increment' : 'decrement']: 1
+                }
+            }
+        });
 
+        // --- ETAPA 3: ATUALIZAR O BITRIX24 (COMENTÁRIO E STATUS DE AVALIADO) ---
         const commands = {
-            update_score: `user.update?ID=${designerId}&fields[${FIELD_PONTUACAO}]=${novaPontuacao}`,
             mark_deal_reviewed: `crm.deal.update?id=${dealId}&fields[${FIELD_JA_AVALIADO}]=1`
         };
 
         if (comentario && comentario.trim() !== '') {
             const commentText = `**Avaliação do Cliente Recebida:**\n\nTipo: ${avaliacao === 'positiva' ? 'Positiva 👍' : 'Negativa 👎'}\n\nComentário: "${comentario.trim()}"`;
-            commands.add_comment = `crm.timeline.comment.add?` + new URLSearchParams({
-                fields: {
-                    ENTITY_ID: dealId,
-                    ENTITY_TYPE: 'deal',
-                    COMMENT: commentText,
-                    AUTHOR_ID: 1 
-                }
-            });
-            // --- LOG DE DEBUG ---
-            console.log('[DEBUG] Comando de comentário foi adicionado ao lote.');
-        } else {
-            console.log('[DEBUG] Nenhum comentário fornecido, comando de comentário não será adicionado.');
+            commands.add_comment = `crm.timeline.comment.add?fields[ENTITY_ID]=${dealId}&fields[ENTITY_TYPE]=deal&fields[COMMENT]=${encodeURIComponent(commentText)}&fields[AUTHOR_ID]=1`;
         }
         
-        // --- LOG DE DEBUG ---
-        console.log('[DEBUG] COMANDOS ENVIADOS NO LOTE (BATCH):', JSON.stringify(commands, null, 2));
-        
-        const batchResponse = await axios.post(`${BITRIX24_API_URL}batch`, { cmd: commands });
-        
-        // --- LOG DE DEBUG CRÍTICO ---
-        // Isso nos mostrará a resposta exata do Bitrix para cada comando dentro do lote.
-        console.log('[DEBUG] RESPOSTA COMPLETA DO BATCH:', JSON.stringify(batchResponse.data, null, 2));
-
-        // Verificação de erros na resposta do batch
-        const batchResult = batchResponse.data.result;
-        if (batchResult.result_error && Object.keys(batchResult.result_error).length > 0) {
-            console.error('[ERRO CRÍTICO] O Bitrix retornou erros no lote:', batchResult.result_error);
-            throw new Error('Um ou mais comandos falharam no Bitrix. Verifique os logs para detalhes.');
-        }
+        await axios.post(`${BITRIX24_API_URL}batch`, { cmd: commands });
 
         return res.status(200).json({ message: 'Avaliação enviada com sucesso!' });
 
     } catch (error) {
-        console.error('Erro ao submeter avaliação:', error.response ? error.response.data : error.message);
+        // Se ocorrer um erro, especialmente no Prisma, logamos para depuração.
+        console.error('Erro ao submeter avaliação:', error);
+        if (error.code === 'P2025') { // Código de erro do Prisma para "registro não encontrado"
+            return res.status(404).json({ message: 'O registro financeiro para este designer não foi encontrado no banco de dados.' });
+        }
         return res.status(500).json({ message: 'Ocorreu um erro interno ao processar sua avaliação.' });
     }
 };
