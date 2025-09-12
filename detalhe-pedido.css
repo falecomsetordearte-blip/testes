@@ -50,54 +50,7 @@
     margin: 0 0 10px 0;
 }
 
-/* --- PERFIL DO DESIGNER --- */
-.designer-profile {
-    background-color: var(--branco);
-    border: 1px solid var(--borda);
-    border-radius: 12px;
-    padding: 20px;
-}
-.designer-profile-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.designer-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-.designer-avatar {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-.designer-details h4 {
-    margin: 0 0 5px 0;
-    font-size: 1.1em;
-}
-.designer-details p {
-    margin: 0;
-    color: var(--cinza-texto);
-    font-size: 0.9em;
-}
-.designer-actions {
-    display: flex;
-    gap: 10px;
-}
-.btn-like, .btn-dislike {
-    background-color: #f0f2f5;
-    border: 1px solid #dcdfe3;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    font-size: 1.2em;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.btn-like:hover { background-color: #e0f0ff; border-color: #b3d7ff; }
-.btn-dislike:hover { background-color: #ffe0e0; border-color: #ffb3b3; }
+/* --- ESTILOS DO PERFIL DO DESIGNER (REMOVIDOS) --- */
 
 /* --- BOTÃO VER ATENDIMENTO --- */
 .btn-ver-atendimento {
@@ -200,4 +153,62 @@
     background-color: #95a5a6;
     opacity: 0.7;
     cursor: not-allowed;
+}
+
+/* --- BOTÃO E MODAL DE AVALIAÇÃO --- */
+.avaliacao-container {
+    margin-top: 30px;
+    text-align: center;
+}
+.btn-avaliacao-abrir {
+    background-color: #f0f2f5;
+    color: var(--texto-escuro);
+    border: 1px solid #dcdfe3;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.btn-avaliacao-abrir:hover {
+    background-color: #e4e6eb;
+    border-color: #ccc;
+}
+.avaliacao-opcoes {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
+.btn-avaliacao {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    border: 2px solid var(--borda);
+    border-radius: 12px;
+    background-color: var(--fundo-pagina);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.btn-avaliacao:hover {
+    transform: translateY(-3px);
+    border-color: #ccc;
+}
+.btn-avaliacao .icone-avaliacao {
+    font-size: 2.5rem;
+    transition: transform 0.2s ease;
+}
+.btn-avaliacao:hover .icone-avaliacao {
+    transform: scale(1.1);
+}
+.btn-avaliacao.like.active {
+    border-color: var(--sucesso);
+    background-color: #f0fff4;
+}
+.btn-avaliacao.dislike.active {
+    border-color: var(--erro);
+    background-color: #fff0f1;
 }

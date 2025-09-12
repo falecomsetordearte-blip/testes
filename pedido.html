@@ -52,26 +52,7 @@
 
                     <div class="detalhe-layout">
                         <div class="detalhe-col-principal">
-                            <!-- Módulo de Perfil do Designer -->
-                            <div class="designer-profile">
-                                <div class="designer-profile-content">
-                                    <div class="designer-info">
-                                        <img src="https://via.placeholder.com/60x60/3498db/ffffff?text=D" alt="Avatar do Designer" class="designer-avatar">
-                                        <div class="designer-details">
-                                            <h4>Designer Responsável</h4>
-                                            <p>Especialista em Design Gráfico</p>
-                                        </div>
-                                    </div>
-                                    <div class="designer-actions">
-                                        <button class="btn-like" title="Curtir Designer">
-                                            👍
-                                        </button>
-                                        <button class="btn-dislike" title="Não Curtir Designer">
-                                            👎
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                            <!-- Módulo de Perfil do Designer REMOVIDO -->
                             
                             <div class="card-detalhe">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -121,7 +102,12 @@
                     </div>
                 </div>
 
-                <!-- 2. O botão de cancelar agora está fora do wrapper, seguro contra erros de carregamento -->
+                <!-- ADICIONADO: Contêiner para o novo botão de avaliação -->
+                <div class="avaliacao-container">
+                    <button id="btn-abrir-avaliacao" class="btn-avaliacao-abrir">Avaliar Designer</button>
+                </div>
+
+                <!-- O botão de cancelar agora está fora do wrapper, seguro contra erros de carregamento -->
                 <div class="cancelar-container">
                     <button id="btn-cancelar" class="btn-cancelar">Cancelar Pedido</button>
                 </div>
@@ -155,30 +141,38 @@
     </div>
 </div>
 
-<!-- Modal de Feedback -->
-<div class="feedback-modal" id="feedback-modal">
-    <div class="feedback-modal-content">
-        <div class="feedback-modal-header">
-            <h3>Avalie o Designer</h3>
-            <button class="feedback-close" id="feedback-close">×</button>
+<!-- ADICIONADO: Novo Modal de Avaliação -->
+<div class="modal-overlay" id="modal-avaliacao-designer">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Como foi sua experiência?</h3>
+            <button class="close-modal" title="Fechar">×</button>
         </div>
-        <div class="feedback-type-indicator" id="feedback-type-indicator">
-            <span id="feedback-type-icon"></span>
-            <span id="feedback-type-text"></span>
-        </div>
-        <form class="feedback-form" id="feedback-form">
-            <textarea id="feedback-text" placeholder="Conte-nos sobre sua experiência com este designer (opcional)..." maxlength="500"></textarea>
-            <div class="feedback-checkbox-container">
-                <input type="checkbox" id="dont-show-again">
-                <label for="dont-show-again">Não mostrar novamente</label>
+        <form id="form-avaliacao">
+            <div class="modal-body">
+                <p style="text-align: center; margin-top: 0; color: #555;">Selecione uma opção para avaliar o designer deste pedido.</p>
+                <div class="avaliacao-opcoes">
+                    <button type="button" class="btn-avaliacao dislike" data-avaliacao="negativa">
+                        <span class="icone-avaliacao">👎</span>
+                        <span>Negativa</span>
+                    </button>
+                    <button type="button" class="btn-avaliacao like" data-avaliacao="positiva">
+                        <span class="icone-avaliacao">👍</span>
+                        <span>Positiva</span>
+                    </button>
+                </div>
+                <div class="form-group" style="margin-top: 20px;">
+                    <label for="avaliacao-comentario">Deixe um comentário (opcional):</label>
+                    <textarea id="avaliacao-comentario" rows="4" placeholder="Sua opinião nos ajuda a melhorar..."></textarea>
+                </div>
             </div>
-            <div class="feedback-buttons">
-                <button type="button" class="feedback-btn feedback-btn-cancel" id="feedback-cancel">Cancelar</button>
-                <button type="submit" class="feedback-btn feedback-btn-submit">Enviar Avaliação</button>
+            <div class="modal-footer">
+                <button type="submit" class="btn-submit">Enviar Avaliação</button>
             </div>
         </form>
     </div>
 </div>
+
 
     <script src="script.js?v=1.1"></script>
     <script src="detalhe-pedido.js?v=1.1"></script>

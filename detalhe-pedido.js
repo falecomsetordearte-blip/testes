@@ -19,8 +19,8 @@
             const arquivosBox = document.getElementById('arquivos-box');
             const btnMarcarVerificado = document.getElementById('btn-marcar-verificado');
             const btnCancelar = document.getElementById('btn-cancelar');
-            const designerAvatarEl = document.querySelector('.designer-avatar');
-            const designerNomeEl = document.querySelector('.designer-details h4');
+            // const designerAvatarEl = document.querySelector('.designer-avatar'); // Removido
+            // const designerNomeEl = document.querySelector('.designer-details h4'); // Removido
             const formMensagem = document.getElementById('form-mensagem');
             const inputMensagem = document.getElementById('input-mensagem');
             const btnEnviar = document.getElementById('btn-enviar-mensagem');
@@ -68,11 +68,7 @@
                         btnVerAtendimento.target = '_blank';
                         btnVerAtendimento.classList.remove('disabled');
                     }
-                    // Atualiza dinamicamente as informações do designer
-                    if (pedido.designerInfo) {
-                        if (designerAvatarEl) designerAvatarEl.src = pedido.designerInfo.avatar;
-                        if (designerNomeEl) designerNomeEl.textContent = pedido.designerInfo.nome;
-                    }
+                    
                     // --- INÍCIO DO BLOCO DE DEPURAÇÃO DE STATUS ---
                     console.log(`[DEBUG] Verificando STAGE_ID recebido: '${pedido.STAGE_ID}' (Tipo: ${typeof pedido.STAGE_ID})`);
 
@@ -285,15 +281,68 @@
                     }
                 });
             }
+
+            // --- LÓGICA DO NOVO MODAL DE AVALIAÇÃO ---
+            const btnAbrirAvaliacao = document.getElementById('btn-abrir-avaliacao');
+            const modalAvaliacao = document.getElementById('modal-avaliacao-designer');
+            const formAvaliacao = document.getElementById('form-avaliacao');
+            const btnLike = modalAvaliacao.querySelector('.btn-avaliacao.like');
+            const btnDislike = modalAvaliacao.querySelector('.btn-avaliacao.dislike');
+            const comentarioInput = document.getElementById('avaliacao-comentario');
+            let avaliacaoSelecionada = null;
+
+            // Abrir o modal
+            btnAbrirAvaliacao.addEventListener('click', () => {
+                modalAvaliacao.classList.add('active');
+            });
+
+            // Fechar o modal
+            modalAvaliacao.querySelector('.close-modal').addEventListener('click', () => {
+                modalAvaliacao.classList.remove('active');
+            });
+
+            // Selecionar avaliação
+            btnLike.addEventListener('click', () => {
+                avaliacaoSelecionada = 'positiva';
+                btnLike.classList.add('active');
+                btnDislike.classList.remove('active');
+            });
+
+            btnDislike.addEventListener('click', () => {
+                avaliacaoSelecionada = 'negativa';
+                btnDislike.classList.add('active');
+                btnLike.classList.remove('active');
+            });
+
+            // Enviar formulário
+            formAvaliacao.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (!avaliacaoSelecionada) {
+                    alert('Por favor, selecione uma avaliação (positiva ou negativa).');
+                    return;
+                }
+
+                const comentario = comentarioInput.value.trim();
+
+                console.log('--- AVALIAÇÃO ENVIADA ---');
+                console.log('Pedido ID:', pedidoId);
+                console.log('Avaliação:', avaliacaoSelecionada);
+                console.log('Comentário:', comentario);
+                // Futuramente, aqui virá a chamada para a API
+                // await fetch('/api/enviarAvaliacao', { ... });
+
+                alert('Obrigado pela sua avaliação!');
+                
+                // Limpar e fechar o modal
+                avaliacaoSelecionada = null;
+                btnLike.classList.remove('active');
+                btnDislike.classList.remove('active');
+                comentarioInput.value = '';
+                modalAvaliacao.classList.remove('active');
+            });
+
         } catch (e) {
             console.error("Ocorreu um erro inesperado no script de detalhe do pedido:", e);
         }
     });
 })();
-
-
-
-
-
-
-
