@@ -13,7 +13,7 @@ const FIELD_CONTATO_CLIENTE = 'UF_CRM_1749481565243';
 const FIELD_LINK_ATENDIMENTO = 'UF_CRM_1752712769666';
 const FIELD_MEDIDAS = 'UF_CRM_1727464924690';
 const FIELD_LINK_ARQUIVO_FINAL = 'UF_CRM_1748277308731';
-const FIELD_REVISAO_SOLICITADA = 'UF_CRM_1757765731136'; // <-- CAMPO ADICIONADO
+const FIELD_REVISAO_SOLICITADA = 'UF_CRM_1757765731136';
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
@@ -27,24 +27,24 @@ module.exports = async (req, res) => {
         if (impressoraFilter) filterParams[FIELD_IMPRESSORA] = impressoraFilter;
         if (materialFilter) filterParams[FIELD_MATERIAL] = materialFilter;
 
+        // 1. Buscar a lista de negócios
         const response = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
             filter: filterParams,
             order: { 'ID': 'DESC' },
             select: [
                 'ID', 'TITLE', 'STAGE_ID', 'ASSIGNED_BY_ID', 'DATE_CREATE',
-                FIELD_PRAZO_IMPRESSAO_MINUTOS,
-                FIELD_STATUS_IMPRESSAO,
-                FIELD_NOME_CLIENTE,
-                FIELD_CONTATO_CLIENTE,
-                FIELD_LINK_ATENDIMENTO,
-                FIELD_MEDIDAS,
-                FIELD_LINK_ARQUIVO_FINAL,
-                FIELD_REVISAO_SOLICITADA // <-- CAMPO ADICIONADO
+                FIELD_PRAZO_IMPRESSAO_MINUTOS, FIELD_STATUS_IMPRESSAO,
+                FIELD_NOME_CLIENTE, FIELD_CONTATO_CLIENTE, FIELD_LINK_ATENDIMENTO,
+                FIELD_MEDIDAS, FIELD_LINK_ARQUIVO_FINAL, FIELD_REVISAO_SOLICITADA
             ]
         });
 
         const deals = response.data.result || [];
+        if (deals.length === 0) {
+            return res.status(200).json({ deals: [] });
+        }
         
+        // 2. Montar um lote de comandos para buscar o histórico de chat de todos os negócios de uma vez
         const chatCommands = deals.map(deal => 
             `crm.timeline.comment.list?` + new URLSearchParams({
                 filter: { ENTITY_ID: deal.ID, ENTITY_TYPE: "deal" },
@@ -53,17 +53,21 @@ module.exports = async (req, res) => {
         );
         
         let chatHistories = {};
-        if (chatCommands.length > 0) {
-            const chatResponse = await axios.post(`${BITRIX24_API_URL}batch`, { cmd: chatCommands });
-            const chatResults = chatResponse.data.result.result;
-            deals.forEach((deal, index) => {
-                chatHistories[deal.ID] = (chatResults[index] || []).map(comment => ({
-                    texto: comment.COMMENT,
-                    remetente: comment.AUTHOR_ID == 1 ? 'cliente' : 'designer'
-                }));
-            });
-        }
+        const chatResponse = await axios.post(`${BITRIX24_API_URL}batch`, { cmd: chatCommands });
+        const chatResults = chatResponse.data.result.result;
+
+        // Mapeia os resultados do lote de volta para cada negócio
+        deals.forEach((deal, index) => {
+            // O Bitrix retorna um array vazio se não houver comentários
+            const comments = chatResults[index] || []; 
+            chatHistories[deal.ID] = comments.map(comment => ({
+                texto: comment.COMMENT,
+                // Assumindo que ID 1 é o sistema/operador e outros são o designer/cliente
+                remetente: comment.AUTHOR_ID == 1 ? 'operador' : 'designer'
+            }));
+        });
         
+        // 3. Adicionar o histórico de chat a cada objeto de negócio
         const dealsWithChat = deals.map(deal => ({
             ...deal,
             historicoMensagens: chatHistories[deal.ID] || []

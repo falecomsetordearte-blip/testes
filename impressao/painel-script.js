@@ -2,7 +2,6 @@
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
         
-        // --- CONSTANTES DE CONFIGURAÇÃO ---
         const STATUS_IMPRESSAO_FIELD = 'UF_CRM_1757756651931';
         const NOME_CLIENTE_FIELD = 'UF_CRM_1741273407628';
         const CONTATO_CLIENTE_FIELD = 'UF_CRM_1749481565243';
@@ -24,9 +23,6 @@
             '1439': { nome: 'Cliente', cor: '#f1c40f' },
             '1441': { nome: 'Conferida', cor: '#2ecc71' }
         };
-
-        const sessionToken = localStorage.getItem('sessionToken');
-        if (!sessionToken) { window.location.href = '../login.html'; return; }
 
         const impressoraFilterEl = document.getElementById('impressora-filter');
         const materialFilterEl = document.getElementById('material-filter');
@@ -178,7 +174,9 @@
 
             const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
-            const revisaoSolicitada = deal[REVISAO_SOLICITADA_FIELD] === true || deal[REVISAO_SOLICITADA_FIELD] === '1';
+            
+            // Bitrix retorna '1' para sim e '0' para não em campos Sim/Não
+            const revisaoSolicitada = deal[REVISAO_SOLICITADA_FIELD] === '1';
             
             let dropdownItemsHtml = '';
             if (linkArquivo) { dropdownItemsHtml += `<a href="${linkArquivo}" target="_blank">Baixar Arquivo</a>`; }
@@ -242,8 +240,9 @@
                 const chatContainer = document.getElementById('mensagens-container');
                 if (deal.historicoMensagens && deal.historicoMensagens.length > 0) {
                     chatContainer.innerHTML = deal.historicoMensagens.map(msg => {
-                        const classe = msg.remetente === 'cliente' ? 'mensagem-cliente' : 'designer';
-                        return `<div class="mensagem ${classe}">${msg.texto.replace(/^\[Mensagem do Cliente\]\n-+\n/, '')}</div>`;
+                        const classe = msg.remetente === 'operador' ? 'mensagem-designer' : 'mensagem-cliente';
+                        const textoLimpo = msg.texto.replace(/^\[.+?\]\n-+\n/, '');
+                        return `<div class="mensagem ${classe}">${textoLimpo}</div>`;
                     }).join('');
                     chatContainer.scrollTop = chatContainer.scrollHeight;
                 } else {
@@ -259,8 +258,7 @@
             attachStatusStepListeners(deal.ID);
             attachDropdownListener();
             attachRevisionListener(deal.ID);
-            
-            const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === true || deal[REVISAO_SOLICITADA_FIELD] === '1';
+            const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === '1';
             if (isRevisionActive) {
                 attachChatListeners(deal.ID);
             }
@@ -279,11 +277,9 @@
         function attachRevisionListener(dealId) {
             const requestRevisionBtn = modalBody.querySelector('button[data-action="request-revision"]');
             if (!requestRevisionBtn) return;
-
             requestRevisionBtn.addEventListener('click', async () => {
                 const container = requestRevisionBtn.closest('.revision-area');
                 container.innerHTML = '<div class="spinner"></div>';
-
                 try {
                     await fetch('/api/impressao/requestRevision', {
                         method: 'POST',
@@ -291,7 +287,7 @@
                         body: JSON.stringify({ dealId })
                     });
                     const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
-                    if (dealIndex > -1) { allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = true; }
+                    if (dealIndex > -1) { allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = '1'; }
                     openDetailsModal(dealId);
                 } catch (error) {
                     alert(error.message);
@@ -322,8 +318,8 @@
                         });
                         input.value = '';
                         const div = document.createElement('div');
-                        div.className = 'mensagem mensagem-designer';
-                        div.textContent = mensagem.replace(/^\[Mensagem do Painel de Impressão\]\n-+\n/, '');
+                        div.className = 'mensagem mensagem-designer'; // Mensagem do operador
+                        div.textContent = mensagem;
                         if(container.querySelector('.info-text')) container.innerHTML = '';
                         container.appendChild(div);
                         container.scrollTop = container.scrollHeight;
@@ -341,10 +337,8 @@
             if (approveBtn) {
                 approveBtn.addEventListener('click', async () => {
                     if (!confirm('Tem certeza que deseja aprovar este arquivo? Esta ação irá processar o pagamento do designer e finalizar o pedido.')) return;
-
                     approveBtn.disabled = true;
                     approveBtn.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0 auto;"></div>';
-
                     try {
                         const response = await fetch('/api/impressao/approveFile', {
                             method: 'POST',
@@ -353,7 +347,6 @@
                         });
                         const data = await response.json();
                         if (!response.ok) throw new Error(data.message);
-                        
                         alert('Arquivo aprovado com sucesso!');
                         modal.classList.remove('active');
                         carregarPedidosDeImpressao();
