@@ -9,7 +9,7 @@
         const LINK_ATENDIMENTO_FIELD = 'UF_CRM_1752712769666';
         const MEDIDAS_FIELD = 'UF_CRM_1727464924690';
         const LINK_ARQUIVO_FINAL_FIELD = 'UF_CRM_1748277308731';
-        const REVISAO_SOLICITADA_FIELD = 'UF_CRM_1757765731136';
+        const REVISAO_SOLICITADA_FIELD = 'UF_CRM_1757765731136'; // <-- Constante adicionada para clareza
 
         const STATUS_MAP = {
             '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao', corFundo: 'rgba(46, 204, 113, 0.1)' },
@@ -176,7 +176,7 @@
             const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
             
-            // Bitrix retorna '1' para sim e '0' para não (ou vazio).
+            // Bitrix retorna '1' para sim e '0' ou vazio para não.
             const revisaoSolicitada = deal[REVISAO_SOLICITADA_FIELD] === '1';
             
             let dropdownItemsHtml = '';
@@ -184,6 +184,7 @@
             if (linkAtendimento) { dropdownItemsHtml += `<a href="${linkAtendimento}" target="_blank">Ver Atendimento</a>`; }
             if (dropdownItemsHtml === '') { dropdownItemsHtml = `<span style="padding: 12px 16px; display: block; color: #999;">Nenhuma ação disponível</span>`; }
             
+            // --- INÍCIO DA LÓGICA CONDICIONAL ---
             let mainColumnHtml = '';
             if (revisaoSolicitada) {
                 // Se a revisão foi solicitada, mostra o chat.
@@ -191,7 +192,7 @@
                     <div class="card-detalhe">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <h3>Conversa de Revisão</h3>
-                            <button class="btn-approve-file" data-action="approve-file">
+                            <button class="btn-approve-file" data-action="approve-file" title="Aprovar o arquivo, processar pagamento do designer e finalizar o pedido.">
                                 <i class="fas fa-check"></i> Arquivo Aprovado
                             </button>
                         </div>
@@ -206,7 +207,7 @@
                         </div>
                     </div>`;
             } else {
-                // Se a revisão NÃO foi solicitada, mostra o botão sutil.
+                // Se a revisão NÃO foi solicitada, mostra o botão para solicitar.
                 mainColumnHtml = `
                     <div class="card-detalhe">
                         <div class="revision-area">
@@ -214,6 +215,7 @@
                         </div>
                     </div>`;
             }
+            // --- FIM DA LÓGICA CONDICIONAL ---
 
             modalBody.innerHTML = `
                 <div class="steps-container">${stepsHtml}</div>
@@ -239,12 +241,14 @@
                 </div>
             `;
             
-            // Preenche o histórico de mensagens se o chat estiver visível
+            // Preenche o histórico de mensagens APENAS se o chat estiver visível
             if (revisaoSolicitada) {
                 const chatContainer = document.getElementById('mensagens-container');
+                // A API getDeals já trás o historicoMensagens
                 if (deal.historicoMensagens && deal.historicoMensagens.length > 0) {
                     chatContainer.innerHTML = deal.historicoMensagens.map(msg => {
                         const classe = msg.remetente === 'operador' ? 'mensagem-designer' : 'mensagem-cliente';
+                        // Remove o cabeçalho automático do Bitrix para uma aparência mais limpa
                         const textoLimpo = msg.texto.replace(/^\[.+?\]\n-+\n/, '');
                         return `<div class="mensagem ${classe}">${textoLimpo}</div>`;
                     }).join('');
@@ -263,9 +267,12 @@
             attachDropdownListener();
             
             const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === '1';
+            
             if (isRevisionActive) {
+                // Se a revisão está ativa, anexa os listeners do chat e do botão de aprovar
                 attachChatListeners(deal.ID);
             } else {
+                // Se não, anexa o listener do botão de solicitar revisão
                 attachRevisionListener(deal.ID);
             }
         }
@@ -286,20 +293,32 @@
 
             requestRevisionBtn.addEventListener('click', async () => {
                 const container = requestRevisionBtn.closest('.revision-area');
-                container.innerHTML = '<div class="spinner"></div>';
+                container.innerHTML = '<div class="loading-pedidos"><div class="spinner"></div></div>'; // Feedback visual
                 try {
-                    await fetch('/api/impressao/requestRevision', {
+                    // Chama a nova API para marcar o campo de revisão como 'Sim'
+                    const response = await fetch('/api/impressao/requestRevision', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ dealId })
                     });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Falha ao solicitar revisão.');
+                    }
+
+                    // Atualiza o dado localmente para evitar uma recarga completa da página
                     const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
                     if (dealIndex > -1) {
                         allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = '1';
                     }
+
+                    // Recarrega o modal para refletir a mudança instantaneamente
                     openDetailsModal(dealId);
+
                 } catch (error) {
-                    alert(error.message);
+                    alert('Erro: ' + error.message);
+                    // Em caso de erro, recarrega o modal para o estado original
                     openDetailsModal(dealId);
                 }
             });
