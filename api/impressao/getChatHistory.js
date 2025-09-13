@@ -12,8 +12,11 @@ module.exports = async (req, res) => {
         if (!dealId) {
             return res.status(400).json({ message: 'ID do Negócio é obrigatório.' });
         }
+        
+        // --- LOG DE DEPURAÇÃO 1 ---
+        console.log(`[getChatHistory] Iniciando busca de comentários para o dealId: ${dealId}`);
 
-        // 1. Faz a chamada para buscar a lista de comentários de um negócio específico
+        // 1. Faz a chamada para buscar a lista de comentários
         const response = await axios.post(`${BITRIX24_API_URL}crm.timeline.comment.list`, {
             filter: {
                 ENTITY_ID: dealId,
@@ -22,9 +25,12 @@ module.exports = async (req, res) => {
             order: { "CREATED": "ASC" }
         });
 
+        // --- LOG DE DEPURAÇÃO 2 ---
+        console.log(`[getChatHistory] Resposta recebida da API Bitrix24 para o dealId ${dealId}:`, JSON.stringify(response.data, null, 2));
+
         const result = response.data.result || [];
         
-        // 2. Garante que os comentários sejam extraídos corretamente, mesmo se vierem em formatos diferentes da API
+        // 2. Garante que os comentários sejam extraídos corretamente
         let comments = [];
         if (result && Array.isArray(result.items)) {
             comments = result.items;
@@ -32,18 +38,20 @@ module.exports = async (req, res) => {
             comments = result;
         }
         
-        // 3. Formata as mensagens para o formato que o frontend espera
+        // 3. Formata as mensagens
         const historicoMensagens = comments.map(comment => ({
             texto: comment.COMMENT,
-            // Assumindo que o usuário com ID 1 é o operador do sistema
             remetente: comment.AUTHOR_ID == 1 ? 'operador' : 'cliente'
         }));
         
-        // 4. Envia o histórico de mensagens formatado de volta para o frontend
+        // --- LOG DE DEPURAÇÃO 3 ---
+        console.log(`[getChatHistory] Enviando ${historicoMensagens.length} mensagens formatadas para o frontend.`);
+
+        // 4. Envia o histórico de mensagens formatado
         return res.status(200).json({ messages: historicoMensagens });
 
     } catch (error) {
-        console.error(`Erro ao buscar histórico do negócio ${req.body.dealId}:`, error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
+        console.error(`[getChatHistory] Erro ao buscar histórico do negócio ${req.body.dealId}:`, error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
         return res.status(500).json({ message: 'Ocorreu um erro ao buscar o histórico de mensagens.' });
     }
 };

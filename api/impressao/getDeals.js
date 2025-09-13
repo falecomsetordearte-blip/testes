@@ -27,6 +27,9 @@ module.exports = async (req, res) => {
         if (impressoraFilter) filterParams[FIELD_IMPRESSORA] = impressoraFilter;
         if (materialFilter) filterParams[FIELD_MATERIAL] = materialFilter;
 
+        // --- LOG DE DEPURAÇÃO 1 ---
+        console.log('[getDeals] Iniciando busca de negócios com os filtros:', JSON.stringify(filterParams));
+
         // 1. Buscar a lista de negócios (sem o histórico de comentários)
         const response = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
             filter: filterParams,
@@ -41,11 +44,14 @@ module.exports = async (req, res) => {
 
         const deals = response.data.result || [];
         
+        // --- LOG DE DEPURAÇÃO 2 ---
+        console.log(`[getDeals] ${deals.length} negócios encontrados. Enviando para o frontend.`);
+        
         // 2. Envia a lista de negócios diretamente
         return res.status(200).json({ deals: deals });
 
     } catch (error) {
-        console.error('Erro ao buscar negócios de impressão:', error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
+        console.error('[getDeals] Erro ao buscar negócios de impressão:', error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
         return res.status(500).json({ message: 'Ocorreu um erro ao buscar os dados.' });
     }
 };
