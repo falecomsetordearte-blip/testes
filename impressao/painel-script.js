@@ -9,6 +9,7 @@
         const LINK_ATENDIMENTO_FIELD = 'UF_CRM_1752712769666';
         const MEDIDAS_FIELD = 'UF_CRM_1727464924690';
         const LINK_ARQUIVO_FINAL_FIELD = 'UF_CRM_1748277308731';
+        const REVISAO_SOLICITADA_FIELD = 'UF_CRM_1757765731136';
 
         const STATUS_MAP = {
             '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao', corFundo: 'rgba(46, 204, 113, 0.1)' },
@@ -23,9 +24,6 @@
             '1439': { nome: 'Cliente', cor: '#f1c40f' },
             '1441': { nome: 'Conferida', cor: '#2ecc71' }
         };
-
-        const sessionToken = localStorage.getItem('sessionToken');
-        if (!sessionToken) { window.location.href = '../login.html'; return; }
 
         const impressoraFilterEl = document.getElementById('impressora-filter');
         const materialFilterEl = document.getElementById('material-filter');
@@ -75,6 +73,11 @@
             .actions-dropdown-content a, .actions-dropdown-content button { color: var(--texto-escuro); padding: 12px 16px; text-decoration: none; display: block; text-align: left; background: none; border: none; width: 100%; cursor: pointer; }
             .actions-dropdown-content a:hover, .actions-dropdown-content button:hover { background-color: #f1f1f1; }
             .actions-dropdown.active .actions-dropdown-content { display: block; }
+            #chat-revisao-container { padding-top: 15px; }
+            .revision-area { text-align: center; padding: 40px 20px; }
+            .btn-request-revision { background: none; border: 2px dashed #d1d5db; color: var(--cinza-texto); padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.3s ease; }
+            .btn-request-revision:hover { border-color: var(--azul-principal); background-color: rgba(56, 169, 244, 0.05); color: var(--azul-principal); }
+            .btn-approve-file { background-color: var(--sucesso); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
         `;
         document.head.appendChild(style);
 
@@ -149,7 +152,16 @@
         
         function openDetailsModal(dealId) {
             const deal = allDealsData.find(d => d.ID == dealId);
-            if (!deal) return;
+            if (!deal) {
+                console.error(`Não foi possível encontrar dados para o negócio com ID: ${dealId}`);
+                return;
+            }
+            
+            // --- PONTO DE DIAGNÓSTICO ---
+            // Verifique o console do navegador (F12) para ver os dados exatos recebidos pela API.
+            // Expanda o objeto e confira a propriedade 'historicoMensagens'.
+            console.log('Dados do negócio para o modal:', deal);
+            // --- FIM DO PONTO DE DIAGNÓSTICO ---
 
             modalTitle.textContent = `Detalhes do Pedido #${deal.ID} - ${deal.TITLE}`;
             
@@ -169,28 +181,50 @@
             const medidasId = deal[MEDIDAS_FIELD];
             const medidaInfo = MEDIDAS_MAP[medidasId];
             let medidasHtml = '---';
-            if (medidaInfo) {
-                medidasHtml = `<span class="tag-medidas" style="background-color: ${medidaInfo.cor};">${medidaInfo.nome}</span>`;
-            }
+            if (medidaInfo) { medidasHtml = `<span class="tag-medidas" style="background-color: ${medidaInfo.cor};">${medidaInfo.nome}</span>`; }
 
             const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
+            const revisaoSolicitada = deal[REVISAO_SOLICITADA_FIELD] === '1';
+            
             let dropdownItemsHtml = '';
             if (linkArquivo) { dropdownItemsHtml += `<a href="${linkArquivo}" target="_blank">Baixar Arquivo</a>`; }
             if (linkAtendimento) { dropdownItemsHtml += `<a href="${linkAtendimento}" target="_blank">Ver Atendimento</a>`; }
             if (dropdownItemsHtml === '') { dropdownItemsHtml = `<span style="padding: 12px 16px; display: block; color: #999;">Nenhuma ação disponível</span>`; }
+            
+            let mainColumnHtml = '';
+            if (revisaoSolicitada) {
+                mainColumnHtml = `
+                    <div class="card-detalhe">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3>Conversa de Revisão</h3>
+                            <button class="btn-approve-file" data-action="approve-file" title="Aprovar o arquivo, processar pagamento do designer e finalizar o pedido.">
+                                <i class="fas fa-check"></i> Arquivo Aprovado
+                            </button>
+                        </div>
+                        <div id="chat-revisao-container" class="chat-box">
+                            <div id="mensagens-container" style="flex-grow: 1; overflow-y: auto; padding-right: 10px;"></div>
+                            <form id="form-mensagem" class="form-mensagem" style="margin-top: 15px;">
+                                <input type="text" id="input-mensagem" placeholder="Digite sua mensagem..." required>
+                                <button type="submit" id="btn-enviar-mensagem" title="Enviar Mensagem">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+                                </button>
+                            </form>
+                        </div>
+                    </div>`;
+            } else {
+                mainColumnHtml = `
+                    <div class="card-detalhe">
+                        <div class="revision-area">
+                            <button class="btn-request-revision" data-action="request-revision">Solicitar Revisão</button>
+                        </div>
+                    </div>`;
+            }
 
             modalBody.innerHTML = `
                 <div class="steps-container">${stepsHtml}</div>
                 <div class="detalhe-layout">
-                    <!-- Coluna Principal (agora vazia, pronta para o chat) -->
-                    <div class="detalhe-col-principal">
-                        <div class="card-detalhe" id="chat-placeholder">
-                           <!-- O chat de contestação será inserido aqui no futuro -->
-                           <p class="info-text">Área reservada para o chat de contestação.</p>
-                        </div>
-                    </div>
-                    <!-- Coluna Lateral (com as informações e ações) -->
+                    <div class="detalhe-col-principal">${mainColumnHtml}</div>
                     <div class="detalhe-col-lateral">
                         <div class="card-detalhe">
                             <div class="info-item">
@@ -203,26 +237,47 @@
                         </div>
                         <div class="card-detalhe">
                             <h3>Informações do Cliente</h3>
-                            <div class="info-item">
-                                <span class="info-item-label">Nome:</span>
-                                <span>${nomeCliente}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-item-label">Contato:</span>
-                                <span>${contatoCliente}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-item-label">Medidas:</span>
-                                ${medidasHtml}
-                            </div>
+                            <div class="info-item"><span class="info-item-label">Nome:</span><span>${nomeCliente}</span></div>
+                            <div class="info-item"><span class="info-item-label">Contato:</span><span>${contatoCliente}</span></div>
+                            <div class="info-item"><span class="info-item-label">Medidas:</span>${medidasHtml}</div>
                         </div>
                     </div>
                 </div>
             `;
             
+            if (revisaoSolicitada) {
+                const chatContainer = document.getElementById('mensagens-container');
+                // A verificação `deal.historicoMensagens` garante que a propriedade existe
+                // A verificação `deal.historicoMensagens.length > 0` garante que não está vazia
+                if (deal.historicoMensagens && deal.historicoMensagens.length > 0) {
+                    console.log(`Renderizando ${deal.historicoMensagens.length} mensagens.`);
+                    chatContainer.innerHTML = deal.historicoMensagens.map(msg => {
+                        const classe = msg.remetente === 'operador' ? 'mensagem-designer' : 'mensagem-cliente';
+                        const textoLimpo = msg.texto ? msg.texto.replace(/^\[.+?\]\n-+\n/, '') : '';
+                        return `<div class="mensagem ${classe}">${textoLimpo}</div>`;
+                    }).join('');
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                } else {
+                    console.log('Nenhuma mensagem no histórico para renderizar.');
+                    chatContainer.innerHTML = '<p class="info-text">Nenhuma mensagem ainda. Inicie a conversa.</p>';
+                }
+            }
+            
             modal.classList.add('active');
+            attachAllListeners(deal);
+        }
+
+        function attachAllListeners(deal) {
             attachStatusStepListeners(deal.ID);
             attachDropdownListener();
+            
+            const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === '1';
+            
+            if (isRevisionActive) {
+                attachChatListeners(deal.ID);
+            } else {
+                attachRevisionListener(deal.ID);
+            }
         }
 
         function attachDropdownListener() {
@@ -230,13 +285,109 @@
             if (!dropdown) return;
             const toggleButton = dropdown.querySelector('.btn-actions-toggle');
             toggleButton.addEventListener('click', () => { dropdown.classList.toggle('active'); });
-            document.body.addEventListener('click', function(event) {
-                if (!dropdown.contains(event.target)) {
-                    dropdown.classList.remove('active');
-                }
+            document.body.addEventListener('click', (event) => {
+                if (!dropdown.contains(event.target)) { dropdown.classList.remove('active'); }
             }, true);
         }
 
+        function attachRevisionListener(dealId) {
+            const requestRevisionBtn = modalBody.querySelector('button[data-action="request-revision"]');
+            if (!requestRevisionBtn) return;
+
+            requestRevisionBtn.addEventListener('click', async () => {
+                const container = requestRevisionBtn.closest('.revision-area');
+                container.innerHTML = '<div class="loading-pedidos"><div class="spinner"></div></div>';
+                try {
+                    const response = await fetch('/api/impressao/requestRevision', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ dealId })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Falha ao solicitar revisão.');
+                    }
+
+                    const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
+                    if (dealIndex > -1) {
+                        allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = '1';
+                        // Adiciona um array vazio para o histórico, para que o chat possa ser iniciado
+                        if (!allDealsData[dealIndex].historicoMensagens) {
+                            allDealsData[dealIndex].historicoMensagens = [];
+                        }
+                    }
+                    openDetailsModal(dealId);
+                } catch (error) {
+                    alert('Erro ao solicitar revisão: ' + error.message);
+                    openDetailsModal(dealId);
+                }
+            });
+        }
+        
+        function attachChatListeners(dealId) {
+            const formMensagem = document.getElementById('form-mensagem');
+            if (formMensagem) {
+                formMensagem.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const input = formMensagem.querySelector('#input-mensagem');
+                    const btn = formMensagem.querySelector('#btn-enviar-mensagem');
+                    const container = document.getElementById('mensagens-container');
+                    const mensagem = input.value.trim();
+                    if (!mensagem) return;
+                    
+                    input.disabled = true;
+                    btn.disabled = true;
+                    
+                    try {
+                        await fetch('/api/sendMessage', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ dealId, message: mensagem })
+                        });
+                        input.value = '';
+                        const div = document.createElement('div');
+                        div.className = 'mensagem mensagem-designer'; // Mensagem do operador
+                        div.textContent = mensagem;
+                        if(container.querySelector('.info-text')) container.innerHTML = '';
+                        container.appendChild(div);
+                        container.scrollTop = container.scrollHeight;
+                    } catch (error) {
+                        alert('Erro ao enviar mensagem: ' + (error.message || 'Tente novamente.'));
+                    } finally {
+                        input.disabled = false;
+                        btn.disabled = false;
+                        input.focus();
+                    }
+                });
+            }
+
+            const approveBtn = document.querySelector('button[data-action="approve-file"]');
+            if (approveBtn) {
+                approveBtn.addEventListener('click', async () => {
+                    if (!confirm('Tem certeza que deseja aprovar este arquivo? Esta ação irá processar o pagamento do designer e finalizar o pedido.')) return;
+                    approveBtn.disabled = true;
+                    approveBtn.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0 auto;"></div>';
+                    try {
+                        const response = await fetch('/api/impressao/approveFile', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ dealId })
+                        });
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.message);
+                        alert('Arquivo aprovado com sucesso!');
+                        modal.classList.remove('active');
+                        carregarPedidosDeImpressao();
+                    } catch (error) {
+                        alert(`Erro ao aprovar arquivo: ${error.message}`);
+                        approveBtn.disabled = false;
+                        approveBtn.innerHTML = '<i class="fas fa-check"></i> Arquivo Aprovado';
+                    }
+                });
+            }
+        }
+        
         function attachStatusStepListeners(dealId) {
             const container = document.querySelector('.steps-container');
             container.addEventListener('click', async (event) => {
@@ -253,7 +404,6 @@
                     });
                     const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
                     if (dealIndex > -1) { allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = statusId; }
-                    
                     const newStatusIndex = STATUS_ORDER.indexOf(statusId);
                     steps.forEach((s, index) => {
                         const currentStatusId = s.dataset.statusId;
@@ -262,7 +412,6 @@
                         if (index < newStatusIndex) s.classList.add('completed');
                         else if (index === newStatusIndex) s.classList.add('active', statusInfo.classe);
                     });
-                    
                     const card = document.querySelector(`.kanban-card[data-deal-id-card="${dealId}"]`);
                     if (card) {
                         card.className = 'kanban-card';
@@ -270,7 +419,7 @@
                         if (newStatusInfo) card.classList.add('status-' + newStatusInfo.classe);
                     }
                 } catch (error) {
-                    alert(error.message);
+                    alert('Erro ao atualizar status: ' + error.message);
                 } finally {
                     container.style.pointerEvents = 'auto';
                 }
