@@ -38,13 +38,15 @@ module.exports = async (req, res) => {
         if (deal.COMPANY_ID != user.COMPANY_ID) { return res.status(403).json({ message: 'Acesso negado a este pedido.' }); }
         if (deal[FIELD_JA_AVALIADO] === true || deal[FIELD_JA_AVALIADO] === '1') { return res.status(409).json({ message: 'Este pedido já foi avaliado.' }); }
 
-        const designerId = deal.ASSIGNED_BY_ID;
-        if (!designerId) { throw new Error('O pedido não tem um designer responsável (ASSIGNED_BY_ID está vazio).'); }
+        // --- CORREÇÃO APLICADA AQUI ---
+        // Convertemos o ID do designer de string para inteiro.
+        const designerId = parseInt(deal.ASSIGNED_BY_ID, 10);
+        
+        if (!designerId) { throw new Error('O pedido não tem um designer responsável (ASSIGNED_BY_ID está vazio ou inválido).'); }
 
         // --- ETAPA 2: ATUALIZAR A PONTUAÇÃO NO NEON DB USANDO PRISMA ---
-        // Usamos as operações atômicas 'increment' e 'decrement' do Prisma, que são seguras.
         await prisma.designerFinanceiro.update({
-            where: { designer_id: designerId },
+            where: { designer_id: designerId }, // Agora 'designerId' é um número
             data: {
                 pontuacao: {
                     [avaliacao === 'positiva' ? 'increment' : 'decrement']: 1
@@ -67,9 +69,8 @@ module.exports = async (req, res) => {
         return res.status(200).json({ message: 'Avaliação enviada com sucesso!' });
 
     } catch (error) {
-        // Se ocorrer um erro, especialmente no Prisma, logamos para depuração.
         console.error('Erro ao submeter avaliação:', error);
-        if (error.code === 'P2025') { // Código de erro do Prisma para "registro não encontrado"
+        if (error.code === 'P2025') { 
             return res.status(404).json({ message: 'O registro financeiro para este designer não foi encontrado no banco de dados.' });
         }
         return res.status(500).json({ message: 'Ocorreu um erro interno ao processar sua avaliação.' });
