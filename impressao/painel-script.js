@@ -159,7 +159,7 @@
                                 ${arquivoHtml}
                             </div>
                             <div class="info-item">
-                                <span class="info-item-label">Atendimento:</span>
+                                <span class="info-item-label"></span>
                                 ${atendimentoHtml}
                             </div>
                         </div>
