@@ -41,7 +41,6 @@
 
         const style = document.createElement('style');
         style.textContent = `
-            /* ... (estilos anteriores) ... */
             .steps-container { display: flex; padding: 20px 10px; margin-bottom: 20px; border-bottom: 1px solid var(--borda); }
             .step { flex: 1; text-align: center; position: relative; color: #6c757d; font-weight: 600; font-size: 14px; padding: 10px 5px; background-color: #f8f9fa; border: 1px solid #dee2e6; cursor: pointer; transition: all 0.2s ease-in-out; }
             .step:first-child { border-radius: 6px 0 0 6px; }
@@ -78,14 +77,82 @@
             .actions-dropdown-content a:hover, .actions-dropdown-content button:hover { background-color: #f1f1f1; }
             .actions-dropdown.active .actions-dropdown-content { display: block; }
             #chat-revisao-container { padding-top: 15px; }
+            .revision-area { text-align: center; padding: 40px 20px; }
+            .btn-request-revision { background: none; border: 2px dashed #d1d5db; color: var(--cinza-texto); padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.3s ease; }
+            .btn-request-revision:hover { border-color: var(--azul-principal); background-color: rgba(56, 169, 244, 0.05); color: var(--azul-principal); }
+            .btn-approve-file { background-color: var(--sucesso); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
         `;
         document.head.appendChild(style);
 
-        async function carregarOpcoesDeFiltro() { /* ...código sem alterações... */ }
-        async function carregarPedidosDeImpressao() { /* ...código sem alterações... */ }
-        function organizarPedidosNasColunas(deals) { /* ...código sem alterações... */ }
-        function createCardHtml(deal) { /* ...código sem alterações... */ }
+        async function carregarOpcoesDeFiltro() {
+            try {
+                const response = await fetch('/api/getProductionFilters');
+                const filters = await response.json();
+                if (!response.ok) throw new Error('Falha ao carregar filtros.');
+                filters.impressoras.forEach(option => { impressoraFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
+                filters.materiais.forEach(option => { materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
+            } catch (error) { console.error("Erro ao carregar opções de filtro:", error); }
+        }
 
+        async function carregarPedidosDeImpressao() {
+            document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '<div class="loading-pedidos"><div class="spinner"></div></div>');
+            try {
+                const response = await fetch('/api/impressao/getDeals', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ impressoraFilter: impressoraFilterEl.value, materialFilter: materialFilterEl.value })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message);
+                allDealsData = data.deals;
+                organizarPedidosNasColunas(allDealsData);
+            } catch (error) {
+                console.error("Erro ao carregar pedidos de impressão:", error);
+                board.innerHTML = `<p style="color:red; padding: 20px;">${error.message}</p>`;
+            }
+        }
+
+        function organizarPedidosNasColunas(deals) {
+            document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '');
+            const agora = new Date();
+            deals.forEach(deal => {
+                let colunaId = 'SEM_DATA';
+                const prazoEmMinutos = parseInt(deal.UF_CRM_17577566402085, 10);
+                if (!isNaN(prazoEmMinutos)) {
+                    const dataCriacao = new Date(deal.DATE_CREATE);
+                    const prazoFinal = new Date(dataCriacao.getTime() + prazoEmMinutos * 60000);
+                    const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+                    const prazoData = new Date(prazoFinal.getFullYear(), prazoFinal.getMonth(), prazoFinal.getDate());
+                    const diffDays = Math.ceil((prazoData - hoje) / (1000 * 60 * 60 * 24));
+                    if (diffDays < 0) colunaId = 'ATRASADO';
+                    else if (diffDays === 0) colunaId = 'HOJE';
+                    else if (diffDays <= 7) colunaId = 'ESSA_SEMANA';
+                    else if (diffDays <= 14) colunaId = 'PROXIMA_SEMANA';
+                }
+                const cardHtml = createCardHtml(deal);
+                const coluna = document.getElementById(`cards-${colunaId}`);
+                if (coluna) coluna.innerHTML += cardHtml;
+            });
+            document.querySelectorAll('.column-cards').forEach(col => {
+                if (col.innerHTML === '') col.innerHTML = '<p class="info-text">Nenhum pedido aqui.</p>';
+            });
+        }
+
+        function createCardHtml(deal) {
+            const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
+            const statusId = deal[STATUS_IMPRESSAO_FIELD];
+            const statusInfo = STATUS_MAP[statusId] || {};
+            return `
+                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
+                    <div class="card-title">#${deal.ID} - ${deal.TITLE}</div>
+                    <div class="card-client-name">${nomeCliente}</div>
+                    <div class="card-actions" style="margin-top: 15px; display: flex; gap: 10px;">
+                        <button class="btn-acao" data-action="open-details-modal" data-deal-id="${deal.ID}">Detalhes</button>
+                    </div>
+                </div>
+            `;
+        }
+        
         function openDetailsModal(dealId) {
             const deal = allDealsData.find(d => d.ID == dealId);
             if (!deal) return;
@@ -117,41 +184,37 @@
             let dropdownItemsHtml = '';
             if (linkArquivo) { dropdownItemsHtml += `<a href="${linkArquivo}" target="_blank">Baixar Arquivo</a>`; }
             if (linkAtendimento) { dropdownItemsHtml += `<a href="${linkAtendimento}" target="_blank">Ver Atendimento</a>`; }
-            // Adiciona o botão "Solicitar Revisão" apenas se a revisão ainda não foi solicitada
-            if (!revisaoSolicitada) {
-                dropdownItemsHtml += `<button data-action="request-revision" data-deal-id="${deal.ID}">Solicitar Revisão</button>`;
-            }
             if (dropdownItemsHtml === '') { dropdownItemsHtml = `<span style="padding: 12px 16px; display: block; color: #999;">Nenhuma ação disponível</span>`; }
             
-            // --- CONTEÚDO DINÂMICO DA COLUNA PRINCIPAL ---
             let mainColumnHtml = '';
             if (revisaoSolicitada) {
                 mainColumnHtml = `
                     <div class="card-detalhe">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <h3>Conversa com o Designer</h3>
-                            <button class="btn-acao btn-verificado" data-action="approve-file" data-deal-id="${deal.ID}">
+                            <button class="btn-approve-file" data-action="approve-file" data-deal-id="${deal.ID}">
                                 <i class="fas fa-check"></i> Arquivo Aprovado
                             </button>
                         </div>
                         <div id="chat-revisao-container" class="chat-box">
-                            <div id="mensagens-container" style="flex-grow: 1; overflow-y: auto;">
-                                <!-- As mensagens do chat serão inseridas aqui -->
-                            </div>
+                            <div id="mensagens-container" style="flex-grow: 1; overflow-y: auto; padding-right: 10px;"></div>
                             <form id="form-mensagem" class="form-mensagem" style="margin-top: 15px;">
                                 <input type="text" id="input-mensagem" placeholder="Digite sua mensagem..." required>
                                 <button type="submit" id="btn-enviar-mensagem" title="Enviar Mensagem">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
                                 </button>
                             </form>
-                            <p class="aviso-envio-arquivos" style="font-size: 12px;">Para enviar arquivos, responda ao e-mail da notificação.</p>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             } else {
-                mainColumnHtml = `<div class="card-detalhe"><p class="info-text">Clique em "Ações > Solicitar Revisão" para iniciar uma conversa sobre este pedido.</p></div>`;
+                mainColumnHtml = `
+                    <div class="card-detalhe">
+                        <div class="revision-area">
+                            <button class="btn-request-revision" data-action="request-revision" data-deal-id="${deal.ID}">Solicitar Revisão</button>
+                        </div>
+                    </div>`;
             }
-            
+
             modalBody.innerHTML = `
                 <div class="steps-container">${stepsHtml}</div>
                 <div class="detalhe-layout">
@@ -176,7 +239,6 @@
                 </div>
             `;
             
-            // Se o modo de revisão estiver ativo, preenchemos o chat
             if (revisaoSolicitada) {
                 const chatContainer = document.getElementById('mensagens-container');
                 if (deal.historicoMensagens && deal.historicoMensagens.length > 0) {
@@ -196,139 +258,55 @@
 
         function attachAllListeners(deal) {
             attachStatusStepListeners(deal.ID);
-            attachDropdownListener(deal);
-            // Se o chat existir, anexa os listeners dele
-            if (deal[REVISAO_SOLICITADA_FIELD] === true || deal[REVISAO_SOLICITADA_FIELD] === '1') {
-                attachChatListeners(deal.ID);
+            attachDropdownListener();
+            attachRevisionListener();
+            
+            const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === true || deal[REVISAO_SOLICITADA_FIELD] === '1';
+            if (isRevisionActive) {
+                // attachChatListeners(deal.ID); // Será implementado no próximo passo
             }
         }
-        
-        function attachDropdownListener(deal) {
+
+        function attachDropdownListener() {
             const dropdown = document.getElementById('modal-actions-menu');
             if (!dropdown) return;
-            
             const toggleButton = dropdown.querySelector('.btn-actions-toggle');
             toggleButton.addEventListener('click', () => { dropdown.classList.toggle('active'); });
             document.body.addEventListener('click', (event) => {
                 if (!dropdown.contains(event.target)) { dropdown.classList.remove('active'); }
             }, true);
+        }
 
-            const requestRevisionBtn = dropdown.querySelector('button[data-action="request-revision"]');
-            if (requestRevisionBtn) {
-                requestRevisionBtn.addEventListener('click', async () => {
-                    const dealId = requestRevisionBtn.dataset.dealId;
-                    dropdown.innerHTML = '<div class="spinner" style="margin: 10px auto;"></div>'; // Feedback visual
-                    
-                    try {
-                        const response = await fetch('/api/impressao/requestRevision', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ dealId })
-                        });
-                        if (!response.ok) throw new Error('Falha ao solicitar revisão.');
+        function attachRevisionListener() {
+            const requestRevisionBtn = modalBody.querySelector('button[data-action="request-revision"]');
+            if (!requestRevisionBtn) return;
 
-                        // Atualiza o dado local e reabre o modal para mostrar o chat
-                        const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
-                        if (dealIndex > -1) {
-                            allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = true;
-                        }
-                        openDetailsModal(dealId);
+            requestRevisionBtn.addEventListener('click', async () => {
+                const dealId = requestRevisionBtn.dataset.dealId;
+                const container = requestRevisionBtn.closest('.revision-area');
+                container.innerHTML = '<div class="spinner"></div>';
 
-                    } catch (error) {
-                        alert(error.message);
-                        openDetailsModal(dealId); // Reabre o modal mesmo em caso de erro
+                try {
+                    const response = await fetch('/api/impressao/requestRevision', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ dealId })
+                    });
+                    if (!response.ok) throw new Error('Falha ao solicitar revisão.');
+
+                    const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
+                    if (dealIndex > -1) {
+                        allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = true;
                     }
-                });
-            }
-        }
-        
-        function attachChatListeners(dealId) {
-            // Lógica para enviar mensagem
-            const formMensagem = document.getElementById('form-mensagem');
-            if (formMensagem) {
-                formMensagem.addEventListener('submit', async (e) => {
-                    // Reutiliza a API sendMessage
-                    // (código omitido para brevidade, mas deve ser o mesmo da sua referência)
-                });
-            }
+                    openDetailsModal(dealId);
 
-            // Lógica para aprovar arquivo
-            const approveBtn = document.querySelector('button[data-action="approve-file"]');
-            if (approveBtn) {
-                approveBtn.addEventListener('click', async () => {
-                    // Chama a API processarPagamentoDesigner
-                    // (lógica será adicionada no próximo passo)
-                    alert('Funcionalidade "Arquivo Aprovado" a ser implementada.');
-                });
-            }
+                } catch (error) {
+                    alert(error.message);
+                    openDetailsModal(dealId);
+                }
+            });
         }
         
-        // As outras funções (init, carregar, etc.) permanecem aqui
-        async function carregarOpcoesDeFiltro() {
-            try {
-                const response = await fetch('/api/getProductionFilters');
-                const filters = await response.json();
-                if (!response.ok) throw new Error('Falha ao carregar filtros.');
-                filters.impressoras.forEach(option => { impressoraFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
-                filters.materiais.forEach(option => { materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
-            } catch (error) { console.error("Erro ao carregar opções de filtro:", error); }
-        }
-        async function carregarPedidosDeImpressao() {
-            document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '<div class="loading-pedidos"><div class="spinner"></div></div>');
-            try {
-                const response = await fetch('/api/impressao/getDeals', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ impressoraFilter: impressoraFilterEl.value, materialFilter: materialFilterEl.value })
-                });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message);
-                allDealsData = data.deals;
-                organizarPedidosNasColunas(allDealsData);
-            } catch (error) {
-                console.error("Erro ao carregar pedidos de impressão:", error);
-                board.innerHTML = `<p style="color:red; padding: 20px;">${error.message}</p>`;
-            }
-        }
-        function organizarPedidosNasColunas(deals) {
-            document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '');
-            const agora = new Date();
-            deals.forEach(deal => {
-                let colunaId = 'SEM_DATA';
-                const prazoEmMinutos = parseInt(deal.UF_CRM_17577566402085, 10);
-                if (!isNaN(prazoEmMinutos)) {
-                    const dataCriacao = new Date(deal.DATE_CREATE);
-                    const prazoFinal = new Date(dataCriacao.getTime() + prazoEmMinutos * 60000);
-                    const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
-                    const prazoData = new Date(prazoFinal.getFullYear(), prazoFinal.getMonth(), prazoFinal.getDate());
-                    const diffDays = Math.ceil((prazoData - hoje) / (1000 * 60 * 60 * 24));
-                    if (diffDays < 0) colunaId = 'ATRASADO';
-                    else if (diffDays === 0) colunaId = 'HOJE';
-                    else if (diffDays <= 7) colunaId = 'ESSA_SEMANA';
-                    else if (diffDays <= 14) colunaId = 'PROXIMA_SEMANA';
-                }
-                const cardHtml = createCardHtml(deal);
-                const coluna = document.getElementById(`cards-${colunaId}`);
-                if (coluna) coluna.innerHTML += cardHtml;
-            });
-            document.querySelectorAll('.column-cards').forEach(col => {
-                if (col.innerHTML === '') col.innerHTML = '<p class="info-text">Nenhum pedido aqui.</p>';
-            });
-        }
-        function createCardHtml(deal) {
-            const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
-            const statusId = deal[STATUS_IMPRESSAO_FIELD];
-            const statusInfo = STATUS_MAP[statusId] || {};
-            return `
-                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
-                    <div class="card-title">#${deal.ID} - ${deal.TITLE}</div>
-                    <div class="card-client-name">${nomeCliente}</div>
-                    <div class="card-actions" style="margin-top: 15px; display: flex; gap: 10px;">
-                        <button class="btn-acao" data-action="open-details-modal" data-deal-id="${deal.ID}">Detalhes</button>
-                    </div>
-                </div>
-            `;
-        }
         function attachStatusStepListeners(dealId) {
             const container = document.querySelector('.steps-container');
             container.addEventListener('click', async (event) => {
@@ -345,7 +323,6 @@
                     });
                     const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
                     if (dealIndex > -1) { allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = statusId; }
-                    
                     const newStatusIndex = STATUS_ORDER.indexOf(statusId);
                     steps.forEach((s, index) => {
                         const currentStatusId = s.dataset.statusId;
@@ -354,7 +331,6 @@
                         if (index < newStatusIndex) s.classList.add('completed');
                         else if (index === newStatusIndex) s.classList.add('active', statusInfo.classe);
                     });
-                    
                     const card = document.querySelector(`.kanban-card[data-deal-id-card="${dealId}"]`);
                     if (card) {
                         card.className = 'kanban-card';
@@ -368,6 +344,7 @@
                 }
             });
         }
+        
         btnFiltrar.addEventListener('click', carregarPedidosDeImpressao);
         closeModalBtn.addEventListener('click', () => modal.classList.remove('active'));
         modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
