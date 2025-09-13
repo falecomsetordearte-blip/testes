@@ -242,7 +242,7 @@
                 const chatContainer = document.getElementById('mensagens-container');
                 if (deal.historicoMensagens && deal.historicoMensagens.length > 0) {
                     chatContainer.innerHTML = deal.historicoMensagens.map(msg => {
-                        const classe = msg.remetente === 'cliente' ? 'mensagem-cliente' : 'mensagem-designer';
+                        const classe = msg.remetente === 'cliente' ? 'mensagem-cliente' : 'designer';
                         return `<div class="mensagem ${classe}">${msg.texto.replace(/^\[Mensagem do Cliente\]\n-+\n/, '')}</div>`;
                     }).join('');
                     chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -258,7 +258,7 @@
         function attachAllListeners(deal) {
             attachStatusStepListeners(deal.ID);
             attachDropdownListener();
-            attachRevisionListener(deal.ID); // Passando o dealId
+            attachRevisionListener(deal.ID);
             
             const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === true || deal[REVISAO_SOLICITADA_FIELD] === '1';
             if (isRevisionActive) {
@@ -299,7 +299,7 @@
                 }
             });
         }
-
+        
         function attachChatListeners(dealId) {
             const formMensagem = document.getElementById('form-mensagem');
             if (formMensagem) {
@@ -323,7 +323,7 @@
                         input.value = '';
                         const div = document.createElement('div');
                         div.className = 'mensagem mensagem-designer';
-                        div.textContent = mensagem;
+                        div.textContent = mensagem.replace(/^\[Mensagem do Painel de Impressão\]\n-+\n/, '');
                         if(container.querySelector('.info-text')) container.innerHTML = '';
                         container.appendChild(div);
                         container.scrollTop = container.scrollHeight;
