@@ -2,6 +2,18 @@
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
         
+        // --- CONSTANTES DE CONFIGURAÇÃO ---
+        const STATUS_IMPRESSAO_FIELD = 'UF_CRM_1757756651931';
+        
+        const STATUS_MAP = {
+            '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao' },
+            '2659': { nome: 'Na Fila',    cor: '#9b59b6', classe: 'na-fila' },
+            '2661': { nome: 'Imprimindo', cor: '#e74c3c', classe: 'imprimindo' },
+            '2663': { nome: 'Pronto',     cor: '#27ae60', classe: 'pronto' }
+        };
+        // A ordem em que os passos aparecerão no modal
+        const STATUS_ORDER = ['2657', '2659', '2661', '2663'];
+
         const sessionToken = localStorage.getItem('sessionToken');
         if (!sessionToken) { window.location.href = '../login.html'; return; }
 
@@ -16,9 +28,87 @@
 
         let allDealsData = [];
 
+        // --- ESTILOS DINÂMICOS PARA O NOVO DESIGN DE STATUS ---
+        const style = document.createElement('style');
+        style.textContent = `
+            .steps-container {
+                display: flex;
+                padding: 20px 10px;
+                margin-bottom: 20px;
+                border-bottom: 1px solid var(--borda);
+            }
+            .step {
+                flex: 1;
+                text-align: center;
+                position: relative;
+                color: #6c757d; /* Cinza para status inativos */
+                font-weight: 600;
+                font-size: 14px;
+                padding: 10px 5px;
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                cursor: pointer;
+                transition: all 0.2s ease-in-out;
+            }
+            .step:first-child { border-radius: 6px 0 0 6px; }
+            .step:last-child { border-radius: 0 6px 6px 0; }
+            .step:not(:last-child)::after {
+                content: '';
+                position: absolute;
+                right: -13px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 0; 
+                height: 0; 
+                border-top: 21px solid transparent;
+                border-bottom: 21px solid transparent;
+                border-left: 13px solid #f8f9fa; /* Cor de fundo da seta */
+                z-index: 2;
+                transition: border-left-color 0.2s ease-in-out;
+            }
+            .step:not(:last-child)::before { /* Sombra/borda da seta */
+                content: '';
+                position: absolute;
+                right: -14px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 0; 
+                height: 0; 
+                border-top: 21px solid transparent;
+                border-bottom: 21px solid transparent;
+                border-left: 13px solid #dee2e6;
+                z-index: 1;
+            }
+
+            .step.completed, .step.active {
+                color: #fff;
+            }
+            .step.completed { background-color: #6c757d; border-color: #5c636a; }
+            .step.completed:not(:last-child)::after { border-left-color: #6c757d; }
+            .step.completed:not(:last-child)::before { border-left-color: #5c636a; }
+            
+            .step.active { z-index: 3; transform: scale(1.05); }
+            .step.active.preparacao { background-color: ${STATUS_MAP['2657'].cor}; border-color: ${STATUS_MAP['2657'].corBorda}; color: #052c65;}
+            .step.active.preparacao:not(:last-child)::after { border-left-color: ${STATUS_MAP['2657'].cor}; }
+            .step.active.preparacao:not(:last-child)::before { border-left-color: ${STATUS_MAP['2657'].corBorda}; }
+            
+            .step.active.na-fila { background-color: ${STATUS_MAP['2659'].cor}; border-color: ${STATUS_MAP['2659'].corBorda}; color: #0a3622;}
+            .step.active.na-fila:not(:last-child)::after { border-left-color: ${STATUS_MAP['2659'].cor}; }
+            .step.active.na-fila:not(:last-child)::before { border-left-color: ${STATUS_MAP['2659'].corBorda}; }
+
+            .step.active.imprimindo { background-color: ${STATUS_MAP['2661'].cor}; border-color: ${STATUS_MAP['2661'].corBorda}; color: #664d03;}
+            .step.active.imprimindo:not(:last-child)::after { border-left-color: ${STATUS_MAP['2661'].cor}; }
+            .step.active.imprimindo:not(:last-child)::before { border-left-color: ${STATUS_MAP['2661'].corBorda}; }
+
+            .step.active.pronto { background-color: ${STATUS_MAP['2663'].cor}; border-color: ${STATUS_MAP['2663'].corBorda}; color: #58151c;}
+            .step.active.pronto:not(:last-child)::after { border-left-color: ${STATUS_MAP['2663'].cor}; }
+            .step.active.pronto:not(:last-child)::before { border-left-color: ${STATUS_MAP['2663'].corBorda}; }
+        `;
+        document.head.appendChild(style);
+
+
         async function carregarOpcoesDeFiltro() {
             try {
-                // Reutiliza a mesma API de filtros, já que os campos são os mesmos
                 const response = await fetch('/api/getProductionFilters');
                 const filters = await response.json();
                 if (!response.ok) throw new Error('Falha ao carregar filtros.');
@@ -29,19 +119,13 @@
                 filters.materiais.forEach(option => {
                     materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`;
                 });
-            } catch (error) {
-                console.error("Erro ao carregar opções de filtro:", error);
-            }
+            } catch (error) { console.error("Erro ao carregar opções de filtro:", error); }
         }
 
         async function carregarPedidosDeImpressao() {
-            document.querySelectorAll('.column-cards').forEach(col => {
-                col.innerHTML = '<div class="loading-pedidos"><div class="spinner"></div></div>';
-            });
+            document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '<div class="loading-pedidos"><div class="spinner"></div></div>');
             
             try {
-                // --- ALTERAÇÃO PRINCIPAL AQUI ---
-                // Aponta para a nova API que criamos no Passo 1
                 const response = await fetch('/api/impressao/getDeals', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -68,7 +152,7 @@
             
             deals.forEach(deal => {
                 let colunaId = 'SEM_DATA';
-                const prazoEmMinutos = parseInt(deal.UF_CRM_1757466402085, 10);
+                const prazoEmMinutos = parseInt(deal.UF_CRM_17577566402085, 10);
                 
                 if (!isNaN(prazoEmMinutos)) {
                     const dataCriacao = new Date(deal.DATE_CREATE);
@@ -85,9 +169,7 @@
                 
                 const cardHtml = createCardHtml(deal);
                 const coluna = document.getElementById(`cards-${colunaId}`);
-                if (coluna) {
-                    coluna.innerHTML += cardHtml;
-                }
+                if (coluna) coluna.innerHTML += cardHtml;
             });
 
             document.querySelectorAll('.column-cards').forEach(col => {
@@ -98,13 +180,11 @@
         function createCardHtml(deal) {
             const linkVerPedido = deal.UF_CRM_1741349861326;
             return `
-                <div class="kanban-card" style="border-left-color: #f39c12;"> <!-- Cor diferente para o Kanban de Impressão -->
+                <div class="kanban-card" data-deal-id-card="${deal.ID}">
                     <div class="card-title">#${deal.ID} - ${deal.TITLE}</div>
                     <div class="card-actions" style="margin-top: 15px; display: flex; gap: 10px;">
                         ${linkVerPedido ? `<a href="${linkVerPedido}" target="_blank" class="btn-acao btn-verificar">Ver Pedido</a>` : ''}
-                        <button class="btn-acao" data-action="open-details-modal" data-deal-id="${deal.ID}">
-                            Detalhes
-                        </button>
+                        <button class="btn-acao" data-action="open-details-modal" data-deal-id="${deal.ID}">Detalhes</button>
                     </div>
                 </div>
             `;
@@ -116,31 +196,43 @@
 
             modalTitle.textContent = `Detalhes do Pedido #${deal.ID} - ${deal.TITLE}`;
             
+            // --- GERAÇÃO DO NOVO HTML PARA OS PASSOS ---
+            const statusAtualId = deal[STATUS_IMPRESSAO_FIELD] || STATUS_ORDER[0];
+            const statusAtualIndex = STATUS_ORDER.indexOf(statusAtualId);
+            let stepsHtml = '';
+            STATUS_ORDER.forEach((id, index) => {
+                const status = STATUS_MAP[id];
+                let stepClass = 'step';
+                if (index < statusAtualIndex) {
+                    stepClass += ' completed';
+                } else if (index === statusAtualIndex) {
+                    stepClass += ' active ' + status.classe;
+                }
+                stepsHtml += `<div class="${stepClass}" data-status-id="${id}">${status.nome}</div>`;
+            });
+            
             let chatHtml = '<p class="info-text">Nenhuma mensagem.</p>';
-            if (deal.historicoMensagens.length > 0) {
+            if (deal.historicoMensagens && deal.historicoMensagens.length > 0) {
                 chatHtml = deal.historicoMensagens.map(msg => {
                     const classe = msg.remetente === 'cliente' ? 'mensagem-cliente' : 'mensagem-designer';
-                    const textoLimpo = msg.texto.replace(/^\[Mensagem do Cliente\]\n-+\n/, '');
-                    return `<div class="mensagem ${classe}">${textoLimpo}</div>`;
+                    return `<div class="mensagem ${classe}">${msg.texto.replace(/^\[Mensagem do Cliente\]\n-+\n/, '')}</div>`;
                 }).join('');
             }
-
-            const stageId = deal.STAGE_ID || "";
+            
             const linkArquivo = deal.UF_CRM_1748277308731;
-            // A lógica de "finalizado" pode ser diferente ou não se aplicar, mas mantemos por consistência
-            const isFinalizado = (stageId.includes("WON")); 
-            let arquivoHtml = '<p class="info-text">O arquivo para download estará disponível aqui quando o pedido for finalizado.</p>';
-            if (linkArquivo) { // Mostra o link do arquivo se existir, independentemente do status
+            let arquivoHtml = '<p class="info-text">Nenhum arquivo final disponível.</p>';
+            if (linkArquivo) {
                 arquivoHtml = `<a href="${linkArquivo}" target="_blank" class="btn-acao btn-download">Baixar Arquivo</a>`;
             }
 
             modalBody.innerHTML = `
+                <div class="steps-container">${stepsHtml}</div>
                 <div class="detalhe-layout">
                     <div class="detalhe-col-principal">
                         <div class="card-detalhe">
                             <h3>Conversa</h3>
-                            <div class="chat-box" style="height: 300px; display: flex; flex-direction: column;">
-                                <div id="modal-mensagens-container" style="overflow-y: auto; flex-grow: 1; padding-right: 10px;">${chatHtml}</div>
+                            <div class="chat-box" style="height: 300px;">
+                                <div id="modal-mensagens-container" style="overflow-y: auto; flex-grow: 1;">${chatHtml}</div>
                             </div>
                         </div>
                     </div>
@@ -154,8 +246,53 @@
             `;
             
             modal.classList.add('active');
+            attachStatusStepListeners(deal.ID);
         }
 
+        function attachStatusStepListeners(dealId) {
+            const container = document.querySelector('.steps-container');
+            container.addEventListener('click', async (event) => {
+                const step = event.target.closest('.step');
+                if (!step) return;
+                
+                const statusId = step.dataset.statusId;
+                const steps = container.querySelectorAll('.step');
+                
+                container.style.pointerEvents = 'none';
+
+                try {
+                    const response = await fetch('/api/impressao/updateStatus', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ dealId, statusId })
+                    });
+                    if (!response.ok) throw new Error('Falha ao atualizar o status.');
+
+                    const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
+                    if (dealIndex > -1) {
+                        allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = statusId;
+                    }
+                    
+                    const newStatusIndex = STATUS_ORDER.indexOf(statusId);
+                    steps.forEach((s, index) => {
+                        const currentStatusId = s.dataset.statusId;
+                        const statusInfo = STATUS_MAP[currentStatusId];
+                        s.className = 'step';
+                        if (index < newStatusIndex) {
+                            s.classList.add('completed');
+                        } else if (index === newStatusIndex) {
+                            s.classList.add('active', statusInfo.classe);
+                        }
+                    });
+
+                } catch (error) {
+                    alert(error.message);
+                } finally {
+                    container.style.pointerEvents = 'auto';
+                }
+            });
+        }
+        
         btnFiltrar.addEventListener('click', carregarPedidosDeImpressao);
         closeModalBtn.addEventListener('click', () => modal.classList.remove('active'));
         modal.addEventListener('click', (e) => {
@@ -164,9 +301,7 @@
 
         board.addEventListener('click', (event) => {
             const button = event.target.closest('button[data-action="open-details-modal"]');
-            if (button) {
-                openDetailsModal(button.dataset.dealId);
-            }
+            if (button) openDetailsModal(button.dataset.dealId);
         });
         
         async function init() {

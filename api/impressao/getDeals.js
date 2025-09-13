@@ -3,12 +3,13 @@ const axios = require('axios');
 
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
-// Mapeamento dos campos customizados (reutilizados do painel de produção)
+// Mapeamento dos campos customizados
 const FIELD_IMPRESSORA = 'UF_CRM_1658470569';
 const FIELD_MATERIAL = 'UF_CRM_1685624742';
-const FIELD_PRAZO_IMPRESSAO_MINUTOS = 'UF_CRM_1757466402085';
+const FIELD_PRAZO_IMPRESSAO_MINUTOS = 'UF_CRM_17577566402085';
 const FIELD_LINK_VER_PEDIDO = 'UF_CRM_1741349861326';
 const FIELD_LINK_ARQUIVO_FINAL = 'UF_CRM_1748277308731';
+const FIELD_STATUS_IMPRESSAO = 'UF_CRM_1757756651931'; // <-- Usando o campo de LISTA
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
@@ -17,12 +18,8 @@ module.exports = async (req, res) => {
 
     try {
         const { impressoraFilter, materialFilter } = req.body;
-
-        // --- ALTERAÇÃO PRINCIPAL AQUI ---
-        // O filtro agora busca por uma STAGE_ID específica, em vez de uma CATEGORY_ID.
         const filterParams = { 'STAGE_ID': 'C17:UC_ZHMX6W' };
 
-        // Os filtros de impressora e material continuam funcionando normalmente
         if (impressoraFilter) filterParams[FIELD_IMPRESSORA] = impressoraFilter;
         if (materialFilter) filterParams[FIELD_MATERIAL] = materialFilter;
 
@@ -33,12 +30,14 @@ module.exports = async (req, res) => {
                 'ID', 'TITLE', 'STAGE_ID', 'ASSIGNED_BY_ID', 'DATE_CREATE',
                 FIELD_PRAZO_IMPRESSAO_MINUTOS,
                 FIELD_LINK_VER_PEDIDO,
-                FIELD_LINK_ARQUIVO_FINAL
+                FIELD_LINK_ARQUIVO_FINAL,
+                FIELD_STATUS_IMPRESSAO // <-- Buscando o campo de LISTA
             ]
         });
 
         const deals = response.data.result || [];
         
+        // O resto da função permanece igual...
         const chatCommands = deals.map(deal => 
             `crm.timeline.comment.list?` + new URLSearchParams({
                 filter: { ENTITY_ID: deal.ID, ENTITY_TYPE: "deal" },
