@@ -28,6 +28,7 @@ module.exports = async (req, res) => {
         if (materialFilter) filterParams[FIELD_MATERIAL] = materialFilter;
 
         // 1. Buscar a lista de negócios
+        console.log('Buscando negócios de impressão...');
         const response = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
             filter: filterParams,
             order: { 'ID': 'DESC' },
@@ -41,10 +42,12 @@ module.exports = async (req, res) => {
 
         const deals = response.data.result || [];
         if (deals.length === 0) {
+            console.log('Nenhum negócio encontrado com os filtros aplicados.');
             return res.status(200).json({ deals: [] });
         }
+        console.log(`Encontrados ${deals.length} negócios. Buscando comentários...`);
 
-        // 2. Montar um lote de comandos para buscar o histórico de chat
+        // 2. Montar um lote de comandos para buscar o histórico de chat de todos os negócios de uma vez
         const chatCommands = deals.map(deal =>
             `crm.timeline.comment.list?` + new URLSearchParams({
                 filter: { ENTITY_ID: deal.ID, ENTITY_TYPE: "deal" },
@@ -53,28 +56,34 @@ module.exports = async (req, res) => {
         );
         
         const chatResponse = await axios.post(`${BITRIX24_API_URL}batch`, { cmd: chatCommands });
-        const batchResults = (chatResponse.data && chatResponse.data.result && chatResponse.data.result.result) ? chatResponse.data.result.result : [];
+
+        // --- INÍCIO DA SEÇÃO DE DIAGNÓSTICO E ROBUSTEZ ---
+
+        // Verifica se a resposta do batch veio no formato esperado
+        if (!chatResponse.data || !chatResponse.data.result || !chatResponse.data.result.result) {
+            console.error('Resposta do batch de comentários está em um formato inesperado:', JSON.stringify(chatResponse.data, null, 2));
+            // Mesmo com erro, continua a execução para não quebrar a página, mas os chats ficarão vazios.
+        }
+
+        const batchResults = chatResponse.data.result.result || [];
+
+        // Adiciona um log para depuração, mostrando o que foi recebido para o primeiro negócio
+        if (deals.length > 0 && batchResults.length > 0) {
+             console.log(`Resposta de comentários para o primeiro negócio (ID: ${deals[0].ID}):`, JSON.stringify(batchResults[0], null, 2));
+        }
+        
+        // --- FIM DA SEÇÃO DE DIAGNÓSTICO ---
 
         // 3. Adicionar o histórico de chat a cada objeto de negócio
         const dealsWithChat = deals.map((deal, index) => {
-            const resultItem = batchResults[index];
-            
-            // --- INÍCIO DA CORREÇÃO CRUCIAL ---
-            // Verifica se o resultado é um objeto com a propriedade "items" (formato comum na API)
-            // ou se já é um array direto. Garante que 'comments' será sempre um array.
-            let comments = [];
-            if (resultItem && Array.isArray(resultItem.items)) {
-                comments = resultItem.items;
-            } else if (Array.isArray(resultItem)) {
-                comments = resultItem;
-            }
-            // --- FIM DA CORREÇÃO CRUCIAL ---
+            // Garante que 'comments' seja sempre um array, mesmo que a resposta do batch falhe para este item
+            const comments = batchResults[index] || []; 
             
             const historicoMensagens = comments.map(comment => ({
                 texto: comment.COMMENT,
-                // Alinhado com o seu exemplo funcional:
-                // O operador que usa o painel é 'operador', e a outra parte é o 'cliente' (designer).
-                remetente: comment.AUTHOR_ID == 1 ? 'operador' : 'cliente'
+                // ATENÇÃO: Confirme se o ID '1' realmente corresponde ao seu operador/sistema.
+                // Em algumas instalações do Bitrix, pode ser um ID de usuário diferente.
+                remetente: comment.AUTHOR_ID == 1 ? 'operador' : 'designer'
             }));
 
             return {
@@ -86,6 +95,7 @@ module.exports = async (req, res) => {
         return res.status(200).json({ deals: dealsWithChat });
 
     } catch (error) {
+        // Log detalhado do erro no servidor
         console.error('Erro detalhado ao buscar negócios de impressão:', error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
         return res.status(500).json({ message: 'Ocorreu um erro ao buscar os dados.' });
     }

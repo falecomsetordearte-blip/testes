@@ -51,14 +51,14 @@
             .step.active { z-index: 3; transform: scale(1.05); }
             .step.active.preparacao { background-color: ${STATUS_MAP['2657'].cor}; border-color: ${STATUS_MAP['2657'].cor}; }
             .step.active.preparacao:not(:last-child)::after, .step.active.preparacao:not(:last-child)::before { border-left-color: ${STATUS_MAP['2657'].cor}; }
-            .step.active.na-fila { background-color: ${STATUS_MAP['259'].cor}; border-color: ${STATUS_MAP['259'].cor}; }
-            .step.active.na-fila:not(:last-child)::after, .step.active.na-fila:not(:last-child)::before { border-left-color: ${STATUS_MAP['259'].cor}; }
+            .step.active.na-fila { background-color: ${STATUS_MAP['2659'].cor}; border-color: ${STATUS_MAP['2659'].cor}; }
+            .step.active.na-fila:not(:last-child)::after, .step.active.na-fila:not(:last-child)::before { border-left-color: ${STATUS_MAP['2659'].cor}; }
             .step.active.imprimindo { background-color: ${STATUS_MAP['2661'].cor}; border-color: ${STATUS_MAP['2661'].cor}; }
             .step.active.imprimindo:not(:last-child)::after, .step.active.imprimindo:not(:last-child)::before { border-left-color: ${STATUS_MAP['2661'].cor}; }
             .step.active.pronto { background-color: ${STATUS_MAP['2663'].cor}; border-color: ${STATUS_MAP['2663'].cor}; }
             .step.active.pronto:not(:last-child)::after, .step.active.pronto:not(:last-child)::before { border-left-color: ${STATUS_MAP['2663'].cor}; }
             .kanban-card.status-preparacao { background-color: ${STATUS_MAP['2657'].corFundo}; border-left-color: ${STATUS_MAP['2657'].cor} !important; }
-            .kanban-card.status-na-fila { background-color: ${STATUS_MAP['259'].corFundo}; border-left-color: ${STATUS_MAP['259'].cor} !important; }
+            .kanban-card.status-na-fila { background-color: ${STATUS_MAP['2659'].corFundo}; border-left-color: ${STATUS_MAP['2659'].cor} !important; }
             .kanban-card.status-imprimindo { background-color: ${STATUS_MAP['2661'].corFundo}; border-left-color: ${STATUS_MAP['2661'].cor} !important; }
             .kanban-card.status-pronto { background-color: ${STATUS_MAP['2663'].corFundo}; border-left-color: ${STATUS_MAP['2663'].cor} !important; }
             .card-client-name { font-size: 0.9em; color: #555; margin-top: 5px; }
@@ -157,7 +157,11 @@
                 return;
             }
             
-            console.log('Dados do negócio para o modal (verifique historicoMensagens):', deal);
+            // --- PONTO DE DIAGNÓSTICO ---
+            // Verifique o console do navegador (F12) para ver os dados exatos recebidos pela API.
+            // Expanda o objeto e confira a propriedade 'historicoMensagens'.
+            console.log('Dados do negócio para o modal:', deal);
+            // --- FIM DO PONTO DE DIAGNÓSTICO ---
 
             modalTitle.textContent = `Detalhes do Pedido #${deal.ID} - ${deal.TITLE}`;
             
@@ -243,17 +247,18 @@
             
             if (revisaoSolicitada) {
                 const chatContainer = document.getElementById('mensagens-container');
+                // A verificação `deal.historicoMensagens` garante que a propriedade existe
+                // A verificação `deal.historicoMensagens.length > 0` garante que não está vazia
                 if (deal.historicoMensagens && deal.historicoMensagens.length > 0) {
+                    console.log(`Renderizando ${deal.historicoMensagens.length} mensagens.`);
                     chatContainer.innerHTML = deal.historicoMensagens.map(msg => {
-                        // Lógica de classe alinhada com seu exemplo funcional:
-                        // 'operador' (quem usa este painel) usa a classe 'mensagem-designer'.
-                        // 'cliente' (a outra parte, o designer) usa a classe 'mensagem-cliente'.
                         const classe = msg.remetente === 'operador' ? 'mensagem-designer' : 'mensagem-cliente';
                         const textoLimpo = msg.texto ? msg.texto.replace(/^\[.+?\]\n-+\n/, '') : '';
                         return `<div class="mensagem ${classe}">${textoLimpo}</div>`;
                     }).join('');
                     chatContainer.scrollTop = chatContainer.scrollHeight;
                 } else {
+                    console.log('Nenhuma mensagem no histórico para renderizar.');
                     chatContainer.innerHTML = '<p class="info-text">Nenhuma mensagem ainda. Inicie a conversa.</p>';
                 }
             }
@@ -307,6 +312,7 @@
                     const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
                     if (dealIndex > -1) {
                         allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = '1';
+                        // Adiciona um array vazio para o histórico, para que o chat possa ser iniciado
                         if (!allDealsData[dealIndex].historicoMensagens) {
                             allDealsData[dealIndex].historicoMensagens = [];
                         }
@@ -341,7 +347,7 @@
                         });
                         input.value = '';
                         const div = document.createElement('div');
-                        div.className = 'mensagem mensagem-designer'; // Mensagem do operador (usuário do painel)
+                        div.className = 'mensagem mensagem-designer'; // Mensagem do operador
                         div.textContent = mensagem;
                         if(container.querySelector('.info-text')) container.innerHTML = '';
                         container.appendChild(div);
