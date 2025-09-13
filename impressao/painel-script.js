@@ -2,7 +2,6 @@
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
         
-        // --- CONSTANTES DE CONFIGURAÇÃO ---
         const STATUS_IMPRESSAO_FIELD = 'UF_CRM_1757756651931';
         const NOME_CLIENTE_FIELD = 'UF_CRM_1741273407628';
         const CONTATO_CLIENTE_FIELD = 'UF_CRM_1749481565243';
@@ -156,7 +155,6 @@
         function openDetailsModal(dealId) {
             const deal = allDealsData.find(d => d.ID == dealId);
             if (!deal) return;
-
             modalTitle.textContent = `Detalhes do Pedido #${deal.ID} - ${deal.TITLE}`;
             
             const statusAtualId = deal[STATUS_IMPRESSAO_FIELD] || STATUS_ORDER[0];
@@ -184,6 +182,9 @@
             let dropdownItemsHtml = '';
             if (linkArquivo) { dropdownItemsHtml += `<a href="${linkArquivo}" target="_blank">Baixar Arquivo</a>`; }
             if (linkAtendimento) { dropdownItemsHtml += `<a href="${linkAtendimento}" target="_blank">Ver Atendimento</a>`; }
+            if (!revisaoSolicitada) {
+                dropdownItemsHtml += `<button data-action="request-revision">Solicitar Revisão</button>`;
+            }
             if (dropdownItemsHtml === '') { dropdownItemsHtml = `<span style="padding: 12px 16px; display: block; color: #999;">Nenhuma ação disponível</span>`; }
             
             let mainColumnHtml = '';
@@ -192,7 +193,7 @@
                     <div class="card-detalhe">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <h3>Conversa com o Designer</h3>
-                            <button class="btn-approve-file" data-action="approve-file" data-deal-id="${deal.ID}">
+                            <button class="btn-approve-file" data-action="approve-file">
                                 <i class="fas fa-check"></i> Arquivo Aprovado
                             </button>
                         </div>
@@ -210,7 +211,7 @@
                 mainColumnHtml = `
                     <div class="card-detalhe">
                         <div class="revision-area">
-                            <button class="btn-request-revision" data-action="request-revision" data-deal-id="${deal.ID}">Solicitar Revisão</button>
+                            <button class="btn-request-revision" data-action="request-revision">Solicitar Revisão</button>
                         </div>
                     </div>`;
             }
@@ -258,16 +259,14 @@
 
         function attachAllListeners(deal) {
             attachStatusStepListeners(deal.ID);
-            attachDropdownListener();
-            attachRevisionListener();
-            
+            attachDropdownListener(deal.ID);
             const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === true || deal[REVISAO_SOLICITADA_FIELD] === '1';
             if (isRevisionActive) {
-                // attachChatListeners(deal.ID); // Será implementado no próximo passo
+                attachChatListeners(deal.ID);
             }
         }
 
-        function attachDropdownListener() {
+        function attachDropdownListener(dealId) {
             const dropdown = document.getElementById('modal-actions-menu');
             if (!dropdown) return;
             const toggleButton = dropdown.querySelector('.btn-actions-toggle');
@@ -275,36 +274,96 @@
             document.body.addEventListener('click', (event) => {
                 if (!dropdown.contains(event.target)) { dropdown.classList.remove('active'); }
             }, true);
+
+            const requestRevisionBtn = dropdown.querySelector('button[data-action="request-revision"]');
+            if (requestRevisionBtn) {
+                requestRevisionBtn.addEventListener('click', async () => {
+                    dropdown.classList.remove('active'); // Fecha o dropdown
+                    const mainColumn = document.querySelector('.detalhe-col-principal');
+                    mainColumn.innerHTML = '<div class="card-detalhe"><div class="spinner"></div></div>'; // Feedback visual
+                    
+                    try {
+                        await fetch('/api/impressao/requestRevision', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ dealId })
+                        });
+                        const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
+                        if (dealIndex > -1) { allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = true; }
+                        openDetailsModal(dealId);
+                    } catch (error) {
+                        alert(error.message);
+                        openDetailsModal(dealId);
+                    }
+                });
+            }
         }
 
-        function attachRevisionListener() {
-            const requestRevisionBtn = modalBody.querySelector('button[data-action="request-revision"]');
-            if (!requestRevisionBtn) return;
-
-            requestRevisionBtn.addEventListener('click', async () => {
-                const dealId = requestRevisionBtn.dataset.dealId;
-                const container = requestRevisionBtn.closest('.revision-area');
-                container.innerHTML = '<div class="spinner"></div>';
-
-                try {
-                    const response = await fetch('/api/impressao/requestRevision', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ dealId })
-                    });
-                    if (!response.ok) throw new Error('Falha ao solicitar revisão.');
-
-                    const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
-                    if (dealIndex > -1) {
-                        allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = true;
+        function attachChatListeners(dealId) {
+            const formMensagem = document.getElementById('form-mensagem');
+            if (formMensagem) {
+                formMensagem.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const input = formMensagem.querySelector('#input-mensagem');
+                    const btn = formMensagem.querySelector('#btn-enviar-mensagem');
+                    const container = document.getElementById('mensagens-container');
+                    const mensagem = input.value.trim();
+                    if (!mensagem) return;
+                    
+                    input.disabled = true;
+                    btn.disabled = true;
+                    
+                    try {
+                        await fetch('/api/sendMessage', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ sessionToken, dealId, message: mensagem })
+                        });
+                        input.value = '';
+                        // Adiciona a nova mensagem visualmente
+                        const div = document.createElement('div');
+                        div.className = 'mensagem mensagem-cliente'; // Assumindo que o operador é o "cliente" do designer
+                        div.textContent = mensagem;
+                        if(container.querySelector('.info-text')) container.innerHTML = '';
+                        container.appendChild(div);
+                        container.scrollTop = container.scrollHeight;
+                    } catch (error) {
+                        alert('Erro ao enviar mensagem.');
+                    } finally {
+                        input.disabled = false;
+                        btn.disabled = false;
+                        input.focus();
                     }
-                    openDetailsModal(dealId);
+                });
+            }
 
-                } catch (error) {
-                    alert(error.message);
-                    openDetailsModal(dealId);
-                }
-            });
+            const approveBtn = document.querySelector('button[data-action="approve-file"]');
+            if (approveBtn) {
+                approveBtn.addEventListener('click', async () => {
+                    if (!confirm('Tem certeza que deseja aprovar este arquivo? Esta ação irá processar o pagamento do designer e finalizar o pedido.')) return;
+
+                    approveBtn.disabled = true;
+                    approveBtn.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0 auto;"></div>';
+
+                    try {
+                        const response = await fetch('/api/impressao/approveFile', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ dealId })
+                        });
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.message);
+                        
+                        alert('Arquivo aprovado com sucesso!');
+                        modal.classList.remove('active');
+                        carregarPedidosDeImpressao();
+                    } catch (error) {
+                        alert(`Erro: ${error.message}`);
+                        approveBtn.disabled = false;
+                        approveBtn.innerHTML = '<i class="fas fa-check"></i> Arquivo Aprovado';
+                    }
+                });
+            }
         }
         
         function attachStatusStepListeners(dealId) {
