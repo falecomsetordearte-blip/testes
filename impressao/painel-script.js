@@ -2,16 +2,17 @@
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
         
-        // --- CONSTANTES DE CONFIGURAÇÃO (AGORA USANDO OS IDs REAIS) ---
+        // --- CONSTANTES DE CONFIGURAÇÃO ---
         const STATUS_IMPRESSAO_FIELD = 'UF_CRM_1757756651931';
         
-        // O mapa agora usa os IDs dos status como chaves.
         const STATUS_MAP = {
-            '2657': { nome: 'Preparação', cor: '#d4edda', classe: 'preparacao' },
-            '2659': { nome: 'Na Fila', cor: '#e6d7ff', classe: 'na-fila' },
-            '2661': { nome: 'Imprimindo', cor: '#f8d7da', classe: 'imprimindo' },
-            '2663': { nome: 'Pronto', cor: '#a3d9a5', classe: 'pronto' }
+            '2657': { nome: 'Preparação', cor: '#d1e7fd', corBorda: '#0d6efd', classe: 'preparacao' },
+            '2659': { nome: 'Na Fila', cor: '#d4edda', corBorda: '#198754', classe: 'na-fila' },
+            '2661': { nome: 'Imprimindo', cor: '#fff3cd', corBorda: '#ffc107', classe: 'imprimindo' },
+            '2663': { nome: 'Pronto', cor: '#f8d7da', corBorda: '#dc3545', classe: 'pronto' }
         };
+        // A ordem em que os passos aparecerão no modal
+        const STATUS_ORDER = ['2657', '2659', '2661', '2663'];
 
         const sessionToken = localStorage.getItem('sessionToken');
         if (!sessionToken) { window.location.href = '../login.html'; return; }
@@ -27,19 +28,81 @@
 
         let allDealsData = [];
 
-        // Adiciona os estilos dinâmicos (CSS permanece o mesmo)
+        // --- ESTILOS DINÂMICOS PARA O NOVO DESIGN DE STATUS ---
         const style = document.createElement('style');
         style.textContent = `
-            .status-impressao-container { display: flex; gap: 10px; margin-top: 15px; }
-            .status-impressao-btn { flex: 1; padding: 10px; border: 2px solid transparent; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
-            .status-impressao-btn.active.preparacao { background-color: #d4edda; border-color: #28a745; }
-            .status-impressao-btn.active.na-fila { background-color: #e6d7ff; border-color: #6b46c1; }
-            .status-impressao-btn.active.imprimindo { background-color: #f8d7da; border-color: #dc3545; }
-            .status-impressao-btn.active.pronto { background-color: #a3d9a5; border-color: #1e7e34; }
-            .kanban-card.status-preparacao { border-left-color: #28a745 !important; }
-            .kanban-card.status-na-fila { border-left-color: #6b46c1 !important; }
-            .kanban-card.status-imprimindo { border-left-color: #dc3545 !important; }
-            .kanban-card.status-pronto { border-left-color: #1e7e34 !important; }
+            .steps-container {
+                display: flex;
+                padding: 20px 10px;
+                margin-bottom: 20px;
+                border-bottom: 1px solid var(--borda);
+            }
+            .step {
+                flex: 1;
+                text-align: center;
+                position: relative;
+                color: #6c757d; /* Cinza para status inativos */
+                font-weight: 600;
+                font-size: 14px;
+                padding: 10px 5px;
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                cursor: pointer;
+                transition: all 0.2s ease-in-out;
+            }
+            .step:first-child { border-radius: 6px 0 0 6px; }
+            .step:last-child { border-radius: 0 6px 6px 0; }
+            .step:not(:last-child)::after {
+                content: '';
+                position: absolute;
+                right: -13px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 0; 
+                height: 0; 
+                border-top: 21px solid transparent;
+                border-bottom: 21px solid transparent;
+                border-left: 13px solid #f8f9fa; /* Cor de fundo da seta */
+                z-index: 2;
+                transition: border-left-color 0.2s ease-in-out;
+            }
+            .step:not(:last-child)::before { /* Sombra/borda da seta */
+                content: '';
+                position: absolute;
+                right: -14px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 0; 
+                height: 0; 
+                border-top: 21px solid transparent;
+                border-bottom: 21px solid transparent;
+                border-left: 13px solid #dee2e6;
+                z-index: 1;
+            }
+
+            .step.completed, .step.active {
+                color: #fff;
+            }
+            .step.completed { background-color: #6c757d; border-color: #5c636a; }
+            .step.completed:not(:last-child)::after { border-left-color: #6c757d; }
+            .step.completed:not(:last-child)::before { border-left-color: #5c636a; }
+            
+            .step.active { z-index: 3; transform: scale(1.05); }
+            .step.active.preparacao { background-color: ${STATUS_MAP['2657'].cor}; border-color: ${STATUS_MAP['2657'].corBorda}; color: #052c65;}
+            .step.active.preparacao:not(:last-child)::after { border-left-color: ${STATUS_MAP['2657'].cor}; }
+            .step.active.preparacao:not(:last-child)::before { border-left-color: ${STATUS_MAP['2657'].corBorda}; }
+            
+            .step.active.na-fila { background-color: ${STATUS_MAP['2659'].cor}; border-color: ${STATUS_MAP['2659'].corBorda}; color: #0a3622;}
+            .step.active.na-fila:not(:last-child)::after { border-left-color: ${STATUS_MAP['2659'].cor}; }
+            .step.active.na-fila:not(:last-child)::before { border-left-color: ${STATUS_MAP['2659'].corBorda}; }
+
+            .step.active.imprimindo { background-color: ${STATUS_MAP['2661'].cor}; border-color: ${STATUS_MAP['2661'].corBorda}; color: #664d03;}
+            .step.active.imprimindo:not(:last-child)::after { border-left-color: ${STATUS_MAP['2661'].cor}; }
+            .step.active.imprimindo:not(:last-child)::before { border-left-color: ${STATUS_MAP['2661'].corBorda}; }
+
+            .step.active.pronto { background-color: ${STATUS_MAP['2663'].cor}; border-color: ${STATUS_MAP['2663'].corBorda}; color: #58151c;}
+            .step.active.pronto:not(:last-child)::after { border-left-color: ${STATUS_MAP['2663'].cor}; }
+            .step.active.pronto:not(:last-child)::before { border-left-color: ${STATUS_MAP['2663'].corBorda}; }
         `;
         document.head.appendChild(style);
 
@@ -116,11 +179,8 @@
 
         function createCardHtml(deal) {
             const linkVerPedido = deal.UF_CRM_1741349861326;
-            const statusId = deal[STATUS_IMPRESSAO_FIELD]; // Agora é o ID numérico
-            const statusInfo = STATUS_MAP[statusId] || {};
-            
             return `
-                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
+                <div class="kanban-card" data-deal-id-card="${deal.ID}">
                     <div class="card-title">#${deal.ID} - ${deal.TITLE}</div>
                     <div class="card-actions" style="margin-top: 15px; display: flex; gap: 10px;">
                         ${linkVerPedido ? `<a href="${linkVerPedido}" target="_blank" class="btn-acao btn-verificar">Ver Pedido</a>` : ''}
@@ -136,6 +196,21 @@
 
             modalTitle.textContent = `Detalhes do Pedido #${deal.ID} - ${deal.TITLE}`;
             
+            // --- GERAÇÃO DO NOVO HTML PARA OS PASSOS ---
+            const statusAtualId = deal[STATUS_IMPRESSAO_FIELD] || STATUS_ORDER[0];
+            const statusAtualIndex = STATUS_ORDER.indexOf(statusAtualId);
+            let stepsHtml = '';
+            STATUS_ORDER.forEach((id, index) => {
+                const status = STATUS_MAP[id];
+                let stepClass = 'step';
+                if (index < statusAtualIndex) {
+                    stepClass += ' completed';
+                } else if (index === statusAtualIndex) {
+                    stepClass += ' active ' + status.classe;
+                }
+                stepsHtml += `<div class="${stepClass}" data-status-id="${id}">${status.nome}</div>`;
+            });
+            
             let chatHtml = '<p class="info-text">Nenhuma mensagem.</p>';
             if (deal.historicoMensagens && deal.historicoMensagens.length > 0) {
                 chatHtml = deal.historicoMensagens.map(msg => {
@@ -150,16 +225,8 @@
                 arquivoHtml = `<a href="${linkArquivo}" target="_blank" class="btn-acao btn-download">Baixar Arquivo</a>`;
             }
 
-            const statusAtualId = deal[STATUS_IMPRESSAO_FIELD];
-            let statusButtonsHtml = '';
-            for (const id in STATUS_MAP) {
-                const status = STATUS_MAP[id];
-                const isActive = id == statusAtualId ? 'active ' + status.classe : '';
-                // O data-attribute agora guarda o ID do status
-                statusButtonsHtml += `<button class="status-impressao-btn ${isActive}" data-status-id="${id}">${status.nome}</button>`;
-            }
-
             modalBody.innerHTML = `
+                <div class="steps-container">${stepsHtml}</div>
                 <div class="detalhe-layout">
                     <div class="detalhe-col-principal">
                         <div class="card-detalhe">
@@ -173,25 +240,25 @@
                         <div class="card-detalhe">
                             <h3>Arquivos</h3>
                             <div id="modal-arquivos-box">${arquivoHtml}</div>
-                            <h3 style="margin-top: 20px;">Status da Impressão</h3>
-                            <div class="status-impressao-container">${statusButtonsHtml}</div>
                         </div>
                     </div>
                 </div>
             `;
             
             modal.classList.add('active');
-            attachStatusButtonListeners(deal.ID);
+            attachStatusStepListeners(deal.ID);
         }
 
-        function attachStatusButtonListeners(dealId) {
-            const container = document.querySelector('.status-impressao-container');
+        function attachStatusStepListeners(dealId) {
+            const container = document.querySelector('.steps-container');
             container.addEventListener('click', async (event) => {
-                if (event.target.tagName !== 'BUTTON') return;
+                const step = event.target.closest('.step');
+                if (!step) return;
                 
-                const statusId = event.target.dataset.statusId;
-                const buttons = container.querySelectorAll('button');
-                buttons.forEach(btn => btn.disabled = true);
+                const statusId = step.dataset.statusId;
+                const steps = container.querySelectorAll('.step');
+                
+                container.style.pointerEvents = 'none';
 
                 try {
                     const response = await fetch('/api/impressao/updateStatus', {
@@ -206,25 +273,22 @@
                         allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = statusId;
                     }
                     
-                    buttons.forEach(btn => {
-                        btn.classList.remove('active', 'preparacao', 'na-fila', 'imprimindo', 'pronto');
-                        if (btn.dataset.statusId === statusId) {
-                            const statusInfo = STATUS_MAP[statusId];
-                            btn.classList.add('active', statusInfo.classe);
+                    const newStatusIndex = STATUS_ORDER.indexOf(statusId);
+                    steps.forEach((s, index) => {
+                        const currentStatusId = s.dataset.statusId;
+                        const statusInfo = STATUS_MAP[currentStatusId];
+                        s.className = 'step';
+                        if (index < newStatusIndex) {
+                            s.classList.add('completed');
+                        } else if (index === newStatusIndex) {
+                            s.classList.add('active', statusInfo.classe);
                         }
                     });
-
-                    const card = document.querySelector(`.kanban-card[data-deal-id-card="${dealId}"]`);
-                    if (card) {
-                        card.className = 'kanban-card';
-                        const statusInfo = STATUS_MAP[statusId];
-                        if (statusInfo) card.classList.add('status-' + statusInfo.classe);
-                    }
 
                 } catch (error) {
                     alert(error.message);
                 } finally {
-                    buttons.forEach(btn => btn.disabled = false);
+                    container.style.pointerEvents = 'auto';
                 }
             });
         }
