@@ -25,9 +25,6 @@
             '1441': { nome: 'Conferida', cor: '#2ecc71' }
         };
 
-        const sessionToken = localStorage.getItem('sessionToken');
-        if (!sessionToken) { window.location.href = '../login.html'; return; }
-
         const impressoraFilterEl = document.getElementById('impressora-filter');
         const materialFilterEl = document.getElementById('material-filter');
         const btnFiltrar = document.getElementById('btn-filtrar');
@@ -178,6 +175,8 @@
 
             const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
+            
+            // Bitrix retorna '1' para sim e '0' para não (ou vazio).
             const revisaoSolicitada = deal[REVISAO_SOLICITADA_FIELD] === '1';
             
             let dropdownItemsHtml = '';
@@ -187,6 +186,7 @@
             
             let mainColumnHtml = '';
             if (revisaoSolicitada) {
+                // Se a revisão foi solicitada, mostra o chat.
                 mainColumnHtml = `
                     <div class="card-detalhe">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -206,6 +206,7 @@
                         </div>
                     </div>`;
             } else {
+                // Se a revisão NÃO foi solicitada, mostra o botão sutil.
                 mainColumnHtml = `
                     <div class="card-detalhe">
                         <div class="revision-area">
@@ -238,6 +239,7 @@
                 </div>
             `;
             
+            // Preenche o histórico de mensagens se o chat estiver visível
             if (revisaoSolicitada) {
                 const chatContainer = document.getElementById('mensagens-container');
                 if (deal.historicoMensagens && deal.historicoMensagens.length > 0) {
@@ -259,11 +261,12 @@
         function attachAllListeners(deal) {
             attachStatusStepListeners(deal.ID);
             attachDropdownListener();
-            attachRevisionListener(deal.ID);
             
             const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === '1';
             if (isRevisionActive) {
                 attachChatListeners(deal.ID);
+            } else {
+                attachRevisionListener(deal.ID);
             }
         }
 
@@ -284,26 +287,20 @@
             requestRevisionBtn.addEventListener('click', async () => {
                 const container = requestRevisionBtn.closest('.revision-area');
                 container.innerHTML = '<div class="spinner"></div>';
-
                 try {
-                    // --- CORREÇÃO APLICADA AQUI ---
-                    // Chamando a API correta para solicitar a revisão
                     await fetch('/api/impressao/requestRevision', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ dealId })
                     });
-                    
-                    // Atualiza o dado local e reabre o modal para mostrar o chat
                     const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
                     if (dealIndex > -1) {
                         allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = '1';
                     }
                     openDetailsModal(dealId);
-
                 } catch (error) {
                     alert(error.message);
-                    openDetailsModal(dealId); // Reabre o modal mesmo em caso de erro
+                    openDetailsModal(dealId);
                 }
             });
         }
@@ -349,10 +346,8 @@
             if (approveBtn) {
                 approveBtn.addEventListener('click', async () => {
                     if (!confirm('Tem certeza que deseja aprovar este arquivo? Esta ação irá processar o pagamento do designer e finalizar o pedido.')) return;
-
                     approveBtn.disabled = true;
                     approveBtn.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0 auto;"></div>';
-
                     try {
                         const response = await fetch('/api/impressao/approveFile', {
                             method: 'POST',
@@ -361,7 +356,6 @@
                         });
                         const data = await response.json();
                         if (!response.ok) throw new Error(data.message);
-                        
                         alert('Arquivo aprovado com sucesso!');
                         modal.classList.remove('active');
                         carregarPedidosDeImpressao();
