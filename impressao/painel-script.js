@@ -12,6 +12,7 @@
         const REVISAO_SOLICITADA_FIELD = 'UF_CRM_1757765731136';
         const FIELD_STATUS_PAGAMENTO_DESIGNER = 'UF_CRM_1757789502613';
         const STATUS_PAGO_ID = '2675';
+        const PRAZO_FINAL_FIELD = 'UF_CRM_1757794109'; // <-- SEU NOVO CAMPO DE PRAZO FINAL
 
         const STATUS_MAP = {
             '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao', corFundo: 'rgba(46, 204, 113, 0.1)' },
@@ -40,12 +41,10 @@
 
         const style = document.createElement('style');
         style.textContent = `
-            /* --- MELHORIA: MODAL INSTANTÂNEO --- */
             #modal-detalhes-rapidos.modal-overlay,
             #modal-detalhes-rapidos .modal-content {
                 transition: none !important;
             }
-            
             .steps-container { display: flex; padding: 20px 10px; margin-bottom: 20px; border-bottom: 1px solid var(--borda); }
             .step { flex: 1; text-align: center; position: relative; color: #6c757d; font-weight: 600; font-size: 14px; padding: 10px 5px; background-color: #f8f9fa; border: 1px solid #dee2e6; cursor: pointer; transition: all 0.2s ease-in-out; }
             .step:first-child { border-radius: 6px 0 0 6px; }
@@ -128,31 +127,49 @@
             }
         }
 
+        // --- FUNÇÃO ATUALIZADA ---
         function organizarPedidosNasColunas(deals) {
             document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '');
             const agora = new Date();
+            
             deals.forEach(deal => {
                 let colunaId = 'SEM_DATA';
-                const prazoEmMinutos = parseInt(deal.UF_CRM_17577566402085, 10);
-                if (!isNaN(prazoEmMinutos)) {
-                    const dataCriacao = new Date(deal.DATE_CREATE);
-                    const prazoFinal = new Date(dataCriacao.getTime() + prazoEmMinutos * 60000);
-                    const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
-                    const prazoData = new Date(prazoFinal.getFullYear(), prazoFinal.getMonth(), prazoFinal.getDate());
-                    const diffDays = Math.ceil((prazoData - hoje) / (1000 * 60 * 60 * 24));
-                    if (diffDays < 0) colunaId = 'ATRASADO';
-                    else if (diffDays === 0) colunaId = 'HOJE';
-                    else if (diffDays <= 7) colunaId = 'ESSA_SEMANA';
-                    else if (diffDays <= 14) colunaId = 'PROXIMA_SEMANA';
+                const prazoFinalStr = deal[PRAZO_FINAL_FIELD];
+
+                if (prazoFinalStr) {
+                    const prazoFinal = new Date(prazoFinalStr);
+                    // Garante que a data é válida
+                    if (!isNaN(prazoFinal.getTime())) {
+                        // Compara apenas a data (ignorando a hora) para definir a coluna
+                        const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+                        const prazoData = new Date(prazoFinal.getFullYear(), prazoFinal.getMonth(), prazoFinal.getDate());
+                        
+                        const diffDays = Math.ceil((prazoData - hoje) / (1000 * 60 * 60 * 24));
+
+                        if (diffDays < 0) {
+                            colunaId = 'ATRASADO';
+                        } else if (diffDays === 0) {
+                            colunaId = 'HOJE';
+                        } else if (diffDays <= 7) {
+                            colunaId = 'ESSA_SEMANA';
+                        } else if (diffDays <= 14) {
+                            colunaId = 'PROXIMA_SEMANA';
+                        }
+                    }
                 }
+
                 const cardHtml = createCardHtml(deal);
                 const coluna = document.getElementById(`cards-${colunaId}`);
-                if (coluna) coluna.innerHTML += cardHtml;
+                if (coluna) {
+                    coluna.innerHTML += cardHtml;
+                }
             });
+            
             document.querySelectorAll('.column-cards').forEach(col => {
                 if (col.innerHTML === '') col.innerHTML = '<p class="info-text">Nenhum pedido aqui.</p>';
             });
         }
+        // --- FIM DA FUNÇÃO ATUALIZADA ---
 
         function createCardHtml(deal) {
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
