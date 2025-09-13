@@ -5,13 +5,13 @@
         // --- CONSTANTES DE CONFIGURAÇÃO ---
         const STATUS_IMPRESSAO_FIELD = 'UF_CRM_1757756651931';
         
+        // O mapa de status agora inclui as cores de fundo "lavadas"
         const STATUS_MAP = {
-            '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao' },
-            '2659': { nome: 'Na Fila',    cor: '#9b59b6', classe: 'na-fila' },
-            '2661': { nome: 'Imprimindo', cor: '#e74c3c', classe: 'imprimindo' },
-            '2663': { nome: 'Pronto',     cor: '#27ae60', classe: 'pronto' }
+            '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao', corFundo: 'rgba(46, 204, 113, 0.1)' },
+            '2659': { nome: 'Na Fila',    cor: '#9b59b6', classe: 'na-fila',    corFundo: 'rgba(155, 89, 182, 0.1)' },
+            '2661': { nome: 'Imprimindo', cor: '#e74c3c', classe: 'imprimindo', corFundo: 'rgba(231, 76, 60, 0.1)' },
+            '2663': { nome: 'Pronto',     cor: '#27ae60', classe: 'pronto',     corFundo: 'rgba(39, 174, 96, 0.15)' }
         };
-        // A ordem em que os passos aparecerão no modal
         const STATUS_ORDER = ['2657', '2659', '2661', '2663'];
 
         const sessionToken = localStorage.getItem('sessionToken');
@@ -28,85 +28,39 @@
 
         let allDealsData = [];
 
-        // --- ESTILOS DINÂMICOS PARA O NOVO DESIGN DE STATUS ---
+        // --- ESTILOS DINÂMICOS ---
         const style = document.createElement('style');
         style.textContent = `
-            .steps-container {
-                display: flex;
-                padding: 20px 10px;
-                margin-bottom: 20px;
-                border-bottom: 1px solid var(--borda);
-            }
-            .step {
-                flex: 1;
-                text-align: center;
-                position: relative;
-                color: #6c757d; /* Cinza para status inativos */
-                font-weight: 600;
-                font-size: 14px;
-                padding: 10px 5px;
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
-                cursor: pointer;
-                transition: all 0.2s ease-in-out;
-            }
+            /* Design dos Passos no Modal */
+            .steps-container { display: flex; padding: 20px 10px; margin-bottom: 20px; border-bottom: 1px solid var(--borda); }
+            .step { flex: 1; text-align: center; position: relative; color: #6c757d; font-weight: 600; font-size: 14px; padding: 10px 5px; background-color: #f8f9fa; border: 1px solid #dee2e6; cursor: pointer; transition: all 0.2s ease-in-out; }
             .step:first-child { border-radius: 6px 0 0 6px; }
             .step:last-child { border-radius: 0 6px 6px 0; }
-            .step:not(:last-child)::after {
-                content: '';
-                position: absolute;
-                right: -13px;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 0; 
-                height: 0; 
-                border-top: 21px solid transparent;
-                border-bottom: 21px solid transparent;
-                border-left: 13px solid #f8f9fa; /* Cor de fundo da seta */
-                z-index: 2;
-                transition: border-left-color 0.2s ease-in-out;
-            }
-            .step:not(:last-child)::before { /* Sombra/borda da seta */
-                content: '';
-                position: absolute;
-                right: -14px;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 0; 
-                height: 0; 
-                border-top: 21px solid transparent;
-                border-bottom: 21px solid transparent;
-                border-left: 13px solid #dee2e6;
-                z-index: 1;
-            }
-
-            .step.completed, .step.active {
-                color: #fff;
-            }
+            .step:not(:last-child)::after { content: ''; position: absolute; right: -13px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 21px solid transparent; border-bottom: 21px solid transparent; border-left: 13px solid #f8f9fa; z-index: 2; transition: border-left-color 0.2s ease-in-out; }
+            .step:not(:last-child)::before { content: ''; position: absolute; right: -14px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 21px solid transparent; border-bottom: 21px solid transparent; border-left: 13px solid #dee2e6; z-index: 1; }
+            .step.completed, .step.active { color: #fff; }
             .step.completed { background-color: #6c757d; border-color: #5c636a; }
             .step.completed:not(:last-child)::after { border-left-color: #6c757d; }
             .step.completed:not(:last-child)::before { border-left-color: #5c636a; }
-            
             .step.active { z-index: 3; transform: scale(1.05); }
-            .step.active.preparacao { background-color: ${STATUS_MAP['2657'].cor}; border-color: ${STATUS_MAP['2657'].corBorda}; color: #052c65;}
-            .step.active.preparacao:not(:last-child)::after { border-left-color: ${STATUS_MAP['2657'].cor}; }
-            .step.active.preparacao:not(:last-child)::before { border-left-color: ${STATUS_MAP['2657'].corBorda}; }
+            .step.active.preparacao { background-color: ${STATUS_MAP['2657'].cor}; border-color: ${STATUS_MAP['2657'].cor}; }
+            .step.active.preparacao:not(:last-child)::after, .step.active.preparacao:not(:last-child)::before { border-left-color: ${STATUS_MAP['2657'].cor}; }
+            .step.active.na-fila { background-color: ${STATUS_MAP['2659'].cor}; border-color: ${STATUS_MAP['2659'].cor}; }
+            .step.active.na-fila:not(:last-child)::after, .step.active.na-fila:not(:last-child)::before { border-left-color: ${STATUS_MAP['2659'].cor}; }
+            .step.active.imprimindo { background-color: ${STATUS_MAP['2661'].cor}; border-color: ${STATUS_MAP['2661'].cor}; }
+            .step.active.imprimindo:not(:last-child)::after, .step.active.imprimindo:not(:last-child)::before { border-left-color: ${STATUS_MAP['2661'].cor}; }
+            .step.active.pronto { background-color: ${STATUS_MAP['2663'].cor}; border-color: ${STATUS_MAP['2663'].cor}; }
+            .step.active.pronto:not(:last-child)::after, .step.active.pronto:not(:last-child)::before { border-left-color: ${STATUS_MAP['2663'].cor}; }
             
-            .step.active.na-fila { background-color: ${STATUS_MAP['2659'].cor}; border-color: ${STATUS_MAP['2659'].corBorda}; color: #0a3622;}
-            .step.active.na-fila:not(:last-child)::after { border-left-color: ${STATUS_MAP['2659'].cor}; }
-            .step.active.na-fila:not(:last-child)::before { border-left-color: ${STATUS_MAP['2659'].corBorda}; }
-
-            .step.active.imprimindo { background-color: ${STATUS_MAP['2661'].cor}; border-color: ${STATUS_MAP['2661'].corBorda}; color: #664d03;}
-            .step.active.imprimindo:not(:last-child)::after { border-left-color: ${STATUS_MAP['2661'].cor}; }
-            .step.active.imprimindo:not(:last-child)::before { border-left-color: ${STATUS_MAP['2661'].corBorda}; }
-
-            .step.active.pronto { background-color: ${STATUS_MAP['2663'].cor}; border-color: ${STATUS_MAP['2663'].corBorda}; color: #58151c;}
-            .step.active.pronto:not(:last-child)::after { border-left-color: ${STATUS_MAP['2663'].cor}; }
-            .step.active.pronto:not(:last-child)::before { border-left-color: ${STATUS_MAP['2663'].corBorda}; }
+            /* NOVOS ESTILOS PARA O FUNDO DOS CARDS */
+            .kanban-card.status-preparacao { background-color: ${STATUS_MAP['2657'].corFundo}; border-left-color: ${STATUS_MAP['2657'].cor} !important; }
+            .kanban-card.status-na-fila { background-color: ${STATUS_MAP['2659'].corFundo}; border-left-color: ${STATUS_MAP['2659'].cor} !important; }
+            .kanban-card.status-imprimindo { background-color: ${STATUS_MAP['2661'].corFundo}; border-left-color: ${STATUS_MAP['2661'].cor} !important; }
+            .kanban-card.status-pronto { background-color: ${STATUS_MAP['2663'].corFundo}; border-left-color: ${STATUS_MAP['2663'].cor} !important; }
         `;
         document.head.appendChild(style);
 
-
+        // ... o resto do arquivo permanece exatamente o mesmo
         async function carregarOpcoesDeFiltro() {
             try {
                 const response = await fetch('/api/getProductionFilters');
@@ -179,8 +133,12 @@
 
         function createCardHtml(deal) {
             const linkVerPedido = deal.UF_CRM_1741349861326;
+            const statusId = deal[STATUS_IMPRESSAO_FIELD];
+            const statusInfo = STATUS_MAP[statusId] || {};
+            
+            // Adicionamos a classe de status aqui
             return `
-                <div class="kanban-card" data-deal-id-card="${deal.ID}">
+                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
                     <div class="card-title">#${deal.ID} - ${deal.TITLE}</div>
                     <div class="card-actions" style="margin-top: 15px; display: flex; gap: 10px;">
                         ${linkVerPedido ? `<a href="${linkVerPedido}" target="_blank" class="btn-acao btn-verificar">Ver Pedido</a>` : ''}
@@ -196,7 +154,6 @@
 
             modalTitle.textContent = `Detalhes do Pedido #${deal.ID} - ${deal.TITLE}`;
             
-            // --- GERAÇÃO DO NOVO HTML PARA OS PASSOS ---
             const statusAtualId = deal[STATUS_IMPRESSAO_FIELD] || STATUS_ORDER[0];
             const statusAtualIndex = STATUS_ORDER.indexOf(statusAtualId);
             let stepsHtml = '';
@@ -284,6 +241,16 @@
                             s.classList.add('active', statusInfo.classe);
                         }
                     });
+                    
+                    // ATUALIZA O CARD NA TELA PRINCIPAL APÓS A MUDANÇA
+                    const card = document.querySelector(`.kanban-card[data-deal-id-card="${dealId}"]`);
+                    if (card) {
+                        card.className = 'kanban-card'; // Limpa classes antigas
+                        const newStatusInfo = STATUS_MAP[statusId];
+                        if (newStatusInfo) {
+                            card.classList.add('status-' + newStatusInfo.classe);
+                        }
+                    }
 
                 } catch (error) {
                     alert(error.message);
