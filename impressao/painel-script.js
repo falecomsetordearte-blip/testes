@@ -12,6 +12,7 @@
         const REVISAO_SOLICITADA_FIELD = 'UF_CRM_1757765731136';
         const FIELD_STATUS_PAGAMENTO_DESIGNER = 'UF_CRM_1757789502613';
         const STATUS_PAGO_ID = '2675';
+        const PRAZO_FINAL_FIELD = 'UF_CRM_1757794109'; // <-- SEU NOVO CAMPO DE PRAZO FINAL
 
         const STATUS_MAP = {
             '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao', corFundo: 'rgba(46, 204, 113, 0.1)' },
@@ -40,6 +41,10 @@
 
         const style = document.createElement('style');
         style.textContent = `
+            #modal-detalhes-rapidos.modal-overlay,
+            #modal-detalhes-rapidos .modal-content {
+                transition: none !important;
+            }
             .steps-container { display: flex; padding: 20px 10px; margin-bottom: 20px; border-bottom: 1px solid var(--borda); }
             .step { flex: 1; text-align: center; position: relative; color: #6c757d; font-weight: 600; font-size: 14px; padding: 10px 5px; background-color: #f8f9fa; border: 1px solid #dee2e6; cursor: pointer; transition: all 0.2s ease-in-out; }
             .step:first-child { border-radius: 6px 0 0 6px; }
@@ -85,39 +90,12 @@
             #btn-enviar-mensagem:hover { background-color: #2c89c8; }
             .chat-bloqueado { position: relative; cursor: not-allowed; }
             .chat-bloqueado::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255, 255, 255, 0.7); border-radius: 8px; z-index: 5; }
-
-            /* --- INÍCIO DOS ESTILOS DOS BOTÕES DE AÇÃO --- */
-            .modal-actions-container {
-                display: flex;
-                flex-direction: column;
-                gap: 10px; /* Espaçamento entre os botões */
-            }
-            .modal-actions-container .btn-acao-modal {
-                display: block; /* Para ocupar a largura inteira */
-                text-decoration: none;
-                text-align: center;
-                padding: 10px;
-                border-radius: 6px;
-                font-weight: 600;
-                transition: background-color 0.2s, color 0.2s;
-                border: 1px solid transparent;
-            }
-            .modal-actions-container .btn-acao-modal.principal {
-                background-color: var(--azul-principal);
-                color: white;
-            }
-            .modal-actions-container .btn-acao-modal.principal:hover {
-                background-color: #2c89c8;
-            }
-            .modal-actions-container .btn-acao-modal.secundario {
-                background-color: #f1f1f1;
-                border-color: #ddd;
-                color: var(--texto-escuro);
-            }
-            .modal-actions-container .btn-acao-modal.secundario:hover {
-                background-color: #e9e9e9;
-            }
-            /* --- FIM DOS ESTILOS DOS BOTÕES DE AÇÃO --- */
+            .modal-actions-container { display: flex; flex-direction: column; gap: 10px; }
+            .modal-actions-container .btn-acao-modal { display: block; text-decoration: none; text-align: center; padding: 10px; border-radius: 6px; font-weight: 600; transition: background-color 0.2s, color 0.2s; border: 1px solid transparent; }
+            .modal-actions-container .btn-acao-modal.principal { background-color: var(--azul-principal); color: white; }
+            .modal-actions-container .btn-acao-modal.principal:hover { background-color: #2c89c8; }
+            .modal-actions-container .btn-acao-modal.secundario { background-color: #f1f1f1; border-color: #ddd; color: var(--texto-escuro); }
+            .modal-actions-container .btn-acao-modal.secundario:hover { background-color: #e9e9e9; }
         `;
         document.head.appendChild(style);
 
@@ -149,31 +127,49 @@
             }
         }
 
+        // --- FUNÇÃO ATUALIZADA ---
         function organizarPedidosNasColunas(deals) {
             document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '');
             const agora = new Date();
+            
             deals.forEach(deal => {
                 let colunaId = 'SEM_DATA';
-                const prazoEmMinutos = parseInt(deal.UF_CRM_17577566402085, 10);
-                if (!isNaN(prazoEmMinutos)) {
-                    const dataCriacao = new Date(deal.DATE_CREATE);
-                    const prazoFinal = new Date(dataCriacao.getTime() + prazoEmMinutos * 60000);
-                    const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
-                    const prazoData = new Date(prazoFinal.getFullYear(), prazoFinal.getMonth(), prazoFinal.getDate());
-                    const diffDays = Math.ceil((prazoData - hoje) / (1000 * 60 * 60 * 24));
-                    if (diffDays < 0) colunaId = 'ATRASADO';
-                    else if (diffDays === 0) colunaId = 'HOJE';
-                    else if (diffDays <= 7) colunaId = 'ESSA_SEMANA';
-                    else if (diffDays <= 14) colunaId = 'PROXIMA_SEMANA';
+                const prazoFinalStr = deal[PRAZO_FINAL_FIELD];
+
+                if (prazoFinalStr) {
+                    const prazoFinal = new Date(prazoFinalStr);
+                    // Garante que a data é válida
+                    if (!isNaN(prazoFinal.getTime())) {
+                        // Compara apenas a data (ignorando a hora) para definir a coluna
+                        const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+                        const prazoData = new Date(prazoFinal.getFullYear(), prazoFinal.getMonth(), prazoFinal.getDate());
+                        
+                        const diffDays = Math.ceil((prazoData - hoje) / (1000 * 60 * 60 * 24));
+
+                        if (diffDays < 0) {
+                            colunaId = 'ATRASADO';
+                        } else if (diffDays === 0) {
+                            colunaId = 'HOJE';
+                        } else if (diffDays <= 7) {
+                            colunaId = 'ESSA_SEMANA';
+                        } else if (diffDays <= 14) {
+                            colunaId = 'PROXIMA_SEMANA';
+                        }
+                    }
                 }
+
                 const cardHtml = createCardHtml(deal);
                 const coluna = document.getElementById(`cards-${colunaId}`);
-                if (coluna) coluna.innerHTML += cardHtml;
+                if (coluna) {
+                    coluna.innerHTML += cardHtml;
+                }
             });
+            
             document.querySelectorAll('.column-cards').forEach(col => {
                 if (col.innerHTML === '') col.innerHTML = '<p class="info-text">Nenhum pedido aqui.</p>';
             });
         }
+        // --- FIM DA FUNÇÃO ATUALIZADA ---
 
         function createCardHtml(deal) {
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
@@ -242,18 +238,10 @@
             const revisaoSolicitada = deal[REVISAO_SOLICITADA_FIELD] === '1';
             const isPago = deal[FIELD_STATUS_PAGAMENTO_DESIGNER] === STATUS_PAGO_ID;
 
-            // --- LÓGICA DOS BOTÕES DE AÇÃO ---
             let actionsHtml = '';
-            if (linkArquivo) {
-                actionsHtml += `<a href="${linkArquivo}" target="_blank" class="btn-acao-modal principal">Baixar Arquivo</a>`;
-            }
-            if (linkAtendimento) {
-                actionsHtml += `<a href="${linkAtendimento}" target="_blank" class="btn-acao-modal secundario">Ver Atendimento</a>`;
-            }
-            if (actionsHtml === '') {
-                actionsHtml = '<p class="info-text" style="text-align:center;">Nenhuma ação disponível.</p>';
-            }
-            // --- FIM DA LÓGICA DOS BOTÕES ---
+            if (linkArquivo) { actionsHtml += `<a href="${linkArquivo}" target="_blank" class="btn-acao-modal principal">Baixar Arquivo</a>`; }
+            if (linkAtendimento) { actionsHtml += `<a href="${linkAtendimento}" target="_blank" class="btn-acao-modal secundario">Ver Atendimento</a>`; }
+            if (actionsHtml === '') { actionsHtml = '<p class="info-text" style="text-align:center;">Nenhuma ação disponível.</p>'; }
 
             let mainColumnHtml = '';
             if (revisaoSolicitada) {
@@ -269,9 +257,7 @@
                 <div class="detalhe-layout">
                     <div class="detalhe-col-principal">${mainColumnHtml}</div>
                     <div class="detalhe-col-lateral">
-                        <div class="card-detalhe modal-actions-container">
-                            ${actionsHtml}
-                        </div>
+                        <div class="card-detalhe modal-actions-container">${actionsHtml}</div>
                         <div class="card-detalhe">
                             <h3>Informações do Cliente</h3>
                             <div class="info-item"><span class="info-item-label">Nome:</span><span>${nomeCliente}</span></div>
@@ -291,11 +277,8 @@
             attachStatusStepListeners(deal.ID);
             const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === '1';
             const isPago = deal[FIELD_STATUS_PAGAMENTO_DESIGNER] === STATUS_PAGO_ID;
-            if (isRevisionActive && !isPago) {
-                attachChatListeners(deal.ID);
-            } else if (!isRevisionActive) {
-                attachRevisionListener(deal.ID);
-            }
+            if (isRevisionActive && !isPago) { attachChatListeners(deal.ID); } 
+            else if (!isRevisionActive) { attachRevisionListener(deal.ID); }
         }
         
         function attachRevisionListener(dealId) {
@@ -368,37 +351,60 @@
             }
         }
         
+        function updateVisualStatus(dealId, newStatusId) {
+            const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
+            if (dealIndex === -1) return;
+            const stepsContainer = document.querySelector('.steps-container');
+            if (stepsContainer && document.getElementById('modal-detalhes-rapidos').classList.contains('active')) {
+                const steps = stepsContainer.querySelectorAll('.step');
+                const newStatusIndex = STATUS_ORDER.indexOf(newStatusId);
+                steps.forEach((s, index) => {
+                    const currentStatusId = s.dataset.statusId;
+                    const statusInfo = STATUS_MAP[currentStatusId];
+                    s.className = 'step';
+                    if (index < newStatusIndex) s.classList.add('completed');
+                    else if (index === newStatusIndex) s.classList.add('active', statusInfo.classe);
+                });
+            }
+            const card = document.querySelector(`.kanban-card[data-deal-id-card="${dealId}"]`);
+            if (card) {
+                card.className = 'kanban-card';
+                const newStatusInfo = STATUS_MAP[newStatusId];
+                if (newStatusInfo) card.classList.add('status-' + newStatusInfo.classe);
+            }
+        }
+
         function attachStatusStepListeners(dealId) {
             const container = document.querySelector('.steps-container');
-            container.addEventListener('click', async (event) => {
+            container.addEventListener('click', (event) => {
                 const step = event.target.closest('.step');
                 if (!step) return;
-                const statusId = step.dataset.statusId;
-                const steps = container.querySelectorAll('.step');
-                container.style.pointerEvents = 'none';
-                try {
-                    await fetch('/api/impressao/updateStatus', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealId, statusId }) });
-                    const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
-                    if (dealIndex > -1) { allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = statusId; }
-                    const newStatusIndex = STATUS_ORDER.indexOf(statusId);
-                    steps.forEach((s, index) => {
-                        const currentStatusId = s.dataset.statusId;
-                        const statusInfo = STATUS_MAP[currentStatusId];
-                        s.className = 'step';
-                        if (index < newStatusIndex) s.classList.add('completed');
-                        else if (index === newStatusIndex) s.classList.add('active', statusInfo.classe);
-                    });
-                    const card = document.querySelector(`.kanban-card[data-deal-id-card="${dealId}"]`);
-                    if (card) {
-                        card.className = 'kanban-card';
-                        const newStatusInfo = STATUS_MAP[statusId];
-                        if (newStatusInfo) card.classList.add('status-' + newStatusInfo.classe);
+
+                const newStatusId = step.dataset.statusId;
+                const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
+                if (dealIndex === -1) return;
+
+                const oldStatusId = allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD];
+                if (newStatusId === oldStatusId) return;
+
+                updateVisualStatus(dealId, newStatusId);
+                allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = newStatusId;
+
+                fetch('/api/impressao/updateStatus', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dealId, statusId: newStatusId })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => { throw new Error(err.message || 'Erro do servidor') });
                     }
-                } catch (error) {
-                    alert('Erro: ' + error.message);
-                } finally {
-                    container.style.pointerEvents = 'auto';
-                }
+                })
+                .catch(error => {
+                    alert(`Não foi possível atualizar o status para "${STATUS_MAP[newStatusId].nome}". Revertendo a alteração.`);
+                    updateVisualStatus(dealId, oldStatusId);
+                    allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = oldStatusId;
+                });
             });
         }
         
