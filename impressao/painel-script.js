@@ -9,7 +9,7 @@
         const LINK_ATENDIMENTO_FIELD = 'UF_CRM_1752712769666';
         const MEDIDAS_FIELD = 'UF_CRM_1727464924690';
         const LINK_ARQUIVO_FINAL_FIELD = 'UF_CRM_1748277308731';
-        const REVISAO_SOLICITADA_FIELD = 'UF_CRM_1757765731136'; // <-- Constante adicionada para clareza
+        const REVISAO_SOLICITADA_FIELD = 'UF_CRM_1757765731136';
 
         const STATUS_MAP = {
             '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao', corFundo: 'rgba(46, 204, 113, 0.1)' },
@@ -152,7 +152,17 @@
         
         function openDetailsModal(dealId) {
             const deal = allDealsData.find(d => d.ID == dealId);
-            if (!deal) return;
+            if (!deal) {
+                console.error(`Não foi possível encontrar dados para o negócio com ID: ${dealId}`);
+                return;
+            }
+            
+            // --- PONTO DE DIAGNÓSTICO ---
+            // Verifique o console do navegador (F12) para ver os dados exatos recebidos pela API.
+            // Expanda o objeto e confira a propriedade 'historicoMensagens'.
+            console.log('Dados do negócio para o modal:', deal);
+            // --- FIM DO PONTO DE DIAGNÓSTICO ---
+
             modalTitle.textContent = `Detalhes do Pedido #${deal.ID} - ${deal.TITLE}`;
             
             const statusAtualId = deal[STATUS_IMPRESSAO_FIELD] || STATUS_ORDER[0];
@@ -175,8 +185,6 @@
 
             const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
-            
-            // Bitrix retorna '1' para sim e '0' ou vazio para não.
             const revisaoSolicitada = deal[REVISAO_SOLICITADA_FIELD] === '1';
             
             let dropdownItemsHtml = '';
@@ -184,10 +192,8 @@
             if (linkAtendimento) { dropdownItemsHtml += `<a href="${linkAtendimento}" target="_blank">Ver Atendimento</a>`; }
             if (dropdownItemsHtml === '') { dropdownItemsHtml = `<span style="padding: 12px 16px; display: block; color: #999;">Nenhuma ação disponível</span>`; }
             
-            // --- INÍCIO DA LÓGICA CONDICIONAL ---
             let mainColumnHtml = '';
             if (revisaoSolicitada) {
-                // Se a revisão foi solicitada, mostra o chat.
                 mainColumnHtml = `
                     <div class="card-detalhe">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -207,7 +213,6 @@
                         </div>
                     </div>`;
             } else {
-                // Se a revisão NÃO foi solicitada, mostra o botão para solicitar.
                 mainColumnHtml = `
                     <div class="card-detalhe">
                         <div class="revision-area">
@@ -215,7 +220,6 @@
                         </div>
                     </div>`;
             }
-            // --- FIM DA LÓGICA CONDICIONAL ---
 
             modalBody.innerHTML = `
                 <div class="steps-container">${stepsHtml}</div>
@@ -241,19 +245,20 @@
                 </div>
             `;
             
-            // Preenche o histórico de mensagens APENAS se o chat estiver visível
             if (revisaoSolicitada) {
                 const chatContainer = document.getElementById('mensagens-container');
-                // A API getDeals já trás o historicoMensagens
+                // A verificação `deal.historicoMensagens` garante que a propriedade existe
+                // A verificação `deal.historicoMensagens.length > 0` garante que não está vazia
                 if (deal.historicoMensagens && deal.historicoMensagens.length > 0) {
+                    console.log(`Renderizando ${deal.historicoMensagens.length} mensagens.`);
                     chatContainer.innerHTML = deal.historicoMensagens.map(msg => {
                         const classe = msg.remetente === 'operador' ? 'mensagem-designer' : 'mensagem-cliente';
-                        // Remove o cabeçalho automático do Bitrix para uma aparência mais limpa
-                        const textoLimpo = msg.texto.replace(/^\[.+?\]\n-+\n/, '');
+                        const textoLimpo = msg.texto ? msg.texto.replace(/^\[.+?\]\n-+\n/, '') : '';
                         return `<div class="mensagem ${classe}">${textoLimpo}</div>`;
                     }).join('');
                     chatContainer.scrollTop = chatContainer.scrollHeight;
                 } else {
+                    console.log('Nenhuma mensagem no histórico para renderizar.');
                     chatContainer.innerHTML = '<p class="info-text">Nenhuma mensagem ainda. Inicie a conversa.</p>';
                 }
             }
@@ -269,10 +274,8 @@
             const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === '1';
             
             if (isRevisionActive) {
-                // Se a revisão está ativa, anexa os listeners do chat e do botão de aprovar
                 attachChatListeners(deal.ID);
             } else {
-                // Se não, anexa o listener do botão de solicitar revisão
                 attachRevisionListener(deal.ID);
             }
         }
@@ -293,9 +296,8 @@
 
             requestRevisionBtn.addEventListener('click', async () => {
                 const container = requestRevisionBtn.closest('.revision-area');
-                container.innerHTML = '<div class="loading-pedidos"><div class="spinner"></div></div>'; // Feedback visual
+                container.innerHTML = '<div class="loading-pedidos"><div class="spinner"></div></div>';
                 try {
-                    // Chama a nova API para marcar o campo de revisão como 'Sim'
                     const response = await fetch('/api/impressao/requestRevision', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -307,18 +309,17 @@
                         throw new Error(errorData.message || 'Falha ao solicitar revisão.');
                     }
 
-                    // Atualiza o dado localmente para evitar uma recarga completa da página
                     const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
                     if (dealIndex > -1) {
                         allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = '1';
+                        // Adiciona um array vazio para o histórico, para que o chat possa ser iniciado
+                        if (!allDealsData[dealIndex].historicoMensagens) {
+                            allDealsData[dealIndex].historicoMensagens = [];
+                        }
                     }
-
-                    // Recarrega o modal para refletir a mudança instantaneamente
                     openDetailsModal(dealId);
-
                 } catch (error) {
-                    alert('Erro: ' + error.message);
-                    // Em caso de erro, recarrega o modal para o estado original
+                    alert('Erro ao solicitar revisão: ' + error.message);
                     openDetailsModal(dealId);
                 }
             });
@@ -352,7 +353,7 @@
                         container.appendChild(div);
                         container.scrollTop = container.scrollHeight;
                     } catch (error) {
-                        alert('Erro ao enviar mensagem.');
+                        alert('Erro ao enviar mensagem: ' + (error.message || 'Tente novamente.'));
                     } finally {
                         input.disabled = false;
                         btn.disabled = false;
@@ -379,7 +380,7 @@
                         modal.classList.remove('active');
                         carregarPedidosDeImpressao();
                     } catch (error) {
-                        alert(`Erro: ${error.message}`);
+                        alert(`Erro ao aprovar arquivo: ${error.message}`);
                         approveBtn.disabled = false;
                         approveBtn.innerHTML = '<i class="fas fa-check"></i> Arquivo Aprovado';
                     }
@@ -418,7 +419,7 @@
                         if (newStatusInfo) card.classList.add('status-' + newStatusInfo.classe);
                     }
                 } catch (error) {
-                    alert(error.message);
+                    alert('Erro ao atualizar status: ' + error.message);
                 } finally {
                     container.style.pointerEvents = 'auto';
                 }
