@@ -1,0 +1,113 @@
+/* /designer/perfil.css */
+
+.profile-container {
+    max-width: 850px; /* Aumenta a largura máxima para usar mais espaço */
+    margin: 0 auto;   /* Mantém centralizado na tela */
+}
+
+.profile-card {
+    background-color: var(--branco);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+}
+
+.profile-card h1 {
+    margin-top: 0;
+    font-size: 28px;
+    text-align: center;
+}
+
+.profile-card > p {
+    text-align: center;
+    color: var(--cinza-texto);
+    margin-top: -10px;
+    margin-bottom: 40px;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 30px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid var(--borda);
+}
+
+.profile-photo-uploader {
+    text-align: center;
+    flex-shrink: 0;
+}
+
+#profile-pic-preview {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 15px;
+    border: 4px solid var(--borda);
+    background-color: #f8f9fa;
+}
+
+.btn-upload-photo {
+    background: none;
+    border: 1px solid var(--borda);
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all .2s ease;
+}
+
+.btn-upload-photo:hover {
+    background-color: #f1f3f5;
+    border-color: #d1d5db;
+}
+
+.profile-header-info {
+    flex-grow: 1;
+}
+
+.profile-form h3 {
+    font-size: 18px;
+    margin-top: 30px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--borda);
+    color: var(--texto-escuro);
+}
+
+.form-grid-2-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+#pontuacao-display {
+    font-size: 1.5em;
+    font-weight: 700;
+    padding: 15px;
+    background-color: var(--fundo-pagina);
+    border-radius: 8px;
+    color: var(--azul-principal);
+    text-align: center;
+    border: 1px solid var(--borda);
+}
+
+#profile-form .btn-submit {
+    margin-top: 30px;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+    .profile-header {
+        flex-direction: column;
+    }
+    .form-grid-2-cols {
+        grid-template-columns: 1fr;
+    }
+    .profile-card {
+        padding: 25px;
+    }
+}
