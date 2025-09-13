@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Meu Perfil - Painel do Designer</title>
-    <!-- O caminho para o style.css precisa voltar um diretório -->
     <link rel="stylesheet" href="../style.css">
-    <!-- Link para o novo CSS específico da página -->
     <link rel="stylesheet" href="perfil.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
@@ -21,26 +19,24 @@
             </div>
         </header>
         <main class="main-painel">
-            <div class="profile-container"> <!-- Contêiner principal com largura maior -->
+            <div class="profile-container">
                 <div id="loading-profile" class="loading-pedidos">
                     <div class="spinner"></div>
                     <span>Carregando seu perfil...</span>
                 </div>
 
                 <div id="profile-content" class="hidden">
-                    <div class="profile-card"> <!-- Card branco para o conteúdo -->
+                    <div class="profile-card">
                         <h1>Meu Perfil</h1>
                         <p>Mantenha seus dados sempre atualizados.</p>
 
                         <form id="profile-form" class="profile-form">
                             <div id="form-feedback" class="form-feedback hidden"></div>
                             
-                            <!-- ESTRUTURA MELHORADA PARA O CABEÇALHO DO PERFIL -->
                             <div class="profile-header">
                                 <div class="profile-photo-uploader">
+                                    <!-- Apenas a imagem é exibida, sem o botão e o input de upload -->
                                     <img id="profile-pic-preview" src="https://via.placeholder.com/120" alt="Foto de Perfil">
-                                    <label for="profile-pic-upload" class="btn-upload-photo" style="cursor: pointer;">Alterar Foto</label>
-                                    <input type="file" id="profile-pic-upload" accept="image/png, image/jpeg" style="display: none;">
                                 </div>
                                 <div class="profile-header-info">
                                     <div class="form-grid-2-cols">
@@ -73,7 +69,6 @@
             </div>
         </main>
     </div>
-    <!-- O caminho para o script também precisa ser ajustado se ele for compartilhado -->
     <script src="perfil-script.js"></script>
 </body>
 </html>
