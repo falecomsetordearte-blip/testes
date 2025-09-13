@@ -224,14 +224,10 @@
             let actionsHtml = '';
             if (linkArquivo) { actionsHtml += `<a href="${linkArquivo}" target="_blank" class="btn-acao-modal principal">Baixar Arquivo</a>`; }
             if (linkAtendimento) { actionsHtml += `<a href="${linkAtendimento}" target="_blank" class="btn-acao-modal secundario">Ver Atendimento</a>`; }
-            
-            // --- INÍCIO DA ALTERAÇÃO ---
             if (deal.TITLE) {
                 const urlVerPedido = `https://www.visiva.com.br/admin/?imprimastore=pedidos/detalhes&id=${encodeURIComponent(deal.TITLE)}`;
                 actionsHtml += `<a href="${urlVerPedido}" target="_blank" class="btn-acao-modal secundario">Ver Pedido</a>`;
             }
-            // --- FIM DA ALTERAÇÃO ---
-            
             if (actionsHtml === '') { actionsHtml = '<p class="info-text" style="text-align:center;">Nenhuma ação disponível.</p>'; }
 
             let mainColumnHtml = '';
@@ -365,6 +361,7 @@
             }
         }
 
+        // --- FUNÇÃO ATUALIZADA ---
         function attachStatusStepListeners(dealId) {
             const container = document.querySelector('.steps-container');
             container.addEventListener('click', (event) => {
@@ -389,6 +386,16 @@
                 .then(response => {
                     if (!response.ok) {
                         return response.json().then(err => { throw new Error(err.message || 'Erro do servidor') });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(`[Optimistic Update] Backend success: ${data.message}`);
+                    if (data.movedToNextStage) {
+                        setTimeout(() => {
+                            modal.classList.remove('active');
+                            carregarPedidosDeImpressao();
+                        }, 500);
                     }
                 })
                 .catch(error => {
