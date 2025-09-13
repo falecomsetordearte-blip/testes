@@ -38,6 +38,7 @@
 
         const style = document.createElement('style');
         style.textContent = `
+            /* ESTILOS ANTERIORES (INTOCADOS) */
             .steps-container { display: flex; padding: 20px 10px; margin-bottom: 20px; border-bottom: 1px solid var(--borda); }
             .step { flex: 1; text-align: center; position: relative; color: #6c757d; font-weight: 600; font-size: 14px; padding: 10px 5px; background-color: #f8f9fa; border: 1px solid #dee2e6; cursor: pointer; transition: all 0.2s ease-in-out; }
             .step:first-child { border-radius: 6px 0 0 6px; }
@@ -78,6 +79,92 @@
             .btn-request-revision { background: none; border: 2px dashed #d1d5db; color: var(--cinza-texto); padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.3s ease; }
             .btn-request-revision:hover { border-color: var(--azul-principal); background-color: rgba(56, 169, 244, 0.05); color: var(--azul-principal); }
             .btn-approve-file { background-color: var(--sucesso); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+
+            /* --- INÍCIO DOS NOVOS ESTILOS DO CHAT --- */
+            
+            /* Contêiner das mensagens para alinhar em coluna */
+            #mensagens-container {
+                display: flex;
+                flex-direction: column;
+                gap: 8px; /* Espaço entre as mensagens */
+            }
+
+            /* Estilo base para todos os balões de mensagem */
+            .mensagem {
+                padding: 10px 15px;
+                border-radius: 18px;
+                max-width: 80%;
+                word-wrap: break-word;
+                line-height: 1.4;
+            }
+
+            /* Balão cinza para o designer (à esquerda) */
+            .mensagem-cliente {
+                background-color: #e9ecef;
+                color: var(--texto-escuro);
+                border-bottom-left-radius: 4px;
+                margin-right: auto;
+                align-self: flex-start;
+            }
+
+            /* Balão azul para o operador/usuário do modal (à direita) */
+            .mensagem-designer {
+                background-color: var(--azul-principal);
+                color: white;
+                border-bottom-right-radius: 4px;
+                margin-left: auto;
+                align-self: flex-end;
+            }
+
+            /* Estilo do formulário de envio */
+            .form-mensagem {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                padding-top: 15px;
+                margin-top: 15px !important;
+                border-top: 1px solid var(--borda);
+            }
+
+            /* Campo de texto */
+            #input-mensagem {
+                flex-grow: 1;
+                border: 1px solid #ccc;
+                border-radius: 20px;
+                padding: 10px 18px;
+                font-size: 14px;
+                transition: border-color 0.2s, box-shadow 0.2s;
+            }
+            #input-mensagem:focus {
+                outline: none;
+                border-color: var(--azul-principal);
+                box-shadow: 0 0 0 2px rgba(56, 169, 244, 0.2);
+            }
+
+            /* Botão de enviar */
+            #btn-enviar-mensagem {
+                flex-shrink: 0;
+                background-color: var(--azul-principal);
+                border: none;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: background-color 0.2s;
+            }
+            #btn-enviar-mensagem svg {
+                fill: white;
+                width: 20px;
+                height: 20px;
+                transform: translateX(1px);
+            }
+            #btn-enviar-mensagem:hover {
+                background-color: #2c89c8;
+            }
+            /* --- FIM DOS NOVOS ESTILOS DO CHAT --- */
         `;
         document.head.appendChild(style);
 
@@ -150,11 +237,7 @@
             `;
         }
 
-        // --- INÍCIO DA MUDANÇA PRINCIPAL ---
-
-        // NOVA FUNÇÃO: Busca e exibe o histórico de chat de um negócio específico.
         async function loadAndDisplayChatHistory(dealId) {
-            // --- LOG DE DEPURAÇÃO (Navegador) ---
             console.log(`[painel-script] Buscando histórico para o dealId: ${dealId}`);
             
             const chatContainer = document.getElementById('mensagens-container');
@@ -171,12 +254,9 @@
                 });
 
                 const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.message || 'Falha ao buscar o histórico de mensagens.');
-                }
+                if (!response.ok) throw new Error(data.message || 'Falha ao buscar o histórico.');
                 
                 const messages = data.messages || [];
-                // --- LOG DE DEPURAÇÃO (Navegador) ---
                 console.log(`[painel-script] ${messages.length} mensagens recebidas da API.`, messages);
 
                 if (messages.length > 0) {
@@ -204,7 +284,6 @@
             
             modalTitle.textContent = `Detalhes do Pedido #${deal.ID} - ${deal.TITLE}`;
             
-            // O restante dos dados já está carregado, então o modal abre instantaneamente.
             const statusAtualId = deal[STATUS_IMPRESSAO_FIELD] || STATUS_ORDER[0];
             const statusAtualIndex = STATUS_ORDER.indexOf(statusAtualId);
             let stepsHtml = '';
@@ -234,7 +313,6 @@
             
             let mainColumnHtml = '';
             if (revisaoSolicitada) {
-                // Monta a estrutura do chat com um spinner de carregamento inicial.
                 mainColumnHtml = `
                     <div class="card-detalhe">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -247,10 +325,10 @@
                             <div id="mensagens-container" style="flex-grow: 1; overflow-y: auto; padding-right: 10px;">
                                 <div class="loading-pedidos"><div class="spinner"></div></div>
                             </div>
-                            <form id="form-mensagem" class="form-mensagem" style="margin-top: 15px;">
+                            <form id="form-mensagem" class="form-mensagem">
                                 <input type="text" id="input-mensagem" placeholder="Digite sua mensagem..." required>
                                 <button type="submit" id="btn-enviar-mensagem" title="Enviar Mensagem">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
                                 </button>
                             </form>
                         </div>
@@ -290,22 +368,17 @@
             
             modal.classList.add('active');
 
-            // Se a área de revisão/chat estiver visível, chama a função para carregar o histórico.
             if (revisaoSolicitada) {
                 loadAndDisplayChatHistory(dealId);
             }
             
             attachAllListeners(deal);
         }
-        
-        // --- FIM DA MUDANÇA PRINCIPAL ---
 
         function attachAllListeners(deal) {
             attachStatusStepListeners(deal.ID);
             attachDropdownListener();
-            
             const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === '1';
-            
             if (isRevisionActive) {
                 attachChatListeners(deal.ID);
             } else {
@@ -326,7 +399,6 @@
         function attachRevisionListener(dealId) {
             const requestRevisionBtn = modalBody.querySelector('button[data-action="request-revision"]');
             if (!requestRevisionBtn) return;
-
             requestRevisionBtn.addEventListener('click', async () => {
                 const container = requestRevisionBtn.closest('.revision-area');
                 container.innerHTML = '<div class="loading-pedidos"><div class="spinner"></div></div>';
@@ -336,17 +408,14 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ dealId })
                     });
-
                     if (!response.ok) {
                         const errorData = await response.json();
                         throw new Error(errorData.message || 'Falha ao solicitar revisão.');
                     }
-
                     const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
                     if (dealIndex > -1) {
                         allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = '1';
                     }
-                    // Recarrega o modal para exibir a nova interface de chat.
                     openDetailsModal(dealId);
                 } catch (error) {
                     alert('Erro ao solicitar revisão: ' + error.message);
@@ -376,11 +445,10 @@
                             body: JSON.stringify({ dealId, message: mensagem })
                         });
                         input.value = '';
-                        // Adiciona a mensagem enviada à tela instantaneamente
                         const div = document.createElement('div');
                         div.className = 'mensagem mensagem-designer'; // Mensagem do operador
                         div.textContent = mensagem;
-                        if(container.querySelector('.info-text')) container.innerHTML = '';
+                        if(container.querySelector('.info-text') || container.querySelector('.loading-pedidos')) container.innerHTML = '';
                         container.appendChild(div);
                         container.scrollTop = container.scrollHeight;
                     } catch (error) {
