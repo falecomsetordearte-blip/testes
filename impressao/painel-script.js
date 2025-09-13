@@ -2,6 +2,7 @@
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
         
+        // --- CONSTANTES DE CONFIGURAÇÃO ---
         const STATUS_IMPRESSAO_FIELD = 'UF_CRM_1757756651931';
         const NOME_CLIENTE_FIELD = 'UF_CRM_1741273407628';
         const CONTATO_CLIENTE_FIELD = 'UF_CRM_1749481565243';
@@ -23,6 +24,9 @@
             '1439': { nome: 'Cliente', cor: '#f1c40f' },
             '1441': { nome: 'Conferida', cor: '#2ecc71' }
         };
+
+        const sessionToken = localStorage.getItem('sessionToken');
+        if (!sessionToken) { window.location.href = '../login.html'; return; }
 
         const impressoraFilterEl = document.getElementById('impressora-filter');
         const materialFilterEl = document.getElementById('material-filter');
@@ -174,8 +178,6 @@
 
             const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
-            
-            // Bitrix retorna '1' para sim e '0' para não em campos Sim/Não
             const revisaoSolicitada = deal[REVISAO_SOLICITADA_FIELD] === '1';
             
             let dropdownItemsHtml = '';
@@ -258,6 +260,7 @@
             attachStatusStepListeners(deal.ID);
             attachDropdownListener();
             attachRevisionListener(deal.ID);
+            
             const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === '1';
             if (isRevisionActive) {
                 attachChatListeners(deal.ID);
@@ -277,9 +280,11 @@
         function attachRevisionListener(dealId) {
             const requestRevisionBtn = modalBody.querySelector('button[data-action="request-revision"]');
             if (!requestRevisionBtn) return;
+
             requestRevisionBtn.addEventListener('click', async () => {
                 const container = requestRevisionBtn.closest('.revision-area');
                 container.innerHTML = '<div class="spinner"></div>';
+
                 try {
                     await fetch('/api/impressao/requestRevision', {
                         method: 'POST',
@@ -337,8 +342,10 @@
             if (approveBtn) {
                 approveBtn.addEventListener('click', async () => {
                     if (!confirm('Tem certeza que deseja aprovar este arquivo? Esta ação irá processar o pagamento do designer e finalizar o pedido.')) return;
+
                     approveBtn.disabled = true;
                     approveBtn.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0 auto;"></div>';
+
                     try {
                         const response = await fetch('/api/impressao/approveFile', {
                             method: 'POST',
@@ -347,6 +354,7 @@
                         });
                         const data = await response.json();
                         if (!response.ok) throw new Error(data.message);
+                        
                         alert('Arquivo aprovado com sucesso!');
                         modal.classList.remove('active');
                         carregarPedidosDeImpressao();
