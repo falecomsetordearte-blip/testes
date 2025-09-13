@@ -40,7 +40,6 @@
 
         const style = document.createElement('style');
         style.textContent = `
-            /* ... (estilos anteriores) ... */
             .steps-container { display: flex; padding: 20px 10px; margin-bottom: 20px; border-bottom: 1px solid var(--borda); }
             .step { flex: 1; text-align: center; position: relative; color: #6c757d; font-weight: 600; font-size: 14px; padding: 10px 5px; background-color: #f8f9fa; border: 1px solid #dee2e6; cursor: pointer; transition: all 0.2s ease-in-out; }
             .step:first-child { border-radius: 6px 0 0 6px; }
@@ -69,21 +68,85 @@
             .info-item:last-child { border-bottom: none; }
             .info-item-label { font-weight: 600; }
             .tag-medidas { padding: 4px 10px; border-radius: 4px; color: white; font-weight: 600; font-size: 12px; }
-            .btn-atendimento { background-color: var(--azul-principal); color: white; padding: 8px 12px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; transition: background-color 0.2s; }
-            .btn-atendimento:hover { background-color: #2c89c8; }
-            .btn-atendimento .fa-comment-dots { font-size: 16px; }
-            /* --- NOVO ESTILO PARA O BOTÃO VERIFICADO --- */
-            .btn-verificado { background-color: var(--sucesso); border: none; color: white; }
-            .btn-verificado:disabled { background-color: #95a5a6; cursor: not-allowed; opacity: 0.7; }
+            .actions-dropdown { position: relative; display: inline-block; }
+            .btn-actions-toggle { background-color: var(--azul-principal); color: white; font-weight: 600; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; transition: background-color 0.2s; }
+            .btn-actions-toggle:hover { background-color: #2c89c8; }
+            .actions-dropdown-content { display: none; position: absolute; right: 0; top: 100%; margin-top: 5px; background-color: white; min-width: 180px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); border-radius: 6px; z-index: 10; border: 1px solid var(--borda); overflow: hidden; }
+            .actions-dropdown-content a, .actions-dropdown-content button { color: var(--texto-escuro); padding: 12px 16px; text-decoration: none; display: block; text-align: left; background: none; border: none; width: 100%; cursor: pointer; }
+            .actions-dropdown-content a:hover, .actions-dropdown-content button:hover { background-color: #f1f1f1; }
+            .actions-dropdown.active .actions-dropdown-content { display: block; }
         `;
         document.head.appendChild(style);
 
-        // Funções omitidas para brevidade
-        async function carregarOpcoesDeFiltro() { /* ...código sem alterações... */ }
-        async function carregarPedidosDeImpressao() { /* ...código sem alterações... */ }
-        function organizarPedidosNasColunas(deals) { /* ...código sem alterações... */ }
-        function createCardHtml(deal) { /* ...código sem alterações... */ }
+        async function carregarOpcoesDeFiltro() {
+            try {
+                const response = await fetch('/api/getProductionFilters');
+                const filters = await response.json();
+                if (!response.ok) throw new Error('Falha ao carregar filtros.');
+                filters.impressoras.forEach(option => { impressoraFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
+                filters.materiais.forEach(option => { materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
+            } catch (error) { console.error("Erro ao carregar opções de filtro:", error); }
+        }
 
+        async function carregarPedidosDeImpressao() {
+            document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '<div class="loading-pedidos"><div class="spinner"></div></div>');
+            try {
+                const response = await fetch('/api/impressao/getDeals', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ impressoraFilter: impressoraFilterEl.value, materialFilter: materialFilterEl.value })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message);
+                allDealsData = data.deals;
+                organizarPedidosNasColunas(allDealsData);
+            } catch (error) {
+                console.error("Erro ao carregar pedidos de impressão:", error);
+                board.innerHTML = `<p style="color:red; padding: 20px;">${error.message}</p>`;
+            }
+        }
+
+        function organizarPedidosNasColunas(deals) {
+            document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '');
+            const agora = new Date();
+            deals.forEach(deal => {
+                let colunaId = 'SEM_DATA';
+                const prazoEmMinutos = parseInt(deal.UF_CRM_17577566402085, 10);
+                if (!isNaN(prazoEmMinutos)) {
+                    const dataCriacao = new Date(deal.DATE_CREATE);
+                    const prazoFinal = new Date(dataCriacao.getTime() + prazoEmMinutos * 60000);
+                    const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+                    const prazoData = new Date(prazoFinal.getFullYear(), prazoFinal.getMonth(), prazoFinal.getDate());
+                    const diffDays = Math.ceil((prazoData - hoje) / (1000 * 60 * 60 * 24));
+                    if (diffDays < 0) colunaId = 'ATRASADO';
+                    else if (diffDays === 0) colunaId = 'HOJE';
+                    else if (diffDays <= 7) colunaId = 'ESSA_SEMANA';
+                    else if (diffDays <= 14) colunaId = 'PROXIMA_SEMANA';
+                }
+                const cardHtml = createCardHtml(deal);
+                const coluna = document.getElementById(`cards-${colunaId}`);
+                if (coluna) coluna.innerHTML += cardHtml;
+            });
+            document.querySelectorAll('.column-cards').forEach(col => {
+                if (col.innerHTML === '') col.innerHTML = '<p class="info-text">Nenhum pedido aqui.</p>';
+            });
+        }
+
+        function createCardHtml(deal) {
+            const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
+            const statusId = deal[STATUS_IMPRESSAO_FIELD];
+            const statusInfo = STATUS_MAP[statusId] || {};
+            return `
+                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
+                    <div class="card-title">#${deal.ID} - ${deal.TITLE}</div>
+                    <div class="card-client-name">${nomeCliente}</div>
+                    <div class="card-actions" style="margin-top: 15px; display: flex; gap: 10px;">
+                        <button class="btn-acao" data-action="open-details-modal" data-deal-id="${deal.ID}">Detalhes</button>
+                    </div>
+                </div>
+            `;
+        }
+        
         function openDetailsModal(dealId) {
             const deal = allDealsData.find(d => d.ID == dealId);
             if (!deal) return;
@@ -101,35 +164,21 @@
                 stepsHtml += `<div class="${stepClass}" data-status-id="${id}">${status.nome}</div>`;
             });
             
-            const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
-            let arquivoHtml = '<p class="info-text">Nenhum arquivo final disponível.</p>';
-            if (linkArquivo) {
-                arquivoHtml = `<a href="${linkArquivo}" target="_blank" class="btn-acao btn-download">Baixar Arquivo</a>`;
-            }
-            
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || '---';
             const contatoCliente = deal[CONTATO_CLIENTE_FIELD] || '---';
-            const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
-            let atendimentoHtml = '---';
-            if(linkAtendimento) {
-                atendimentoHtml = `<a href="${linkAtendimento}" target="_blank" class="btn-atendimento"><i class="fas fa-comment-dots"></i><span>Ver Atendimento</span></a>`;
-            }
-
             const medidasId = deal[MEDIDAS_FIELD];
             const medidaInfo = MEDIDAS_MAP[medidasId];
             let medidasHtml = '---';
             if (medidaInfo) {
                 medidasHtml = `<span class="tag-medidas" style="background-color: ${medidaInfo.cor};">${medidaInfo.nome}</span>`;
             }
-            
-            // --- LÓGICA DO BOTÃO VERIFICADO ---
-            const stageId = deal.STAGE_ID || "";
-            // Condição: O pedido está na etapa de impressão, mas ainda não é 'WON'
-            const podeVerificar = stageId === 'C17:UC_ZHMX6W';
-            let verificadoHtml = '';
-            if (podeVerificar) {
-                verificadoHtml = `<button class="btn-acao btn-verificado" data-action="verificar" data-deal-id="${deal.ID}">Verificado</button>`;
-            }
+
+            const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
+            const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
+            let dropdownItemsHtml = '';
+            if (linkArquivo) { dropdownItemsHtml += `<a href="${linkArquivo}" target="_blank">Baixar Arquivo</a>`; }
+            if (linkAtendimento) { dropdownItemsHtml += `<a href="${linkAtendimento}" target="_blank">Ver Atendimento</a>`; }
+            if (dropdownItemsHtml === '') { dropdownItemsHtml = `<span style="padding: 12px 16px; display: block; color: #999;">Nenhuma ação disponível</span>`; }
 
             modalBody.innerHTML = `
                 <div class="steps-container">${stepsHtml}</div>
@@ -145,12 +194,9 @@
                     <div class="detalhe-col-lateral">
                         <div class="card-detalhe">
                             <h3>Ações</h3>
-                            <div class="info-item"><span class="info-item-label">Arquivo:</span>${arquivoHtml}</div>
-                            <div class="info-item"><span class="info-item-label">Atendimento:</span>${atendimentoHtml}</div>
-                            <!-- Botão Verificado adicionado aqui -->
-                            <div class="info-item" style="${!podeVerificar ? 'display:none;' : ''}">
-                                <span class="info-item-label">Finalizar:</span>
-                                ${verificadoHtml}
+                            <div class="actions-dropdown" id="modal-actions-menu">
+                                <button class="btn-actions-toggle">Ações</button>
+                                <div class="actions-dropdown-content">${dropdownItemsHtml}</div>
                             </div>
                         </div>
                     </div>
@@ -159,50 +205,60 @@
             
             modal.classList.add('active');
             attachStatusStepListeners(deal.ID);
-            // Anexar evento para o novo botão
-            attachVerificadoButtonListener();
+            attachDropdownListener();
         }
 
-        function attachVerificadoButtonListener() {
-            const btnVerificado = modalBody.querySelector('button[data-action="verificar"]');
-            if (!btnVerificado) return;
-
-            btnVerificado.addEventListener('click', async () => {
-                const dealId = btnVerificado.dataset.dealId;
-                if (!confirm(`Tem certeza que deseja marcar o pedido #${dealId} como verificado? O pedido sairá da lista de impressão.`)) {
-                    return;
+        function attachDropdownListener() {
+            const dropdown = document.getElementById('modal-actions-menu');
+            if (!dropdown) return;
+            const toggleButton = dropdown.querySelector('.btn-actions-toggle');
+            toggleButton.addEventListener('click', () => { dropdown.classList.toggle('active'); });
+            document.body.addEventListener('click', function(event) {
+                if (!dropdown.contains(event.target)) {
+                    dropdown.classList.remove('active');
                 }
+            }, true);
+        }
 
-                btnVerificado.disabled = true;
-                btnVerificado.textContent = '...';
-
+        function attachStatusStepListeners(dealId) {
+            const container = document.querySelector('.steps-container');
+            container.addEventListener('click', async (event) => {
+                const step = event.target.closest('.step');
+                if (!step) return;
+                const statusId = step.dataset.statusId;
+                const steps = container.querySelectorAll('.step');
+                container.style.pointerEvents = 'none';
                 try {
-                    const response = await fetch('/api/markAsVerified', {
+                    await fetch('/api/impressao/updateStatus', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sessionToken, dealId })
+                        body: JSON.stringify({ dealId, statusId })
                     });
-
-                    const data = await response.json();
-                    if (!response.ok) {
-                        throw new Error(data.message || 'Falha ao marcar como verificado.');
-                    }
+                    const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
+                    if (dealIndex > -1) { allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = statusId; }
                     
-                    alert('Pedido verificado com sucesso!');
-                    modal.classList.remove('active');
-                    // Recarrega a lista principal para remover o card
-                    carregarPedidosDeImpressao(); 
-
+                    const newStatusIndex = STATUS_ORDER.indexOf(statusId);
+                    steps.forEach((s, index) => {
+                        const currentStatusId = s.dataset.statusId;
+                        const statusInfo = STATUS_MAP[currentStatusId];
+                        s.className = 'step';
+                        if (index < newStatusIndex) s.classList.add('completed');
+                        else if (index === newStatusIndex) s.classList.add('active', statusInfo.classe);
+                    });
+                    
+                    const card = document.querySelector(`.kanban-card[data-deal-id-card="${dealId}"]`);
+                    if (card) {
+                        card.className = 'kanban-card';
+                        const newStatusInfo = STATUS_MAP[statusId];
+                        if (newStatusInfo) card.classList.add('status-' + newStatusInfo.classe);
+                    }
                 } catch (error) {
                     alert(error.message);
-                    btnVerificado.disabled = false;
-                    btnVerificado.textContent = 'Verificado';
+                } finally {
+                    container.style.pointerEvents = 'auto';
                 }
             });
         }
-        
-        // Função para anexar os listeners dos botões de status
-        function attachStatusStepListeners(dealId) { /* ...código sem alterações... */ }
         
         btnFiltrar.addEventListener('click', carregarPedidosDeImpressao);
         closeModalBtn.addEventListener('click', () => modal.classList.remove('active'));
@@ -217,141 +273,5 @@
             await carregarPedidosDeImpressao();
         }
         init();
-
-        // Funções omitidas para brevidade, mas devem ser mantidas
-        async function carregarOpcoesDeFiltro() {
-            try {
-                const response = await fetch('/api/getProductionFilters');
-                const filters = await response.json();
-                if (!response.ok) throw new Error('Falha ao carregar filtros.');
-
-                filters.impressoras.forEach(option => {
-                    impressoraFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`;
-                });
-                filters.materiais.forEach(option => {
-                    materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`;
-                });
-            } catch (error) { console.error("Erro ao carregar opções de filtro:", error); }
-        }
-        async function carregarPedidosDeImpressao() {
-            document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '<div class="loading-pedidos"><div class="spinner"></div></div>');
-            
-            try {
-                const response = await fetch('/api/impressao/getDeals', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        impressoraFilter: impressoraFilterEl.value,
-                        materialFilter: materialFilterEl.value
-                    })
-                });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message);
-
-                allDealsData = data.deals;
-                organizarPedidosNasColunas(allDealsData);
-
-            } catch (error) {
-                console.error("Erro ao carregar pedidos de impressão:", error);
-                board.innerHTML = `<p style="color:red; padding: 20px;">${error.message}</p>`;
-            }
-        }
-        function organizarPedidosNasColunas(deals) {
-            document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '');
-            const agora = new Date();
-            
-            deals.forEach(deal => {
-                let colunaId = 'SEM_DATA';
-                const prazoEmMinutos = parseInt(deal.UF_CRM_17577566402085, 10);
-                
-                if (!isNaN(prazoEmMinutos)) {
-                    const dataCriacao = new Date(deal.DATE_CREATE);
-                    const prazoFinal = new Date(dataCriacao.getTime() + prazoEmMinutos * 60000);
-                    const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
-                    const prazoData = new Date(prazoFinal.getFullYear(), prazoFinal.getMonth(), prazoFinal.getDate());
-                    const diffDays = Math.ceil((prazoData - hoje) / (1000 * 60 * 60 * 24));
-
-                    if (diffDays < 0) colunaId = 'ATRASADO';
-                    else if (diffDays === 0) colunaId = 'HOJE';
-                    else if (diffDays <= 7) colunaId = 'ESSA_SEMANA';
-                    else if (diffDays <= 14) colunaId = 'PROXIMA_SEMANA';
-                }
-                
-                const cardHtml = createCardHtml(deal);
-                const coluna = document.getElementById(`cards-${colunaId}`);
-                if (coluna) coluna.innerHTML += cardHtml;
-            });
-
-            document.querySelectorAll('.column-cards').forEach(col => {
-                if (col.innerHTML === '') col.innerHTML = '<p class="info-text">Nenhum pedido aqui.</p>';
-            });
-        }
-        function createCardHtml(deal) {
-            const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
-            const statusId = deal[STATUS_IMPRESSAO_FIELD];
-            const statusInfo = STATUS_MAP[statusId] || {};
-            
-            return `
-                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
-                    <div class="card-title">#${deal.ID} - ${deal.TITLE}</div>
-                    <div class="card-client-name">${nomeCliente}</div>
-                    <div class="card-actions" style="margin-top: 15px; display: flex; gap: 10px;">
-                        <button class="btn-acao" data-action="open-details-modal" data-deal-id="${deal.ID}">Detalhes</button>
-                    </div>
-                </div>
-            `;
-        }
-        function attachStatusStepListeners(dealId) {
-            const container = document.querySelector('.steps-container');
-            container.addEventListener('click', async (event) => {
-                const step = event.target.closest('.step');
-                if (!step) return;
-                
-                const statusId = step.dataset.statusId;
-                const steps = container.querySelectorAll('.step');
-                
-                container.style.pointerEvents = 'none';
-
-                try {
-                    const response = await fetch('/api/impressao/updateStatus', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ dealId, statusId })
-                    });
-                    if (!response.ok) throw new Error('Falha ao atualizar o status.');
-
-                    const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
-                    if (dealIndex > -1) {
-                        allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = statusId;
-                    }
-                    
-                    const newStatusIndex = STATUS_ORDER.indexOf(statusId);
-                    steps.forEach((s, index) => {
-                        const currentStatusId = s.dataset.statusId;
-                        const statusInfo = STATUS_MAP[currentStatusId];
-                        s.className = 'step';
-                        if (index < newStatusIndex) {
-                            s.classList.add('completed');
-                        } else if (index === newStatusIndex) {
-                            s.classList.add('active', statusInfo.classe);
-                        }
-                    });
-                    
-                    const card = document.querySelector(`.kanban-card[data-deal-id-card="${dealId}"]`);
-                    if (card) {
-                        card.className = 'kanban-card';
-                        const newStatusInfo = STATUS_MAP[statusId];
-                        if (newStatusInfo) {
-                            card.classList.add('status-' + newStatusInfo.classe);
-                        }
-                    }
-
-                } catch (error) {
-                    alert(error.message);
-                } finally {
-                    container.style.pointerEvents = 'auto';
-                }
-            });
-        }
     });
 })();
