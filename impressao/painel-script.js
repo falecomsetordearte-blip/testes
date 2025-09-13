@@ -183,20 +183,37 @@
             modalBody.innerHTML = `
                 <div class="steps-container">${stepsHtml}</div>
                 <div class="detalhe-layout">
+                    <!-- Coluna Principal (agora vazia, pronta para o chat) -->
                     <div class="detalhe-col-principal">
-                        <div class="card-detalhe">
-                            <h3>Informações do Cliente</h3>
-                            <div class="info-item"><span class="info-item-label">Nome:</span><span>${nomeCliente}</span></div>
-                            <div class="info-item"><span class="info-item-label">Contato:</span><span>${contatoCliente}</span></div>
-                            <div class="info-item"><span class="info-item-label">Medidas:</span>${medidasHtml}</div>
+                        <div class="card-detalhe" id="chat-placeholder">
+                           <!-- O chat de contestação será inserido aqui no futuro -->
+                           <p class="info-text">Área reservada para o chat de contestação.</p>
                         </div>
                     </div>
+                    <!-- Coluna Lateral (com as informações e ações) -->
                     <div class="detalhe-col-lateral">
                         <div class="card-detalhe">
-                            <h3>Ações</h3>
-                            <div class="actions-dropdown" id="modal-actions-menu">
-                                <button class="btn-actions-toggle">Ações</button>
-                                <div class="actions-dropdown-content">${dropdownItemsHtml}</div>
+                            <div class="info-item">
+                                <span class="info-item-label">Opções:</span>
+                                <div class="actions-dropdown" id="modal-actions-menu">
+                                    <button class="btn-actions-toggle">Ações</button>
+                                    <div class="actions-dropdown-content">${dropdownItemsHtml}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-detalhe">
+                            <h3>Informações do Cliente</h3>
+                            <div class="info-item">
+                                <span class="info-item-label">Nome:</span>
+                                <span>${nomeCliente}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-item-label">Contato:</span>
+                                <span>${contatoCliente}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-item-label">Medidas:</span>
+                                ${medidasHtml}
                             </div>
                         </div>
                     </div>
