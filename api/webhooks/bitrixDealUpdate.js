@@ -75,4 +75,4 @@ module.exports = async (req, res) => {
         console.error('Erro crítico no webhook bitrixDealUpdate:', error);
         res.status(200).send('Error processed');
     }
-};
+}; 
