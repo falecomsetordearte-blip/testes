@@ -40,7 +40,7 @@
 
         const style = document.createElement('style');
         style.textContent = `
-            /* ... (estilos anteriores dos passos e cards) ... */
+            /* ... (estilos anteriores) ... */
             .steps-container { display: flex; padding: 20px 10px; margin-bottom: 20px; border-bottom: 1px solid var(--borda); }
             .step { flex: 1; text-align: center; position: relative; color: #6c757d; font-weight: 600; font-size: 14px; padding: 10px 5px; background-color: #f8f9fa; border: 1px solid #dee2e6; cursor: pointer; transition: all 0.2s ease-in-out; }
             .step:first-child { border-radius: 6px 0 0 6px; }
@@ -69,48 +69,21 @@
             .info-item:last-child { border-bottom: none; }
             .info-item-label { font-weight: 600; }
             .tag-medidas { padding: 4px 10px; border-radius: 4px; color: white; font-weight: 600; font-size: 12px; }
-
-            /* --- NOVO ESTILO PARA O BOTÃO DE ATENDIMENTO --- */
-            .btn-atendimento {
-                background-color: var(--azul-principal);
-                color: white;
-                padding: 8px 12px;
-                border-radius: 6px;
-                text-decoration: none;
-                font-size: 14px;
-                font-weight: 500;
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                transition: background-color 0.2s;
-            }
-            .btn-atendimento:hover {
-                background-color: #2c89c8;
-            }
-            .btn-atendimento .fa-comment-dots {
-                font-size: 16px;
-            }
+            .btn-atendimento { background-color: var(--azul-principal); color: white; padding: 8px 12px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; transition: background-color 0.2s; }
+            .btn-atendimento:hover { background-color: #2c89c8; }
+            .btn-atendimento .fa-comment-dots { font-size: 16px; }
+            /* --- NOVO ESTILO PARA O BOTÃO VERIFICADO --- */
+            .btn-verificado { background-color: var(--sucesso); border: none; color: white; }
+            .btn-verificado:disabled { background-color: #95a5a6; cursor: not-allowed; opacity: 0.7; }
         `;
         document.head.appendChild(style);
 
-        // ... (resto do arquivo, com a alteração na função openDetailsModal)
+        // Funções omitidas para brevidade
+        async function carregarOpcoesDeFiltro() { /* ...código sem alterações... */ }
+        async function carregarPedidosDeImpressao() { /* ...código sem alterações... */ }
+        function organizarPedidosNasColunas(deals) { /* ...código sem alterações... */ }
+        function createCardHtml(deal) { /* ...código sem alterações... */ }
 
-        function createCardHtml(deal) {
-            const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
-            const statusId = deal[STATUS_IMPRESSAO_FIELD];
-            const statusInfo = STATUS_MAP[statusId] || {};
-            
-            return `
-                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
-                    <div class="card-title">#${deal.ID} - ${deal.TITLE}</div>
-                    <div class="card-client-name">${nomeCliente}</div>
-                    <div class="card-actions" style="margin-top: 15px; display: flex; gap: 10px;">
-                        <button class="btn-acao" data-action="open-details-modal" data-deal-id="${deal.ID}">Detalhes</button>
-                    </div>
-                </div>
-            `;
-        }
-        
         function openDetailsModal(dealId) {
             const deal = allDealsData.find(d => d.ID == dealId);
             if (!deal) return;
@@ -137,13 +110,9 @@
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || '---';
             const contatoCliente = deal[CONTATO_CLIENTE_FIELD] || '---';
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
-            let atendimentoHtml = '---'; // Padrão caso não haja link
+            let atendimentoHtml = '---';
             if(linkAtendimento) {
-                // --- HTML DO BOTÃO ATUALIZADO AQUI ---
-                atendimentoHtml = `<a href="${linkAtendimento}" target="_blank" class="btn-atendimento">
-                                       <i class="fas fa-comment-dots"></i>
-                                       <span>Ver Atendimento</span>
-                                   </a>`;
+                atendimentoHtml = `<a href="${linkAtendimento}" target="_blank" class="btn-atendimento"><i class="fas fa-comment-dots"></i><span>Ver Atendimento</span></a>`;
             }
 
             const medidasId = deal[MEDIDAS_FIELD];
@@ -152,6 +121,15 @@
             if (medidaInfo) {
                 medidasHtml = `<span class="tag-medidas" style="background-color: ${medidaInfo.cor};">${medidaInfo.nome}</span>`;
             }
+            
+            // --- LÓGICA DO BOTÃO VERIFICADO ---
+            const stageId = deal.STAGE_ID || "";
+            // Condição: O pedido está na etapa de impressão, mas ainda não é 'WON'
+            const podeVerificar = stageId === 'C17:UC_ZHMX6W';
+            let verificadoHtml = '';
+            if (podeVerificar) {
+                verificadoHtml = `<button class="btn-acao btn-verificado" data-action="verificar" data-deal-id="${deal.ID}">Verificado</button>`;
+            }
 
             modalBody.innerHTML = `
                 <div class="steps-container">${stepsHtml}</div>
@@ -159,30 +137,20 @@
                     <div class="detalhe-col-principal">
                         <div class="card-detalhe">
                             <h3>Informações do Cliente</h3>
-                            <div class="info-item">
-                                <span class="info-item-label">Nome:</span>
-                                <span>${nomeCliente}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-item-label">Contato:</span>
-                                <span>${contatoCliente}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-item-label">Medidas:</span>
-                                ${medidasHtml}
-                            </div>
+                            <div class="info-item"><span class="info-item-label">Nome:</span><span>${nomeCliente}</span></div>
+                            <div class="info-item"><span class="info-item-label">Contato:</span><span>${contatoCliente}</span></div>
+                            <div class="info-item"><span class="info-item-label">Medidas:</span>${medidasHtml}</div>
                         </div>
                     </div>
                     <div class="detalhe-col-lateral">
                         <div class="card-detalhe">
                             <h3>Ações</h3>
-                            <div class="info-item">
-                                <span class="info-item-label"></span>
-                                ${arquivoHtml}
-                            </div>
-                            <div class="info-item">
-                                <span class="info-item-label"></span>
-                                ${atendimentoHtml}
+                            <div class="info-item"><span class="info-item-label">Arquivo:</span>${arquivoHtml}</div>
+                            <div class="info-item"><span class="info-item-label">Atendimento:</span>${atendimentoHtml}</div>
+                            <!-- Botão Verificado adicionado aqui -->
+                            <div class="info-item" style="${!podeVerificar ? 'display:none;' : ''}">
+                                <span class="info-item-label">Finalizar:</span>
+                                ${verificadoHtml}
                             </div>
                         </div>
                     </div>
@@ -191,9 +159,64 @@
             
             modal.classList.add('active');
             attachStatusStepListeners(deal.ID);
+            // Anexar evento para o novo botão
+            attachVerificadoButtonListener();
         }
 
-        // --- MANTER O RESTO DO ARQUIVO IGUAL ---
+        function attachVerificadoButtonListener() {
+            const btnVerificado = modalBody.querySelector('button[data-action="verificar"]');
+            if (!btnVerificado) return;
+
+            btnVerificado.addEventListener('click', async () => {
+                const dealId = btnVerificado.dataset.dealId;
+                if (!confirm(`Tem certeza que deseja marcar o pedido #${dealId} como verificado? O pedido sairá da lista de impressão.`)) {
+                    return;
+                }
+
+                btnVerificado.disabled = true;
+                btnVerificado.textContent = '...';
+
+                try {
+                    const response = await fetch('/api/markAsVerified', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sessionToken, dealId })
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.message || 'Falha ao marcar como verificado.');
+                    }
+                    
+                    alert('Pedido verificado com sucesso!');
+                    modal.classList.remove('active');
+                    // Recarrega a lista principal para remover o card
+                    carregarPedidosDeImpressao(); 
+
+                } catch (error) {
+                    alert(error.message);
+                    btnVerificado.disabled = false;
+                    btnVerificado.textContent = 'Verificado';
+                }
+            });
+        }
+        
+        // Função para anexar os listeners dos botões de status
+        function attachStatusStepListeners(dealId) { /* ...código sem alterações... */ }
+        
+        btnFiltrar.addEventListener('click', carregarPedidosDeImpressao);
+        closeModalBtn.addEventListener('click', () => modal.classList.remove('active'));
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
+        board.addEventListener('click', (event) => {
+            const button = event.target.closest('button[data-action="open-details-modal"]');
+            if (button) openDetailsModal(button.dataset.dealId);
+        });
+        
+        async function init() {
+            await carregarOpcoesDeFiltro();
+            await carregarPedidosDeImpressao();
+        }
+        init();
 
         // Funções omitidas para brevidade, mas devem ser mantidas
         async function carregarOpcoesDeFiltro() {
@@ -263,6 +286,21 @@
                 if (col.innerHTML === '') col.innerHTML = '<p class="info-text">Nenhum pedido aqui.</p>';
             });
         }
+        function createCardHtml(deal) {
+            const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
+            const statusId = deal[STATUS_IMPRESSAO_FIELD];
+            const statusInfo = STATUS_MAP[statusId] || {};
+            
+            return `
+                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
+                    <div class="card-title">#${deal.ID} - ${deal.TITLE}</div>
+                    <div class="card-client-name">${nomeCliente}</div>
+                    <div class="card-actions" style="margin-top: 15px; display: flex; gap: 10px;">
+                        <button class="btn-acao" data-action="open-details-modal" data-deal-id="${deal.ID}">Detalhes</button>
+                    </div>
+                </div>
+            `;
+        }
         function attachStatusStepListeners(dealId) {
             const container = document.querySelector('.steps-container');
             container.addEventListener('click', async (event) => {
@@ -315,22 +353,5 @@
                 }
             });
         }
-        btnFiltrar.addEventListener('click', carregarPedidosDeImpressao);
-        closeModalBtn.addEventListener('click', () => modal.classList.remove('active'));
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.classList.remove('active');
-        });
-
-        board.addEventListener('click', (event) => {
-            const button = event.target.closest('button[data-action="open-details-modal"]');
-            if (button) openDetailsModal(button.dataset.dealId);
-        });
-        
-        async function init() {
-            await carregarOpcoesDeFiltro();
-            await carregarPedidosDeImpressao();
-        }
-
-        init();
     });
 })();
