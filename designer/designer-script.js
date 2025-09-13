@@ -185,7 +185,16 @@
             }
             let html = "";
             saques.forEach(saque => {
-                let statusInfo = { texto: 'Solicitado', classe: 'status-analise' }; // Pode ser aprimorado com stages do pipeline C31
+                // --- LÓGICA DE STATUS ATUALIZADA AQUI ---
+                let statusInfo = { texto: 'Em Processamento', classe: 'status-andamento' };
+                const stageId = saque.STAGE_ID || "";
+
+                if (stageId === "C31:NEW") {
+                    statusInfo = { texto: 'Solicitado', classe: 'status-analise' };
+                } else if (stageId === "C31:WON") {
+                    statusInfo = { texto: 'Pago', classe: 'status-aprovado' };
+                }
+                
                 const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(saque.OPPORTUNITY) || 0);
                 html += `
                     <div class="pedido-item">
