@@ -149,22 +149,62 @@
                 </div>
             `;
         }
+
+        // --- INÍCIO DA MUDANÇA PRINCIPAL ---
+
+        // NOVA FUNÇÃO: Busca e exibe o histórico de chat de um negócio específico.
+        async function loadAndDisplayChatHistory(dealId) {
+            // --- LOG DE DEPURAÇÃO (Navegador) ---
+            console.log(`[painel-script] Buscando histórico para o dealId: ${dealId}`);
+            
+            const chatContainer = document.getElementById('mensagens-container');
+            if (!chatContainer) {
+                console.error('[painel-script] Erro: O contêiner do chat (#mensagens-container) não foi encontrado no DOM.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/impressao/getChatHistory', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dealId })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.message || 'Falha ao buscar o histórico de mensagens.');
+                }
+                
+                const messages = data.messages || [];
+                // --- LOG DE DEPURAÇÃO (Navegador) ---
+                console.log(`[painel-script] ${messages.length} mensagens recebidas da API.`, messages);
+
+                if (messages.length > 0) {
+                    chatContainer.innerHTML = messages.map(msg => {
+                        const classe = msg.remetente === 'operador' ? 'mensagem-designer' : 'mensagem-cliente';
+                        const textoLimpo = msg.texto ? msg.texto.replace(/^\[.+?\]\n-+\n/, '') : '';
+                        return `<div class="mensagem ${classe}">${textoLimpo}</div>`;
+                    }).join('');
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                } else {
+                    chatContainer.innerHTML = '<p class="info-text">Nenhuma mensagem ainda. Inicie a conversa.</p>';
+                }
+            } catch (error) {
+                console.error('[painel-script] Erro ao carregar histórico do chat:', error);
+                chatContainer.innerHTML = `<p class="info-text" style="color: red;">Erro ao carregar mensagens: ${error.message}</p>`;
+            }
+        }
         
         function openDetailsModal(dealId) {
             const deal = allDealsData.find(d => d.ID == dealId);
             if (!deal) {
-                console.error(`Não foi possível encontrar dados para o negócio com ID: ${dealId}`);
+                console.error(`[painel-script] Não foi possível encontrar dados para o negócio com ID: ${dealId}`);
                 return;
             }
             
-            // --- PONTO DE DIAGNÓSTICO ---
-            // Verifique o console do navegador (F12) para ver os dados exatos recebidos pela API.
-            // Expanda o objeto e confira a propriedade 'historicoMensagens'.
-            console.log('Dados do negócio para o modal:', deal);
-            // --- FIM DO PONTO DE DIAGNÓSTICO ---
-
             modalTitle.textContent = `Detalhes do Pedido #${deal.ID} - ${deal.TITLE}`;
             
+            // O restante dos dados já está carregado, então o modal abre instantaneamente.
             const statusAtualId = deal[STATUS_IMPRESSAO_FIELD] || STATUS_ORDER[0];
             const statusAtualIndex = STATUS_ORDER.indexOf(statusAtualId);
             let stepsHtml = '';
@@ -194,6 +234,7 @@
             
             let mainColumnHtml = '';
             if (revisaoSolicitada) {
+                // Monta a estrutura do chat com um spinner de carregamento inicial.
                 mainColumnHtml = `
                     <div class="card-detalhe">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -203,7 +244,9 @@
                             </button>
                         </div>
                         <div id="chat-revisao-container" class="chat-box">
-                            <div id="mensagens-container" style="flex-grow: 1; overflow-y: auto; padding-right: 10px;"></div>
+                            <div id="mensagens-container" style="flex-grow: 1; overflow-y: auto; padding-right: 10px;">
+                                <div class="loading-pedidos"><div class="spinner"></div></div>
+                            </div>
                             <form id="form-mensagem" class="form-mensagem" style="margin-top: 15px;">
                                 <input type="text" id="input-mensagem" placeholder="Digite sua mensagem..." required>
                                 <button type="submit" id="btn-enviar-mensagem" title="Enviar Mensagem">
@@ -245,27 +288,17 @@
                 </div>
             `;
             
+            modal.classList.add('active');
+
+            // Se a área de revisão/chat estiver visível, chama a função para carregar o histórico.
             if (revisaoSolicitada) {
-                const chatContainer = document.getElementById('mensagens-container');
-                // A verificação `deal.historicoMensagens` garante que a propriedade existe
-                // A verificação `deal.historicoMensagens.length > 0` garante que não está vazia
-                if (deal.historicoMensagens && deal.historicoMensagens.length > 0) {
-                    console.log(`Renderizando ${deal.historicoMensagens.length} mensagens.`);
-                    chatContainer.innerHTML = deal.historicoMensagens.map(msg => {
-                        const classe = msg.remetente === 'operador' ? 'mensagem-designer' : 'mensagem-cliente';
-                        const textoLimpo = msg.texto ? msg.texto.replace(/^\[.+?\]\n-+\n/, '') : '';
-                        return `<div class="mensagem ${classe}">${textoLimpo}</div>`;
-                    }).join('');
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                } else {
-                    console.log('Nenhuma mensagem no histórico para renderizar.');
-                    chatContainer.innerHTML = '<p class="info-text">Nenhuma mensagem ainda. Inicie a conversa.</p>';
-                }
+                loadAndDisplayChatHistory(dealId);
             }
             
-            modal.classList.add('active');
             attachAllListeners(deal);
         }
+        
+        // --- FIM DA MUDANÇA PRINCIPAL ---
 
         function attachAllListeners(deal) {
             attachStatusStepListeners(deal.ID);
@@ -312,11 +345,8 @@
                     const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
                     if (dealIndex > -1) {
                         allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = '1';
-                        // Adiciona um array vazio para o histórico, para que o chat possa ser iniciado
-                        if (!allDealsData[dealIndex].historicoMensagens) {
-                            allDealsData[dealIndex].historicoMensagens = [];
-                        }
                     }
+                    // Recarrega o modal para exibir a nova interface de chat.
                     openDetailsModal(dealId);
                 } catch (error) {
                     alert('Erro ao solicitar revisão: ' + error.message);
@@ -346,6 +376,7 @@
                             body: JSON.stringify({ dealId, message: mensagem })
                         });
                         input.value = '';
+                        // Adiciona a mensagem enviada à tela instantaneamente
                         const div = document.createElement('div');
                         div.className = 'mensagem mensagem-designer'; // Mensagem do operador
                         div.textContent = mensagem;
