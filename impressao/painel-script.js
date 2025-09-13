@@ -155,7 +155,7 @@
                         <div class="card-detalhe">
                             <h3>Ações</h3>
                             <div class="info-item">
-                                <span class="info-item-label">Arquivo:</span>
+                                <span class="info-item-label"></span>
                                 ${arquivoHtml}
                             </div>
                             <div class="info-item">
