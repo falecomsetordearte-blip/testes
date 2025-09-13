@@ -286,17 +286,24 @@
                 container.innerHTML = '<div class="spinner"></div>';
 
                 try {
+                    // --- CORREÇÃO APLICADA AQUI ---
+                    // Chamando a API correta para solicitar a revisão
                     await fetch('/api/impressao/requestRevision', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ dealId })
                     });
+                    
+                    // Atualiza o dado local e reabre o modal para mostrar o chat
                     const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
-                    if (dealIndex > -1) { allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = '1'; }
+                    if (dealIndex > -1) {
+                        allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = '1';
+                    }
                     openDetailsModal(dealId);
+
                 } catch (error) {
                     alert(error.message);
-                    openDetailsModal(dealId);
+                    openDetailsModal(dealId); // Reabre o modal mesmo em caso de erro
                 }
             });
         }
