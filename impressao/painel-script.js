@@ -40,6 +40,7 @@
 
         const style = document.createElement('style');
         style.textContent = `
+            /* ... (estilos anteriores dos passos e cards) ... */
             .steps-container { display: flex; padding: 20px 10px; margin-bottom: 20px; border-bottom: 1px solid var(--borda); }
             .step { flex: 1; text-align: center; position: relative; color: #6c757d; font-weight: 600; font-size: 14px; padding: 10px 5px; background-color: #f8f9fa; border: 1px solid #dee2e6; cursor: pointer; transition: all 0.2s ease-in-out; }
             .step:first-child { border-radius: 6px 0 0 6px; }
@@ -68,19 +69,37 @@
             .info-item:last-child { border-bottom: none; }
             .info-item-label { font-weight: 600; }
             .tag-medidas { padding: 4px 10px; border-radius: 4px; color: white; font-weight: 600; font-size: 12px; }
+
+            /* --- NOVO ESTILO PARA O BOTÃO DE ATENDIMENTO --- */
+            .btn-atendimento {
+                background-color: var(--azul-principal);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 6px;
+                text-decoration: none;
+                font-size: 14px;
+                font-weight: 500;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                transition: background-color 0.2s;
+            }
+            .btn-atendimento:hover {
+                background-color: #2c89c8;
+            }
+            .btn-atendimento .fa-comment-dots {
+                font-size: 16px;
+            }
         `;
         document.head.appendChild(style);
 
-        async function carregarOpcoesDeFiltro() { /* ...código sem alterações... */ }
-        async function carregarPedidosDeImpressao() { /* ...código sem alterações... */ }
-        function organizarPedidosNasColunas(deals) { /* ...código sem alterações... */ }
+        // ... (resto do arquivo, com a alteração na função openDetailsModal)
 
         function createCardHtml(deal) {
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
             const statusId = deal[STATUS_IMPRESSAO_FIELD];
             const statusInfo = STATUS_MAP[statusId] || {};
             
-            // --- TÍTULO DO CARD ATUALIZADO ---
             return `
                 <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
                     <div class="card-title">#${deal.ID} - ${deal.TITLE}</div>
@@ -115,13 +134,16 @@
                 arquivoHtml = `<a href="${linkArquivo}" target="_blank" class="btn-acao btn-download">Baixar Arquivo</a>`;
             }
             
-            // --- NOVAS INFORMAÇÕES PARA O MODAL ---
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || '---';
             const contatoCliente = deal[CONTATO_CLIENTE_FIELD] || '---';
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
-            let atendimentoHtml = '';
+            let atendimentoHtml = '---'; // Padrão caso não haja link
             if(linkAtendimento) {
-                atendimentoHtml = `<a href="${linkAtendimento}" target="_blank" class="btn-acao">Ver Atendimento</a>`;
+                // --- HTML DO BOTÃO ATUALIZADO AQUI ---
+                atendimentoHtml = `<a href="${linkAtendimento}" target="_blank" class="btn-atendimento">
+                                       <i class="fas fa-comment-dots"></i>
+                                       <span>Ver Atendimento</span>
+                                   </a>`;
             }
 
             const medidasId = deal[MEDIDAS_FIELD];
@@ -155,11 +177,11 @@
                         <div class="card-detalhe">
                             <h3>Ações</h3>
                             <div class="info-item">
-                                <span class="info-item-label"></span>
+                                <span class="info-item-label">Arquivo:</span>
                                 ${arquivoHtml}
                             </div>
                             <div class="info-item">
-                                <span class="info-item-label"></span>
+                                <span class="info-item-label">Atendimento:</span>
                                 ${atendimentoHtml}
                             </div>
                         </div>
@@ -171,23 +193,7 @@
             attachStatusStepListeners(deal.ID);
         }
 
-        function attachStatusStepListeners(dealId) { /* ...código sem alterações... */ }
-        
-        btnFiltrar.addEventListener('click', carregarPedidosDeImpressao);
-        closeModalBtn.addEventListener('click', () => modal.classList.remove('active'));
-        modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
-
-        board.addEventListener('click', (event) => {
-            const button = event.target.closest('button[data-action="open-details-modal"]');
-            if (button) openDetailsModal(button.dataset.dealId);
-        });
-        
-        async function init() {
-            await carregarOpcoesDeFiltro();
-            await carregarPedidosDeImpressao();
-        }
-
-        init();
+        // --- MANTER O RESTO DO ARQUIVO IGUAL ---
 
         // Funções omitidas para brevidade, mas devem ser mantidas
         async function carregarOpcoesDeFiltro() {
@@ -309,5 +315,22 @@
                 }
             });
         }
+        btnFiltrar.addEventListener('click', carregarPedidosDeImpressao);
+        closeModalBtn.addEventListener('click', () => modal.classList.remove('active'));
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.classList.remove('active');
+        });
+
+        board.addEventListener('click', (event) => {
+            const button = event.target.closest('button[data-action="open-details-modal"]');
+            if (button) openDetailsModal(button.dataset.dealId);
+        });
+        
+        async function init() {
+            await carregarOpcoesDeFiltro();
+            await carregarPedidosDeImpressao();
+        }
+
+        init();
     });
 })();
