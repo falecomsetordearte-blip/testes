@@ -7,9 +7,13 @@ const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 const FIELD_IMPRESSORA = 'UF_CRM_1658470569';
 const FIELD_MATERIAL = 'UF_CRM_1685624742';
 const FIELD_PRAZO_IMPRESSAO_MINUTOS = 'UF_CRM_17577566402085';
-const FIELD_LINK_VER_PEDIDO = 'UF_CRM_1741349861326';
+const FIELD_STATUS_IMPRESSAO = 'UF_CRM_1757756651931';
+// --- NOVOS CAMPOS ADICIONADOS ---
+const FIELD_NOME_CLIENTE = 'UF_CRM_1741273407628';
+const FIELD_CONTATO_CLIENTE = 'UF_CRM_1749481565243';
+const FIELD_LINK_ATENDIMENTO = 'UF_CRM_1752712769666';
+const FIELD_MEDIDAS = 'UF_CRM_1727464924690';
 const FIELD_LINK_ARQUIVO_FINAL = 'UF_CRM_1748277308731';
-const FIELD_STATUS_IMPRESSAO = 'UF_CRM_1757756651931'; // <-- Usando o campo de LISTA
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
@@ -29,15 +33,18 @@ module.exports = async (req, res) => {
             select: [
                 'ID', 'TITLE', 'STAGE_ID', 'ASSIGNED_BY_ID', 'DATE_CREATE',
                 FIELD_PRAZO_IMPRESSAO_MINUTOS,
-                FIELD_LINK_VER_PEDIDO,
-                FIELD_LINK_ARQUIVO_FINAL,
-                FIELD_STATUS_IMPRESSAO // <-- Buscando o campo de LISTA
+                FIELD_STATUS_IMPRESSAO,
+                // --- NOVOS CAMPOS ADICIONADOS ---
+                FIELD_NOME_CLIENTE,
+                FIELD_CONTATO_CLIENTE,
+                FIELD_LINK_ATENDIMENTO,
+                FIELD_MEDIDAS,
+                FIELD_LINK_ARQUIVO_FINAL
             ]
         });
 
         const deals = response.data.result || [];
         
-        // O resto da função permanece igual...
         const chatCommands = deals.map(deal => 
             `crm.timeline.comment.list?` + new URLSearchParams({
                 filter: { ENTITY_ID: deal.ID, ENTITY_TYPE: "deal" },
