@@ -6,10 +6,10 @@
         const STATUS_IMPRESSAO_FIELD = 'UF_CRM_1757756651931';
         
         const STATUS_MAP = {
-            '2657': { nome: 'Preparação', cor: '#d1e7fd', corBorda: '#0d6efd', classe: 'preparacao' },
-            '2659': { nome: 'Na Fila', cor: '#d4edda', corBorda: '#198754', classe: 'na-fila' },
-            '2661': { nome: 'Imprimindo', cor: '#fff3cd', corBorda: '#ffc107', classe: 'imprimindo' },
-            '2663': { nome: 'Pronto', cor: '#f8d7da', corBorda: '#dc3545', classe: 'pronto' }
+            '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao' },
+            '2659': { nome: 'Na Fila',    cor: '#9b59b6', classe: 'na-fila' },
+            '2661': { nome: 'Imprimindo', cor: '#e74c3c', classe: 'imprimindo' },
+            '2663': { nome: 'Pronto',     cor: '#27ae60', classe: 'pronto' }
         };
         // A ordem em que os passos aparecerão no modal
         const STATUS_ORDER = ['2657', '2659', '2661', '2663'];
