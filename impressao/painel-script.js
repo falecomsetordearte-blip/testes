@@ -10,8 +10,8 @@
         const MEDIDAS_FIELD = 'UF_CRM_1727464924690';
         const LINK_ARQUIVO_FINAL_FIELD = 'UF_CRM_1748277308731';
         const REVISAO_SOLICITADA_FIELD = 'UF_CRM_1757765731136';
-        const FIELD_STATUS_PAGAMENTO_DESIGNER = 'UF_CRM_1757789502613'; // <-- NOVO
-        const STATUS_PAGO_ID = '2675'; // <-- NOVO
+        const FIELD_STATUS_PAGAMENTO_DESIGNER = 'UF_CRM_1757789502613';
+        const STATUS_PAGO_ID = '2675';
 
         const STATUS_MAP = {
             '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao', corFundo: 'rgba(46, 204, 113, 0.1)' },
@@ -68,13 +68,6 @@
             .info-item:last-child { border-bottom: none; }
             .info-item-label { font-weight: 600; }
             .tag-medidas { padding: 4px 10px; border-radius: 4px; color: white; font-weight: 600; font-size: 12px; }
-            .actions-dropdown { position: relative; display: inline-block; }
-            .btn-actions-toggle { background-color: var(--azul-principal); color: white; font-weight: 600; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; transition: background-color 0.2s; }
-            .btn-actions-toggle:hover { background-color: #2c89c8; }
-            .actions-dropdown-content { display: none; position: absolute; right: 0; top: 100%; margin-top: 5px; background-color: white; min-width: 180px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); border-radius: 6px; z-index: 10; border: 1px solid var(--borda); overflow: hidden; }
-            .actions-dropdown-content a, .actions-dropdown-content button { color: var(--texto-escuro); padding: 12px 16px; text-decoration: none; display: block; text-align: left; background: none; border: none; width: 100%; cursor: pointer; }
-            .actions-dropdown-content a:hover, .actions-dropdown-content button:hover { background-color: #f1f1f1; }
-            .actions-dropdown.active .actions-dropdown-content { display: block; }
             #chat-revisao-container { padding-top: 15px; }
             .revision-area { text-align: center; padding: 40px 20px; }
             .btn-request-revision { background: none; border: 2px dashed #d1d5db; color: var(--cinza-texto); padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.3s ease; }
@@ -90,28 +83,44 @@
             #btn-enviar-mensagem { flex-shrink: 0; background-color: var(--azul-principal); border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background-color 0.2s; }
             #btn-enviar-mensagem svg { fill: white; width: 20px; height: 20px; transform: translateX(1px); }
             #btn-enviar-mensagem:hover { background-color: #2c89c8; }
-            
-            /* --- NOVO ESTILO PARA O BLOQUEIO --- */
-            .chat-bloqueado {
-                position: relative;
-                cursor: not-allowed;
+            .chat-bloqueado { position: relative; cursor: not-allowed; }
+            .chat-bloqueado::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255, 255, 255, 0.7); border-radius: 8px; z-index: 5; }
+
+            /* --- INÍCIO DOS ESTILOS DOS BOTÕES DE AÇÃO --- */
+            .modal-actions-container {
+                display: flex;
+                flex-direction: column;
+                gap: 10px; /* Espaçamento entre os botões */
             }
-            .chat-bloqueado::after {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background-color: rgba(255, 255, 255, 0.7);
-                border-radius: 8px;
-                z-index: 5;
+            .modal-actions-container .btn-acao-modal {
+                display: block; /* Para ocupar a largura inteira */
+                text-decoration: none;
+                text-align: center;
+                padding: 10px;
+                border-radius: 6px;
+                font-weight: 600;
+                transition: background-color 0.2s, color 0.2s;
+                border: 1px solid transparent;
             }
+            .modal-actions-container .btn-acao-modal.principal {
+                background-color: var(--azul-principal);
+                color: white;
+            }
+            .modal-actions-container .btn-acao-modal.principal:hover {
+                background-color: #2c89c8;
+            }
+            .modal-actions-container .btn-acao-modal.secundario {
+                background-color: #f1f1f1;
+                border-color: #ddd;
+                color: var(--texto-escuro);
+            }
+            .modal-actions-container .btn-acao-modal.secundario:hover {
+                background-color: #e9e9e9;
+            }
+            /* --- FIM DOS ESTILOS DOS BOTÕES DE AÇÃO --- */
         `;
         document.head.appendChild(style);
 
-        // ... (resto das funções, como carregarOpcoesDeFiltro, carregarPedidosDeImpressao, etc., permanecem iguais)
-        
         async function carregarOpcoesDeFiltro() {
             try {
                 const response = await fetch('/api/getProductionFilters');
@@ -182,19 +191,13 @@
         }
 
         async function loadAndDisplayChatHistory(dealId) {
-            console.log(`[painel-script] Buscando histórico para o dealId: ${dealId}`);
             const chatContainer = document.getElementById('mensagens-container');
             if (!chatContainer) return;
             try {
-                const response = await fetch('/api/impressao/getChatHistory', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ dealId })
-                });
+                const response = await fetch('/api/impressao/getChatHistory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealId }) });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.message);
                 const messages = data.messages || [];
-                console.log(`[painel-script] ${messages.length} mensagens recebidas da API.`, messages);
                 if (messages.length > 0) {
                     chatContainer.innerHTML = messages.map(msg => {
                         const classe = msg.remetente === 'operador' ? 'mensagem-designer' : 'mensagem-cliente';
@@ -206,8 +209,7 @@
                     chatContainer.innerHTML = '<p class="info-text">Nenhuma mensagem ainda. Inicie a conversa.</p>';
                 }
             } catch (error) {
-                console.error('[painel-script] Erro ao carregar histórico do chat:', error);
-                chatContainer.innerHTML = `<p class="info-text" style="color: red;">Erro ao carregar mensagens: ${error.message}</p>`;
+                chatContainer.innerHTML = `<p class="info-text" style="color: red;">Erro ao carregar mensagens.</p>`;
             }
         }
         
@@ -238,51 +240,28 @@
             const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
             const revisaoSolicitada = deal[REVISAO_SOLICITADA_FIELD] === '1';
-            const isPago = deal[FIELD_STATUS_PAGAMENTO_DESIGNER] === STATUS_PAGO_ID; // <-- NOVA VERIFICAÇÃO
+            const isPago = deal[FIELD_STATUS_PAGAMENTO_DESIGNER] === STATUS_PAGO_ID;
 
-            let dropdownItemsHtml = '';
-            if (linkArquivo) { dropdownItemsHtml += `<a href="${linkArquivo}" target="_blank">Baixar Arquivo</a>`; }
-            if (linkAtendimento) { dropdownItemsHtml += `<a href="${linkAtendimento}" target="_blank">Ver Atendimento</a>`; }
-            if (dropdownItemsHtml === '') { dropdownItemsHtml = `<span style="padding: 12px 16px; display: block; color: #999;">Nenhuma ação disponível</span>`; }
-            
+            // --- LÓGICA DOS BOTÕES DE AÇÃO ---
+            let actionsHtml = '';
+            if (linkArquivo) {
+                actionsHtml += `<a href="${linkArquivo}" target="_blank" class="btn-acao-modal principal">Baixar Arquivo</a>`;
+            }
+            if (linkAtendimento) {
+                actionsHtml += `<a href="${linkAtendimento}" target="_blank" class="btn-acao-modal secundario">Ver Atendimento</a>`;
+            }
+            if (actionsHtml === '') {
+                actionsHtml = '<p class="info-text" style="text-align:center;">Nenhuma ação disponível.</p>';
+            }
+            // --- FIM DA LÓGICA DOS BOTÕES ---
+
             let mainColumnHtml = '';
             if (revisaoSolicitada) {
-                // Remove o botão "Arquivo Aprovado" se já estiver pago
-                const approveButtonHtml = isPago ? '' : `<button class="btn-approve-file" data-action="approve-file" title="Aprovar o arquivo, processar pagamento do designer e finalizar o pedido."><i class="fas fa-check"></i> Arquivo Aprovado</button>`;
-                
-                // Monta o HTML do chat
-                let chatHtml = `
-                    <div class="card-detalhe">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h3>Conversa de Revisão</h3>
-                            ${approveButtonHtml}
-                        </div>
-                        <div id="chat-revisao-container" class="chat-box">
-                            <div id="mensagens-container" style="flex-grow: 1; overflow-y: auto; padding-right: 10px;">
-                                <div class="loading-pedidos"><div class="spinner"></div></div>
-                            </div>
-                            <form id="form-mensagem" class="form-mensagem">
-                                <input type="text" id="input-mensagem" placeholder="Digite sua mensagem..." required>
-                                <button type="submit" id="btn-enviar-mensagem" title="Enviar Mensagem">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
-                                </button>
-                            </form>
-                        </div>
-                    </div>`;
-
-                // Se estiver pago, envolve o HTML do chat com o div de bloqueio
-                if (isPago) {
-                    mainColumnHtml = `<div class="chat-bloqueado" title="Arquivo desse Pedido já foi aprovado.">${chatHtml}</div>`;
-                } else {
-                    mainColumnHtml = chatHtml;
-                }
+                const approveButtonHtml = isPago ? '' : `<button class="btn-approve-file" data-action="approve-file" title="Aprovar o arquivo, processar pagamento e finalizar."><i class="fas fa-check"></i> Arquivo Aprovado</button>`;
+                let chatHtml = `<div class="card-detalhe"><div style="display: flex; justify-content: space-between; align-items: center;"><h3>Conversa de Revisão</h3>${approveButtonHtml}</div><div id="chat-revisao-container" class="chat-box"><div id="mensagens-container" style="flex-grow: 1; overflow-y: auto; padding-right: 10px;"><div class="loading-pedidos"><div class="spinner"></div></div></div><form id="form-mensagem" class="form-mensagem"><input type="text" id="input-mensagem" placeholder="Digite sua mensagem..." required><button type="submit" id="btn-enviar-mensagem" title="Enviar Mensagem"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg></button></form></div></div>`;
+                mainColumnHtml = isPago ? `<div class="chat-bloqueado" title="Arquivo desse Pedido já foi aprovado.">${chatHtml}</div>` : chatHtml;
             } else {
-                mainColumnHtml = `
-                    <div class="card-detalhe">
-                        <div class="revision-area">
-                            <button class="btn-request-revision" data-action="request-revision">Solicitar Revisão</button>
-                        </div>
-                    </div>`;
+                mainColumnHtml = `<div class="card-detalhe"><div class="revision-area"><button class="btn-request-revision" data-action="request-revision">Solicitar Revisão</button></div></div>`;
             }
 
             modalBody.innerHTML = `
@@ -290,14 +269,8 @@
                 <div class="detalhe-layout">
                     <div class="detalhe-col-principal">${mainColumnHtml}</div>
                     <div class="detalhe-col-lateral">
-                        <div class="card-detalhe">
-                            <div class="info-item">
-                                <span class="info-item-label">Opções:</span>
-                                <div class="actions-dropdown" id="modal-actions-menu">
-                                    <button class="btn-actions-toggle">Ações</button>
-                                    <div class="actions-dropdown-content">${dropdownItemsHtml}</div>
-                                </div>
-                            </div>
+                        <div class="card-detalhe modal-actions-container">
+                            ${actionsHtml}
                         </div>
                         <div class="card-detalhe">
                             <h3>Informações do Cliente</h3>
@@ -310,39 +283,21 @@
             `;
             
             modal.classList.add('active');
-
-            if (revisaoSolicitada) {
-                loadAndDisplayChatHistory(dealId);
-            }
-            
+            if (revisaoSolicitada) { loadAndDisplayChatHistory(dealId); }
             attachAllListeners(deal);
         }
 
         function attachAllListeners(deal) {
             attachStatusStepListeners(deal.ID);
-            attachDropdownListener();
             const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === '1';
             const isPago = deal[FIELD_STATUS_PAGAMENTO_DESIGNER] === STATUS_PAGO_ID;
-
-            if (isRevisionActive && !isPago) { // O chat só funciona se a revisão estiver ativa E não estiver pago
+            if (isRevisionActive && !isPago) {
                 attachChatListeners(deal.ID);
-            } else if (!isRevisionActive) { // O botão de solicitar revisão só aparece se a revisão não foi solicitada
+            } else if (!isRevisionActive) {
                 attachRevisionListener(deal.ID);
             }
         }
         
-        // ... (o restante do arquivo, como attachDropdownListener, attachRevisionListener, etc. permanece exatamente igual)
-
-        function attachDropdownListener() {
-            const dropdown = document.getElementById('modal-actions-menu');
-            if (!dropdown) return;
-            const toggleButton = dropdown.querySelector('.btn-actions-toggle');
-            toggleButton.addEventListener('click', () => { dropdown.classList.toggle('active'); });
-            document.body.addEventListener('click', (event) => {
-                if (!dropdown.contains(event.target)) { dropdown.classList.remove('active'); }
-            }, true);
-        }
-
         function attachRevisionListener(dealId) {
             const requestRevisionBtn = modalBody.querySelector('button[data-action="request-revision"]');
             if (!requestRevisionBtn) return;
@@ -350,22 +305,13 @@
                 const container = requestRevisionBtn.closest('.revision-area');
                 container.innerHTML = '<div class="loading-pedidos"><div class="spinner"></div></div>';
                 try {
-                    const response = await fetch('/api/impressao/requestRevision', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ dealId })
-                    });
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.message || 'Falha ao solicitar revisão.');
-                    }
+                    const response = await fetch('/api/impressao/requestRevision', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealId }) });
+                    if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message); }
                     const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
-                    if (dealIndex > -1) {
-                        allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = '1';
-                    }
+                    if (dealIndex > -1) { allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = '1'; }
                     openDetailsModal(dealId);
                 } catch (error) {
-                    alert('Erro ao solicitar revisão: ' + error.message);
+                    alert('Erro: ' + error.message);
                     openDetailsModal(dealId);
                 }
             });
@@ -381,16 +327,9 @@
                     const container = document.getElementById('mensagens-container');
                     const mensagem = input.value.trim();
                     if (!mensagem) return;
-                    
-                    input.disabled = true;
-                    btn.disabled = true;
-                    
+                    input.disabled = true; btn.disabled = true;
                     try {
-                        await fetch('/api/sendMessage', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ dealId, message: mensagem })
-                        });
+                        await fetch('/api/sendMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealId, message: mensagem }) });
                         input.value = '';
                         const div = document.createElement('div');
                         div.className = 'mensagem mensagem-designer';
@@ -399,11 +338,9 @@
                         container.appendChild(div);
                         container.scrollTop = container.scrollHeight;
                     } catch (error) {
-                        alert('Erro ao enviar mensagem: ' + (error.message || 'Tente novamente.'));
+                        alert('Erro ao enviar mensagem.');
                     } finally {
-                        input.disabled = false;
-                        btn.disabled = false;
-                        input.focus();
+                        input.disabled = false; btn.disabled = false; input.focus();
                     }
                 });
             }
@@ -415,25 +352,15 @@
                     approveBtn.disabled = true;
                     approveBtn.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0 auto;"></div>';
                     try {
-                        const response = await fetch('/api/impressao/approveFile', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ dealId })
-                        });
+                        const response = await fetch('/api/impressao/approveFile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealId }) });
                         const data = await response.json();
                         if (!response.ok) throw new Error(data.message);
                         alert('Arquivo aprovado com sucesso!');
-                        
-                        // Atualiza o dado localmente para refletir o novo estado de pagamento
                         const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
-                        if (dealIndex > -1) {
-                            allDealsData[dealIndex][FIELD_STATUS_PAGAMENTO_DESIGNER] = STATUS_PAGO_ID;
-                        }
-                        // Recarrega o modal para exibir a interface bloqueada
+                        if (dealIndex > -1) { allDealsData[dealIndex][FIELD_STATUS_PAGAMENTO_DESIGNER] = STATUS_PAGO_ID; }
                         openDetailsModal(dealId);
-
                     } catch (error) {
-                        alert(`Erro ao aprovar arquivo: ${error.message}`);
+                        alert(`Erro: ${error.message}`);
                         approveBtn.disabled = false;
                         approveBtn.innerHTML = '<i class="fas fa-check"></i> Arquivo Aprovado';
                     }
@@ -450,11 +377,7 @@
                 const steps = container.querySelectorAll('.step');
                 container.style.pointerEvents = 'none';
                 try {
-                    await fetch('/api/impressao/updateStatus', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ dealId, statusId })
-                    });
+                    await fetch('/api/impressao/updateStatus', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealId, statusId }) });
                     const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
                     if (dealIndex > -1) { allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = statusId; }
                     const newStatusIndex = STATUS_ORDER.indexOf(statusId);
@@ -472,7 +395,7 @@
                         if (newStatusInfo) card.classList.add('status-' + newStatusInfo.classe);
                     }
                 } catch (error) {
-                    alert('Erro ao atualizar status: ' + error.message);
+                    alert('Erro: ' + error.message);
                 } finally {
                     container.style.pointerEvents = 'auto';
                 }
