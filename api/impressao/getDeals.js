@@ -14,6 +14,7 @@ const FIELD_LINK_ATENDIMENTO = 'UF_CRM_1752712769666';
 const FIELD_MEDIDAS = 'UF_CRM_1727464924690';
 const FIELD_LINK_ARQUIVO_FINAL = 'UF_CRM_1748277308731';
 const FIELD_REVISAO_SOLICITADA = 'UF_CRM_1757765731136';
+const FIELD_STATUS_PAGAMENTO_DESIGNER = 'UF_CRM_1757789502613'; // <-- NOVO CAMPO ADICIONADO
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
@@ -27,10 +28,9 @@ module.exports = async (req, res) => {
         if (impressoraFilter) filterParams[FIELD_IMPRESSORA] = impressoraFilter;
         if (materialFilter) filterParams[FIELD_MATERIAL] = materialFilter;
 
-        // --- LOG DE DEPURAÇÃO 1 ---
         console.log('[getDeals] Iniciando busca de negócios com os filtros:', JSON.stringify(filterParams));
 
-        // 1. Buscar a lista de negócios (sem o histórico de comentários)
+        // 1. Buscar a lista de negócios
         const response = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
             filter: filterParams,
             order: { 'ID': 'DESC' },
@@ -38,13 +38,13 @@ module.exports = async (req, res) => {
                 'ID', 'TITLE', 'STAGE_ID', 'ASSIGNED_BY_ID', 'DATE_CREATE',
                 FIELD_PRAZO_IMPRESSAO_MINUTOS, FIELD_STATUS_IMPRESSAO,
                 FIELD_NOME_CLIENTE, FIELD_CONTATO_CLIENTE, FIELD_LINK_ATENDIMENTO,
-                FIELD_MEDIDAS, FIELD_LINK_ARQUIVO_FINAL, FIELD_REVISAO_SOLICITADA
+                FIELD_MEDIDAS, FIELD_LINK_ARQUIVO_FINAL, FIELD_REVISAO_SOLICITADA,
+                FIELD_STATUS_PAGAMENTO_DESIGNER // <-- NOVO CAMPO ADICIONADO
             ]
         });
 
         const deals = response.data.result || [];
         
-        // --- LOG DE DEPURAÇÃO 2 ---
         console.log(`[getDeals] ${deals.length} negócios encontrados. Enviando para o frontend.`);
         
         // 2. Envia a lista de negócios diretamente

@@ -10,6 +10,8 @@
         const MEDIDAS_FIELD = 'UF_CRM_1727464924690';
         const LINK_ARQUIVO_FINAL_FIELD = 'UF_CRM_1748277308731';
         const REVISAO_SOLICITADA_FIELD = 'UF_CRM_1757765731136';
+        const FIELD_STATUS_PAGAMENTO_DESIGNER = 'UF_CRM_1757789502613'; // <-- NOVO
+        const STATUS_PAGO_ID = '2675'; // <-- NOVO
 
         const STATUS_MAP = {
             '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao', corFundo: 'rgba(46, 204, 113, 0.1)' },
@@ -38,7 +40,6 @@
 
         const style = document.createElement('style');
         style.textContent = `
-            /* ESTILOS ANTERIORES (INTOCADOS) */
             .steps-container { display: flex; padding: 20px 10px; margin-bottom: 20px; border-bottom: 1px solid var(--borda); }
             .step { flex: 1; text-align: center; position: relative; color: #6c757d; font-weight: 600; font-size: 14px; padding: 10px 5px; background-color: #f8f9fa; border: 1px solid #dee2e6; cursor: pointer; transition: all 0.2s ease-in-out; }
             .step:first-child { border-radius: 6px 0 0 6px; }
@@ -79,95 +80,38 @@
             .btn-request-revision { background: none; border: 2px dashed #d1d5db; color: var(--cinza-texto); padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.3s ease; }
             .btn-request-revision:hover { border-color: var(--azul-principal); background-color: rgba(56, 169, 244, 0.05); color: var(--azul-principal); }
             .btn-approve-file { background-color: var(--sucesso); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
-
-            /* --- INÍCIO DOS NOVOS ESTILOS DO CHAT --- */
+            #mensagens-container { display: flex; flex-direction: column; gap: 8px; }
+            .mensagem { padding: 10px 15px; border-radius: 18px; max-width: 80%; word-wrap: break-word; line-height: 1.4; }
+            .mensagem-cliente { background-color: #e9ecef; color: var(--texto-escuro); border-bottom-left-radius: 4px; margin-right: auto; align-self: flex-start; }
+            .mensagem-designer { background-color: var(--azul-principal); color: white; border-bottom-right-radius: 4px; margin-left: auto; align-self: flex-end; }
+            .form-mensagem { display: flex; gap: 10px; align-items: center; padding-top: 15px; margin-top: 15px !important; border-top: 1px solid var(--borda); }
+            #input-mensagem { flex-grow: 1; border: 1px solid #ccc; border-radius: 20px; padding: 10px 18px; font-size: 14px; transition: border-color 0.2s, box-shadow 0.2s; }
+            #input-mensagem:focus { outline: none; border-color: var(--azul-principal); box-shadow: 0 0 0 2px rgba(56, 169, 244, 0.2); }
+            #btn-enviar-mensagem { flex-shrink: 0; background-color: var(--azul-principal); border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background-color 0.2s; }
+            #btn-enviar-mensagem svg { fill: white; width: 20px; height: 20px; transform: translateX(1px); }
+            #btn-enviar-mensagem:hover { background-color: #2c89c8; }
             
-            /* Contêiner das mensagens para alinhar em coluna */
-            #mensagens-container {
-                display: flex;
-                flex-direction: column;
-                gap: 8px; /* Espaço entre as mensagens */
+            /* --- NOVO ESTILO PARA O BLOQUEIO --- */
+            .chat-bloqueado {
+                position: relative;
+                cursor: not-allowed;
             }
-
-            /* Estilo base para todos os balões de mensagem */
-            .mensagem {
-                padding: 10px 15px;
-                border-radius: 18px;
-                max-width: 80%;
-                word-wrap: break-word;
-                line-height: 1.4;
+            .chat-bloqueado::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(255, 255, 255, 0.7);
+                border-radius: 8px;
+                z-index: 5;
             }
-
-            /* Balão cinza para o designer (à esquerda) */
-            .mensagem-cliente {
-                background-color: #e9ecef;
-                color: var(--texto-escuro);
-                border-bottom-left-radius: 4px;
-                margin-right: auto;
-                align-self: flex-start;
-            }
-
-            /* Balão azul para o operador/usuário do modal (à direita) */
-            .mensagem-designer {
-                background-color: var(--azul-principal);
-                color: white;
-                border-bottom-right-radius: 4px;
-                margin-left: auto;
-                align-self: flex-end;
-            }
-
-            /* Estilo do formulário de envio */
-            .form-mensagem {
-                display: flex;
-                gap: 10px;
-                align-items: center;
-                padding-top: 15px;
-                margin-top: 15px !important;
-                border-top: 1px solid var(--borda);
-            }
-
-            /* Campo de texto */
-            #input-mensagem {
-                flex-grow: 1;
-                border: 1px solid #ccc;
-                border-radius: 20px;
-                padding: 10px 18px;
-                font-size: 14px;
-                transition: border-color 0.2s, box-shadow 0.2s;
-            }
-            #input-mensagem:focus {
-                outline: none;
-                border-color: var(--azul-principal);
-                box-shadow: 0 0 0 2px rgba(56, 169, 244, 0.2);
-            }
-
-            /* Botão de enviar */
-            #btn-enviar-mensagem {
-                flex-shrink: 0;
-                background-color: var(--azul-principal);
-                border: none;
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                transition: background-color 0.2s;
-            }
-            #btn-enviar-mensagem svg {
-                fill: white;
-                width: 20px;
-                height: 20px;
-                transform: translateX(1px);
-            }
-            #btn-enviar-mensagem:hover {
-                background-color: #2c89c8;
-            }
-            /* --- FIM DOS NOVOS ESTILOS DO CHAT --- */
         `;
         document.head.appendChild(style);
 
+        // ... (resto das funções, como carregarOpcoesDeFiltro, carregarPedidosDeImpressao, etc., permanecem iguais)
+        
         async function carregarOpcoesDeFiltro() {
             try {
                 const response = await fetch('/api/getProductionFilters');
@@ -239,26 +183,18 @@
 
         async function loadAndDisplayChatHistory(dealId) {
             console.log(`[painel-script] Buscando histórico para o dealId: ${dealId}`);
-            
             const chatContainer = document.getElementById('mensagens-container');
-            if (!chatContainer) {
-                console.error('[painel-script] Erro: O contêiner do chat (#mensagens-container) não foi encontrado no DOM.');
-                return;
-            }
-
+            if (!chatContainer) return;
             try {
                 const response = await fetch('/api/impressao/getChatHistory', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ dealId })
                 });
-
                 const data = await response.json();
-                if (!response.ok) throw new Error(data.message || 'Falha ao buscar o histórico.');
-                
+                if (!response.ok) throw new Error(data.message);
                 const messages = data.messages || [];
                 console.log(`[painel-script] ${messages.length} mensagens recebidas da API.`, messages);
-
                 if (messages.length > 0) {
                     chatContainer.innerHTML = messages.map(msg => {
                         const classe = msg.remetente === 'operador' ? 'mensagem-designer' : 'mensagem-cliente';
@@ -277,10 +213,7 @@
         
         function openDetailsModal(dealId) {
             const deal = allDealsData.find(d => d.ID == dealId);
-            if (!deal) {
-                console.error(`[painel-script] Não foi possível encontrar dados para o negócio com ID: ${dealId}`);
-                return;
-            }
+            if (!deal) return;
             
             modalTitle.textContent = `Detalhes do Pedido #${deal.ID} - ${deal.TITLE}`;
             
@@ -305,7 +238,8 @@
             const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
             const revisaoSolicitada = deal[REVISAO_SOLICITADA_FIELD] === '1';
-            
+            const isPago = deal[FIELD_STATUS_PAGAMENTO_DESIGNER] === STATUS_PAGO_ID; // <-- NOVA VERIFICAÇÃO
+
             let dropdownItemsHtml = '';
             if (linkArquivo) { dropdownItemsHtml += `<a href="${linkArquivo}" target="_blank">Baixar Arquivo</a>`; }
             if (linkAtendimento) { dropdownItemsHtml += `<a href="${linkAtendimento}" target="_blank">Ver Atendimento</a>`; }
@@ -313,13 +247,15 @@
             
             let mainColumnHtml = '';
             if (revisaoSolicitada) {
-                mainColumnHtml = `
+                // Remove o botão "Arquivo Aprovado" se já estiver pago
+                const approveButtonHtml = isPago ? '' : `<button class="btn-approve-file" data-action="approve-file" title="Aprovar o arquivo, processar pagamento do designer e finalizar o pedido."><i class="fas fa-check"></i> Arquivo Aprovado</button>`;
+                
+                // Monta o HTML do chat
+                let chatHtml = `
                     <div class="card-detalhe">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <h3>Conversa de Revisão</h3>
-                            <button class="btn-approve-file" data-action="approve-file" title="Aprovar o arquivo, processar pagamento do designer e finalizar o pedido.">
-                                <i class="fas fa-check"></i> Arquivo Aprovado
-                            </button>
+                            ${approveButtonHtml}
                         </div>
                         <div id="chat-revisao-container" class="chat-box">
                             <div id="mensagens-container" style="flex-grow: 1; overflow-y: auto; padding-right: 10px;">
@@ -333,6 +269,13 @@
                             </form>
                         </div>
                     </div>`;
+
+                // Se estiver pago, envolve o HTML do chat com o div de bloqueio
+                if (isPago) {
+                    mainColumnHtml = `<div class="chat-bloqueado" title="Arquivo desse Pedido já foi aprovado.">${chatHtml}</div>`;
+                } else {
+                    mainColumnHtml = chatHtml;
+                }
             } else {
                 mainColumnHtml = `
                     <div class="card-detalhe">
@@ -379,12 +322,16 @@
             attachStatusStepListeners(deal.ID);
             attachDropdownListener();
             const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === '1';
-            if (isRevisionActive) {
+            const isPago = deal[FIELD_STATUS_PAGAMENTO_DESIGNER] === STATUS_PAGO_ID;
+
+            if (isRevisionActive && !isPago) { // O chat só funciona se a revisão estiver ativa E não estiver pago
                 attachChatListeners(deal.ID);
-            } else {
+            } else if (!isRevisionActive) { // O botão de solicitar revisão só aparece se a revisão não foi solicitada
                 attachRevisionListener(deal.ID);
             }
         }
+        
+        // ... (o restante do arquivo, como attachDropdownListener, attachRevisionListener, etc. permanece exatamente igual)
 
         function attachDropdownListener() {
             const dropdown = document.getElementById('modal-actions-menu');
@@ -446,7 +393,7 @@
                         });
                         input.value = '';
                         const div = document.createElement('div');
-                        div.className = 'mensagem mensagem-designer'; // Mensagem do operador
+                        div.className = 'mensagem mensagem-designer';
                         div.textContent = mensagem;
                         if(container.querySelector('.info-text') || container.querySelector('.loading-pedidos')) container.innerHTML = '';
                         container.appendChild(div);
@@ -476,8 +423,15 @@
                         const data = await response.json();
                         if (!response.ok) throw new Error(data.message);
                         alert('Arquivo aprovado com sucesso!');
-                        modal.classList.remove('active');
-                        carregarPedidosDeImpressao();
+                        
+                        // Atualiza o dado localmente para refletir o novo estado de pagamento
+                        const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
+                        if (dealIndex > -1) {
+                            allDealsData[dealIndex][FIELD_STATUS_PAGAMENTO_DESIGNER] = STATUS_PAGO_ID;
+                        }
+                        // Recarrega o modal para exibir a interface bloqueada
+                        openDetailsModal(dealId);
+
                     } catch (error) {
                         alert(`Erro ao aprovar arquivo: ${error.message}`);
                         approveBtn.disabled = false;
