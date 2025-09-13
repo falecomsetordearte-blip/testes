@@ -40,6 +40,12 @@
 
         const style = document.createElement('style');
         style.textContent = `
+            /* --- MELHORIA: MODAL INSTANTÂNEO --- */
+            #modal-detalhes-rapidos.modal-overlay,
+            #modal-detalhes-rapidos .modal-content {
+                transition: none !important;
+            }
+            
             .steps-container { display: flex; padding: 20px 10px; margin-bottom: 20px; border-bottom: 1px solid var(--borda); }
             .step { flex: 1; text-align: center; position: relative; color: #6c757d; font-weight: 600; font-size: 14px; padding: 10px 5px; background-color: #f8f9fa; border: 1px solid #dee2e6; cursor: pointer; transition: all 0.2s ease-in-out; }
             .step:first-child { border-radius: 6px 0 0 6px; }
@@ -85,39 +91,12 @@
             #btn-enviar-mensagem:hover { background-color: #2c89c8; }
             .chat-bloqueado { position: relative; cursor: not-allowed; }
             .chat-bloqueado::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255, 255, 255, 0.7); border-radius: 8px; z-index: 5; }
-
-            /* --- INÍCIO DOS ESTILOS DOS BOTÕES DE AÇÃO --- */
-            .modal-actions-container {
-                display: flex;
-                flex-direction: column;
-                gap: 10px; /* Espaçamento entre os botões */
-            }
-            .modal-actions-container .btn-acao-modal {
-                display: block; /* Para ocupar a largura inteira */
-                text-decoration: none;
-                text-align: center;
-                padding: 10px;
-                border-radius: 6px;
-                font-weight: 600;
-                transition: background-color 0.2s, color 0.2s;
-                border: 1px solid transparent;
-            }
-            .modal-actions-container .btn-acao-modal.principal {
-                background-color: var(--azul-principal);
-                color: white;
-            }
-            .modal-actions-container .btn-acao-modal.principal:hover {
-                background-color: #2c89c8;
-            }
-            .modal-actions-container .btn-acao-modal.secundario {
-                background-color: #f1f1f1;
-                border-color: #ddd;
-                color: var(--texto-escuro);
-            }
-            .modal-actions-container .btn-acao-modal.secundario:hover {
-                background-color: #e9e9e9;
-            }
-            /* --- FIM DOS ESTILOS DOS BOTÕES DE AÇÃO --- */
+            .modal-actions-container { display: flex; flex-direction: column; gap: 10px; }
+            .modal-actions-container .btn-acao-modal { display: block; text-decoration: none; text-align: center; padding: 10px; border-radius: 6px; font-weight: 600; transition: background-color 0.2s, color 0.2s; border: 1px solid transparent; }
+            .modal-actions-container .btn-acao-modal.principal { background-color: var(--azul-principal); color: white; }
+            .modal-actions-container .btn-acao-modal.principal:hover { background-color: #2c89c8; }
+            .modal-actions-container .btn-acao-modal.secundario { background-color: #f1f1f1; border-color: #ddd; color: var(--texto-escuro); }
+            .modal-actions-container .btn-acao-modal.secundario:hover { background-color: #e9e9e9; }
         `;
         document.head.appendChild(style);
 
@@ -242,18 +221,10 @@
             const revisaoSolicitada = deal[REVISAO_SOLICITADA_FIELD] === '1';
             const isPago = deal[FIELD_STATUS_PAGAMENTO_DESIGNER] === STATUS_PAGO_ID;
 
-            // --- LÓGICA DOS BOTÕES DE AÇÃO ---
             let actionsHtml = '';
-            if (linkArquivo) {
-                actionsHtml += `<a href="${linkArquivo}" target="_blank" class="btn-acao-modal principal">Baixar Arquivo</a>`;
-            }
-            if (linkAtendimento) {
-                actionsHtml += `<a href="${linkAtendimento}" target="_blank" class="btn-acao-modal secundario">Ver Atendimento</a>`;
-            }
-            if (actionsHtml === '') {
-                actionsHtml = '<p class="info-text" style="text-align:center;">Nenhuma ação disponível.</p>';
-            }
-            // --- FIM DA LÓGICA DOS BOTÕES ---
+            if (linkArquivo) { actionsHtml += `<a href="${linkArquivo}" target="_blank" class="btn-acao-modal principal">Baixar Arquivo</a>`; }
+            if (linkAtendimento) { actionsHtml += `<a href="${linkAtendimento}" target="_blank" class="btn-acao-modal secundario">Ver Atendimento</a>`; }
+            if (actionsHtml === '') { actionsHtml = '<p class="info-text" style="text-align:center;">Nenhuma ação disponível.</p>'; }
 
             let mainColumnHtml = '';
             if (revisaoSolicitada) {
@@ -269,9 +240,7 @@
                 <div class="detalhe-layout">
                     <div class="detalhe-col-principal">${mainColumnHtml}</div>
                     <div class="detalhe-col-lateral">
-                        <div class="card-detalhe modal-actions-container">
-                            ${actionsHtml}
-                        </div>
+                        <div class="card-detalhe modal-actions-container">${actionsHtml}</div>
                         <div class="card-detalhe">
                             <h3>Informações do Cliente</h3>
                             <div class="info-item"><span class="info-item-label">Nome:</span><span>${nomeCliente}</span></div>
@@ -291,11 +260,8 @@
             attachStatusStepListeners(deal.ID);
             const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === '1';
             const isPago = deal[FIELD_STATUS_PAGAMENTO_DESIGNER] === STATUS_PAGO_ID;
-            if (isRevisionActive && !isPago) {
-                attachChatListeners(deal.ID);
-            } else if (!isRevisionActive) {
-                attachRevisionListener(deal.ID);
-            }
+            if (isRevisionActive && !isPago) { attachChatListeners(deal.ID); } 
+            else if (!isRevisionActive) { attachRevisionListener(deal.ID); }
         }
         
         function attachRevisionListener(dealId) {
@@ -368,37 +334,60 @@
             }
         }
         
+        function updateVisualStatus(dealId, newStatusId) {
+            const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
+            if (dealIndex === -1) return;
+            const stepsContainer = document.querySelector('.steps-container');
+            if (stepsContainer && document.getElementById('modal-detalhes-rapidos').classList.contains('active')) {
+                const steps = stepsContainer.querySelectorAll('.step');
+                const newStatusIndex = STATUS_ORDER.indexOf(newStatusId);
+                steps.forEach((s, index) => {
+                    const currentStatusId = s.dataset.statusId;
+                    const statusInfo = STATUS_MAP[currentStatusId];
+                    s.className = 'step';
+                    if (index < newStatusIndex) s.classList.add('completed');
+                    else if (index === newStatusIndex) s.classList.add('active', statusInfo.classe);
+                });
+            }
+            const card = document.querySelector(`.kanban-card[data-deal-id-card="${dealId}"]`);
+            if (card) {
+                card.className = 'kanban-card';
+                const newStatusInfo = STATUS_MAP[newStatusId];
+                if (newStatusInfo) card.classList.add('status-' + newStatusInfo.classe);
+            }
+        }
+
         function attachStatusStepListeners(dealId) {
             const container = document.querySelector('.steps-container');
-            container.addEventListener('click', async (event) => {
+            container.addEventListener('click', (event) => {
                 const step = event.target.closest('.step');
                 if (!step) return;
-                const statusId = step.dataset.statusId;
-                const steps = container.querySelectorAll('.step');
-                container.style.pointerEvents = 'none';
-                try {
-                    await fetch('/api/impressao/updateStatus', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealId, statusId }) });
-                    const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
-                    if (dealIndex > -1) { allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = statusId; }
-                    const newStatusIndex = STATUS_ORDER.indexOf(statusId);
-                    steps.forEach((s, index) => {
-                        const currentStatusId = s.dataset.statusId;
-                        const statusInfo = STATUS_MAP[currentStatusId];
-                        s.className = 'step';
-                        if (index < newStatusIndex) s.classList.add('completed');
-                        else if (index === newStatusIndex) s.classList.add('active', statusInfo.classe);
-                    });
-                    const card = document.querySelector(`.kanban-card[data-deal-id-card="${dealId}"]`);
-                    if (card) {
-                        card.className = 'kanban-card';
-                        const newStatusInfo = STATUS_MAP[statusId];
-                        if (newStatusInfo) card.classList.add('status-' + newStatusInfo.classe);
+
+                const newStatusId = step.dataset.statusId;
+                const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
+                if (dealIndex === -1) return;
+
+                const oldStatusId = allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD];
+                if (newStatusId === oldStatusId) return;
+
+                updateVisualStatus(dealId, newStatusId);
+                allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = newStatusId;
+
+                fetch('/api/impressao/updateStatus', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dealId, statusId: newStatusId })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => { throw new Error(err.message || 'Erro do servidor') });
                     }
-                } catch (error) {
-                    alert('Erro: ' + error.message);
-                } finally {
-                    container.style.pointerEvents = 'auto';
-                }
+                })
+                .catch(error => {
+                    alert(`Não foi possível atualizar o status para "${STATUS_MAP[newStatusId].nome}". Revertendo a alteração.`);
+                    updateVisualStatus(dealId, oldStatusId);
+                    allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = oldStatusId;
+                });
             });
         }
         
