@@ -25,8 +25,8 @@
             '1441': { nome: 'Conferida', cor: '#2ecc71' }
         };
 
-        // NOTA: O painel de impressão não usa 'sessionToken' de cliente. A segurança é o acesso à página.
-        // Se precisar de segurança por usuário no futuro, um sistema de login para operadores seria necessário.
+        const sessionToken = localStorage.getItem('sessionToken');
+        if (!sessionToken) { window.location.href = '../login.html'; return; }
 
         const impressoraFilterEl = document.getElementById('impressora-filter');
         const materialFilterEl = document.getElementById('material-filter');
@@ -183,9 +183,6 @@
             let dropdownItemsHtml = '';
             if (linkArquivo) { dropdownItemsHtml += `<a href="${linkArquivo}" target="_blank">Baixar Arquivo</a>`; }
             if (linkAtendimento) { dropdownItemsHtml += `<a href="${linkAtendimento}" target="_blank">Ver Atendimento</a>`; }
-            if (!revisaoSolicitada) {
-                dropdownItemsHtml += `<button data-action="request-revision">Solicitar Revisão</button>`;
-            }
             if (dropdownItemsHtml === '') { dropdownItemsHtml = `<span style="padding: 12px 16px; display: block; color: #999;">Nenhuma ação disponível</span>`; }
             
             let mainColumnHtml = '';
@@ -260,14 +257,16 @@
 
         function attachAllListeners(deal) {
             attachStatusStepListeners(deal.ID);
-            attachDropdownListener(deal.ID);
+            attachDropdownListener();
+            attachRevisionListener(deal.ID); // Passando o dealId
+            
             const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === true || deal[REVISAO_SOLICITADA_FIELD] === '1';
             if (isRevisionActive) {
                 attachChatListeners(deal.ID);
             }
         }
 
-        function attachDropdownListener(dealId) {
+        function attachDropdownListener() {
             const dropdown = document.getElementById('modal-actions-menu');
             if (!dropdown) return;
             const toggleButton = dropdown.querySelector('.btn-actions-toggle');
@@ -275,29 +274,30 @@
             document.body.addEventListener('click', (event) => {
                 if (!dropdown.contains(event.target)) { dropdown.classList.remove('active'); }
             }, true);
+        }
 
-            const requestRevisionBtn = dropdown.querySelector('button[data-action="request-revision"]');
-            if (requestRevisionBtn) {
-                requestRevisionBtn.addEventListener('click', async () => {
-                    dropdown.classList.remove('active');
-                    const mainColumn = document.querySelector('.detalhe-col-principal');
-                    mainColumn.innerHTML = '<div class="card-detalhe"><div class="spinner"></div></div>';
-                    
-                    try {
-                        await fetch('/api/impressao/requestRevision', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ dealId })
-                        });
-                        const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
-                        if (dealIndex > -1) { allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = true; }
-                        openDetailsModal(dealId);
-                    } catch (error) {
-                        alert(error.message);
-                        openDetailsModal(dealId);
-                    }
-                });
-            }
+        function attachRevisionListener(dealId) {
+            const requestRevisionBtn = modalBody.querySelector('button[data-action="request-revision"]');
+            if (!requestRevisionBtn) return;
+
+            requestRevisionBtn.addEventListener('click', async () => {
+                const container = requestRevisionBtn.closest('.revision-area');
+                container.innerHTML = '<div class="spinner"></div>';
+
+                try {
+                    await fetch('/api/impressao/requestRevision', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ dealId })
+                    });
+                    const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
+                    if (dealIndex > -1) { allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = true; }
+                    openDetailsModal(dealId);
+                } catch (error) {
+                    alert(error.message);
+                    openDetailsModal(dealId);
+                }
+            });
         }
 
         function attachChatListeners(dealId) {
@@ -318,12 +318,12 @@
                         await fetch('/api/sendMessage', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ dealId, message: mensagem }) // Removido sessionToken
+                            body: JSON.stringify({ dealId, message: mensagem })
                         });
                         input.value = '';
                         const div = document.createElement('div');
-                        div.className = 'mensagem mensagem-designer'; // Mensagem do operador
-                        div.textContent = mensagem.replace(/^\[Mensagem do Painel de Impressão\]\n-+\n/, '');;
+                        div.className = 'mensagem mensagem-designer';
+                        div.textContent = mensagem;
                         if(container.querySelector('.info-text')) container.innerHTML = '';
                         container.appendChild(div);
                         container.scrollTop = container.scrollHeight;
