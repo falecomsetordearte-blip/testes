@@ -2,6 +2,7 @@
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
         
+        // --- CONSTANTES DE CONFIGURAÇÃO ---
         const STATUS_IMPRESSAO_FIELD = 'UF_CRM_1757756651931';
         const NOME_CLIENTE_FIELD = 'UF_CRM_1741273407628';
         const CONTATO_CLIENTE_FIELD = 'UF_CRM_1749481565243';
@@ -24,8 +25,8 @@
             '1441': { nome: 'Conferida', cor: '#2ecc71' }
         };
 
-        const sessionToken = localStorage.getItem('sessionToken');
-        if (!sessionToken) { window.location.href = '../login.html'; return; }
+        // NOTA: O painel de impressão não usa 'sessionToken' de cliente. A segurança é o acesso à página.
+        // Se precisar de segurança por usuário no futuro, um sistema de login para operadores seria necessário.
 
         const impressoraFilterEl = document.getElementById('impressora-filter');
         const materialFilterEl = document.getElementById('material-filter');
@@ -192,7 +193,7 @@
                 mainColumnHtml = `
                     <div class="card-detalhe">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h3>Conversa com o Designer</h3>
+                            <h3>Conversa de Revisão</h3>
                             <button class="btn-approve-file" data-action="approve-file">
                                 <i class="fas fa-check"></i> Arquivo Aprovado
                             </button>
@@ -278,9 +279,9 @@
             const requestRevisionBtn = dropdown.querySelector('button[data-action="request-revision"]');
             if (requestRevisionBtn) {
                 requestRevisionBtn.addEventListener('click', async () => {
-                    dropdown.classList.remove('active'); // Fecha o dropdown
+                    dropdown.classList.remove('active');
                     const mainColumn = document.querySelector('.detalhe-col-principal');
-                    mainColumn.innerHTML = '<div class="card-detalhe"><div class="spinner"></div></div>'; // Feedback visual
+                    mainColumn.innerHTML = '<div class="card-detalhe"><div class="spinner"></div></div>';
                     
                     try {
                         await fetch('/api/impressao/requestRevision', {
@@ -317,13 +318,12 @@
                         await fetch('/api/sendMessage', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ sessionToken, dealId, message: mensagem })
+                            body: JSON.stringify({ dealId, message: mensagem }) // Removido sessionToken
                         });
                         input.value = '';
-                        // Adiciona a nova mensagem visualmente
                         const div = document.createElement('div');
-                        div.className = 'mensagem mensagem-cliente'; // Assumindo que o operador é o "cliente" do designer
-                        div.textContent = mensagem;
+                        div.className = 'mensagem mensagem-designer'; // Mensagem do operador
+                        div.textContent = mensagem.replace(/^\[Mensagem do Painel de Impressão\]\n-+\n/, '');;
                         if(container.querySelector('.info-text')) container.innerHTML = '';
                         container.appendChild(div);
                         container.scrollTop = container.scrollHeight;
