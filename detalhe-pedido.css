@@ -1,0 +1,214 @@
+/* /detalhe-pedido.css */
+
+/* --- LAYOUT DA PÁGINA DE DETALHES --- */
+.detalhe-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr; /* Coluna principal maior, coluna lateral menor */
+    gap: 30px;
+    align-items: start; /* Alinha os itens no topo de suas células de grid */
+}
+
+.detalhe-col-principal, .detalhe-col-lateral {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+/* Remove a margem inferior do último card para alinhar melhor */
+.card-detalhe:last-child {
+    margin-bottom: 0;
+}
+
+/* --- BANNER DE AVISO "EM ANÁLISE" --- */
+.aviso-banner {
+    background-color: #fffbe6; /* Amarelo claro para alerta */
+    border: 1px solid #ffe58f;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    padding: 20px;
+    color: #8a6d3b;
+}
+.aviso-banner-content .aviso-principal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+}
+.aviso-icon {
+    cursor: pointer;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+.aviso-detalhes {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #ffe58f;
+    font-size: 0.9em;
+    line-height: 1.6;
+}
+.aviso-detalhes p {
+    margin: 0 0 10px 0;
+}
+
+/* --- ESTILOS DO PERFIL DO DESIGNER (REMOVIDOS) --- */
+
+/* --- BOTÃO VER ATENDIMENTO --- */
+.btn-ver-atendimento {
+    background-color: var(--branco);
+    border: 1px solid var(--borda);
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--texto-escuro);
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+.btn-ver-atendimento:hover { background-color: #f8f9fa; }
+.btn-ver-atendimento.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
+}
+.tag-em-breve {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background-color: var(--alerta);
+    color: var(--texto-escuro);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+}
+
+
+/* --- CHAT E BOTÕES --- */
+#input-mensagem {
+    flex: 1;
+    height: 50px;
+    padding: 0 20px;
+    border: 2px solid #a8d5f3;
+    border-radius: 50px;
+    font-size: 16px;
+    background-color: #f7fcff;
+    outline: none;
+    transition: border-color 0.2s;
+}
+#input-mensagem:focus {
+    border-color: #3498db;
+}
+#btn-enviar-mensagem {
+    width: 50px;
+    height: 50px;
+    flex-shrink: 0;
+}
+.aviso-envio-arquivos {
+    font-size: 13px;
+    color: var(--cinza-texto);
+    text-align: center;
+    margin-top: 15px;
+}
+.btn-adicionar-credito {
+    padding: 4px 8px;
+    font-size: 12px;
+    margin-left: 10px;
+    background-color: #eaf6ff;
+    color: #3498db;
+    border: 1px solid #bde0fe;
+}
+.btn-verificado {
+    width: 100%;
+    margin-top: 15px;
+    background-color: var(--sucesso);
+    color: var(--branco);
+}
+.btn-verificado:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+}
+
+/* --- BOTÃO CANCELAR --- */
+.cancelar-container {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    text-align: right;
+}
+.btn-cancelar {
+    background-color: #e74c3c;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background-color 0.2s, opacity 0.2s;
+}
+.btn-cancelar:hover {
+    background-color: #c0392b;
+}
+.btn-cancelar:disabled {
+    background-color: #95a5a6;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* --- BOTÃO E MODAL DE AVALIAÇÃO --- */
+.avaliacao-container {
+    margin-top: 30px;
+    text-align: center;
+}
+.btn-avaliacao-abrir {
+    background-color: #f0f2f5;
+    color: var(--texto-escuro);
+    border: 1px solid #dcdfe3;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.btn-avaliacao-abrir:hover {
+    background-color: #e4e6eb;
+    border-color: #ccc;
+}
+.avaliacao-opcoes {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
+.btn-avaliacao {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    border: 2px solid var(--borda);
+    border-radius: 12px;
+    background-color: var(--fundo-pagina);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.btn-avaliacao:hover {
+    transform: translateY(-3px);
+    border-color: #ccc;
+}
+.btn-avaliacao .icone-avaliacao {
+    font-size: 2.5rem;
+    transition: transform 0.2s ease;
+}
+.btn-avaliacao:hover .icone-avaliacao {
+    transform: scale(1.1);
+}
+.btn-avaliacao.like.active {
+    border-color: var(--sucesso);
+    background-color: #f0fff4;
+}
+.btn-avaliacao.dislike.active {
+    border-color: var(--erro);
+    background-color: #fff0f1;
+}

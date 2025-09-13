@@ -5,218 +5,8 @@
     <title>Detalhes do Pedido - Setor de Arte</title>
     <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
     <link rel="stylesheet" href="style.css?v=1.1">
+    <link rel="stylesheet" href="detalhe-pedido.css?v=1.1">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        .cancelar-container {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            text-align: right;
-        }
-        .btn-cancelar {
-            background-color: #e74c3c;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            transition: background-color 0.2s, opacity 0.2s;
-        }
-        .btn-cancelar:hover {
-            background-color: #c0392b;
-        }
-        .btn-cancelar:disabled {
-            background-color: #95a5a6;
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        /* Estilos para o modal de feedback */
-        .feedback-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .feedback-modal-content {
-            background: white;
-            border-radius: 8px;
-            padding: 0;
-            max-width: 500px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .feedback-modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 24px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .feedback-modal-header h3 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .feedback-close {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #999;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .feedback-close:hover {
-            color: #666;
-        }
-
-        .feedback-type-indicator {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 16px 24px;
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #eee;
-            font-weight: 500;
-        }
-
-        .feedback-type-indicator span:first-child {
-            font-size: 20px;
-        }
-
-        .feedback-form {
-            padding: 24px;
-        }
-
-        .feedback-form textarea {
-            width: 100%;
-            min-height: 100px;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-family: inherit;
-            font-size: 14px;
-            resize: vertical;
-            margin-bottom: 16px;
-        }
-
-        .feedback-form textarea:focus {
-            outline: none;
-            border-color: #3498db;
-        }
-
-        .feedback-checkbox-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-
-        .feedback-checkbox-container input[type="checkbox"] {
-            margin: 0;
-        }
-
-        .feedback-checkbox-container label {
-            font-size: 14px;
-            color: #666;
-            cursor: pointer;
-        }
-
-        .feedback-buttons {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-
-        .feedback-btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .feedback-btn-cancel {
-            background-color: #f8f9fa;
-            color: #666;
-            border: 1px solid #ddd;
-        }
-
-        .feedback-btn-cancel:hover {
-            background-color: #e9ecef;
-        }
-
-        .feedback-btn-submit {
-            background-color: #3498db;
-            color: white;
-        }
-
-        .feedback-btn-submit:hover {
-            background-color: #2980b9;
-        }
-
-        /* Remover a tag "Em Breve" dos botões de avaliação */
-        .designer-actions .tag-em-breve {
-            display: none;
-        }
-
-        /* Ativar os botões de avaliação */
-        .btn-like, .btn-dislike {
-            cursor: pointer;
-            opacity: 1;
-            pointer-events: auto;
-        }
-        #form-mensagem {
-    display: flex; /* Garante que o input e o botão fiquem na mesma linha */
-    align-items: center; /* Alinha verticalmente */
-    gap: 10px; /* Espaço entre o input e o botão */
-}
-
-#input-mensagem {
-    flex: 1; /* Faz o input ocupar todo o espaço disponível */
-    height: 50px; /* Altura do campo */
-    padding: 0 20px; /* Espaçamento interno (vertical | horizontal) */
-    border: 2px solid #a8d5f3; /* Borda azul clara como na sua imagem */
-    border-radius: 50px; /* Bordas completamente arredondadas */
-    font-size: 16px;
-    background-color: #f7fcff;
-    outline: none; /* Remove a borda de foco padrão do navegador */
-    transition: border-color 0.2s;
-}
-
-#input-mensagem:focus {
-    border-color: #3498db; /* Borda fica mais escura quando o campo está focado */
-}
-
-/* Ajuste no botão para combinar com a altura do input */
-#btn-enviar-mensagem {
-    width: 50px;
-    height: 50px;
-    flex-shrink: 0; /* Impede que o botão encolha */
-    </style>
 </head>
 <body>
 
@@ -262,26 +52,7 @@
 
                     <div class="detalhe-layout">
                         <div class="detalhe-col-principal">
-                            <!-- Módulo de Perfil do Designer -->
-                            <div class="designer-profile">
-                                <div class="designer-profile-content">
-                                    <div class="designer-info">
-                                        <img src="https://via.placeholder.com/60x60/3498db/ffffff?text=D" alt="Avatar do Designer" class="designer-avatar">
-                                        <div class="designer-details">
-                                            <h4>Designer Responsável</h4>
-                                            <p>Especialista em Design Gráfico</p>
-                                        </div>
-                                    </div>
-                                    <div class="designer-actions">
-                                        <button class="btn-like" title="Curtir Designer">
-                                            👍
-                                        </button>
-                                        <button class="btn-dislike" title="Não Curtir Designer">
-                                            👎
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                            <!-- Módulo de Perfil do Designer REMOVIDO -->
                             
                             <div class="card-detalhe">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -297,7 +68,7 @@
                                         <div class="loading-pedidos"><div class="spinner"></div></div>
                                     </div>
                                     <form id="form-mensagem" class="form-mensagem">
-                                        <input type="text" id="input-mensagem" name="mensagem" placeholder="Digite sua mensagem para o designer..." required></textarea>
+                                        <input type="text" id="input-mensagem" name="mensagem" placeholder="Digite sua mensagem para o designer..." required>
                                         <button type="submit" id="btn-enviar-mensagem" title="Enviar Mensagem">
                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
                                         </button>
@@ -307,7 +78,6 @@
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="vertical-align: middle; margin-left: 4px;">
                 <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
             </svg>
-        </a>
     </p>
                                 </div>
                             </div>
@@ -332,7 +102,12 @@
                     </div>
                 </div>
 
-                <!-- 2. O botão de cancelar agora está fora do wrapper, seguro contra erros de carregamento -->
+                <!-- ADICIONADO: Contêiner para o novo botão de avaliação -->
+                <div class="avaliacao-container">
+                    <button id="btn-abrir-avaliacao" class="btn-avaliacao-abrir">Avaliar Designer</button>
+                </div>
+
+                <!-- O botão de cancelar agora está fora do wrapper, seguro contra erros de carregamento -->
                 <div class="cancelar-container">
                     <button id="btn-cancelar" class="btn-cancelar">Cancelar Pedido</button>
                 </div>
@@ -366,30 +141,38 @@
     </div>
 </div>
 
-<!-- Modal de Feedback -->
-<div class="feedback-modal" id="feedback-modal">
-    <div class="feedback-modal-content">
-        <div class="feedback-modal-header">
-            <h3>Avalie o Designer</h3>
-            <button class="feedback-close" id="feedback-close">×</button>
+<!-- ADICIONADO: Novo Modal de Avaliação -->
+<div class="modal-overlay" id="modal-avaliacao-designer">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Como foi sua experiência?</h3>
+            <button class="close-modal" title="Fechar">×</button>
         </div>
-        <div class="feedback-type-indicator" id="feedback-type-indicator">
-            <span id="feedback-type-icon"></span>
-            <span id="feedback-type-text"></span>
-        </div>
-        <form class="feedback-form" id="feedback-form">
-            <textarea id="feedback-text" placeholder="Conte-nos sobre sua experiência com este designer (opcional)..." maxlength="500"></textarea>
-            <div class="feedback-checkbox-container">
-                <input type="checkbox" id="dont-show-again">
-                <label for="dont-show-again">Não mostrar novamente</label>
+        <form id="form-avaliacao">
+            <div class="modal-body">
+                <p style="text-align: center; margin-top: 0; color: #555;">Selecione uma opção para avaliar o designer deste pedido.</p>
+                <div class="avaliacao-opcoes">
+                    <button type="button" class="btn-avaliacao dislike" data-avaliacao="negativa">
+                        <span class="icone-avaliacao">👎</span>
+                        <span>Negativa</span>
+                    </button>
+                    <button type="button" class="btn-avaliacao like" data-avaliacao="positiva">
+                        <span class="icone-avaliacao">👍</span>
+                        <span>Positiva</span>
+                    </button>
+                </div>
+                <div class="form-group" style="margin-top: 20px;">
+                    <label for="avaliacao-comentario">Deixe um comentário (opcional):</label>
+                    <textarea id="avaliacao-comentario" rows="4" placeholder="Sua opinião nos ajuda a melhorar..."></textarea>
+                </div>
             </div>
-            <div class="feedback-buttons">
-                <button type="button" class="feedback-btn feedback-btn-cancel" id="feedback-cancel">Cancelar</button>
-                <button type="submit" class="feedback-btn feedback-btn-submit">Enviar Avaliação</button>
+            <div class="modal-footer">
+                <button type="submit" class="btn-submit">Enviar Avaliação</button>
             </div>
         </form>
     </div>
 </div>
+
 
     <script src="script.js?v=1.1"></script>
     <script src="detalhe-pedido.js?v=1.1"></script>
@@ -397,4 +180,3 @@
 
 </body>
 </html>
-

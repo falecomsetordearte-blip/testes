@@ -4,6 +4,9 @@ const axios = require('axios');
 
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
+// Adicionando a constante para o campo de avaliação
+const FIELD_JA_AVALIADO = 'UF_CRM_1753383576795';
+
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Método não permitido' });
@@ -25,24 +28,27 @@ module.exports = async (req, res) => {
             return res.status(401).json({ message: 'Sessão inválida ou usuário não associado a uma empresa.' });
         }
         
-        // ETAPA 2: Buscar os dados do negócio (deal) específico, com ID na URL
-        const urlComParametro = `${BITRIX24_API_URL}crm.deal.get.json?ID=${dealId}`;
-        console.log(`[DEBUG] Executando chamada para: ${urlComParametro}`);
-
-        const dealResponse = await axios.post(urlComParametro); // Enviando o POST para a URL com o parâmetro
+        // ETAPA 2: Buscar os dados do negócio, solicitando explicitamente os campos necessários
+        const dealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.get`, {
+            id: dealId,
+            select: [
+                "*", // Pega todos os campos padrão
+                "UF_*", // Pega todos os campos personalizados (UF_CRM_*)
+                FIELD_JA_AVALIADO // Garante que nosso campo específico venha na resposta
+            ]
+        });
         const deal = dealResponse.data.result;
 
-        // Log para vermos o objeto 'deal' completo que o Bitrix24 retornou
-        console.log('[DEBUG] Objeto "deal" completo recebido de crm.deal.get:', deal);
+        if (!deal) {
+            return res.status(404).json({ message: 'Pedido não encontrado.' });
+        }
 
-        if (!deal || deal.COMPANY_ID != user.COMPANY_ID) {
+        if (deal.COMPANY_ID != user.COMPANY_ID) {
             return res.status(403).json({ message: 'Acesso negado a este pedido.' });
         }
 
-        // ETAPA 3: Buscar os dados do designer responsável (funcionário)
+        // ETAPA 3: Buscar os dados do designer responsável
         const responsibleId = deal.ASSIGNED_BY_ID;
-        console.log(`[DEBUG] Buscando designer. ID do Responsável (ASSIGNED_BY_ID) no Deal: ${responsibleId}`);
-
         let designerInfo = {
             nome: 'Setor de Arte',
             avatar: 'https://setordearte.com.br/images/logo-redonda.svg'
@@ -60,22 +66,23 @@ module.exports = async (req, res) => {
                     avatar: designer.PERSONAL_PHOTO || designerInfo.avatar
                 };
             }
-        } else {
-            console.warn('[AVISO] O campo ASSIGNED_BY_ID do negócio está vazio ou nulo. Usando fallback.');
         }
-        // ETAPA 4: Buscar o histórico de mensagens (comentários da timeline)
+        
+        // ETAPA 4: Buscar o histórico de mensagens
         const commentsResponse = await axios.post(`${BITRIX24_API_URL}crm.timeline.comment.list`, {
             filter: {
                 ENTITY_ID: dealId,
                 ENTITY_TYPE: "deal"
             },
-            order: { "CREATED": "ASC" } // Ordena do mais antigo para o mais novo
+            order: { "CREATED": "ASC" }
         });
 
         const historicoMensagens = (commentsResponse.data.result || []).map(comment => ({
             texto: comment.COMMENT,
-            remetente: comment.AUTHOR_ID == 1 ? 'cliente' : 'designer' // Se o autor for o Sistema, é o cliente. Senão, é o designer.
+            remetente: comment.AUTHOR_ID == 1 ? 'cliente' : 'designer'
         }));
+
+        // ETAPA 5: Montar a resposta final
         return res.status(200).json({
             status: 'success',
             pedido: {
@@ -87,7 +94,9 @@ module.exports = async (req, res) => {
                 LINK_ATENDIMENTO: deal.UF_CRM_1752712769666,
                 LINK_ARQUIVO_FINAL: deal.UF_CRM_1748277308731,
                 designerInfo: designerInfo,
-                historicoMensagens: historicoMensagens
+                historicoMensagens: historicoMensagens,
+                // ADICIONADO: A chave que informa o frontend se o pedido já foi avaliado
+                jaAvaliado: deal[FIELD_JA_AVALIADO] === true || deal[FIELD_JA_AVALIADO] === '1'
             }
         });
 
