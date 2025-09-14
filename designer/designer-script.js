@@ -1,4 +1,4 @@
-// /designer/designer-script.js - VERSÃO COMPLETA E FINAL
+// /designer/designer-script.js - VERSÃO CORRIGIDA
 
 (function() {
     // Função para exibir feedback nos formulários
@@ -144,6 +144,9 @@
             document.getElementById('designer-pedidos-ativos').textContent = data.pedidosAtivos;
         }
 
+        // =======================================================
+        // === FUNÇÃO CORRIGIDA PARA RENDERIZAR OS ATENDIMENTOS ===
+        // =======================================================
         function renderizarListaAtendimentos(pedidos) {
             const container = document.getElementById('atendimentos-list');
             if (!pedidos || pedidos.length === 0) {
@@ -164,10 +167,15 @@
 
                 const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(pedido.OPPORTUNITY) || 0);
                 
+                // AQUI ESTÁ A CORREÇÃO: cada informação está em sua própria div de coluna
                 html += `
                     <div class="pedido-item">
                         <div class="col-id"><strong>#${pedido.ID}</strong></div>
-                        <div class="col-titulo">${pedido.TITLE}</div>
+                        <div class="col-titulo">
+                            <div class="col-content">
+                                <span>${pedido.TITLE}</span>
+                            </div>
+                        </div>
                         <div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div>
                         <div class="col-valor">${valorFormatado}</div>
                         <div class="col-acoes"><a href="../pedido.html?id=${pedido.ID}" class="btn-ver-pedido" target="_blank">Ver Detalhes</a></div>
@@ -185,7 +193,6 @@
             }
             let html = "";
             saques.forEach(saque => {
-                // --- LÓGICA DE STATUS ATUALIZADA AQUI ---
                 let statusInfo = { texto: 'Em Processamento', classe: 'status-andamento' };
                 const stageId = saque.STAGE_ID || "";
 
@@ -196,10 +203,16 @@
                 }
                 
                 const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(saque.OPPORTUNITY) || 0);
+                
+                // CORREÇÃO APLICADA AQUI TAMBÉM
                 html += `
                     <div class="pedido-item">
                         <div class="col-id"><strong>#${saque.ID}</strong></div>
-                        <div class="col-titulo">${saque.TITLE}</div>
+                        <div class="col-titulo">
+                             <div class="col-content">
+                                <span>${saque.TITLE}</span>
+                            </div>
+                        </div>
                         <div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div>
                         <div class="col-valor">${valorFormatado}</div>
                     </div>
