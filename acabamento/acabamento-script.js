@@ -2,12 +2,10 @@
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
         
-        // --- CONSTANTES DE CONFIGURAÇÃO (ASSUMINDO AS MESMAS DA IMPRESSÃO) ---
+        // --- CONSTANTES DE CONFIGURAÇÃO ---
         const NOME_CLIENTE_FIELD = 'UF_CRM_1741273407628';
         const CONTATO_CLIENTE_FIELD = 'UF_CRM_1749481565243';
-        const LINK_ATENDIMENTO_FIELD = 'UF_CRM_1752712769666';
         const MEDIDAS_FIELD = 'UF_CRM_1727464924690';
-        const LINK_ARQUIVO_FINAL_FIELD = 'UF_CRM_1748277308731';
         const PRAZO_FINAL_FIELD = 'UF_CRM_1757794109';
 
         const MEDIDAS_MAP = {
@@ -39,9 +37,9 @@
             .info-item-label { font-weight: 600; }
             .tag-medidas { padding: 4px 10px; border-radius: 4px; color: white; font-weight: 600; font-size: 12px; }
             .modal-actions-container { display: flex; flex-direction: column; gap: 10px; }
-            .modal-actions-container .btn-acao-modal { display: block; text-decoration: none; text-align: center; padding: 10px; border-radius: 6px; font-weight: 600; transition: background-color 0.2s, color 0.2s; border: 1px solid transparent; }
-            .modal-actions-container .btn-acao-modal.principal { background-color: var(--azul-principal); color: white; }
-            .modal-actions-container .btn-acao-modal.principal:hover { background-color: #2c89c8; }
+            .modal-actions-container .btn-acao-modal { display: block; text-decoration: none; text-align: center; padding: 10px; border-radius: 6px; font-weight: 600; transition: background-color 0.2s, color 0.2s; border: 1px solid transparent; cursor: pointer; }
+            .modal-actions-container .btn-acao-modal.principal { background-color: var(--sucesso); color: white; }
+            .modal-actions-container .btn-acao-modal.principal:hover { background-color: #27ae60; }
             .modal-actions-container .btn-acao-modal.secundario { background-color: #f1f1f1; border-color: #ddd; color: var(--texto-escuro); }
             .modal-actions-container .btn-acao-modal.secundario:hover { background-color: #e9e9e9; }
         `;
@@ -60,7 +58,6 @@
         async function carregarPedidosDeAcabamento() {
             document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '<div class="loading-pedidos"><div class="spinner"></div></div>');
             try {
-                // APONTANDO PARA A NOVA API DE ACABAMENTO
                 const response = await fetch('/api/acabamento/getDeals', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -129,17 +126,13 @@
             let medidasHtml = '---';
             if (medidaInfo) { medidasHtml = `<span class="tag-medidas" style="background-color: ${medidaInfo.cor};">${medidaInfo.nome}</span>`; }
 
-            const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
-            const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
-
             let actionsHtml = '';
-            if (linkArquivo) { actionsHtml += `<a href="${linkArquivo}" target="_blank" class="btn-acao-modal principal">Baixar Arquivo</a>`; }
-            if (linkAtendimento) { actionsHtml += `<a href="${linkAtendimento}" target="_blank" class="btn-acao-modal secundario">Ver Atendimento</a>`; }
             if (deal.TITLE) {
                 const urlVerPedido = `https://www.visiva.com.br/admin/?imprimastore=pedidos/detalhes&id=${encodeURIComponent(deal.TITLE)}`;
                 actionsHtml += `<a href="${urlVerPedido}" target="_blank" class="btn-acao-modal secundario">Ver Pedido</a>`;
             }
-            if (actionsHtml === '') { actionsHtml = '<p class="info-text" style="text-align:center;">Nenhuma ação disponível.</p>'; }
+            // Adiciona o novo botão "Concluir"
+            actionsHtml += `<button class="btn-acao-modal principal" data-action="concluir-deal">Concluir</button>`;
 
             modalBody.innerHTML = `
                 <div class="detalhe-layout">
@@ -160,6 +153,41 @@
             `;
             
             modal.classList.add('active');
+            attachConcluirListener(deal.ID); // Anexa o listener para o novo botão
+        }
+        
+        function attachConcluirListener(dealId) {
+            const concluirBtn = modalBody.querySelector('button[data-action="concluir-deal"]');
+            if (!concluirBtn) return;
+
+            concluirBtn.addEventListener('click', async () => {
+                if (!confirm('Tem certeza que deseja concluir este pedido?')) return;
+                
+                concluirBtn.disabled = true;
+                concluirBtn.textContent = 'Concluindo...';
+
+                try {
+                    const response = await fetch('/api/acabamento/concluirDeal', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ dealId })
+                    });
+
+                    if (!response.ok) {
+                        const data = await response.json();
+                        throw new Error(data.message || 'Falha ao concluir o pedido.');
+                    }
+                    
+                    alert('Pedido concluído com sucesso!');
+                    modal.classList.remove('active');
+                    carregarPedidosDeAcabamento(); // Atualiza o painel para remover o card
+
+                } catch (error) {
+                    alert(`Erro: ${error.message}`);
+                    concluirBtn.disabled = false;
+                    concluirBtn.textContent = 'Concluir';
+                }
+            });
         }
         
         btnFiltrar.addEventListener('click', carregarPedidosDeAcabamento);
