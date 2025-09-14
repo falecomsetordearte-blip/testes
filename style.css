@@ -1,4 +1,4 @@
-/* --- GLOBAIS E VARIÁVEIS --- */
+/* --- GLOBAIS E VARIÁRIIS --- */
 :root {
     --azul-principal: #38a9f4;
     --texto-escuro: #2c3e50;
@@ -186,13 +186,16 @@ form { text-align: left; }
 
 /* --- Estilo de cada Card --- */
 .kanban-card {
-    background-color: var(--branco); /* Fundo branco sólido */
+    background-color: var(--branco);
     border-radius: 8px;
     padding: 15px;
     margin-bottom: 12px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    border: 1px solid #e0e0e0;
     cursor: grab;
+    /* MUDANÇA AQUI: Borda padrão mais grossa à esquerda */
+    border: 1px solid #e0e0e0;
+    border-left: 5px solid #b0bec5; /* Cor cinza padrão para status indefinido */
+    transition: border-left-color 0.3s ease, background-color 0.3s ease;
 }
 .kanban-card:active { cursor: grabbing; }
 
@@ -220,4 +223,25 @@ form { text-align: left; }
 }
 .btn-detalhes:hover {
     background-color: #e4e6e9;
+}
+
+
+/* === NOVA SEÇÃO: CORES DOS CARDS POR STATUS (PAINEL IMPRESSÃO) === */
+/* Essas classes são aplicadas pelo painel-script.js */
+
+.kanban-card.status-preparacao {
+    border-left-color: #2ecc71; /* Verde (Preparação) */
+    background-color: rgba(46, 204, 113, 0.05);
+}
+.kanban-card.status-na-fila {
+    border-left-color: #9b59b6; /* Roxo (Na Fila) */
+    background-color: rgba(155, 89, 182, 0.05);
+}
+.kanban-card.status-imprimindo {
+    border-left-color: #e74c3c; /* Vermelho (Imprimindo) */
+    background-color: rgba(231, 76, 60, 0.05);
+}
+.kanban-card.status-pronto {
+    border-left-color: #27ae60; /* Verde Escuro (Pronto) */
+    background-color: rgba(39, 174, 96, 0.07);
 }
