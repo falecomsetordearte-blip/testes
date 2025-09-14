@@ -26,6 +26,7 @@
             <div class="kanban-header">
                 <h1>Painel de Impressão</h1>
                 <div class="filtros-pedidos">
+                    <!-- Filtros podem ser estilizados ou mantidos. O CSS global já os cobre. -->
                     <select id="impressora-filter">
                         <option value="">Todas as Impressoras</option>
                         <!-- Opções serão adicionadas via JS -->
@@ -39,25 +40,75 @@
             </div>
 
             <div class="kanban-board">
-                <!-- Colunas de Prazo -->
-                <div class="kanban-column" data-column-id="ATRASADO">
-                    <div class="column-header"><span class="column-title">ATRASADO</span></div>
-                    <div class="column-cards" id="cards-ATRASADO"></div>
+                <!-- Colunas de Prazo com as novas classes de status para cores -->
+                <div class="kanban-column status-perdido" data-column-id="ATRASADO">
+                    <div class="column-header">
+                        <span class="column-title">ATRASADO</span>
+                        <span class="column-total" id="total-ATRASADO">R$0</span>
+                        <button class="add-card-btn" title="Adicionar Negócio">+</button>
+                    </div>
+                    <div class="column-cards" id="cards-ATRASADO">
+                        
+                        <!-- CARD DE EXEMPLO - Use esta estrutura para criar os cards dinamicamente -->
+                        <div class="kanban-card" data-card-id="12345">
+                            <div class="card-header-info">
+                                <span class="card-title">TESTE (ignorem)</span>
+                                <!-- Badge de notificação (opcional) -->
+                                <span class="card-notification-badge">2</span>
+                            </div>
+                            <div class="card-value">R$31,50</div>
+                            <a href="#" class="card-company">VISIVA - GRÁFICA E COMUNICAÇÃO VISUAL</a>
+                            <div class="card-date">hoje, 09:03</div>
+                            <div class="card-footer">
+                                <div class="card-responsible">
+                                    <img src="https://i.pravatar.cc/28?u=dior" alt="Dior">
+                                    <span>Dior</span>
+                                </div>
+                                <div class="card-icons">
+                                    <i class="fa-solid fa-phone"></i>
+                                    <i class="fa-solid fa-envelope"></i>
+                                    <i class="fa-solid fa-comment"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Fim do Card de Exemplo -->
+
+                    </div>
                 </div>
-                <div class="kanban-column" data-column-id="HOJE">
-                    <div class="column-header"><span class="column-title">HOJE</span></div>
+                
+                <div class="kanban-column status-negociacao" data-column-id="HOJE">
+                    <div class="column-header">
+                        <span class="column-title">HOJE</span>
+                        <span class="column-total" id="total-HOJE">R$0</span>
+                        <button class="add-card-btn" title="Adicionar Negócio">+</button>
+                    </div>
                     <div class="column-cards" id="cards-HOJE"></div>
                 </div>
-                <div class="kanban-column" data-column-id="ESSA_SEMANA">
-                    <div class="column-header"><span class="column-title">ESTA SEMANA</span></div>
+
+                <div class="kanban-column status-contrato" data-column-id="ESSA_SEMANA">
+                    <div class="column-header">
+                        <span class="column-title">ESTA SEMANA</span>
+                        <span class="column-total" id="total-ESSA_SEMANA">R$0</span>
+                        <button class="add-card-btn" title="Adicionar Negócio">+</button>
+                    </div>
                     <div class="column-cards" id="cards-ESSA_SEMANA"></div>
                 </div>
-                <div class="kanban-column" data-column-id="PROXIMA_SEMANA">
-                    <div class="column-header"><span class="column-title">PRÓXIMA SEMANA</span></div>
+
+                <div class="kanban-column status-producao" data-column-id="PROXIMA_SEMANA">
+                    <div class="column-header">
+                        <span class="column-title">PRÓXIMA SEMANA</span>
+                        <span class="column-total" id="total-PROXIMA_SEMANA">R$0</span>
+                        <button class="add-card-btn" title="Adicionar Negócio">+</button>
+                    </div>
                     <div class="column-cards" id="cards-PROXIMA_SEMANA"></div>
                 </div>
-                <div class="kanban-column" data-column-id="SEM_DATA">
-                    <div class="column-header"><span class="column-title">SEM DATA</span></div>
+
+                <div class="kanban-column status-sem-etapa" data-column-id="SEM_DATA">
+                    <div class="column-header">
+                        <span class="column-title">SEM DATA</span>
+                        <span class="column-total" id="total-SEM_DATA">R$0</span>
+                        <button class="add-card-btn" title="Adicionar Negócio">+</button>
+                    </div>
                     <div class="column-cards" id="cards-SEM_DATA"></div>
                 </div>
             </div>
@@ -67,7 +118,7 @@
     <!-- O script agora aponta para o novo arquivo dentro desta pasta -->
     <script src="painel-script.js"></script>
 
-    <!-- MODAL DE DETALHES RÁPIDOS DO PEDIDO -->
+    <!-- MODAL DE DETALHES RÁPIDOS DO PEDIDO (estrutura inalterada) -->
     <div class="modal-overlay" id="modal-detalhes-rapidos">
         <div class="modal-content modal-lg">
             <div class="modal-header">

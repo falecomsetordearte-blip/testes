@@ -39,25 +39,49 @@
             </div>
 
             <div class="kanban-board">
-                <!-- Colunas de Prazo -->
-                <div class="kanban-column" data-column-id="ATRASADO">
-                    <div class="column-header"><span class="column-title">ATRASADO</span></div>
+                <!-- Colunas de Prazo com as novas classes de status para cores -->
+                <div class="kanban-column status-perdido" data-column-id="ATRASADO">
+                    <div class="column-header">
+                        <span class="column-title">ATRASADO</span>
+                        <span class="column-total" id="total-ATRASADO">R$0</span>
+                        <button class="add-card-btn" title="Adicionar Negócio">+</button>
+                    </div>
                     <div class="column-cards" id="cards-ATRASADO"></div>
                 </div>
-                <div class="kanban-column" data-column-id="HOJE">
-                    <div class="column-header"><span class="column-title">HOJE</span></div>
+                
+                <div class="kanban-column status-negociacao" data-column-id="HOJE">
+                    <div class="column-header">
+                        <span class="column-title">HOJE</span>
+                        <span class="column-total" id="total-HOJE">R$0</span>
+                        <button class="add-card-btn" title="Adicionar Negócio">+</button>
+                    </div>
                     <div class="column-cards" id="cards-HOJE"></div>
                 </div>
-                <div class="kanban-column" data-column-id="ESSA_SEMANA">
-                    <div class="column-header"><span class="column-title">ESTA SEMANA</span></div>
+
+                <div class="kanban-column status-contrato" data-column-id="ESSA_SEMANA">
+                    <div class="column-header">
+                        <span class="column-title">ESTA SEMANA</span>
+                        <span class="column-total" id="total-ESSA_SEMANA">R$0</span>
+                        <button class="add-card-btn" title="Adicionar Negócio">+</button>
+                    </div>
                     <div class="column-cards" id="cards-ESSA_SEMANA"></div>
                 </div>
-                <div class="kanban-column" data-column-id="PROXIMA_SEMANA">
-                    <div class="column-header"><span class="column-title">PRÓXIMA SEMANA</span></div>
+
+                <div class="kanban-column status-producao" data-column-id="PROXIMA_SEMANA">
+                    <div class="column-header">
+                        <span class="column-title">PRÓXIMA SEMANA</span>
+                        <span class="column-total" id="total-PROXIMA_SEMANA">R$0</span>
+                        <button class="add-card-btn" title="Adicionar Negócio">+</button>
+                    </div>
                     <div class="column-cards" id="cards-PROXIMA_SEMANA"></div>
                 </div>
-                <div class="kanban-column" data-column-id="SEM_DATA">
-                    <div class="column-header"><span class="column-title">SEM DATA</span></div>
+
+                <div class="kanban-column status-sem-etapa" data-column-id="SEM_DATA">
+                    <div class="column-header">
+                        <span class="column-title">SEM DATA</span>
+                        <span class="column-total" id="total-SEM_DATA">R$0</span>
+                        <button class="add-card-btn" title="Adicionar Negócio">+</button>
+                    </div>
                     <div class="column-cards" id="cards-SEM_DATA"></div>
                 </div>
             </div>
