@@ -186,13 +186,15 @@ form { text-align: left; }
 
 /* --- Estilo de cada Card --- */
 .kanban-card {
-    background-color: var(--branco); /* Fundo branco sólido */
+    background-color: var(--branco);
     border-radius: 8px;
     padding: 15px;
     margin-bottom: 12px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    border: 1px solid #e0e0e0;
     cursor: grab;
+    border: 1px solid #e0e0e0;
+    border-left: 5px solid #b0bec5; /* Cor cinza padrão para status indefinido */
+    transition: border-left-color 0.3s ease, background-color 0.3s ease;
 }
 .kanban-card:active { cursor: grabbing; }
 
@@ -220,4 +222,30 @@ form { text-align: left; }
 }
 .btn-detalhes:hover {
     background-color: #e4e6e9;
+}
+
+
+/* === SEÇÃO FINAL ATUALIZADA: CORES DOS CARDS POR STATUS (PAINEL IMPRESSÃO) === */
+/* Essas classes são aplicadas pelo painel-script.js */
+/* Todos os status agora têm um fundo de cor sólida e clara, sem transparência. */
+
+.kanban-card.status-preparacao {
+    border-left-color: #2ecc71; /* Cor original, intensa */
+    background-color: #eafaf1; /* Tom pastel sólido de verde */
+    border-color: #a7d7b9;
+}
+.kanban-card.status-na-fila {
+    border-left-color: #9b59b6; /* Cor original, intensa */
+    background-color: #f5f0f7; /* Tom pastel sólido de roxo */
+    border-color: #cbb4d6;
+}
+.kanban-card.status-imprimindo {
+    border-left-color: #e74c3c; /* Cor original, intensa */
+    background-color: #fdedeb; /* Tom pastel sólido de vermelho */
+    border-color: #f3b8af;
+}
+.kanban-card.status-pronto {
+    border-left-color: #27ae60; /* Cor original, intensa */
+    background-color: #e9f7ef; /* Tom pastel sólido de verde escuro */
+    border-color: #a4d4b6;
 }
