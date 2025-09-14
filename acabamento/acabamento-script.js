@@ -31,7 +31,6 @@
             #modal-detalhes-rapidos .modal-content {
                 transition: none !important;
             }
-            .card-client-name { font-size: 0.9em; color: #555; margin-top: 5px; }
             .info-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--borda); }
             .info-item:last-child { border-bottom: none; }
             .info-item-label { font-weight: 600; }
@@ -42,6 +41,8 @@
             .modal-actions-container .btn-acao-modal.principal:hover { background-color: #27ae60; }
             .modal-actions-container .btn-acao-modal.secundario { background-color: #f1f1f1; border-color: #ddd; color: var(--texto-escuro); }
             .modal-actions-container .btn-acao-modal.secundario:hover { background-color: #e9e9e9; }
+            .card-detalhe { background-color: var(--branco); border-radius: 12px; padding: 25px; margin-bottom: 20px; }
+            .detalhe-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
         `;
         document.head.appendChild(style);
 
@@ -100,15 +101,16 @@
             });
         }
 
+        // --- FUNÇÃO ATUALIZADA ---
         function createCardHtml(deal) {
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
+            const displayId = deal.TITLE ? `#${deal.TITLE}` : `#${deal.ID}`;
+
             return `
                 <div class="kanban-card" data-deal-id-card="${deal.ID}">
-                    <div class="card-title">#${deal.ID} - ${deal.TITLE}</div>
+                    <div class="card-id">${displayId}</div>
                     <div class="card-client-name">${nomeCliente}</div>
-                    <div class="card-actions" style="margin-top: 15px; display: flex; gap: 10px;">
-                        <button class="btn-acao" data-action="open-details-modal" data-deal-id="${deal.ID}">Detalhes</button>
-                    </div>
+                    <button class="btn-detalhes" data-action="open-details-modal" data-deal-id="${deal.ID}">Detalhes</button>
                 </div>
             `;
         }
@@ -117,7 +119,7 @@
             const deal = allDealsData.find(d => d.ID == dealId);
             if (!deal) return;
             
-            modalTitle.textContent = `Detalhes do Pedido #${deal.ID} - ${deal.TITLE}`;
+            modalTitle.textContent = `Detalhes do Pedido #${deal.TITLE || deal.ID}`;
             
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || '---';
             const contatoCliente = deal[CONTATO_CLIENTE_FIELD] || '---';
@@ -131,7 +133,6 @@
                 const urlVerPedido = `https://www.visiva.com.br/admin/?imprimastore=pedidos/detalhes&id=${encodeURIComponent(deal.TITLE)}`;
                 actionsHtml += `<a href="${urlVerPedido}" target="_blank" class="btn-acao-modal secundario">Ver Pedido</a>`;
             }
-            // Adiciona o novo botão "Concluir"
             actionsHtml += `<button class="btn-acao-modal principal" data-action="concluir-deal">Concluir</button>`;
 
             modalBody.innerHTML = `
@@ -153,7 +154,7 @@
             `;
             
             modal.classList.add('active');
-            attachConcluirListener(deal.ID); // Anexa o listener para o novo botão
+            attachConcluirListener(deal.ID);
         }
         
         function attachConcluirListener(dealId) {
@@ -180,7 +181,7 @@
                     
                     alert('Pedido concluído com sucesso!');
                     modal.classList.remove('active');
-                    carregarPedidosDeAcabamento(); // Atualiza o painel para remover o card
+                    carregarPedidosDeAcabamento();
 
                 } catch (error) {
                     alert(`Erro: ${error.message}`);
