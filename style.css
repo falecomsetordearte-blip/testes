@@ -613,6 +613,7 @@ form { text-align: left; }
     flex-direction: column;
     height: calc(100vh - 76px);
     padding: 20px;
+    background-color: #1ba0e3;
 }
 
 .kanban-header {
