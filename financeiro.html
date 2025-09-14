@@ -5,43 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Financeiro - Setor de Arte</title>
     <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
-    <link rel="stylesheet" href="style.css">
+    <!-- Link para o CSS global -->
+    <link rel="stylesheet" href="style.css"> 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Adicionaremos um CSS customizado para esta página se necessário -->
     <style>
-        /* Container principal para as ações */
+        /* Estilos específicos para os botões de ação na lista, mantidos aqui por simplicidade */
         .financial-actions-group {
             display: flex;
-            flex-direction: column; /* Organiza os itens em coluna */
-            align-items: center;   /* Centraliza horizontalmente */
-            gap: 8px;              /* Espaço entre o botão e os radios */
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
         }
-
-        /* Grupo dos botões de rádio */
         .radio-group {
             display: flex;
-            gap: 15px; /* Espaço entre "Pago" e "Devedor" */
+            gap: 15px;
         }
-
         .radio-group label {
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 5px;
         }
-        
-        /* Estilo do botão Verificar/Ver Detalhes */
         .btn-verificar {
             padding: 5px 12px;
             font-size: 0.8rem;
             text-decoration: none;
             border-radius: 5px;
-            border: 1px solid var(--borda);
+            border: 1px solid #e0e0e0;
             background-color: #f8f9fa;
             color: var(--texto-escuro);
             transition: background-color 0.2s;
         }
-
         .btn-verificar:hover {
             background-color: #e9ecef;
         }
@@ -52,7 +46,6 @@
         <header class="app-header">
             <div class="container header-content">
                 <a href="painel.html"><img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte" class="app-logo"></a>
-                <!-- Podemos adicionar aqui o menu de usuário se for um ambiente logado -->
             </div>
         </header>
 
@@ -61,49 +54,57 @@
                 <section class="pedidos-section">
                     <div class="pedidos-header-bar">
                         <h2>Painel Financeiro</h2>
-                       <section class="pedidos-section">
-                    <div class="pedidos-header-bar">
-                        <h2>Painel Financeiro</h2>
                         <div id="financeiro-filtros" class="filtros-pedidos">
                             <input type="text" id="name-filter-input" placeholder="Buscar por nome do pedido...">
-                            <select id="status-filter">
-                                <option value="todos">Todos os Status</option>
-                                <option value="C11:UC_YYHPKI">Verificar Pendência</option>
-                                <option value="C11:UC_4SNWR7">Pago</option>
-                                <option value="C11:UC_W0DCSV">Devedor</option>
-                            </select>
                             <button id="btn-buscar" class="btn-acao">Buscar</button>
                         </div>
                     </div>
-                    </div>
 
-                    <!-- Cabeçalho da Lista -->
-                    <div class="pedidos-list-header">
-                        <div class="col-id">ID</div>
-                        <div class="col-titulo">Título do Pedido</div>
-                        <div class="col-status">Status Atual</div>
-                        <div class="col-acoes" style="flex-grow: 1.5; text-align: center;">Ações</div>
-                    </div>
+                    <!-- Início do Componente de Abas com o novo visual de card -->
+                    <div class="tabs-component">
+                        
+                        <!-- Botões das Abas -->
+                        <div class="tab-buttons">
+                            <button class="tab-btn active" data-tab="todos">Todos os Status</button>
+                            <button class="tab-btn" data-tab="C11:UC_YYHPKI">Verificar Pendência</button>
+                            <button class="tab-btn" data-tab="C11:UC_4SNWR7">Pago</button>
+                            <button class="tab-btn" data-tab="C11:UC_W0DCSV">Devedor</button>
+                        </div>
 
-                    <!-- Corpo da Lista -->
-                    <div id="financeiro-list-body" class="pedidos-list-body">
-                        <div class="loading-pedidos">
-                            <div class="spinner"></div>
-                            <span>Carregando pendências...</span>
+                        <!-- Conteúdo das Abas -->
+                        <div class="tab-content">
+                            <!-- Painel de Conteúdo -->
+                            <div class="tab-pane active">
+                                
+                                <!-- Cabeçalho da Lista -->
+                                <div class="pedidos-list-header" style="grid-template-columns: 1fr 4fr 2fr 1.5fr;">
+                                    <div class="col-id">ID</div>
+                                    <div class="col-titulo">Título do Pedido</div>
+                                    <div class="col-status">Status Atual</div>
+                                    <div class="col-acoes" style="text-align: center;">Ações</div>
+                                </div>
+
+                                <!-- Corpo da Lista -->
+                                <div id="financeiro-list-body" class="pedidos-list-body">
+                                    <!-- O conteúdo (loading ou lista) será inserido aqui pelo JS -->
+                                </div>
+                                
+                                <!-- Controles de Paginação (se houver) -->
+                                <div id="pagination-container" class="pagination-container hidden" style="padding-top: 20px; border-top: 1px solid var(--borda); margin-top: 20px;">
+                                    <div class="pagination-info">
+                                        <span id="pagination-info-text"></span>
+                                    </div>
+                                    <div class="pagination-controls">
+                                        <button id="btn-prev-page" class="pagination-btn">Anterior</button>
+                                        <span id="page-indicator"></span>
+                                        <button id="btn-next-page" class="pagination-btn">Próxima</button>
+                                    </div>
+                                </div>
+
+                            </div>
                         </div>
                     </div>
-                    
-                    <!-- Controles de Paginação -->
-                    <div id="pagination-container" class="pagination-container hidden">
-                        <div class="pagination-info">
-                            <span id="pagination-info-text"></span>
-                        </div>
-                        <div class="pagination-controls">
-                            <button id="btn-prev-page" class="pagination-btn">Anterior</button>
-                            <span id="page-indicator"></span>
-                            <button id="btn-next-page" class="pagination-btn">Próxima</button>
-                        </div>
-                    </div>
+                    <!-- Fim do Componente de Abas -->
                 </section>
             </div>
         </main>

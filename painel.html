@@ -43,40 +43,55 @@
                         <h2>Meus Pedidos</h2>
                         <div class="filtros-pedidos">
                             <input type="text" placeholder="Buscar por título ou ID..." id="search-input">
-                            <select id="status-filter">
-                                <option value="todos">Todos os Status</option>
-                                <option value="pagamento">Aguardando Pagamento</option>
-                                <option value="andamento">Em Andamento</option>
-                                <option value="cancelado">Cancelado</option>
-                            </select>
                         </div>
                     </div>
-                    <div class="pedidos-list-header">
-                        <div class="col-id">ID</div>
-                        <div class="col-titulo">Título</div>
-                        <div class="col-status">Status</div>
-                        <div class="col-valor">Valor</div>
-                        <div class="col-acoes">Ações</div>
-                    </div>
-                    <div id="pedidos-list-body" class="pedidos-list-body">
-                        <div class="loading-pedidos">
-                            <div class="spinner"></div>
-                            <span>Carregando seus pedidos...</span>
+
+                    <!-- Início do Componente de Abas -->
+                    <div class="tabs-component">
+                        
+                        <!-- Botões das Abas -->
+                        <div class="tab-buttons">
+                            <button class="tab-btn active" data-tab="todos">Todos os Status</button>
+                            <button class="tab-btn" data-tab="pagamento">Aguardando Pagamento</button>
+                            <button class="tab-btn" data-tab="andamento">Em Andamento</button>
+                            <button class="tab-btn" data-tab="cancelado">Cancelado</button>
+                        </div>
+
+                        <!-- Conteúdo das Abas -->
+                        <div class="tab-content">
+                             <div class="tab-pane active">
+
+                                <div class="pedidos-list-header" style="grid-template-columns: 1fr 4fr 1.5fr 1.5fr 1.5fr;">
+                                    <div class="col-id">ID</div>
+                                    <div class="col-titulo">Título</div>
+                                    <div class="col-status">Status</div>
+                                    <div class="col-valor">Valor</div>
+                                    <div class="col-acoes">Ações</div>
+                                </div>
+
+                                <div id="pedidos-list-body" class="pedidos-list-body">
+                                    <div class="loading-pedidos">
+                                        <div class="spinner"></div>
+                                        <span>Carregando seus pedidos...</span>
+                                    </div>
+                                </div>
+                                
+                                <div id="pagination-container" class="pagination-container hidden">
+                                    <div class="pagination-info">
+                                        <span id="pagination-info-text"></span>
+                                    </div>
+                                    <div class="pagination-controls">
+                                        <button id="btn-first-page" class="pagination-btn" title="Primeira página">«</button>
+                                        <button id="btn-prev-page" class="pagination-btn" title="Página anterior">‹</button>
+                                        <span id="pagination-pages" class="pagination-pages"></span>
+                                        <button id="btn-next-page" class="pagination-btn" title="Próxima página">›</button>
+                                        <button id="btn-last-page" class="pagination-btn" title="Última página">»</button>
+                                    </div>
+                                </div>
+                             </div>
                         </div>
                     </div>
-                    
-                    <div id="pagination-container" class="pagination-container hidden">
-                        <div class="pagination-info">
-                            <span id="pagination-info-text"></span>
-                        </div>
-                        <div class="pagination-controls">
-                            <button id="btn-first-page" class="pagination-btn" title="Primeira página">«</button>
-                            <button id="btn-prev-page" class="pagination-btn" title="Página anterior">‹</button>
-                            <span id="pagination-pages" class="pagination-pages"></span>
-                            <button id="btn-next-page" class="pagination-btn" title="Próxima página">›</button>
-                            <button id="btn-last-page" class="pagination-btn" title="Última página">»</button>
-                        </div>
-                    </div>
+                    <!-- Fim do Componente de Abas -->
                 </section>
             </div>
         </main>

@@ -60,8 +60,25 @@ form { text-align: left; }
 #user-greeting { font-weight: 600; color: #555; }
 #logout-button { background: #f8f9fa; border: 1px solid var(--borda); color: var(--texto-escuro); padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all .2s ease; }
 #logout-button:hover { background-color: #e9ecef; }
+.main-painel { padding: 40px 0; }
 .loading-pedidos { text-align: center; padding: 40px; color: #888; }
 .info-text { font-size: 14px; color: rgba(255,255,255,0.5); text-align: center; padding: 20px; }
+
+/* Estilos para seções de conteúdo como 'pedidos-section' */
+.pedidos-section { margin-bottom: 40px; }
+.pedidos-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px; }
+.pedidos-header-bar h2 { font-size: 24px; margin: 0; }
+.filtros-pedidos { display: flex; gap: 10px; }
+.filtros-pedidos input, .filtros-pedidos select { padding: 8px 12px; border-radius: 8px; border: 1px solid #d1d5db; }
+.btn-acao { padding: 8px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; background-color: var(--azul-principal); color: var(--branco); transition: all .2s ease; }
+.btn-acao:hover { background-color: #2c89c8; }
+
+/* Estilos para listas/tabelas */
+.pedidos-list-header { display: grid; gap: 20px; padding: 10px 20px; font-weight: 600; color: var(--cinza-texto); text-align: left; }
+.pedidos-list-body { background-color: var(--branco); border: 1px solid var(--borda); border-radius: 12px; }
+.pedido-item { display: grid; gap: 20px; padding: 20px; align-items: center; text-align: left; border-bottom: 1px solid var(--borda); }
+.pedido-item:last-child { border-bottom: none; }
+.col-id { font-weight: 700; color: var(--azul-principal); }
 
 /* ================================ */
 /* ===   MODAIS - ESTILOS BASE    === */
@@ -78,174 +95,101 @@ form { text-align: left; }
 .modal-body { padding: 30px 25px; flex-grow: 1; overflow-y: auto; }
 .modal-content.modal-lg { max-width: 1000px; }
 
+
 /* ===================================== */
-/* ===    PAINEL KANBAN (NOVO ESTILO)   ==== */
+/* ===    PAINEL KANBAN               ==== */
 /* ===================================== */
-
-/* --- Container Principal do Kanban --- */
-.main-kanban {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 76px); /* Altura total menos o header */
-    padding: 0 20px 20px 20px;
-    background-color: #34495e;
-    background-image: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-}
-
-/* --- Cabeçalho com Filtros --- */
-.kanban-header {
-    flex-shrink: 0;
-    padding: 20px 0;
-}
-.kanban-header h1 {
-    font-size: 1.8rem;
-    margin: 0 0 15px 0;
-    color: var(--branco);
-    font-weight: 700;
-}
-.filtros-pedidos {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-.filtros-pedidos select, .filtros-pedidos button {
-    background-color: var(--branco);
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 14px;
-    font-family: 'Poppins', sans-serif;
-    color: var(--texto-escuro);
-}
-.filtros-pedidos button {
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-.filtros-pedidos button:hover {
-    background-color: #f0f0f0;
-}
-
-/* --- Container das Colunas --- */
-.kanban-board {
-    display: flex;
-    gap: 0;
-    flex-grow: 1;
-    overflow-x: auto;
-    overflow-y: hidden;
-}
-
-/* --- Estilo de cada Coluna --- */
-.kanban-column {
-    background-color: transparent;
-    display: flex;
-    flex-direction: column;
-    width: 280px;
-    flex-shrink: 0;
-    border-right: 2px dotted rgba(255, 255, 255, 0.2);
-    padding: 0 15px;
-}
+.main-kanban { display: flex; flex-direction: column; height: calc(100vh - 76px); padding: 0 20px 20px 20px; background-color: #34495e; background-image: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); }
+.kanban-header { flex-shrink: 0; padding: 20px 0; }
+.kanban-header h1 { font-size: 1.8rem; margin: 0 0 15px 0; color: var(--branco); font-weight: 700; }
+.kanban-board { display: flex; gap: 0; flex-grow: 1; overflow-x: auto; overflow-y: hidden; }
+.kanban-column { background-color: transparent; display: flex; flex-direction: column; width: 280px; flex-shrink: 0; border-right: 2px dotted rgba(255, 255, 255, 0.2); padding: 0 15px; }
 .kanban-column:first-child { padding-left: 0; }
 .kanban-column:last-child { border-right: none; padding-right: 0; }
-
-/* --- Cabeçalho da Coluna (barra colorida) --- */
-.column-header {
-    padding: 12px 15px;
-    flex-shrink: 0;
-    margin-bottom: 15px;
-    border-radius: 8px;
-    color: var(--branco);
-}
-.column-title {
-    font-weight: 700;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    line-height: 1.4;
-}
-
-/* Cores dos cabeçalhos das colunas */
+.column-header { padding: 12px 15px; flex-shrink: 0; margin-bottom: 15px; border-radius: 8px; color: var(--branco); }
+.column-title { font-weight: 700; font-size: 0.9rem; text-transform: uppercase; line-height: 1.4; }
 .status-atrasado .column-header   { background-color: var(--erro); }
 .status-hoje .column-header       { background-color: var(--alerta); }
 .status-esta-semana .column-header{ background-color: var(--info); }
 .status-proxima-semana .column-header { background-color: var(--sucesso); }
 .status-sem-data .column-header   { background-color: var(--cinza-neutro); }
-
-
-/* --- Área de rolagem dos cards --- */
-.column-cards {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding-right: 8px;
-    margin-right: -8px;
-}
+.column-cards { flex-grow: 1; overflow-y: auto; padding-right: 8px; margin-right: -8px; }
 .column-cards::-webkit-scrollbar { width: 6px; }
 .column-cards::-webkit-scrollbar-track { background: transparent; }
 .column-cards::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.3); border-radius: 10px; }
 .column-cards::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.5); }
-
-
-/* --- Estilo de cada Card --- */
-.kanban-card {
-    background-color: var(--branco);
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 12px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    cursor: grab;
-    border: 1px solid #e0e0e0;
-    border-left: 5px solid #b0bec5; /* Cor cinza padrão para status indefinido */
-    transition: border-left-color 0.3s ease, background-color 0.3s ease;
-}
+.kanban-card { background-color: var(--branco); border-radius: 8px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: grab; border: 1px solid #e0e0e0; border-left: 5px solid #b0bec5; transition: border-left-color 0.3s ease, background-color 0.3s ease; }
 .kanban-card:active { cursor: grabbing; }
+.card-id { font-weight: 600; color: var(--cinza-texto); font-size: 0.9rem; margin-bottom: 4px; }
+.card-client-name { font-size: 0.9rem; color: #333; margin-bottom: 15px; }
+.btn-detalhes { background-color: #f0f2f5; border: 1px solid #dcdfe3; color: var(--texto-escuro); padding: 6px 14px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: background-color 0.2s ease; }
+.btn-detalhes:hover { background-color: #e4e6e9; }
+.kanban-card.status-preparacao { border-left-color: #2ecc71; background-color: #eafaf1; border-color: #a7d7b9; }
+.kanban-card.status-na-fila { border-left-color: #9b59b6; background-color: #f5f0f7; border-color: #cbb4d6; }
+.kanban-card.status-imprimindo { border-left-color: #e74c3c; background-color: #fdedeb; border-color: #f3b8af; }
+.kanban-card.status-pronto { border-left-color: #27ae60; background-color: #e9f7ef; border-color: #a4d4b6; }
 
-.card-id {
+
+/* ===================================== */
+/* ===    ABAS (TABS) - NOVO ESTILO   ==== */
+/* ===================================== */
+
+/* Contêiner principal para um componente de abas. Envolve as abas e o conteúdo. */
+.tabs-component {
+    background-color: var(--branco);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    border: 1px solid var(--borda);
+    overflow: hidden;
+}
+
+/* Barra que contém os botões das abas */
+.tab-buttons {
+    display: flex;
+    border-bottom: 1px solid var(--borda);
+    background-color: #f8f9fa;
+}
+
+/* Estilo individual de cada botão de aba */
+.tab-btn {
+    padding: 15px 25px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-size: 1rem;
     font-weight: 600;
     color: var(--cinza-texto);
-    font-size: 0.9rem;
-    margin-bottom: 4px;
+    position: relative;
+    transition: color 0.2s ease;
 }
-.card-client-name {
-    font-size: 0.9rem;
-    color: #333;
-    margin-bottom: 15px;
-}
-.btn-detalhes {
-    background-color: #f0f2f5;
-    border: 1px solid #dcdfe3;
+.tab-btn:hover {
     color: var(--texto-escuro);
-    padding: 6px 14px;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-.btn-detalhes:hover {
-    background-color: #e4e6e9;
 }
 
+/* Estilo da aba ativa (selecionada) */
+.tab-btn.active {
+    color: var(--azul-principal);
+}
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; /* Posiciona a linha sobre a borda do contêiner */
+    left: 0;
+    right: 0;
+    height: 3px;
+    background-color: var(--azul-principal);
+}
 
-/* === SEÇÃO FINAL ATUALIZADA: CORES DOS CARDS POR STATUS (PAINEL IMPRESSÃO) === */
-/* Essas classes são aplicadas pelo painel-script.js */
-/* Todos os status agora têm um fundo de cor sólida e clara, sem transparência. */
+/* Contêiner para a área de conteúdo que muda */
+.tab-content {
+    padding: 25px;
+    /* Adicione aqui qualquer estilo de contêiner de conteúdo, se necessário */
+}
 
-.kanban-card.status-preparacao {
-    border-left-color: #2ecc71; /* Cor original, intensa */
-    background-color: #eafaf1; /* Tom pastel sólido de verde */
-    border-color: #a7d7b9;
+/* Cada painel de conteúdo individual dentro do contêiner */
+.tab-pane {
+    display: none; /* Por padrão, todos os painéis estão escondidos */
 }
-.kanban-card.status-na-fila {
-    border-left-color: #9b59b6; /* Cor original, intensa */
-    background-color: #f5f0f7; /* Tom pastel sólido de roxo */
-    border-color: #cbb4d6;
-}
-.kanban-card.status-imprimindo {
-    border-left-color: #e74c3c; /* Cor original, intensa */
-    background-color: #fdedeb; /* Tom pastel sólido de vermelho */
-    border-color: #f3b8af;
-}
-.kanban-card.status-pronto {
-    border-left-color: #27ae60; /* Cor original, intensa */
-    background-color: #e9f7ef; /* Tom pastel sólido de verde escuro */
-    border-color: #a4d4b6;
+.tab-pane.active {
+    display: block; /* Apenas o painel com a classe 'active' é mostrado */
 }
