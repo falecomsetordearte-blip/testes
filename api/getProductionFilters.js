@@ -4,6 +4,7 @@ const axios = require('axios');
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 const FIELD_IMPRESSORA = 'UF_CRM_1658470569';
 const FIELD_MATERIAL = 'UF_CRM_1685624742';
+const FIELD_TIPO_ENTREGA = 'UF_CRM_1658492661';
 
 module.exports = async (req, res) => {
     if (req.method !== 'GET') {
@@ -16,10 +17,12 @@ module.exports = async (req, res) => {
 
         const impressoraOptions = allFields[FIELD_IMPRESSORA]?.items || [];
         const materialOptions = allFields[FIELD_MATERIAL]?.items || [];
+        const tipoEntregaOptions = allFields[FIELD_TIPO_ENTREGA]?.items || [];
 
         const filters = {
             impressoras: impressoraOptions.map(item => ({ id: item.ID, value: item.VALUE })),
-            materiais: materialOptions.map(item => ({ id: item.ID, value: item.VALUE }))
+            materiais: materialOptions.map(item => ({ id: item.ID, value: item.VALUE })),
+            tiposEntrega: tipoEntregaOptions.map(item => ({ id: item.ID, value: item.VALUE }))
         };
 
         return res.status(200).json(filters);

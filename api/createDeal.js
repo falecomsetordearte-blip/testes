@@ -8,6 +8,9 @@ const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 const FIELD_BRIEFING_COMPLETO = 'UF_CRM_1738249371';
 const FIELD_NOME_CLIENTE = 'UF_CRM_1741273407628';
 const FIELD_WHATSAPP_CLIENTE = 'UF_CRM_1749481565243';
+const FIELD_IMPRESSORA = 'UF_CRM_1658470569';
+const FIELD_MATERIAL = 'UF_CRM_1685624742';
+const FIELD_TIPO_ENTREGA = 'UF_CRM_1658492661';
 
 module.exports = async (req, res) => {
     console.log("--- INICIANDO FUNÇÃO /api/createDeal ---");
@@ -17,8 +20,8 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { sessionToken, ...formData } = req.body;
-        console.log("Dados recebidos do formulário:", formData);
+        const { sessionToken, impressoraId, materialId, tipoEntregaId, ...formData } = req.body;
+        console.log("Dados recebidos do formulário:", { ...formData, impressoraId, materialId, tipoEntregaId });
 
         // PONTO DE VERIFICAÇÃO 1: Encontrar o contato e a company
         console.log("Buscando usuário com o token de sessão...");
@@ -36,7 +39,7 @@ module.exports = async (req, res) => {
         
         // PONTO DE VERIFICAÇÃO 2: Logar os dados do usuário e da company
         console.log(`Usuário encontrado: ID ${user.ID}, Nome: ${user.NAME}`);
-        console.log(`ID da Empresa associada: ${user.COMPANY_ID}`); // VAMOS VERIFICAR SE ESTE VALOR EXISTE
+        console.log(`ID da Empresa associada: ${user.COMPANY_ID}`);
 
         if (!user.COMPANY_ID) {
             console.error("ERRO: O usuário encontrado não está associado a nenhuma empresa (COMPANY_ID está nulo).");
@@ -50,12 +53,15 @@ module.exports = async (req, res) => {
             'TITLE': formData.titulo,
             'OPPORTUNITY': opportunityValue.toFixed(2),
             'CURRENCY_ID': 'BRL',
-            'COMPANY_ID': companyId, // A variável que queremos verificar
+            'COMPANY_ID': companyId,
             'CATEGORY_ID': 17,
             'STAGE_ID': 'C17:NEW',
             [FIELD_BRIEFING_COMPLETO]: formData.briefingFormatado,
             [FIELD_NOME_CLIENTE]: formData.nomeCliente,
             [FIELD_WHATSAPP_CLIENTE]: formData.wppCliente,
+            [FIELD_IMPRESSORA]: impressoraId,
+            [FIELD_MATERIAL]: materialId,
+            [FIELD_TIPO_ENTREGA]: tipoEntregaId,
         };
 
         // PONTO DE VERIFICAÇÃO 3: Logar o objeto exato que será enviado para o Bitrix24

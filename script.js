@@ -479,6 +479,40 @@ function inicializarPainelDePedidos() {
         materiaisContainer.innerHTML = `<div class="material-item"><label class="item-label">Item 1</label><div class="form-group"><label for="material-descricao-1">Descreva o Material</label><input type="text" id="material-descricao-1" class="material-descricao" required></div><div class="form-group"><label for="material-detalhes-1">Como o cliente deseja a arte?</label><textarea id="material-detalhes-1" class="material-detalhes" rows="3" required></textarea></div></div>`;
     }
 
+    async function carregarOpcoesDoModal() {
+        const impressoraSelect = document.getElementById('pedido-impressora');
+        const materialSelect = document.getElementById('pedido-material');
+        const tipoEntregaSelect = document.getElementById('pedido-tipo-entrega');
+
+        try {
+            const response = await fetch('/api/getProductionFilters');
+            const filters = await response.json();
+            if (!response.ok) throw new Error('Falha ao carregar opções.');
+
+            impressoraSelect.innerHTML = '<option value="">Selecione a Impressora</option>';
+            materialSelect.innerHTML = '<option value="">Selecione o Material</option>';
+            tipoEntregaSelect.innerHTML = '<option value="">Selecione o Tipo de Entrega</option>';
+
+            filters.impressoras.forEach(option => {
+                impressoraSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
+            });
+
+            filters.materiais.forEach(option => {
+                materialSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
+            });
+            
+            filters.tiposEntrega.forEach(option => {
+                tipoEntregaSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
+            });
+
+        } catch (error) {
+            console.error("Erro ao carregar opções para o modal:", error);
+            impressoraSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+            materialSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+            tipoEntregaSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+        }
+    }
+
     formNovoPedido.addEventListener('submit', async (event) => {
         event.preventDefault();
         const submitButton = formNovoPedido.querySelector("button[type='submit']");
@@ -501,6 +535,9 @@ function inicializarPainelDePedidos() {
             nomeCliente: document.getElementById("cliente-final-nome").value,
             wppCliente: document.getElementById("cliente-final-wpp").value,
             briefingFormatado: briefingFormatado,
+            impressoraId: document.getElementById("pedido-impressora").value,
+            materialId: document.getElementById("pedido-material").value,
+            tipoEntregaId: document.getElementById("pedido-tipo-entrega").value,
         };
 
         try {
@@ -565,6 +602,7 @@ function inicializarPainelDePedidos() {
     const searchInput = document.getElementById("search-input");
     if (searchInput) searchInput.addEventListener("input", aplicarFiltros);
     
+    carregarOpcoesDoModal();
     ativarDropdownsDePagamento();
     atualizarDadosPainel();
 }
