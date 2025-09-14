@@ -1,4 +1,4 @@
-/* --- GLOBAIS E VARIÁRIIS --- */
+/* --- GLOBAIS E VARIÁVEIS --- */
 :root {
     --azul-principal: #38a9f4;
     --texto-escuro: #2c3e50;
@@ -192,7 +192,6 @@ form { text-align: left; }
     margin-bottom: 12px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     cursor: grab;
-    /* MUDANÇA AQUI: Borda padrão mais grossa à esquerda */
     border: 1px solid #e0e0e0;
     border-left: 5px solid #b0bec5; /* Cor cinza padrão para status indefinido */
     transition: border-left-color 0.3s ease, background-color 0.3s ease;
@@ -226,22 +225,34 @@ form { text-align: left; }
 }
 
 
-/* === NOVA SEÇÃO: CORES DOS CARDS POR STATUS (PAINEL IMPRESSÃO) === */
+/* === SEÇÃO ATUALIZADA: CORES DOS CARDS POR STATUS (PAINEL IMPRESSÃO) === */
 /* Essas classes são aplicadas pelo painel-script.js */
 
+/* Status intermediários: Apenas a borda colorida, fundo branco sólido */
 .kanban-card.status-preparacao {
     border-left-color: #2ecc71; /* Verde (Preparação) */
-    background-color: rgba(46, 204, 113, 0.05);
+    background-color: var(--branco);
 }
 .kanban-card.status-na-fila {
     border-left-color: #9b59b6; /* Roxo (Na Fila) */
-    background-color: rgba(155, 89, 182, 0.05);
+    background-color: var(--branco);
 }
 .kanban-card.status-imprimindo {
     border-left-color: #e74c3c; /* Vermelho (Imprimindo) */
-    background-color: rgba(231, 76, 60, 0.05);
+    background-color: var(--branco);
 }
+
+/* Status final (Pronto): Fundo escuro e texto claro, sem transparência */
 .kanban-card.status-pronto {
     border-left-color: #27ae60; /* Verde Escuro (Pronto) */
-    background-color: rgba(39, 174, 96, 0.07);
+    background-color: #3e5265; /* Cor de fundo escura SÓLIDA */
+    border-color: rgba(255, 255, 255, 0.4); /* Borda geral sutil e clara */
 }
+
+/* Ajusta as cores do texto para o card escuro */
+.kanban-card.status-pronto .card-id,
+.kanban-card.status-pronto .card-client-name {
+    color: #e0e6ec; /* Cor do texto clara */
+}
+
+/* O botão 'Detalhes' já tem um fundo claro que contrasta bem, então não precisa de ajuste. */
