@@ -64,11 +64,10 @@
             .step.active.imprimindo:not(:last-child)::after, .step.active.imprimindo:not(:last-child)::before { border-left-color: ${STATUS_MAP['2661'].cor}; }
             .step.active.pronto { background-color: ${STATUS_MAP['2663'].cor}; border-color: ${STATUS_MAP['2663'].cor}; }
             .step.active.pronto:not(:last-child)::after, .step.active.pronto:not(:last-child)::before { border-left-color: ${STATUS_MAP['2663'].cor}; }
-            .kanban-card.status-preparacao { background-color: ${STATUS_MAP['2657'].corFundo}; border-left-color: ${STATUS_MAP['2657'].cor} !important; }
-            .kanban-card.status-na-fila { background-color: ${STATUS_MAP['2659'].corFundo}; border-left-color: ${STATUS_MAP['2659'].cor} !important; }
-            .kanban-card.status-imprimindo { background-color: ${STATUS_MAP['2661'].corFundo}; border-left-color: ${STATUS_MAP['2661'].cor} !important; }
-            .kanban-card.status-pronto { background-color: ${STATUS_MAP['2663'].corFundo}; border-left-color: ${STATUS_MAP['2663'].cor} !important; }
-            .card-client-name { font-size: 0.9em; color: #555; margin-top: 5px; }
+            .kanban-card.status-preparacao { border-left-color: ${STATUS_MAP['2657'].cor} !important; }
+            .kanban-card.status-na-fila { border-left-color: ${STATUS_MAP['2659'].cor} !important; }
+            .kanban-card.status-imprimindo { border-left-color: ${STATUS_MAP['2661'].cor} !important; }
+            .kanban-card.status-pronto { border-left-color: ${STATUS_MAP['2663'].cor} !important; }
             .info-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--borda); }
             .info-item:last-child { border-bottom: none; }
             .info-item-label { font-weight: 600; }
@@ -96,6 +95,8 @@
             .modal-actions-container .btn-acao-modal.principal:hover { background-color: #2c89c8; }
             .modal-actions-container .btn-acao-modal.secundario { background-color: #f1f1f1; border-color: #ddd; color: var(--texto-escuro); }
             .modal-actions-container .btn-acao-modal.secundario:hover { background-color: #e9e9e9; }
+            .card-detalhe { background-color: var(--branco); border-radius: 12px; padding: 25px; margin-bottom: 20px; }
+            .detalhe-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
         `;
         document.head.appendChild(style);
 
@@ -154,17 +155,20 @@
             });
         }
 
+        // --- FUNÇÃO ATUALIZADA ---
         function createCardHtml(deal) {
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
             const statusId = deal[STATUS_IMPRESSAO_FIELD];
             const statusInfo = STATUS_MAP[statusId] || {};
+            
+            // Usamos deal.TITLE para o ID visível se ele existir, senão deal.ID
+            const displayId = deal.TITLE ? `#${deal.TITLE}` : `#${deal.ID}`;
+
             return `
                 <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
-                    <div class="card-title">#${deal.ID} - ${deal.TITLE}</div>
+                    <div class="card-id">${displayId}</div>
                     <div class="card-client-name">${nomeCliente}</div>
-                    <div class="card-actions" style="margin-top: 15px; display: flex; gap: 10px;">
-                        <button class="btn-acao" data-action="open-details-modal" data-deal-id="${deal.ID}">Detalhes</button>
-                    </div>
+                    <button class="btn-detalhes" data-action="open-details-modal" data-deal-id="${deal.ID}">Detalhes</button>
                 </div>
             `;
         }
@@ -185,7 +189,7 @@
                     }).join('');
                     chatContainer.scrollTop = chatContainer.scrollHeight;
                 } else {
-                    chatContainer.innerHTML = '<p class="info-text">Nenhuma mensagem ainda. Inicie a conversa.</p>';
+                    chatContainer.innerHTML = '<p class="info-text" style="color: #555;">Nenhuma mensagem ainda. Inicie a conversa.</p>';
                 }
             } catch (error) {
                 chatContainer.innerHTML = `<p class="info-text" style="color: red;">Erro ao carregar mensagens.</p>`;
@@ -196,7 +200,7 @@
             const deal = allDealsData.find(d => d.ID == dealId);
             if (!deal) return;
             
-            modalTitle.textContent = `Detalhes do Pedido #${deal.ID} - ${deal.TITLE}`;
+            modalTitle.textContent = `Detalhes do Pedido #${deal.TITLE || deal.ID}`;
             
             const statusAtualId = deal[STATUS_IMPRESSAO_FIELD] || STATUS_ORDER[0];
             const statusAtualIndex = STATUS_ORDER.indexOf(statusAtualId);
@@ -228,7 +232,7 @@
                 const urlVerPedido = `https://www.visiva.com.br/admin/?imprimastore=pedidos/detalhes&id=${encodeURIComponent(deal.TITLE)}`;
                 actionsHtml += `<a href="${urlVerPedido}" target="_blank" class="btn-acao-modal secundario">Ver Pedido</a>`;
             }
-            if (actionsHtml === '') { actionsHtml = '<p class="info-text" style="text-align:center;">Nenhuma ação disponível.</p>'; }
+            if (actionsHtml === '') { actionsHtml = '<p class="info-text" style="text-align:center; color: #555;">Nenhuma ação disponível.</p>'; }
 
             let mainColumnHtml = '';
             if (revisaoSolicitada) {
@@ -361,7 +365,6 @@
             }
         }
 
-        // --- FUNÇÃO ATUALIZADA ---
         function attachStatusStepListeners(dealId) {
             const container = document.querySelector('.steps-container');
             container.addEventListener('click', (event) => {
