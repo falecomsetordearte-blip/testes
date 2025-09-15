@@ -1,4 +1,4 @@
-// /vendas-script.js - VERSÃO COMPLETA E CORRIGIDA COM AJUSTE DE ALTURA
+// /vendas-script.js - VERSÃO COMPLETA E SEGURA
 
 (function() {
 
@@ -33,9 +33,21 @@
             return;
         }
 
-        const greetingEl = document.getElementById('user-greeting');
-        if (greetingEl && userName) {
-            greetingEl.textContent = `Olá, ${userName}!`;
+        // Tenta popular o menu do usuário, se ele existir no HTML
+        const headerContent = document.querySelector('.header-content');
+        if (headerContent && !headerContent.querySelector('.user-menu')) {
+            const userMenuHTML = `
+                <div class="user-menu">
+                    <span id="user-greeting">Olá, ${userName || ''}!</span>
+                    <button id="logout-button">Sair</button>
+                </div>
+            `;
+            headerContent.insertAdjacentHTML('beforeend', userMenuHTML);
+            const logoutButton = document.getElementById('logout-button');
+            if(logoutButton) logoutButton.addEventListener('click', () => {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            });
         }
         
         // --- CONSTANTES E ESTADO ---
@@ -78,7 +90,11 @@
                 const response = await fetch('/api/getSalesDeals', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pages: columnPages })
+                    // O CORPO DA REQUISIÇÃO AGORA INCLUI O TOKEN DE SESSÃO
+                    body: JSON.stringify({
+                        sessionToken: sessionToken, // <-- TOKEN ADICIONADO AQUI
+                        pages: columnPages
+                    })
                 });
 
                 const data = await response.json();
@@ -120,7 +136,11 @@
                 const response = await fetch('/api/updateDealStage', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ dealId, newStageId })
+                    body: JSON.stringify({
+                        sessionToken: sessionToken, // <-- Adicionando token aqui também por segurança
+                        dealId,
+                        newStageId
+                    })
                 });
                 if (!response.ok) {
                     const data = await response.json();

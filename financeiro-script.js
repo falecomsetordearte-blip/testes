@@ -1,6 +1,14 @@
-// /financeiro-script.js
+// /financeiro-script.js - VERSÃO SEGURA E CORRIGIDA
 
 (function() {
+    // --- NOVO BLOCO DE SEGURANÇA ---
+    const sessionToken = localStorage.getItem('sessionToken');
+    if (!sessionToken) {
+        window.location.href = 'login.html'; // Redireciona se não estiver logado
+        return; // Para a execução do script
+    }
+    // --- FIM DO NOVO BLOCO DE SEGURANÇA ---
+
     // --- ELEMENTOS DO DOM ---
     const listBody = document.getElementById('financeiro-list-body');
     const paginationContainer = document.getElementById('pagination-container');
@@ -20,7 +28,6 @@
 
     // --- FUNÇÃO PARA BUSCAR OS DADOS ---
     async function fetchFinancialDeals(page = 0) {
-        // Mostra o estado de carregamento dentro do corpo da lista
         listBody.innerHTML = `<div class="loading-pedidos"><div class="spinner"></div><span>Carregando...</span></div>`;
         const nameFilter = nameFilterInput.value;
         
@@ -28,9 +35,10 @@
             const response = await fetch('/api/getFinancialDeals', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
+                    sessionToken: sessionToken, // <-- TOKEN ADICIONADO AQUI
                     page: page, 
-                    statusFilter: currentStatusFilter, // Usa a variável de estado
+                    statusFilter: currentStatusFilter,
                     nameFilter: nameFilter 
                 })
             });
@@ -50,7 +58,6 @@
 
     // --- FUNÇÃO PARA RENDERIZAR A LISTA ---
     function renderDeals(deals) {
-        // Limpa o corpo da lista antes de adicionar novos itens
         listBody.innerHTML = ''; 
 
         if (!deals || deals.length === 0) {
@@ -83,11 +90,10 @@
                 </div>
             `;
 
-            // Cria o elemento da linha do pedido
             const pedidoItem = document.createElement('div');
             pedidoItem.className = 'pedido-item';
             pedidoItem.id = `deal-${deal.ID}`;
-            pedidoItem.style.gridTemplateColumns = '1fr 4fr 2fr 1.5fr'; // Garante o alinhamento com o header
+            pedidoItem.style.gridTemplateColumns = '1fr 4fr 2fr 1.5fr';
             pedidoItem.innerHTML = `
                 <div class="col-id"><strong>#${deal.ID}</strong></div>
                 <div class="col-titulo">${deal.TITLE}</div>
@@ -120,7 +126,11 @@
             const response = await fetch('/api/updateFinancialDealStatus', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ dealId: dealId, status: status })
+                body: JSON.stringify({
+                    sessionToken: sessionToken, // <-- TOKEN ADICIONADO AQUI
+                    dealId: dealId,
+                    status: status
+                })
             });
             
             if (!response.ok) {
@@ -128,13 +138,11 @@
                 throw new Error(data.message);
             }
 
-            // Animação de remoção suave
             itemRow.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
             itemRow.style.opacity = '0';
             itemRow.style.transform = 'translateX(50px)';
             setTimeout(() => {
                 itemRow.remove();
-                // Opcional: recarregar os dados para garantir consistência se a lista for curta
                 if (listBody.children.length === 0) {
                     fetchFinancialDeals(currentPage);
                 }
@@ -143,31 +151,20 @@
         } catch (error) {
             alert(`Erro ao atualizar status: ${error.message}`);
             itemRow.style.opacity = '1';
-            // Para reverter a seleção do rádio, precisaríamos de uma lógica mais complexa,
-            // mas o ideal é que a API raramente falhe.
         }
     }
     
     // --- EVENT LISTENERS ---
-    
-    // Listener para as abas de status
     tabButtonsContainer.addEventListener('click', (event) => {
         const clickedButton = event.target.closest('.tab-btn');
-        if (!clickedButton) return; // Sai se o clique não foi em um botão
+        if (!clickedButton) return;
 
-        // Remove a classe 'active' de todas as abas
         tabButtons.forEach(btn => btn.classList.remove('active'));
-        // Adiciona a classe 'active' apenas na aba clicada
         clickedButton.classList.add('active');
-
-        // Atualiza o filtro de status atual
         currentStatusFilter = clickedButton.dataset.tab;
-
-        // Busca os dados para a nova aba, começando da primeira página
         fetchFinancialDeals(0);
     });
 
-    // Listener para os botões de rádio (delegação de evento)
     listBody.addEventListener('change', (event) => {
         if (event.target.type === 'radio') {
             const dealId = event.target.closest('.radio-group').dataset.dealId;
@@ -189,10 +186,28 @@
     });
 
     btnBuscar.addEventListener('click', () => {
-        fetchFinancialDeals(0); // Ao buscar, sempre volta para a primeira página
+        fetchFinancialDeals(0);
     });
 
     // --- EXECUÇÃO INICIAL ---
-    // A primeira chamada é feita assim que a página carrega
-    fetchFinancialDeals();
+    document.addEventListener('DOMContentLoaded', () => {
+        const userName = localStorage.getItem('userName');
+        const headerContent = document.querySelector('.header-content');
+        if (headerContent && !headerContent.querySelector('.user-menu')) {
+            const userMenuHTML = `
+                <div class="user-menu">
+                    <span id="user-greeting">Olá, ${userName || ''}!</span>
+                    <button id="logout-button">Sair</button>
+                </div>
+            `;
+            headerContent.insertAdjacentHTML('beforeend', userMenuHTML);
+            const logoutButton = document.getElementById('logout-button');
+            if(logoutButton) logoutButton.addEventListener('click', () => {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            });
+        }
+
+        fetchFinancialDeals();
+    });
 })();

@@ -1,4 +1,4 @@
-// /api/getDealDetails.js
+// /api/getDealDetails.js - CÓDIGO COMPLETO (NENHUMA ALTERAÇÃO NECESSÁRIA)
 
 const axios = require('axios');
 

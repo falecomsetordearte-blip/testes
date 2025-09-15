@@ -1,4 +1,4 @@
-// /api/markAsVerified.js
+// /api/markAsVerified.js - CÓDIGO COMPLETO (NENHUMA ALTERAÇÃO NECESSÁRIA)
 
 const axios = require('axios');
 

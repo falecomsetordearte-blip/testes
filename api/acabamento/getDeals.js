@@ -1,9 +1,10 @@
-// /api/acabamento/getDeals.js
+// /api/acabamento/getDeals.js - VERSÃO SEGURA E CORRIGIDA
+
 const axios = require('axios');
 
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
-// Mapeamento dos campos customizados (assumindo que são os mesmos da impressão)
+// Mapeamento de campos (sem alteração)
 const FIELD_IMPRESSORA = 'UF_CRM_1658470569';
 const FIELD_MATERIAL = 'UF_CRM_1685624742';
 const FIELD_STATUS_IMPRESSAO = 'UF_CRM_1757756651931';
@@ -22,9 +23,32 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { impressoraFilter, materialFilter } = req.body;
-        // --- ÚNICA ALTERAÇÃO CRÍTICA AQUI ---
-        const filterParams = { 'STAGE_ID': 'C17:UC_QA8TN5' }; // <-- NOVO STAGE ID PARA ACABAMENTO
+        // ETAPA 1: RECEBER OS DADOS, INCLUINDO O TOKEN
+        const { sessionToken, impressoraFilter, materialFilter } = req.body;
+
+        // Validação de segurança: se não houver token, recusa a requisição
+        if (!sessionToken) {
+            return res.status(401).json({ message: 'Acesso não autorizado. Token de sessão é obrigatório.' });
+        }
+
+        // ETAPA 2: ENCONTRAR O USUÁRIO E SUA EMPRESA PELO TOKEN
+        const searchUserResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
+            filter: { '%UF_CRM_1751824225': sessionToken }, // Busca o contato que tem este token
+            select: ['ID', 'COMPANY_ID']
+        });
+
+        const user = searchUserResponse.data.result[0];
+
+        // Se o usuário não for encontrado ou não tiver uma empresa associada, a sessão é inválida
+        if (!user || !user.COMPANY_ID) {
+            return res.status(401).json({ message: 'Sessão inválida ou empresa não encontrada.' });
+        }
+
+        // ETAPA 3: MONTAR O FILTRO DA BUSCA COM O COMPANY_ID DO USUÁRIO
+        const filterParams = {
+            'STAGE_ID': 'C17:UC_QA8TN5',      // Stage de Acabamento
+            'COMPANY_ID': user.COMPANY_ID     // <-- FILTRO DE SEGURANÇA ADICIONADO
+        };
 
         if (impressoraFilter) filterParams[FIELD_IMPRESSORA] = impressoraFilter;
         if (materialFilter) filterParams[FIELD_MATERIAL] = materialFilter;
@@ -38,14 +62,14 @@ module.exports = async (req, res) => {
                 'ID', 'TITLE', 'STAGE_ID', 'ASSIGNED_BY_ID',
                 FIELD_STATUS_IMPRESSAO, FIELD_NOME_CLIENTE, FIELD_CONTATO_CLIENTE,
                 FIELD_LINK_ATENDIMENTO, FIELD_MEDIDAS, FIELD_LINK_ARQUIVO_FINAL,
-                FIELD_REVISAO_SOLICITADA, FIELD_STATUS_PAGAMENTO_DESIGNER,
+                FIELD_REVISAO_SOLICITA, FIELD_STATUS_PAGAMENTO_DESIGNER,
                 FIELD_PRAZO_FINAL
             ]
         });
 
         const deals = response.data.result || [];
         
-        console.log(`[getAcabamentoDeals] ${deals.length} negócios encontrados. Enviando para o frontend.`);
+        console.log(`[getAcabamentoDeals] ${deals.length} negócios encontrados para a empresa ${user.COMPANY_ID}. Enviando para o frontend.`);
         
         return res.status(200).json({ deals: deals });
 
