@@ -1,6 +1,17 @@
-// /impressao/painel-script.js
+// /impressao/painel-script.js - VERSÃO CORRIGIDA E COMPLETA
+
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
+
+        // --- NOVO BLOCO DE SEGURANÇA ---
+        // Verifica se o usuário está logado. Se não, redireciona para a página de login.
+        const sessionToken = localStorage.getItem('sessionToken');
+        if (!sessionToken) {
+            // O caminho para login.html precisa "subir" um nível de pasta (../)
+            window.location.href = '../login.html'; 
+            return; // Interrompe a execução do script para evitar erros
+        }
+        // --- FIM DO NOVO BLOCO DE SEGURANÇA ---
         
         // --- CONSTANTES DE CONFIGURAÇÃO ---
         const STATUS_IMPRESSAO_FIELD = 'UF_CRM_1757756651931';
@@ -116,7 +127,12 @@
                 const response = await fetch('/api/impressao/getDeals', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ impressoraFilter: impressoraFilterEl.value, materialFilter: materialFilterEl.value })
+                    // O CORPO DA REQUISIÇÃO AGORA INCLUI O TOKEN DE SESSÃO
+                    body: JSON.stringify({
+                        sessionToken: sessionToken, // <-- TOKEN ADICIONADO AQUI
+                        impressoraFilter: impressoraFilterEl.value,
+                        materialFilter: materialFilterEl.value
+                    })
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.message);
@@ -155,13 +171,11 @@
             });
         }
 
-        // --- FUNÇÃO ATUALIZADA ---
         function createCardHtml(deal) {
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
             const statusId = deal[STATUS_IMPRESSAO_FIELD];
             const statusInfo = STATUS_MAP[statusId] || {};
             
-            // Usamos deal.TITLE para o ID visível se ele existir, senão deal.ID
             const displayId = deal.TITLE ? `#${deal.TITLE}` : `#${deal.ID}`;
 
             return `
