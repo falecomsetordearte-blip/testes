@@ -130,55 +130,7 @@ form { text-align: left; }
 .kanban-card.status-pronto { border-left-color: #27ae60; background-color: #e9f7ef; border-color: #a4d4b6; }
 
 
-/* ===================================== */
-/* ===    ABAS (TABS) - NOVO ESTILO   ==== */
-/* ===================================== */
 
-/* Contêiner principal para um componente de abas. Envolve as abas e o conteúdo. */
-.tabs-component {
-    background-color: var(--branco);
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-    border: 1px solid var(--borda);
-    overflow: hidden;
-}
-
-/* Barra que contém os botões das abas */
-.tab-buttons {
-    display: flex;
-    border-bottom: 1px solid var(--borda);
-    background-color: #f8f9fa;
-}
-
-/* Estilo individual de cada botão de aba */
-.tab-btn {
-    padding: 15px 25px;
-    cursor: pointer;
-    background: none;
-    border: none;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--cinza-texto);
-    position: relative;
-    transition: color 0.2s ease;
-}
-.tab-btn:hover {
-    color: var(--texto-escuro);
-}
-
-/* Estilo da aba ativa (selecionada) */
-.tab-btn.active {
-    color: var(--azul-principal);
-}
-.tab-btn.active::after {
-    content: '';
-    position: absolute;
-    bottom: -1px; /* Posiciona a linha sobre a borda do contêiner */
-    left: 0;
-    right: 0;
-    height: 3px;
-    background-color: var(--azul-principal);
-}
 /* ================================ */
 /* ===   ABAS (TABS)              === */
 /* ================================ */
