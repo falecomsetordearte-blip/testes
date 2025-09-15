@@ -17,7 +17,7 @@
                 <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte" class="app-logo">
                 <div class="user-menu">
                     <span id="user-greeting">Olá!</span>
-                    <button id="logout-button" class="btn btn-light btn-sm">Sair</button>
+                    <button id="logout-button">Sair</button>
                 </div>
             </div>
         </header>
@@ -33,9 +33,8 @@
                         <span id="saldo-valor" class="saldo-valor">R$ 0,00</span>
                     </div>
                     <div class="acoes-box">
-                        <!-- BOTÕES ATUALIZADOS COM AS NOVAS CLASSES GLOBAIS -->
-                        <button class="btn btn-light" id="btn-add-credito">Adicionar Créditos</button>
-                        <button class="btn btn-primary" id="btn-novo-pedido"><strong>+</strong> Novo Pedido</button>
+                        <button class="btn-acao btn-add-credito">Adicionar Créditos</button>
+                        <button class="btn-acao btn-novo-pedido"><strong>+</strong> Novo Pedido</button>
                     </div>
                 </section>
 
@@ -47,8 +46,10 @@
                         </div>
                     </div>
 
+                    <!-- Início do Componente de Abas -->
                     <div class="tabs-component">
                         
+                        <!-- Botões das Abas -->
                         <div class="tab-buttons">
                             <button class="tab-btn active" data-tab="todos">Todos os Status</button>
                             <button class="tab-btn" data-tab="pagamento">Aguardando Pagamento</button>
@@ -56,6 +57,7 @@
                             <button class="tab-btn" data-tab="cancelado">Cancelado</button>
                         </div>
 
+                        <!-- Conteúdo das Abas -->
                         <div class="tab-content">
                              <div class="tab-pane active">
 
@@ -89,6 +91,7 @@
                              </div>
                         </div>
                     </div>
+                    <!-- Fim do Componente de Abas -->
                 </section>
             </div>
         </main>
@@ -107,7 +110,79 @@
         </div>
         <form id="novo-pedido-form" class="modal-body-scrollable">
             <div class="form-grid-modified">
-                <!-- ... (conteúdo do modal permanece o mesmo) ... -->
+                <div id="pedido-form-error" class="form-feedback error hidden full-width"></div>
+                
+                <div class="video-explicativo-wrapper full-width">
+                    <a href="#" id="video-explicativo-toggle" class="video-toggle-link">Assistir Vídeo Explicativo</a>
+                    <div id="video-explicativo-container" class="video-container hidden">
+                        <iframe width="100%" height="315" src="https://www.youtube.com/embed/lae4DJIYXoA" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                </div>
+
+                <div class="form-row-four">
+                    <div class="form-group">
+                        <label for="pedido-titulo">Título do Pedido</label>
+                        <input type="text" id="pedido-titulo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cliente-final-nome">Nome do Cliente Final</label>
+                        <input type="text" id="cliente-final-nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cliente-final-wpp">WhatsApp do Cliente Final</label>
+                        <input type="tel" id="cliente-final-wpp" required placeholder="(00) 00000-0000">
+                    </div>
+                    <div class="form-group">
+                        <label for="pedido-valor">Valor para o Designer (R$)</label>
+                        <input type="number" id="pedido-valor" min="35" step="5" required>
+                    </div>
+                </div>
+
+                <div class="form-group-flex full-width" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                    <div class="form-group">
+                        <label for="pedido-impressora">Impressora</label>
+                        <select id="pedido-impressora" required>
+                            <option value="">Carregando...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pedido-material">Material</label>
+                        <select id="pedido-material" required>
+                            <option value="">Carregando...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pedido-tipo-entrega">Tipo de Entrega</label>
+                        <select id="pedido-tipo-entrega" required>
+                            <option value="">Carregando...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="full-width">
+                    <h4 class="materiais-header">Materiais do Pedido</h4>
+                    <div id="materiais-container">
+                        <div class="material-item">
+                            <label class="item-label">Item 1</label>
+                            <div class="form-group">
+                                <label for="material-descricao-1">Descreva o Material</label>
+                                <input type="text" id="material-descricao-1" class="material-descricao" placeholder="Ex. Banner 60x100 3 unidades" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="material-detalhes-1">Como o cliente deseja a arte?</label>
+                                <textarea id="material-detalhes-1" class="material-detalhes" rows="3" required></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" id="btn-add-material" class="btn-add-material">+ Adicionar Material</button>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label for="pedido-formato">Formato Desejado</label>
+                    <input type="text" id="pedido-formato" placeholder="Ex: PDF, CDR, AI" required>
+                </div>
+
+                <button type="submit" class="btn-submit full-width">Criar Pedido</button>
             </div>
         </form>
     </div>
@@ -129,7 +204,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Gerar Cobrança</button>
+                    <button type="submit" class="btn-pagar">Gerar Cobrança</button>
                 </div>
             </form>
         </div>
