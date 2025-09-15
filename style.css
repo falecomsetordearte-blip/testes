@@ -124,10 +124,10 @@ form { text-align: left; }
 .card-client-name { font-size: 0.9rem; color: #333; margin-bottom: 15px; }
 .btn-detalhes { background-color: #f0f2f5; border: 1px solid #dcdfe3; color: var(--texto-escuro); padding: 6px 14px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: background-color 0.2s ease; }
 .btn-detalhes:hover { background-color: #e4e6e9; }
-.kanban-card.status-preparacao { border-left-color: #2ecc71; background-color: #eafaf1; border-color: #79f6a9; }
-.kanban-card.status-na-fila { border-left-color: #9b59b6; background-color: #f5f0f7; border-color: #b380cb; }
-.kanban-card.status-imprimindo { border-left-color: #e74c3c; background-color: #fdedeb; border-color: #e29589; }
-.kanban-card.status-pronto { border-left-color: #27ae60; background-color: #e9f7ef; border-color: #5fc988; }
+.kanban-card.status-preparacao { border-left-color: #2ecc71; background-color: #79f6a9; border-color: #79f6a9; }
+.kanban-card.status-na-fila { border-left-color: #9b59b6; background-color: #b380cb; border-color: #b380cb; }
+.kanban-card.status-imprimindo { border-left-color: #e74c3c; background-color: #e29589; border-color: #e29589; }
+.kanban-card.status-pronto { border-left-color: #27ae60; background-color: #5fc988; border-color: #5fc988; }
 
 
 
