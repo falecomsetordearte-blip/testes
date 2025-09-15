@@ -1,4 +1,4 @@
-// /script.js - VERSÃO COMPLETA E REESTRUTURADA
+// /script.js - VERSÃO CORRIGIDA E COMPLETA
 
 async function handleAuthError(response) {
     if (response.status === 401 || response.status === 403) {
@@ -301,6 +301,7 @@ let todosPedidos = [];
 let paginaAtual = 1;
 const itensPorPagina = 20;
 let pedidosFiltrados = [];
+let currentStatusFilter = 'todos'; // Adicionado para controlar o filtro de aba
 
 async function atualizarDadosPainel() {
     const sessionToken = localStorage.getItem("sessionToken");
@@ -329,6 +330,9 @@ async function atualizarDadosPainel() {
     }
 }
 
+// =======================================================
+// === FUNÇÃO CORRIGIDA PARA RENDERIZAR OS PEDIDOS     ===
+// =======================================================
 function renderizarPedidos() {
     const pedidosListBody = document.getElementById("pedidos-list-body");
     pedidosListBody.innerHTML = "";
@@ -345,6 +349,7 @@ function renderizarPedidos() {
             }
             let acaoHtml = `<a href="pedido.html?id=${pedido.ID}" class="btn-ver-pedido">Ver Detalhes${notificacaoHtml}</a>`;
             const stageId = pedido.STAGE_ID || "";
+
             if (stageId.includes("NEW")) {
                 statusInfo = { texto: 'Aguardando Pagamento', classe: 'status-pagamento' };
                 acaoHtml = `<div class="dropdown-pagamento"><button class="btn-pagar" data-deal-id="${pedido.ID}">Pagar Agora</button><div class="dropdown-content"><button class="btn-pagar-saldo" data-deal-id="${pedido.ID}">Usar Saldo</button><button class="btn-gerar-cobranca" data-deal-id="${pedido.ID}">PIX</button></div></div>`;
@@ -360,7 +365,21 @@ function renderizarPedidos() {
                 statusInfo = { texto: 'Em Andamento', classe: 'status-andamento' };
             }
             const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(pedido.OPPORTUNITY) || 0);
-            html += `<div class="pedido-item"><div class="col-id"><strong>#${pedido.ID}</strong></div><div class="col-titulo">${pedido.TITLE}</div><div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div><div class="col-valor">${valorFormatado}</div><div class="col-acoes">${acaoHtml}</div></div>`;
+            
+            // AQUI ESTÁ A CORREÇÃO: cada informação vai para sua própria div de coluna.
+            html += `
+                <div class="pedido-item">
+                    <div class="col-id"><strong>#${pedido.ID}</strong></div>
+                    <div class="col-titulo">
+                        <div class="col-content">
+                            <span>${pedido.TITLE}</span>
+                        </div>
+                    </div>
+                    <div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div>
+                    <div class="col-valor">${valorFormatado}</div>
+                    <div class="col-acoes">${acaoHtml}</div>
+                </div>
+            `;
         });
         pedidosListBody.innerHTML = html;
     } else {
@@ -368,15 +387,38 @@ function renderizarPedidos() {
     }
 }
 
+
 function aplicarFiltros() {
     const searchInput = document.getElementById("search-input");
     const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
-    pedidosFiltrados = searchTerm 
-        ? todosPedidos.filter(p => (p.TITLE || "").toLowerCase().includes(searchTerm) || (p.ID || "").toString().includes(searchTerm))
-        : todosPedidos;
-    paginaAtual = 1;
+    
+    let pedidosTemporarios = todosPedidos;
+
+    // 1. Filtro por Aba de Status
+    if (currentStatusFilter !== 'todos') {
+        pedidosTemporarios = pedidosTemporarios.filter(pedido => {
+            const stageId = pedido.STAGE_ID || "";
+            if (currentStatusFilter === 'pagamento') return stageId.includes("NEW");
+            if (currentStatusFilter === 'andamento') return !stageId.includes("NEW") && !stageId.includes("LOSE") && !stageId.includes("WON");
+            if (currentStatusFilter === 'cancelado') return stageId.includes("LOSE");
+            return true;
+        });
+    }
+
+    // 2. Filtro por Barra de Busca
+    if (searchTerm) {
+        pedidosTemporarios = pedidosTemporarios.filter(p => 
+            (p.TITLE || "").toLowerCase().includes(searchTerm) || 
+            (p.ID || "").toString().includes(searchTerm)
+        );
+    }
+
+    pedidosFiltrados = pedidosTemporarios;
+    paginaAtual = 1; // Reseta para a primeira página a cada novo filtro
     renderizarPedidos();
+    // Você precisará de uma função para atualizar a UI da paginação aqui
 }
+
 
 function ativarDropdownsDePagamento() {
     const pedidosListBody = document.getElementById('pedidos-list-body');
@@ -443,166 +485,174 @@ function ativarDropdownsDePagamento() {
 }
 
 function inicializarPainelDePedidos() {
+    // Lógica para o modal de novo pedido
     const modalNovoPedido = document.getElementById("modal-novo-pedido");
     const btnOpenModalNovoPedido = document.querySelector(".btn-novo-pedido");
-    const btnCloseModalNovoPedido = modalNovoPedido.querySelector(".close-modal");
-    const formNovoPedido = document.getElementById("novo-pedido-form");
-    btnOpenModalNovoPedido.addEventListener("click", () => modalNovoPedido.classList.add("active"));
-    btnCloseModalNovoPedido.addEventListener("click", () => modalNovoPedido.classList.remove("active"));
-    
-    const wppInput = document.getElementById('cliente-final-wpp');
-    if (wppInput) IMask(wppInput, { mask: '(00) 00000-0000' });
+    if (modalNovoPedido && btnOpenModalNovoPedido) {
+        const btnCloseModalNovoPedido = modalNovoPedido.querySelector(".close-modal");
+        const formNovoPedido = document.getElementById("novo-pedido-form");
+        btnOpenModalNovoPedido.addEventListener("click", () => modalNovoPedido.classList.add("active"));
+        btnCloseModalNovoPedido.addEventListener("click", () => modalNovoPedido.classList.remove("active"));
+        
+        const wppInput = document.getElementById('cliente-final-wpp');
+        if (wppInput) IMask(wppInput, { mask: '(00) 00000-0000' });
 
-    const videoToggle = document.getElementById('video-explicativo-toggle');
-    const videoContainer = document.getElementById('video-explicativo-container');
-    videoToggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        videoContainer.classList.toggle('hidden');
-        videoToggle.textContent = videoContainer.classList.contains('hidden') ? 'Assistir Vídeo Explicativo' : 'Fechar Vídeo';
-    });
-
-    const btnAddMaterial = document.getElementById('btn-add-material');
-    const materiaisContainer = document.getElementById('materiais-container');
-    btnAddMaterial.addEventListener('click', () => {
-        const itemCount = materiaisContainer.querySelectorAll('.material-item').length;
-        const newItemNumber = itemCount + 1;
-        const newItemDiv = document.createElement('div');
-        newItemDiv.classList.add('material-item');
-        newItemDiv.innerHTML = `
-            <label class="item-label">Item ${newItemNumber}</label>
-            <div class="form-group"><label for="material-descricao-${newItemNumber}">Descreva o Material</label><input type="text" id="material-descricao-${newItemNumber}" class="material-descricao" required></div>
-            <div class="form-group"><label for="material-detalhes-${newItemNumber}">Como o cliente deseja a arte?</label><textarea id="material-detalhes-${newItemNumber}" class="material-detalhes" rows="3" required></textarea></div>`;
-        materiaisContainer.appendChild(newItemDiv);
-    });
-    
-    function resetMateriaisForm() {
-        materiaisContainer.innerHTML = `<div class="material-item"><label class="item-label">Item 1</label><div class="form-group"><label for="material-descricao-1">Descreva o Material</label><input type="text" id="material-descricao-1" class="material-descricao" required></div><div class="form-group"><label for="material-detalhes-1">Como o cliente deseja a arte?</label><textarea id="material-detalhes-1" class="material-detalhes" rows="3" required></textarea></div></div>`;
-    }
-
-    async function carregarOpcoesDoModal() {
-        const impressoraSelect = document.getElementById('pedido-impressora');
-        const materialSelect = document.getElementById('pedido-material');
-        const tipoEntregaSelect = document.getElementById('pedido-tipo-entrega');
-
-        try {
-            const response = await fetch('/api/getProductionFilters');
-            const filters = await response.json();
-            if (!response.ok) throw new Error('Falha ao carregar opções.');
-
-            impressoraSelect.innerHTML = '<option value="">Selecione a Impressora</option>';
-            materialSelect.innerHTML = '<option value="">Selecione o Material</option>';
-            tipoEntregaSelect.innerHTML = '<option value="">Selecione o Tipo de Entrega</option>';
-
-            filters.impressoras.forEach(option => {
-                impressoraSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
-            });
-
-            filters.materiais.forEach(option => {
-                materialSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
-            });
-            
-            filters.tiposEntrega.forEach(option => {
-                tipoEntregaSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
-            });
-
-        } catch (error) {
-            console.error("Erro ao carregar opções para o modal:", error);
-            impressoraSelect.innerHTML = '<option value="">Erro ao carregar</option>';
-            materialSelect.innerHTML = '<option value="">Erro ao carregar</option>';
-            tipoEntregaSelect.innerHTML = '<option value="">Erro ao carregar</option>';
-        }
-    }
-
-    formNovoPedido.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const submitButton = formNovoPedido.querySelector("button[type='submit']");
-        submitButton.disabled = true;
-        submitButton.textContent = "Criando...";
-        hideFeedback("pedido-form-error");
-
-        let briefingFormatado = '';
-        document.querySelectorAll('#materiais-container .material-item').forEach((item, index) => {
-            const descricao = item.querySelector('.material-descricao').value;
-            const detalhes = item.querySelector('.material-detalhes').value;
-            briefingFormatado += `--- Item ${index + 1} ---\nMaterial: ${descricao}\nDetalhes da Arte: ${detalhes}\n\n`;
+        const videoToggle = document.getElementById('video-explicativo-toggle');
+        const videoContainer = document.getElementById('video-explicativo-container');
+        videoToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            videoContainer.classList.toggle('hidden');
+            videoToggle.textContent = videoContainer.classList.contains('hidden') ? 'Assistir Vídeo Explicativo' : 'Fechar Vídeo';
         });
-        briefingFormatado += `--- Formato de Entrega ---\n${document.getElementById("pedido-formato").value}`;
 
-        const pedidoData = {
-            sessionToken: localStorage.getItem("sessionToken"),
-            titulo: document.getElementById("pedido-titulo").value,
-            valorDesigner: document.getElementById("pedido-valor").value,
-            nomeCliente: document.getElementById("cliente-final-nome").value,
-            wppCliente: document.getElementById("cliente-final-wpp").value,
-            briefingFormatado: briefingFormatado,
-            impressoraId: document.getElementById("pedido-impressora").value,
-            materialId: document.getElementById("pedido-material").value,
-            tipoEntregaId: document.getElementById("pedido-tipo-entrega").value,
-        };
-
-        try {
-            const response = await fetch('/api/createDeal', {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(pedidoData)
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message || "Erro ao criar pedido.");
-            
-            modalNovoPedido.classList.remove("active");
-            formNovoPedido.reset();
-            resetMateriaisForm();
-            await atualizarDadosPainel();
-        } catch (error) {
-            showFeedback("pedido-form-error", error.message, true);
-        } finally {
-            submitButton.disabled = false;
-            submitButton.textContent = "Criar Pedido";
+        const btnAddMaterial = document.getElementById('btn-add-material');
+        const materiaisContainer = document.getElementById('materiais-container');
+        btnAddMaterial.addEventListener('click', () => {
+            const itemCount = materiaisContainer.querySelectorAll('.material-item').length;
+            const newItemNumber = itemCount + 1;
+            const newItemDiv = document.createElement('div');
+            newItemDiv.classList.add('material-item');
+            newItemDiv.innerHTML = `
+                <label class="item-label">Item ${newItemNumber}</label>
+                <div class="form-group"><label for="material-descricao-${newItemNumber}">Descreva o Material</label><input type="text" id="material-descricao-${newItemNumber}" class="material-descricao" required></div>
+                <div class="form-group"><label for="material-detalhes-${newItemNumber}">Como o cliente deseja a arte?</label><textarea id="material-detalhes-${newItemNumber}" class="material-detalhes" rows="3" required></textarea></div>`;
+            materiaisContainer.appendChild(newItemDiv);
+        });
+        
+        function resetMateriaisForm() {
+            materiaisContainer.innerHTML = `<div class="material-item"><label class="item-label">Item 1</label><div class="form-group"><label for="material-descricao-1">Descreva o Material</label><input type="text" id="material-descricao-1" class="material-descricao" required></div><div class="form-group"><label for="material-detalhes-1">Como o cliente deseja a arte?</label><textarea id="material-detalhes-1" class="material-detalhes" rows="3" required></textarea></div></div>`;
         }
-    });
+
+        async function carregarOpcoesDoModal() {
+            const impressoraSelect = document.getElementById('pedido-impressora');
+            const materialSelect = document.getElementById('pedido-material');
+            const tipoEntregaSelect = document.getElementById('pedido-tipo-entrega');
+
+            try {
+                const response = await fetch('/api/getProductionFilters');
+                const filters = await response.json();
+                if (!response.ok) throw new Error('Falha ao carregar opções.');
+
+                impressoraSelect.innerHTML = '<option value="">Selecione a Impressora</option>';
+                materialSelect.innerHTML = '<option value="">Selecione o Material</option>';
+                tipoEntregaSelect.innerHTML = '<option value="">Selecione o Tipo de Entrega</option>';
+
+                filters.impressoras.forEach(option => {
+                    impressoraSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
+                });
+                filters.materiais.forEach(option => {
+                    materialSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
+                });
+                filters.tiposEntrega.forEach(option => {
+                    tipoEntregaSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
+                });
+            } catch (error) {
+                console.error("Erro ao carregar opções para o modal:", error);
+            }
+        }
+        
+        formNovoPedido.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const submitButton = formNovoPedido.querySelector("button[type='submit']");
+            submitButton.disabled = true;
+            submitButton.textContent = "Criando...";
+            hideFeedback("pedido-form-error");
+            let briefingFormatado = '';
+            document.querySelectorAll('#materiais-container .material-item').forEach((item, index) => {
+                const descricao = item.querySelector('.material-descricao').value;
+                const detalhes = item.querySelector('.material-detalhes').value;
+                briefingFormatado += `--- Item ${index + 1} ---\nMaterial: ${descricao}\nDetalhes da Arte: ${detalhes}\n\n`;
+            });
+            briefingFormatado += `--- Formato de Entrega ---\n${document.getElementById("pedido-formato").value}`;
+            const pedidoData = {
+                sessionToken: localStorage.getItem("sessionToken"),
+                titulo: document.getElementById("pedido-titulo").value,
+                valorDesigner: document.getElementById("pedido-valor").value,
+                nomeCliente: document.getElementById("cliente-final-nome").value,
+                wppCliente: document.getElementById("cliente-final-wpp").value,
+                briefingFormatado: briefingFormatado,
+                impressoraId: document.getElementById("pedido-impressora").value,
+                materialId: document.getElementById("pedido-material").value,
+                tipoEntregaId: document.getElementById("pedido-tipo-entrega").value,
+            };
+            try {
+                const response = await fetch('/api/createDeal', {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(pedidoData)
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || "Erro ao criar pedido.");
+                modalNovoPedido.classList.remove("active");
+                formNovoPedido.reset();
+                resetMateriaisForm();
+                await atualizarDadosPainel();
+            } catch (error) {
+                showFeedback("pedido-form-error", error.message, true);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = "Criar Pedido";
+            }
+        });
+        carregarOpcoesDoModal();
+    }
     
+    // Lógica para o modal de créditos
     const modalCreditos = document.getElementById("modal-adquirir-creditos");
     const btnOpenModalCreditos = document.querySelector(".btn-add-credito");
-    const btnCloseModalCreditos = modalCreditos.querySelector(".close-modal");
-    const formCreditos = document.getElementById("adquirir-creditos-form");
-    if (btnOpenModalCreditos) btnOpenModalCreditos.addEventListener("click", () => modalCreditos.classList.add("active"));
-    if (btnCloseModalCreditos) btnCloseModalCreditos.addEventListener("click", () => modalCreditos.classList.remove("active"));
-    formCreditos.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const submitButton = formCreditos.querySelector("button[type='submit']");
-        const valorInput = document.getElementById("creditos-valor");
-        hideFeedback("creditos-form-error");
-        const valor = valorInput.value;
-        const sessionToken = localStorage.getItem("sessionToken");
-        if (!valor || parseFloat(valor) < 5) return showFeedback("creditos-form-error", "Por favor, insira um valor de no mínimo R$ 5,00.", true);
-        
-        submitButton.disabled = true;
-        submitButton.textContent = "Gerando...";
-        try {
-            const response = await fetch('/api/addCredit', {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ token: sessionToken, valor: valor })
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message || "Erro desconhecido ao gerar cobrança.");
+    if (modalCreditos && btnOpenModalCreditos) {
+        const btnCloseModalCreditos = modalCreditos.querySelector(".close-modal");
+        const formCreditos = document.getElementById("adquirir-creditos-form");
+        btnOpenModalCreditos.addEventListener("click", () => modalCreditos.classList.add("active"));
+        btnCloseModalCreditos.addEventListener("click", () => modalCreditos.classList.remove("active"));
+        formCreditos.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const submitButton = formCreditos.querySelector("button[type='submit']");
+            const valorInput = document.getElementById("creditos-valor");
+            hideFeedback("creditos-form-error");
+            const valor = valorInput.value;
+            const sessionToken = localStorage.getItem("sessionToken");
+            if (!valor || parseFloat(valor) < 5) return showFeedback("creditos-form-error", "Por favor, insira um valor de no mínimo R$ 5,00.", true);
+            
+            submitButton.disabled = true;
+            submitButton.textContent = "Gerando...";
+            try {
+                const response = await fetch('/api/addCredit', {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token: sessionToken, valor: valor })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || "Erro desconhecido ao gerar cobrança.");
+                window.open(data.url, '_blank');
+                modalCreditos.classList.remove("active");
+                formCreditos.reset();
+                alert("Sua cobrança foi gerada! Conclua o pagamento na nova aba que foi aberta.");
+            } catch (error) {
+                showFeedback("creditos-form-error", error.message, true);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = "Gerar Cobrança";
+            }
+        });
+    }
 
-            window.open(data.url, '_blank');
-            modalCreditos.classList.remove("active");
-            formCreditos.reset();
-            alert("Sua cobrança foi gerada! Conclua o pagamento na nova aba que foi aberta.");
-        } catch (error) {
-            showFeedback("creditos-form-error", error.message, true);
-        } finally {
-            submitButton.disabled = false;
-            submitButton.textContent = "Gerar Cobrança";
-        }
-    });
+    // Lógica para as abas
+    const tabButtonsContainer = document.querySelector('.tab-buttons');
+    if (tabButtonsContainer) {
+        tabButtonsContainer.addEventListener('click', (event) => {
+            const clickedButton = event.target.closest('.tab-btn');
+            if (!clickedButton) return;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            clickedButton.classList.add('active');
+            currentStatusFilter = clickedButton.dataset.tab;
+            aplicarFiltros();
+        });
+    }
 
     const searchInput = document.getElementById("search-input");
     if (searchInput) searchInput.addEventListener("input", aplicarFiltros);
     
-    carregarOpcoesDoModal();
     ativarDropdownsDePagamento();
     atualizarDadosPainel();
 }
