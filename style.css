@@ -118,6 +118,8 @@ form { text-align: left; }
     100% { transform: rotate(360deg); }
 }
 
+.w-100 { width: 100% !important; }
+
 /* ========================================================= */
 /* ===                HEADER / NAVBAR                    === */
 /* ========================================================= */
@@ -594,3 +596,101 @@ a.btn-ver-pedido:hover {
 .status-cancelado { background-color: #f8d7da; color: #721c24; }
 .status-analise   { background-color: #e6d7ff; color: #6b46c1; }
 .status-verificado{ background-color: #e0e0e0; color: #424242; }
+
+
+/* ========================================================= */
+/* ===           MODAIS - ESTILOS ADICIONAIS             === */
+/* ========================================================= */
+#novo-pedido-form {
+    /* Faz o formulário ocupar o espaço restante no modal */
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Garante que o body controle o scroll */
+}
+
+.modal-footer {
+    flex-shrink: 0; /* Impede que o rodapé encolha */
+    padding: 15px 25px;
+    border-top: 1px solid var(--borda);
+    background-color: #f8f9fa;
+    text-align: right;
+}
+
+/* Mensagens de feedback/erro no formulário do modal */
+.form-feedback {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+.form-feedback.error {
+    color: var(--erro);
+    background-color: #fbe9e7;
+    border-color: #ffcdd2;
+}
+
+/* Layout para linhas de formulário com múltiplos campos */
+.form-row {
+    display: grid;
+    gap: 20px;
+    margin-bottom: 0; /* O gap já cria espaçamento */
+}
+.form-row-three { grid-template-columns: repeat(3, 1fr); }
+.form-row-four { grid-template-columns: repeat(4, 1fr); }
+
+/* Seção do vídeo explicativo */
+.video-explicativo-wrapper {
+    margin-bottom: 25px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+.video-toggle-link {
+    font-weight: 600;
+    color: var(--azul-principal);
+    text-decoration: none;
+    cursor: pointer;
+}
+.video-toggle-link:hover { text-decoration: underline; }
+.video-container { margin-top: 15px; }
+
+/* Seção de materiais */
+.materiais-header {
+    margin: 25px 0 15px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--texto-escuro);
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--borda);
+}
+.material-item {
+    position: relative;
+    padding: 25px 20px 5px 20px; /* Mais padding no topo para o label */
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+.item-label {
+    position: absolute;
+    top: -11px;
+    left: 15px;
+    background: var(--branco);
+    padding: 0 10px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--cinza-texto);
+}
+.btn-add-material {
+    width: 100%;
+    border-style: dashed;
+    border-width: 2px;
+}
+
+/* Responsividade para o grid do formulário */
+@media (max-width: 768px) {
+    .form-row-three, .form-row-four {
+        grid-template-columns: 1fr; /* Empilha os campos em telas menores */
+    }
+}
