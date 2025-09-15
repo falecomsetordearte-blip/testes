@@ -230,65 +230,92 @@ form { text-align: left; }
 }
 
 /* ========================================================= */
-/* ===                BOTÕES - GLOBAL                    === */
+/* ===                BOTÕES - GLOBAL (NOVA VERSÃO)      === */
 /* ========================================================= */
-.btn {
-    display: inline-block;
-    padding: 10px 20px;
 
-    font-size: 1rem;
+/* --- ESTILO BASE PARA TODOS OS BOTÕES --- */
+.btn {
+    /* Espaçamento e Alinhamento */
+    display: inline-flex; /* Melhora o alinhamento de texto e ícones */
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    
+    /* Tipografia */
+    font-family: 'Poppins', sans-serif;
+    font-size: 15px;
     font-weight: 600;
     line-height: 1.5;
     text-align: center;
     text-decoration: none;
-    color: var(--texto-escuro);
+    white-space: nowrap; /* Impede que o texto quebre em duas linhas */
 
-    background-color: transparent;
+    /* Aparência */
     border: 1px solid transparent;
-    border-radius: 8px;
+    border-radius: 8px; /* Cantos suavemente arredondados */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Sombra muito sutil para dar profundidade */
 
+    /* Comportamento */
     cursor: pointer;
     user-select: none;
-
-    transition: all 0.2s ease-in-out;
+    transition: all 0.2s ease-in-out; /* Transição suave para todas as propriedades */
 }
 
+/* --- EFEITOS AO INTERAGIR (HOVER, FOCUS, ACTIVE) --- */
 .btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px); /* Efeito de "levantar" o botão */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12); /* Sombra mais pronunciada */
 }
 
+.btn:focus-visible {
+    /* Estilo para acessibilidade, quando se navega com o teclado (tecla Tab) */
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(56, 169, 244, 0.35);
+}
+
+.btn:active {
+    /* Efeito ao clicar no botão */
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* --- ESTADO DESABILITADO --- */
 .btn:disabled,
 .btn.disabled {
-    opacity: 0.65;
+    opacity: 0.6;
     cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
+    transform: none; /* Remove os efeitos de hover */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-/* Modificadores de cor */
+
+/* === MODIFICADORES DE COR === */
+
+/* Principal (Azul) */
 .btn-primary {
     color: var(--branco);
     background-color: var(--azul-principal);
     border-color: var(--azul-principal);
 }
 .btn-primary:hover {
-    background-color: #2c89c8;
-    border-color: #2c89c8;
+    background-color: #2c98e0; /* Tom um pouco mais claro no hover */
+    border-color: #2c98e0;
     color: var(--branco);
 }
 
+/* Sucesso (Verde) */
 .btn-success {
     color: var(--branco);
     background-color: var(--sucesso);
     border-color: var(--sucesso);
 }
 .btn-success:hover {
-    background-color: #218838;
-    border-color: #1e7e34;
+    background-color: #24993e;
+    border-color: #24993e;
     color: var(--branco);
 }
 
+/* Leve (Branco/Cinza claro) */
 .btn-light {
     color: var(--texto-escuro);
     background-color: #f8f9fa;
@@ -299,9 +326,48 @@ form { text-align: left; }
     border-color: #ced4da;
 }
 
-/* Tamanhos */
-.btn-sm { padding: 6px 14px; font-size: 0.875rem; border-radius: 6px; }
-.btn-lg { padding: 14px 28px; font-size: 1.1rem; border-radius: 10px; }
+/* --- NOVOS ESTILOS DE BOTÃO (BÔNUS!) --- */
+
+/* Perigo (Vermelho) - útil para ações de cancelamento */
+.btn-danger {
+    color: var(--branco);
+    background-color: var(--erro);
+    border-color: var(--erro);
+}
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+    color: var(--branco);
+}
+
+/* Secundário (Cinza) - para ações menos importantes */
+.btn-secondary {
+    color: var(--branco);
+    background-color: var(--cinza-neutro);
+    border-color: var(--cinza-neutro);
+}
+.btn-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: var(--branco);
+}
+
+/* Contorno (Apenas borda) - um estilo moderno e limpo */
+.btn-outline-primary {
+    color: var(--azul-principal);
+    background-color: transparent;
+    border-color: var(--azul-principal);
+}
+.btn-outline-primary:hover {
+    color: var(--branco);
+    background-color: var(--azul-principal);
+    border-color: var(--azul-principal);
+}
+
+
+/* === MODIFICADORES DE TAMANHO === */
+.btn-sm { padding: 8px 16px; font-size: 0.875rem; border-radius: 6px; }
+.btn-lg { padding: 14px 32px; font-size: 1.1rem; border-radius: 10px; }
 
 /* ========================================================= */
 /* ===                DROPDOWN                            === */
@@ -693,4 +759,130 @@ a.btn-ver-pedido:hover {
     .form-row-three, .form-row-four {
         grid-template-columns: 1fr; /* Empilha os campos em telas menores */
     }
+}
+
+/* ========================================================= */
+/* ===      ESTILOS PARA BOTÕES ESPECÍFICOS (NOVA VERSÃO) === */
+/* ========================================================= */
+
+/* Botão de submit dos formulários de login/cadastro */
+.btn-submit {
+    /* Faz ele se comportar como nosso novo .btn-primary */
+    display: block;
+    width: 100%;
+    padding: 14px 28px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+
+    color: var(--branco);
+    background-color: var(--azul-principal);
+    border: 1px solid var(--azul-principal);
+}
+.btn-submit:hover {
+    background-color: #2c98e0;
+    border-color: #2c98e0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+/* Botões de Ação genéricos (ex: "Buscar", "Filtrar") */
+.btn-acao {
+    /* Herda o estilo base do .btn */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease-in-out;
+    
+    /* Usa o estilo do nosso novo .btn-secondary */
+    color: var(--branco);
+    background-color: var(--cinza-neutro);
+    border: 1px solid var(--cinza-neutro);
+}
+.btn-acao:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Botão "+ Adicionar Material" no modal */
+.btn-add-material {
+    color: var(--cinza-texto);
+    background-color: transparent;
+    border: 2px dashed #d1d5db; /* Mantém o tracejado, mas mais refinado */
+}
+.btn-add-material:hover {
+    color: var(--azul-principal);
+    border-color: var(--azul-principal);
+    background-color: rgba(56, 169, 244, 0.05); /* Um fundo azul bem sutil */
+}
+
+/* Botão "Verificar" na lista de financeiros */
+.btn-verificar {
+    /* Herda o estilo do .btn-sm .btn-light */
+    padding: 6px 14px;
+    font-size: 0.875rem;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+
+    color: var(--texto-escuro);
+    background-color: #f8f9fa;
+    border: 1px solid #d1d5db;
+}
+.btn-verificar:hover {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+    transform: translateY(-1px); /* Um pulo menor para botões pequenos */
+}
+
+/* Botões "Detalhes" e "PRODUZIR" dentro dos cards Kanban */
+.kanban-card .btn-detalhes,
+.kanban-card .card-button-produzir,
+.kanban-card .btn-acao { /* Estilo unificado para botões nos cards */
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 5px;
+    background-color: #e9ecef;
+    color: var(--texto-escuro);
+    border: 1px solid #dee2e6;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.kanban-card .btn-detalhes:hover,
+.kanban-card .card-button-produzir:hover,
+.kanban-card .btn-acao:hover {
+    background-color: var(--azul-principal);
+    border-color: var(--azul-principal);
+    color: var(--branco);
+}
+
+/* Link "Ver Detalhes" na lista de pedidos */
+a.btn-ver-pedido {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--azul-principal);
+    background: none;
+    border: none;
+    padding: 0;
+    text-decoration: none;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+a.btn-ver-pedido:hover {
+    text-decoration: underline;
+    color: #2c89c8;
 }
