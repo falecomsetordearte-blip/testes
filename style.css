@@ -964,3 +964,38 @@ a.btn-ver-pedido:hover {
     padding: 30px;
     background-color: var(--fundo-pagina);
 }
+/* ========================================================= */
+/* ===                LOGO EM DESTAQUE (EFEITO ESCAPAR)  === */
+/* ========================================================= */
+
+/* O 'berço' da logo, posicionado em relação ao header */
+.logo-container {
+    position: relative; /* Essencial para o posicionamento do link */
+    z-index: 1001; /* Garante que a logo fique acima de outros elementos */
+}
+
+/* O círculo branco visível que contém a imagem */
+.logo-container a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;  /* Largura do círculo */
+    height: 80px; /* Altura do círculo */
+    background: var(--branco);
+    border-radius: 50%; /* Transforma o quadrado em círculo */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    
+    /* A mágica acontece aqui: move o círculo 50% para baixo */
+    transform: translateY(50%); 
+    transition: transform 0.3s ease;
+}
+
+.logo-container a:hover {
+    transform: translateY(50%) scale(1.05); /* Efeito de zoom suave ao passar o mouse */
+}
+
+/* A imagem da logo, agora dentro do círculo */
+.logo-container .app-logo {
+    height: 50px; /* Tamanho da logo dentro do círculo */
+    width: auto;
+}
