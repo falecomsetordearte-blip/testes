@@ -1,4 +1,4 @@
-// /impressao/painel-script.js - VERSÃO COM DATA DO PRAZO NO CARD
+// /impressao/painel-script.js - VERSÃO COM FUNDO DO CARD COLORIDO
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
@@ -21,10 +21,10 @@
         const PRAZO_FINAL_FIELD = 'UF_CRM_1757794109';
 
         const STATUS_MAP = {
-            '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao', corFundo: 'rgba(46, 204, 113, 0.1)' },
-            '2659': { nome: 'Na Fila',    cor: '#9b59b6', classe: 'na-fila',    corFundo: 'rgba(155, 89, 182, 0.1)' },
-            '2661': { nome: 'Imprimindo', cor: '#e74c3c', classe: 'imprimindo', corFundo: 'rgba(231, 76, 60, 0.1)' },
-            '2663': { nome: 'Pronto',     cor: '#27ae60', classe: 'pronto',     corFundo: 'rgba(39, 174, 96, 0.15)' }
+            '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao', corFundo: '#74e7a6ff' }, // Verde pastel sólido
+            '2659': { nome: 'Na Fila',    cor: '#9b59b6', classe: 'na-fila',    corFundo: '#d49af1ff' }, // Roxo pastel sólido
+            '2661': { nome: 'Imprimindo', cor: '#e74c3c', classe: 'imprimindo', corFundo: '#da8b81ff' }, // Vermelho pastel sólido
+            '2663': { nome: 'Pronto',     cor: '#27ae60', classe: 'pronto',     corFundo: '#58ac7cff' }  // Verde escuro pastel sólido
         };
         const STATUS_ORDER = ['2657', '2659', '2661', '2663'];
 
@@ -47,7 +47,15 @@
 
         const style = document.createElement('style');
         style.textContent = `
-            /* --- NOVO ESTILO PARA A TAG DE DATA --- */
+            /* Efeito de card clicável */
+            .kanban-card {
+                transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            }
+            .kanban-card:hover {
+                cursor: pointer;
+                transform: translateY(-3px);
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            }
             .card-deadline-tag {
                 margin-top: 8px;
                 display: inline-block;
@@ -58,7 +66,25 @@
                 font-weight: 600;
                 color: #495057;
             }
-            /* --- FIM DO NOVO ESTILO --- */
+            
+            /* --- ALTERAÇÃO PRINCIPAL: CORES DE FUNDO DOS CARDS --- */
+            .kanban-card.status-preparacao {
+                border-left-color: ${STATUS_MAP['2657'].cor} !important;
+                background-color: ${STATUS_MAP['2657'].corFundo};
+            }
+            .kanban-card.status-na-fila {
+                border-left-color: ${STATUS_MAP['2659'].cor} !important;
+                background-color: ${STATUS_MAP['2659'].corFundo};
+            }
+            .kanban-card.status-imprimindo {
+                border-left-color: ${STATUS_MAP['2661'].cor} !important;
+                background-color: ${STATUS_MAP['2661'].corFundo};
+            }
+            .kanban-card.status-pronto {
+                border-left-color: ${STATUS_MAP['2663'].cor} !important;
+                background-color: ${STATUS_MAP['2663'].corFundo};
+            }
+            /* --- FIM DA ALTERAÇÃO --- */
 
             #modal-detalhes-rapidos.modal-overlay,
             #modal-detalhes-rapidos .modal-content { transition: none !important; }
@@ -81,10 +107,6 @@
             .step.active.imprimindo:not(:last-child)::after, .step.active.imprimindo:not(:last-child)::before { border-left-color: ${STATUS_MAP['2661'].cor}; }
             .step.active.pronto { background-color: ${STATUS_MAP['2663'].cor}; border-color: ${STATUS_MAP['2663'].cor}; }
             .step.active.pronto:not(:last-child)::after, .step.active.pronto:not(:last-child)::before { border-left-color: ${STATUS_MAP['2663'].cor}; }
-            .kanban-card.status-preparacao { border-left-color: ${STATUS_MAP['2657'].cor} !important; }
-            .kanban-card.status-na-fila { border-left-color: ${STATUS_MAP['2659'].cor} !important; }
-            .kanban-card.status-imprimindo { border-left-color: ${STATUS_MAP['2661'].cor} !important; }
-            .kanban-card.status-pronto { border-left-color: ${STATUS_MAP['2663'].cor} !important; }
             .info-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--borda); }
             .info-item:last-child { border-bottom: none; }
             .info-item-label { font-weight: 600; }
@@ -117,42 +139,8 @@
         `;
         document.head.appendChild(style);
         
-        // ... (resto do código, incluindo a função `organizarPedidosNasColunas` que já corrigimos antes) ...
-
-        // --- FUNÇÃO createCardHtml ATUALIZADA ---
-        function createCardHtml(deal) {
-            const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
-            const statusId = deal[STATUS_IMPRESSAO_FIELD];
-            const statusInfo = STATUS_MAP[statusId] || {};
-            const displayId = deal.TITLE ? `#${deal.TITLE}` : `#${deal.ID}`;
-
-            // Lógica para criar a tag de data do prazo
-            let prazoTagHtml = '';
-            const prazoFinalStr = deal[PRAZO_FINAL_FIELD];
-            if (prazoFinalStr) {
-                // Formata a data para DD/MM, que é mais curto e ideal para uma tag
-                const dataFormatada = new Date(prazoFinalStr).toLocaleDateString('pt-BR', {
-                    day: '2-digit',
-                    month: '2-digit'
-                });
-                prazoTagHtml = `<div class="card-deadline-tag">Prazo: ${dataFormatada}</div>`;
-            }
-
-            return `
-                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
-                    <div class="card-id">${displayId}</div>
-                    <div class="card-client-name">${nomeCliente}</div>
-                    ${prazoTagHtml}
-                    <button class="btn-detalhes" data-action="open-details-modal" data-deal-id="${deal.ID}">Detalhes</button>
-                </div>
-            `;
-        }
-        // --- FIM DA FUNÇÃO ATUALIZADA ---
-
-        // =======================================================
-        // CÓDIGO RESTANTE DO ARQUIVO (SEM ALTERAÇÕES)
-        // =======================================================
-
+        // As funções abaixo permanecem inalteradas, apenas a inclusão do CSS acima já resolve.
+        
         async function carregarOpcoesDeFiltro() {
             try {
                 const response = await fetch('/api/getProductionFilters');
@@ -229,6 +217,29 @@
             });
         }
         
+        function createCardHtml(deal) {
+            const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
+            const statusId = deal[STATUS_IMPRESSAO_FIELD];
+            const statusInfo = STATUS_MAP[statusId] || {};
+            const displayId = deal.TITLE ? `#${deal.TITLE}` : `#${deal.ID}`;
+            let prazoTagHtml = '';
+            const prazoFinalStr = deal[PRAZO_FINAL_FIELD];
+            if (prazoFinalStr) {
+                const dataFormatada = new Date(prazoFinalStr).toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit'
+                });
+                prazoTagHtml = `<div class="card-deadline-tag">Prazo: ${dataFormatada}</div>`;
+            }
+            return `
+                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
+                    <div class="card-id">${displayId}</div>
+                    <div class="card-client-name">${nomeCliente}</div>
+                    ${prazoTagHtml}
+                </div>
+            `;
+        }
+
         async function loadAndDisplayChatHistory(dealId) {
             const chatContainer = document.getElementById('mensagens-container');
             if (!chatContainer) return;
@@ -452,9 +463,15 @@
         btnFiltrar.addEventListener('click', carregarPedidosDeImpressao);
         closeModalBtn.addEventListener('click', () => modal.classList.remove('active'));
         modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
+
         board.addEventListener('click', (event) => {
-            const button = event.target.closest('button[data-action="open-details-modal"]');
-            if (button) openDetailsModal(button.dataset.dealId);
+            const card = event.target.closest('.kanban-card');
+            if (card) {
+                const dealId = card.dataset.dealIdCard;
+                if (dealId) {
+                    openDetailsModal(dealId);
+                }
+            }
         });
         
         async function init() {
