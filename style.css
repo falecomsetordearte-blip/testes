@@ -960,7 +960,7 @@ a.btn-ver-pedido:hover {
 /* Estilo do item de menu ATIVO */
 .sidebar-nav a.active {
     color: #ffffff; /* Texto branco puro para destaque */
-    background-color: rgba(56, 169, 244, 0.15); /* Fundo com a cor primária azul, semi-transparente */
+    background-color: rgb(9 9 10 / 15%); /* Fundo com a cor primária azul, semi-transparente */
     border-left-color: var(--azul-principal); /* Borda lateral com a cor primária */
 }
 
