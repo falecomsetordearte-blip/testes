@@ -977,25 +977,18 @@ a.btn-ver-pedido:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* TAMANHO MAIOR: Aumentamos o círculo de 80px para 110px */
     width: 110px;
     height: 110px;
     background: var(--branco);
     border-radius: 50%;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     
-    /* POSIÇÃO MAIS ALTA: Reduzimos o "empurrão" para baixo de 50% para 30% */
-    transform: translateY(30%); 
+    /* ALTERAÇÃO: Empurra a logo para baixo em apenas 10 pixels fixos */
+    transform: translateY(10px); 
     transition: transform 0.3s ease;
 }
 
 .logo-container a:hover {
-    /* Ajustamos o hover para a nova posição */
-    transform: translateY(30%) scale(1.05);
-}
-
-.logo-container .app-logo {
-    /* TAMANHO MAIOR: Aumentamos a logo interna de 50px para 70px */
-    height: 70px;
-    width: auto;
+    /* ALTERAÇÃO: Mantém a nova posição no hover */
+    transform: translateY(10px) scale(1.05);
 }
