@@ -917,85 +917,103 @@ a.btn-ver-pedido:hover {
 }
 
 /* ========================================================= */
-/* ===                NOVO LAYOUT COM SIDEBAR            === */
+/* ===                NOVO LAYOUT COM SIDEBAR FIXO         === */
 /* ========================================================= */
 
-.app-wrapper {
-    display: flex;
-    min-height: calc(100vh - 70px); /* Ajustado para a nova altura do header */
+/* --- ESTRUTURA GERAL --- */
+body {
+    /* Garante que o body não tenha margens que atrapalhem o layout */
+    margin: 0; 
 }
 
-/* --- ESTILOS DO MENU LATERAL (VERSÃO ESCURA) --- */
+.app-layout-grid {
+    display: grid;
+    grid-template-columns: 240px 1fr; /* Coluna 1: Sidebar (fixa), Coluna 2: Conteúdo (flexível) */
+    grid-template-rows: auto 1fr; /* Linha 1: Header (auto), Linha 2: Conteúdo Principal (ocupa o resto) */
+    height: 100vh; /* Ocupa a altura total da tela */
+}
+
+/* --- MENU LATERAL (SIDEBAR) --- */
 .app-sidebar {
-    width: 240px;
-    flex-shrink: 0;
-    background-color: #7893a5; /* SUA NOVA COR DE FUNDO */
-    padding: 50px 0;
-    /* A borda direita não é mais necessária com o contraste de cores */
-}
-
-.sidebar-nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.sidebar-nav a {
+    grid-row: 1 / -1; /* Ocupa todas as linhas da grid (fica fixo na altura) */
+    grid-column: 1 / 2; /* Ocupa a primeira coluna */
+    background-color: #7893a5;
+    z-index: 1010; /* Garante que fique acima de outros elementos */
     display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 12px 20px;
-    text-decoration: none;
-    color: #e0e6eb; /* Cor do texto principal (claro) */
-    font-weight: 500;
-    transition: all 0.2s ease;
-    border-left: 3px solid transparent;
+    flex-direction: column;
+    overflow-y: auto; /* Adiciona scroll SÓ no menu se ele for muito grande */
 }
 
-.sidebar-nav a:hover {
-    color: #ffffff; /* Texto fica branco puro no hover */
-    background-color: #89a1b1; /* Fundo ao passar o mouse (tom mais claro) */
-}
-
-/* Estilo do item de menu ATIVO */
-.sidebar-nav a.active {
-    color: #ffffff; /* Texto branco puro para destaque */
-    background-color: rgb(9 9 10 / 15%); /* Fundo com a cor primária azul, semi-transparente */
-    border-left-color: var(--azul-principal); /* Borda lateral com a cor primária */
-}
-
-.sidebar-nav a i {
-    font-size: 16px;
-    width: 20px;
+/* --- HEADER DA SIDEBAR (LOGO) --- */
+.sidebar-header {
+    padding: 20px;
     text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.nav-separator {
-    height: 1px;
-    background-color: rgba(255, 255, 255, 0.15); /* Linha separadora branca e sutil */
-    margin: 15px 20px;
+.sidebar-header .logo-link {
+    display: inline-block;
 }
 
-.sidebar-nav a.disabled {
-    color: #97a6b2; /* Cor mais esmaecida para itens desabilitados */
-    cursor: not-allowed;
-    background: none !important;
+.sidebar-header .sidebar-logo {
+    height: 80px; /* Tamanho da logo */
+    width: auto;
+    transition: transform 0.3s ease;
 }
 
-/* --- Área de Conteúdo Principal (sem alterações) --- */
-.app-content {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 30px;
+.sidebar-header .logo-link:hover .sidebar-logo {
+    transform: scale(1.05); /* Efeito de zoom */
+}
+
+/* Esconde o H1 visualmente, mas mantém para leitores de tela */
+.sidebar-header h1 {
+    display: none; 
+}
+
+/* --- NAVEGAÇÃO DA SIDEBAR (LINKS) --- */
+.sidebar-nav {
+    flex-grow: 1; /* Faz a navegação ocupar o espaço restante */
+    padding: 20px 0;
+}
+
+/* (O restante dos estilos do .sidebar-nav que já tínhamos permanecem os mesmos) */
+.sidebar-nav ul { list-style: none; padding: 0; margin: 0; }
+.sidebar-nav a { display: flex; align-items: center; gap: 15px; padding: 12px 20px; text-decoration: none; color: #e0e6eb; font-weight: 500; transition: all 0.2s ease; border-left: 3px solid transparent; }
+.sidebar-nav a:hover { color: #ffffff; background-color: #89a1b1; }
+.sidebar-nav a.active { color: #ffffff; background-color: rgba(56, 169, 244, 0.15); border-left-color: var(--azul-principal); }
+.sidebar-nav a i { font-size: 16px; width: 20px; text-align: center; }
+.nav-separator { height: 1px; background-color: rgba(255, 255, 255, 0.15); margin: 15px 20px; }
+.sidebar-nav a.disabled { color: #97a6b2; cursor: not-allowed; background: none !important; }
+
+/* --- CABEÇALHO SUPERIOR (HEADER) --- */
+.app-header {
+    grid-column: 2 / -1; /* Ocupa a segunda coluna até o final */
+    grid-row: 1 / 2; /* Ocupa a primeira linha */
+    position: sticky; /* Fica "grudado" no topo da área de rolagem */
+    top: 0;
+    z-index: 1000;
+    background-color: var(--branco);
+    border-bottom: 1px solid var(--borda);
+}
+
+.header-content {
+    display: flex;
+    justify-content: flex-end; /* Alinha o menu do usuário à direita */
+    align-items: center;
+    padding: 0 30px;
+    height: 70px;
+}
+
+/* --- CONTEÚDO PRINCIPAL --- */
+.app-content-wrapper {
+    grid-column: 2 / -1; /* Ocupa a segunda coluna */
+    grid-row: 2 / 3; /* Ocupa a segunda linha */
+    overflow-y: auto; /* ESTA é a área que vai rolar */
     background-color: var(--fundo-pagina);
 }
 
-/* --- Área de Conteúdo Principal --- */
 .app-content {
-    flex-grow: 1; /* Faz o conteúdo ocupar todo o espaço restante */
-    overflow-y: auto; /* Adiciona scroll apenas na área de conteúdo */
     padding: 30px;
-    background-color: var(--fundo-pagina);
 }
 /* ========================================================= */
 /* ===                LOGO EM DESTAQUE (EFEITO ESCAPAR)  === */

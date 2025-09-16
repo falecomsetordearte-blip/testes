@@ -4,68 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Setor de Arte</title>
-    <link rel="icon" type="image/svg+xml" href="/images/logo-redonda.svg">
+    <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
     <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
     
-    <!-- Marcador que será substituído pelo header.html -->
-    <div id="header-placeholder"></div>
+    <div class="app-layout-grid">
 
-    <div class="app-wrapper">
-        <!-- Marcador que será substituído pelo sidebar.html -->
+        <!-- Marcador que será substituído pelo sidebar.html (que agora contém a logo) -->
         <div id="sidebar-placeholder"></div>
+
+        <!-- Marcador que será substituído pelo header.html -->
+        <div id="header-placeholder"></div>
         
-        <!-- Conteúdo específico desta página -->
-        <main class="app-content">
-            <div class="container">
-                <div class="dashboard-header">
-                    <h1>Bem-vindo(a) ao seu Painel de Controle</h1>
-                    <p>Selecione uma das opções abaixo para começar.</p>
+        <!-- Wrapper para o conteúdo que rola -->
+        <div class="app-content-wrapper">
+            <main class="app-content">
+                <div class="container">
+                    <div class="dashboard-header">
+                        <h1>Bem-vindo(a) ao seu Painel de Controle</h1>
+                        <p>Selecione uma das opções abaixo para começar.</p>
+                    </div>
+
+                    <div class="dashboard-nav-grid">
+                        <!-- Seus cards de navegação aqui -->
+                        <a href="/painel.html" class="nav-card">
+                            <div class="nav-card-icon"><i class="fas fa-list-alt"></i></div>
+                            <h2>Painel de Pedidos</h2>
+                            <p>Acompanhe seus pedidos de arte, envie novas solicitações e interaja com os designers.</p>
+                        </a>
+                        <a href="/financeiro.html" class="nav-card">
+                            <div class="nav-card-icon"><i class="fas fa-dollar-sign"></i></div>
+                            <h2>Painel Financeiro</h2>
+                            <p>Gerencie pendências financeiras e visualize status de pagamentos.</p>
+                        </a>
+                        <a href="#" class="nav-card disabled">
+                            <div class="nav-card-icon"><i class="fas fa-user-cog"></i></div>
+                            <h2>Meu Perfil</h2>
+                            <p>Atualize suas informações de contato e dados da empresa. (Em breve)</p>
+                        </a>
+                        <a href="#" class="nav-card disabled">
+                            <div class="nav-card-icon"><i class="fas fa-question-circle"></i></div>
+                            <h2>Central de Ajuda</h2>
+                            <p>Encontre respostas para suas dúvidas ou entre em contato. (Em breve)</p>
+                        </a>
+                    </div>
                 </div>
+            </main>
 
-                <div class="dashboard-nav-grid">
-                    <!-- Card de Navegação 1 -->
-                    <a href="/painel.html" class="nav-card">
-                        <div class="nav-card-icon"><i class="fas fa-list-alt"></i></div>
-                        <h2>Painel de Pedidos</h2>
-                        <p>Acompanhe seus pedidos de arte, envie novas solicitações e interaja com os designers.</p>
-                    </a>
-
-                    <!-- Card de Navegação 2 -->
-                    <a href="/financeiro.html" class="nav-card">
-                        <div class="nav-card-icon"><i class="fas fa-dollar-sign"></i></div>
-                        <h2>Painel Financeiro</h2>
-                        <p>Gerencie pendências financeiras e visualize status de pagamentos.</p>
-                    </a>
-
-                    <!-- Card de Navegação 3 -->
-                    <a href="#" class="nav-card disabled">
-                        <div class="nav-card-icon"><i class="fas fa-user-cog"></i></div>
-                        <h2>Meu Perfil</h2>
-                        <p>Atualize suas informações de contato e dados da empresa. (Em breve)</p>
-                    </a>
-
-                    <!-- Card de Navegação 4 -->
-                    <a href="#" class="nav-card disabled">
-                        <div class="nav-card-icon"><i class="fas fa-question-circle"></i></div>
-                        <h2>Central de Ajuda</h2>
-                        <p>Encontre respostas para suas dúvidas ou entre em contato. (Em breve)</p>
-                    </a>
-                </div>
-            </div>
-        </main>
-        <!-- Fim do conteúdo específico -->
+            <!-- Marcador que será substituído pelo footer.html -->
+            <div id="footer-placeholder"></div>
+        </div>
     </div>
-    
-    <!-- Marcador que será substituído pelo footer.html (se você tiver um) -->
-    <div id="footer-placeholder"></div>
 
-    <!-- Carrega o nosso novo script de layout -->
     <script src="/layout.js"></script>
-    <!-- O script.js NÃO é mais necessário aqui, pois a lógica dele foi movida para o layout.js -->
 
 </body>
 </html>
