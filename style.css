@@ -138,6 +138,7 @@ form { text-align: left; }
 }
 
 .header-content {
+    background-color: #7893a5;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -156,7 +157,7 @@ form { text-align: left; }
 
 #user-greeting {
     font-weight: 600;
-    color: #555;
+    color: #ffffff;
 }
 
 /* ========================================================= */
