@@ -21,10 +21,10 @@
         const PRAZO_FINAL_FIELD = 'UF_CRM_1757794109';
 
         const STATUS_MAP = {
-            '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao', corFundo: '#eafaf1' }, // Verde pastel sólido
-            '2659': { nome: 'Na Fila',    cor: '#9b59b6', classe: 'na-fila',    corFundo: '#f4eef7' }, // Roxo pastel sólido
-            '2661': { nome: 'Imprimindo', cor: '#e74c3c', classe: 'imprimindo', corFundo: '#fdedeb' }, // Vermelho pastel sólido
-            '2663': { nome: 'Pronto',     cor: '#27ae60', classe: 'pronto',     corFundo: '#e9f7ef' }  // Verde escuro pastel sólido
+            '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao', corFundo: '#74e7a6ff' }, // Verde pastel sólido
+            '2659': { nome: 'Na Fila',    cor: '#9b59b6', classe: 'na-fila',    corFundo: '#d49af1ff' }, // Roxo pastel sólido
+            '2661': { nome: 'Imprimindo', cor: '#e74c3c', classe: 'imprimindo', corFundo: '#da8b81ff' }, // Vermelho pastel sólido
+            '2663': { nome: 'Pronto',     cor: '#27ae60', classe: 'pronto',     corFundo: '#58ac7cff' }  // Verde escuro pastel sólido
         };
         const STATUS_ORDER = ['2657', '2659', '2661', '2663'];
 
