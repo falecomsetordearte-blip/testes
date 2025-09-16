@@ -1,4 +1,4 @@
-// /script.js - VERSÃO CORRIGIDA E COMPLETA
+// /script.js - CÓDIGO COMPLETO (NENHUMA ALTERAÇÃO NECESSÁRIA)
 
 async function handleAuthError(response) {
     if (response.status === 401 || response.status === 403) {

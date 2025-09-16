@@ -1,19 +1,14 @@
-// /impressao/painel-script.js - VERSÃO CORRIGIDA E COMPLETA
+// /impressao/painel-script.js - VERSÃO COM DATA DO PRAZO NO CARD
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
 
-        // --- NOVO BLOCO DE SEGURANÇA ---
-        // Verifica se o usuário está logado. Se não, redireciona para a página de login.
         const sessionToken = localStorage.getItem('sessionToken');
         if (!sessionToken) {
-            // O caminho para login.html precisa "subir" um nível de pasta (../)
             window.location.href = '../login.html'; 
-            return; // Interrompe a execução do script para evitar erros
+            return;
         }
-        // --- FIM DO NOVO BLOCO DE SEGURANÇA ---
         
-        // --- CONSTANTES DE CONFIGURAÇÃO ---
         const STATUS_IMPRESSAO_FIELD = 'UF_CRM_1757756651931';
         const NOME_CLIENTE_FIELD = 'UF_CRM_1741273407628';
         const CONTATO_CLIENTE_FIELD = 'UF_CRM_1749481565243';
@@ -52,10 +47,21 @@
 
         const style = document.createElement('style');
         style.textContent = `
-            #modal-detalhes-rapidos.modal-overlay,
-            #modal-detalhes-rapidos .modal-content {
-                transition: none !important;
+            /* --- NOVO ESTILO PARA A TAG DE DATA --- */
+            .card-deadline-tag {
+                margin-top: 8px;
+                display: inline-block;
+                background-color: #e9ecef;
+                padding: 3px 8px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 600;
+                color: #495057;
             }
+            /* --- FIM DO NOVO ESTILO --- */
+
+            #modal-detalhes-rapidos.modal-overlay,
+            #modal-detalhes-rapidos .modal-content { transition: none !important; }
             .steps-container { display: flex; padding: 20px 10px; margin-bottom: 20px; border-bottom: 1px solid var(--borda); }
             .step { flex: 1; text-align: center; position: relative; color: #6c757d; font-weight: 600; font-size: 14px; padding: 10px 5px; background-color: #f8f9fa; border: 1px solid #dee2e6; cursor: pointer; transition: all 0.2s ease-in-out; }
             .step:first-child { border-radius: 6px 0 0 6px; }
@@ -110,12 +116,50 @@
             .detalhe-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
         `;
         document.head.appendChild(style);
+        
+        // ... (resto do código, incluindo a função `organizarPedidosNasColunas` que já corrigimos antes) ...
+
+        // --- FUNÇÃO createCardHtml ATUALIZADA ---
+        function createCardHtml(deal) {
+            const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
+            const statusId = deal[STATUS_IMPRESSAO_FIELD];
+            const statusInfo = STATUS_MAP[statusId] || {};
+            const displayId = deal.TITLE ? `#${deal.TITLE}` : `#${deal.ID}`;
+
+            // Lógica para criar a tag de data do prazo
+            let prazoTagHtml = '';
+            const prazoFinalStr = deal[PRAZO_FINAL_FIELD];
+            if (prazoFinalStr) {
+                // Formata a data para DD/MM, que é mais curto e ideal para uma tag
+                const dataFormatada = new Date(prazoFinalStr).toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit'
+                });
+                prazoTagHtml = `<div class="card-deadline-tag">Prazo: ${dataFormatada}</div>`;
+            }
+
+            return `
+                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
+                    <div class="card-id">${displayId}</div>
+                    <div class="card-client-name">${nomeCliente}</div>
+                    ${prazoTagHtml}
+                    <button class="btn-detalhes" data-action="open-details-modal" data-deal-id="${deal.ID}">Detalhes</button>
+                </div>
+            `;
+        }
+        // --- FIM DA FUNÇÃO ATUALIZADA ---
+
+        // =======================================================
+        // CÓDIGO RESTANTE DO ARQUIVO (SEM ALTERAÇÕES)
+        // =======================================================
 
         async function carregarOpcoesDeFiltro() {
             try {
                 const response = await fetch('/api/getProductionFilters');
                 const filters = await response.json();
                 if (!response.ok) throw new Error('Falha ao carregar filtros.');
+                impressoraFilterEl.innerHTML = `<option value="">Todas as Impressoras</option>`;
+                materialFilterEl.innerHTML = `<option value="">Todos os Materiais</option>`;
                 filters.impressoras.forEach(option => { impressoraFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
                 filters.materiais.forEach(option => { materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
             } catch (error) { console.error("Erro ao carregar opções de filtro:", error); }
@@ -127,9 +171,8 @@
                 const response = await fetch('/api/impressao/getDeals', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // O CORPO DA REQUISIÇÃO AGORA INCLUI O TOKEN DE SESSÃO
                     body: JSON.stringify({
-                        sessionToken: sessionToken, // <-- TOKEN ADICIONADO AQUI
+                        sessionToken: sessionToken,
                         impressoraFilter: impressoraFilterEl.value,
                         materialFilter: materialFilterEl.value
                     })
@@ -147,46 +190,45 @@
         function organizarPedidosNasColunas(deals) {
             document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '');
             const agora = new Date();
+            const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
             deals.forEach(deal => {
                 let colunaId = 'SEM_DATA';
                 const prazoFinalStr = deal[PRAZO_FINAL_FIELD];
                 if (prazoFinalStr) {
-                    const prazoFinal = new Date(prazoFinalStr);
-                    if (!isNaN(prazoFinal.getTime())) {
-                        const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
-                        const prazoData = new Date(prazoFinal.getFullYear(), prazoFinal.getMonth(), prazoFinal.getDate());
-                        const diffDays = Math.ceil((prazoData - hoje) / (1000 * 60 * 60 * 24));
-                        if (diffDays < 0) { colunaId = 'ATRASADO'; } 
-                        else if (diffDays === 0) { colunaId = 'HOJE'; } 
-                        else if (diffDays <= 7) { colunaId = 'ESSA_SEMANA'; } 
-                        else if (diffDays <= 14) { colunaId = 'PROXIMA_SEMANA'; }
+                    const dateParts = prazoFinalStr.split('T')[0].split('-');
+                    if (dateParts.length === 3) {
+                        const ano = parseInt(dateParts[0], 10);
+                        const mes = parseInt(dateParts[1], 10) - 1;
+                        const dia = parseInt(dateParts[2], 10);
+                        const prazoData = new Date(ano, mes, dia);
+                        if (!isNaN(prazoData.getTime())) {
+                            const diffTime = prazoData.getTime() - hoje.getTime();
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            if (diffDays < 0) {
+                                colunaId = 'ATRASADO';
+                            } else if (diffDays === 0) {
+                                colunaId = 'HOJE';
+                            } else if (diffDays <= 7) {
+                                colunaId = 'ESSA_SEMANA';
+                            } else {
+                                colunaId = 'PROXIMA_SEMANA';
+                            }
+                        }
                     }
                 }
                 const cardHtml = createCardHtml(deal);
                 const coluna = document.getElementById(`cards-${colunaId}`);
-                if (coluna) { coluna.innerHTML += cardHtml; }
+                if (coluna) {
+                    coluna.innerHTML += cardHtml;
+                }
             });
             document.querySelectorAll('.column-cards').forEach(col => {
-                if (col.innerHTML === '') col.innerHTML = '<p class="info-text">Nenhum pedido aqui.</p>';
+                if (col.innerHTML === '') {
+                    col.innerHTML = '<p class="info-text">Nenhum pedido aqui.</p>';
+                }
             });
         }
-
-        function createCardHtml(deal) {
-            const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
-            const statusId = deal[STATUS_IMPRESSAO_FIELD];
-            const statusInfo = STATUS_MAP[statusId] || {};
-            
-            const displayId = deal.TITLE ? `#${deal.TITLE}` : `#${deal.ID}`;
-
-            return `
-                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
-                    <div class="card-id">${displayId}</div>
-                    <div class="card-client-name">${nomeCliente}</div>
-                    <button class="btn-detalhes" data-action="open-details-modal" data-deal-id="${deal.ID}">Detalhes</button>
-                </div>
-            `;
-        }
-
+        
         async function loadAndDisplayChatHistory(dealId) {
             const chatContainer = document.getElementById('mensagens-container');
             if (!chatContainer) return;
@@ -213,9 +255,7 @@
         function openDetailsModal(dealId) {
             const deal = allDealsData.find(d => d.ID == dealId);
             if (!deal) return;
-            
             modalTitle.textContent = `Detalhes do Pedido #${deal.TITLE || deal.ID}`;
-            
             const statusAtualId = deal[STATUS_IMPRESSAO_FIELD] || STATUS_ORDER[0];
             const statusAtualIndex = STATUS_ORDER.indexOf(statusAtualId);
             let stepsHtml = '';
@@ -226,19 +266,16 @@
                 else if (index === statusAtualIndex) stepClass += ' active ' + status.classe;
                 stepsHtml += `<div class="${stepClass}" data-status-id="${id}">${status.nome}</div>`;
             });
-            
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || '---';
             const contatoCliente = deal[CONTATO_CLIENTE_FIELD] || '---';
             const medidasId = deal[MEDIDAS_FIELD];
             const medidaInfo = MEDIDAS_MAP[medidasId];
             let medidasHtml = '---';
             if (medidaInfo) { medidasHtml = `<span class="tag-medidas" style="background-color: ${medidaInfo.cor};">${medidaInfo.nome}</span>`; }
-
             const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
             const revisaoSolicitada = deal[REVISAO_SOLICITADA_FIELD] === '1';
             const isPago = deal[FIELD_STATUS_PAGAMENTO_DESIGNER] === STATUS_PAGO_ID;
-
             let actionsHtml = '';
             if (linkArquivo) { actionsHtml += `<a href="${linkArquivo}" target="_blank" class="btn-acao-modal principal">Baixar Arquivo</a>`; }
             if (linkAtendimento) { actionsHtml += `<a href="${linkAtendimento}" target="_blank" class="btn-acao-modal secundario">Ver Atendimento</a>`; }
@@ -247,7 +284,6 @@
                 actionsHtml += `<a href="${urlVerPedido}" target="_blank" class="btn-acao-modal secundario">Ver Pedido</a>`;
             }
             if (actionsHtml === '') { actionsHtml = '<p class="info-text" style="text-align:center; color: #555;">Nenhuma ação disponível.</p>'; }
-
             let mainColumnHtml = '';
             if (revisaoSolicitada) {
                 const approveButtonHtml = isPago ? '' : `<button class="btn-approve-file" data-action="approve-file" title="Aprovar o arquivo, processar pagamento e finalizar."><i class="fas fa-check"></i> Arquivo Aprovado</button>`;
@@ -256,7 +292,6 @@
             } else {
                 mainColumnHtml = `<div class="card-detalhe"><div class="revision-area"><button class="btn-request-revision" data-action="request-revision">Solicitar Revisão</button></div></div>`;
             }
-
             modalBody.innerHTML = `
                 <div class="steps-container">${stepsHtml}</div>
                 <div class="detalhe-layout">
@@ -270,9 +305,7 @@
                             <div class="info-item"><span class="info-item-label">Medidas:</span>${medidasHtml}</div>
                         </div>
                     </div>
-                </div>
-            `;
-            
+                </div>`;
             modal.classList.add('active');
             if (revisaoSolicitada) { loadAndDisplayChatHistory(dealId); }
             attachAllListeners(deal);
@@ -332,7 +365,6 @@
                     }
                 });
             }
-
             const approveBtn = document.querySelector('button[data-action="approve-file"]');
             if (approveBtn) {
                 approveBtn.addEventListener('click', async () => {
@@ -384,26 +416,20 @@
             container.addEventListener('click', (event) => {
                 const step = event.target.closest('.step');
                 if (!step) return;
-
                 const newStatusId = step.dataset.statusId;
                 const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
                 if (dealIndex === -1) return;
-
                 const oldStatusId = allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD];
                 if (newStatusId === oldStatusId) return;
-
                 updateVisualStatus(dealId, newStatusId);
                 allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = newStatusId;
-
                 fetch('/api/impressao/updateStatus', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ dealId, statusId: newStatusId })
                 })
                 .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(err => { throw new Error(err.message || 'Erro do servidor') });
-                    }
+                    if (!response.ok) { return response.json().then(err => { throw new Error(err.message || 'Erro do servidor') }); }
                     return response.json();
                 })
                 .then(data => {

@@ -1,4 +1,4 @@
-// /api/cancelDeal.js
+// /api/cancelDeal.js - CÓDIGO COMPLETO (NENHUMA ALTERAÇÃO NECESSÁRIA)
 
 const axios = require('axios');
 

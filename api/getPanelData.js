@@ -1,3 +1,5 @@
+// /api/getPanelData.js - VERSÃO COM FILTRO DE STAGES ADICIONADO
+
 const axios = require('axios');
 
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
@@ -15,7 +17,7 @@ module.exports = async (req, res) => {
 
         const searchUserResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken },
-            select: ['ID', 'NAME', 'COMPANY_ID'] // Removido UF_CRM_SALDO e UF_CRM_CONTA_ATIVA que não estavam sendo usados
+            select: ['ID', 'NAME', 'COMPANY_ID']
         });
 
         const user = searchUserResponse.data.result[0];
@@ -34,11 +36,19 @@ module.exports = async (req, res) => {
             }
         }
         
+        // --- ALTERAÇÃO APLICADA AQUI ---
+        // Adicionamos a condição '!STAGE_ID' ao filtro para excluir os estágios indesejados.
         const dealsResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
             filter: {
                 'COMPANY_ID': user.COMPANY_ID,
-                'CATEGORY_ID': 17 // Filtra apenas para o pipeline de arte
+                'CATEGORY_ID': 17, // Filtra apenas para o pipeline de arte
+                '!STAGE_ID': [
+                    'C17:UC_ZHMX6W', // Stage de Impressão
+                    'C11:UC_YYHPKI', // Stage Financeiro
+                    'C17:UC_ZPMNF9'  // Stage de Acabamento Concluído
+                ]
             },
+            // --- FIM DA ALTERAÇÃO ---
             order: { 'ID': 'DESC' },
             select: [
                 'ID', 'TITLE', 'STAGE_ID', 'OPPORTUNITY', 'COMMENTS',

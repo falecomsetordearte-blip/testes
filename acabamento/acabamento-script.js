@@ -1,7 +1,18 @@
-// /acabamento/acabamento-script.js
+// /acabamento/acabamento-script.js - VERSÃO SEGURA E CORRIGIDA
+
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
         
+        // --- NOVO BLOCO DE SEGURANÇA ---
+        // Verifica se o usuário está logado. Se não, redireciona para a página de login.
+        const sessionToken = localStorage.getItem('sessionToken');
+        if (!sessionToken) {
+            // O caminho para login.html precisa "subir" um nível de pasta (../)
+            window.location.href = '../login.html'; 
+            return; // Interrompe a execução do script para evitar erros
+        }
+        // --- FIM DO NOVO BLOCO DE SEGURANÇA ---
+
         // --- CONSTANTES DE CONFIGURAÇÃO ---
         const NOME_CLIENTE_FIELD = 'UF_CRM_1741273407628';
         const CONTATO_CLIENTE_FIELD = 'UF_CRM_1749481565243';
@@ -62,7 +73,12 @@
                 const response = await fetch('/api/acabamento/getDeals', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ impressoraFilter: impressoraFilterEl.value, materialFilter: materialFilterEl.value })
+                    // O CORPO DA REQUISIÇÃO AGORA INCLUI O TOKEN DE SESSÃO
+                    body: JSON.stringify({
+                        sessionToken: sessionToken, // <-- TOKEN ADICIONADO AQUI
+                        impressoraFilter: impressoraFilterEl.value,
+                        materialFilter: materialFilterEl.value
+                    })
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.message);
@@ -101,7 +117,6 @@
             });
         }
 
-        // --- FUNÇÃO ATUALIZADA ---
         function createCardHtml(deal) {
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
             const displayId = deal.TITLE ? `#${deal.TITLE}` : `#${deal.ID}`;
@@ -171,7 +186,11 @@
                     const response = await fetch('/api/acabamento/concluirDeal', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ dealId })
+                        // O CORPO DA REQUISIÇÃO AGORA INCLUI O TOKEN DE SESSÃO
+                        body: JSON.stringify({
+                            sessionToken: sessionToken, // <-- TOKEN ADICIONADO AQUI
+                            dealId: dealId
+                        })
                     });
 
                     if (!response.ok) {

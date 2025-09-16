@@ -1,4 +1,4 @@
-// /api/getFinancialDeals.js
+// /api/getFinancialDeals.js - VERSÃO SEGURA E CORRIGIDA
 
 const axios = require('axios');
 
@@ -11,22 +11,36 @@ module.exports = async (req, res) => {
     }
 
     try {
-        // A página e o filtro são recebidos do frontend
-        const { page = 0, statusFilter, nameFilter } = req.body;
+        const { sessionToken, page = 0, statusFilter, nameFilter } = req.body;
 
-        // ETAPA 1: Construir o objeto de filtro dinamicamente
+        // ETAPA 1: VALIDAR O TOKEN E ENCONTRAR A EMPRESA
+        if (!sessionToken) {
+            return res.status(401).json({ message: 'Acesso não autorizado. Token é obrigatório.' });
+        }
+
+        const userSearch = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
+            filter: { '%UF_CRM_1751824225': sessionToken },
+            select: ['ID', 'COMPANY_ID']
+        });
+
+        const user = userSearch.data.result[0];
+        if (!user || !user.COMPANY_ID) {
+            return res.status(401).json({ message: 'Sessão inválida ou empresa não encontrada.' });
+        }
+
+        // ETAPA 2: Construir o objeto de filtro dinamicamente, AGORA COM O COMPANY_ID
         const filterParams = {
             'CATEGORY_ID': 11,
+            'COMPANY_ID': user.COMPANY_ID // <-- FILTRO DE SEGURANÇA ADICIONADO
         };
-        // Adiciona o filtro de nome se ele for fornecido
+        
         if (nameFilter && nameFilter.trim() !== '') {
             filterParams['%TITLE'] = nameFilter.trim();
         }
-        // Adiciona o filtro de status apenas se um específico for selecionado
+        
         if (statusFilter && statusFilter !== 'todos') {
             filterParams['STAGE_ID'] = statusFilter;
         } else {
-            // Caso contrário, busca em todos os status relevantes do pipeline 11
             filterParams['STAGE_ID'] = [
                 'C11:UC_YYHPKI',
                 'C11:UC_4SNWR7',
@@ -34,18 +48,18 @@ module.exports = async (req, res) => {
             ];
         }
 
-        // ETAPA 2: Buscar os negócios no Bitrix24 usando o filtro construído
+        // ETAPA 3: Buscar os negócios no Bitrix24 usando o filtro seguro
         const response = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
             filter: filterParams,
-            order: { 'ID': 'DESC' }, // Ordena pelos mais recentes
+            order: { 'ID': 'DESC' },
             select: ['ID', 'TITLE', 'STAGE_ID', 'OPPORTUNITY', 'CONTACT_ID', 'COMPANY_ID'],
-            start: page * ITEMS_PER_PAGE // Ponto de partida para a paginação
+            start: page * ITEMS_PER_PAGE
         });
 
         const deals = response.data.result || [];
         const total = response.data.total || 0;
 
-        // ETAPA 3: Montar a resposta com os dados e informações de paginação
+        // ETAPA 4: Montar a resposta com os dados e informações de paginação
         return res.status(200).json({
             deals: deals,
             pagination: {
