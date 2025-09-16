@@ -1,4 +1,4 @@
-// /impressao/painel-script.js - VERSÃO COM CORREÇÃO NA LÓGICA DE DATAS
+// /impressao/painel-script.js - VERSÃO COM DATA DO PRAZO NO CARD
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
@@ -47,6 +47,19 @@
 
         const style = document.createElement('style');
         style.textContent = `
+            /* --- NOVO ESTILO PARA A TAG DE DATA --- */
+            .card-deadline-tag {
+                margin-top: 8px;
+                display: inline-block;
+                background-color: #e9ecef;
+                padding: 3px 8px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 600;
+                color: #495057;
+            }
+            /* --- FIM DO NOVO ESTILO --- */
+
             #modal-detalhes-rapidos.modal-overlay,
             #modal-detalhes-rapidos .modal-content { transition: none !important; }
             .steps-container { display: flex; padding: 20px 10px; margin-bottom: 20px; border-bottom: 1px solid var(--borda); }
@@ -103,75 +116,43 @@
             .detalhe-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
         `;
         document.head.appendChild(style);
-
-        async function carregarOpcoesDeFiltro() { /* ...código inalterado... */ }
-        async function carregarPedidosDeImpressao() { /* ...código inalterado... */ }
-
-        // --- FUNÇÃO CORRIGIDA ---
-        function organizarPedidosNasColunas(deals) {
-            document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '');
-            
-            const agora = new Date();
-            const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()); // Hoje à meia-noite
-
-            deals.forEach(deal => {
-                let colunaId = 'SEM_DATA';
-                const prazoFinalStr = deal[PRAZO_FINAL_FIELD];
-                
-                if (prazoFinalStr) {
-                    // PARSE SEGURO DA DATA: Pega apenas a parte da data (YYYY-MM-DD) e ignora a hora/fuso
-                    const dateParts = prazoFinalStr.split('T')[0].split('-');
-                    if (dateParts.length === 3) {
-                        const ano = parseInt(dateParts[0], 10);
-                        const mes = parseInt(dateParts[1], 10) - 1; // Mês em JS é 0-11
-                        const dia = parseInt(dateParts[2], 10);
-                        
-                        // Cria a data do prazo à meia-noite, no fuso local, evitando erros de conversão
-                        const prazoData = new Date(ano, mes, dia);
-
-                        if (!isNaN(prazoData.getTime())) {
-                            // Calcula a diferença em dias
-                            const diffTime = prazoData.getTime() - hoje.getTime();
-                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                            if (diffDays < 0) {
-                                colunaId = 'ATRASADO';
-                            } else if (diffDays === 0) {
-                                colunaId = 'HOJE';
-                            } else if (diffDays <= 7) {
-                                colunaId = 'ESSA_SEMANA';
-                            } else { // Qualquer prazo futuro acima de 7 dias
-                                colunaId = 'PROXIMA_SEMANA';
-                            }
-                        }
-                    }
-                }
-                
-                const cardHtml = createCardHtml(deal);
-                const coluna = document.getElementById(`cards-${colunaId}`);
-                if (coluna) {
-                    coluna.innerHTML += cardHtml;
-                }
-            });
-
-            document.querySelectorAll('.column-cards').forEach(col => {
-                if (col.innerHTML === '') {
-                    col.innerHTML = '<p class="info-text">Nenhum pedido aqui.</p>';
-                }
-            });
-        }
-        // --- FIM DA FUNÇÃO CORRIGIDA ---
-
-        function createCardHtml(deal) { /* ...código inalterado... */ }
-        async function loadAndDisplayChatHistory(dealId) { /* ...código inalterado... */ }
-        function openDetailsModal(dealId) { /* ...código inalterado... */ }
-        function attachAllListeners(deal) { /* ...código inalterado... */ }
-        function attachRevisionListener(dealId) { /* ...código inalterado... */ }
-        function attachChatListeners(dealId) { /* ...código inalterado... */ }
-        function updateVisualStatus(dealId, newStatusId) { /* ...código inalterado... */ }
-        function attachStatusStepListeners(dealId) { /* ...código inalterado... */ }
         
-        // Colando aqui as funções que foram omitidas para manter o código completo
+        // ... (resto do código, incluindo a função `organizarPedidosNasColunas` que já corrigimos antes) ...
+
+        // --- FUNÇÃO createCardHtml ATUALIZADA ---
+        function createCardHtml(deal) {
+            const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
+            const statusId = deal[STATUS_IMPRESSAO_FIELD];
+            const statusInfo = STATUS_MAP[statusId] || {};
+            const displayId = deal.TITLE ? `#${deal.TITLE}` : `#${deal.ID}`;
+
+            // Lógica para criar a tag de data do prazo
+            let prazoTagHtml = '';
+            const prazoFinalStr = deal[PRAZO_FINAL_FIELD];
+            if (prazoFinalStr) {
+                // Formata a data para DD/MM, que é mais curto e ideal para uma tag
+                const dataFormatada = new Date(prazoFinalStr).toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit'
+                });
+                prazoTagHtml = `<div class="card-deadline-tag">Prazo: ${dataFormatada}</div>`;
+            }
+
+            return `
+                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
+                    <div class="card-id">${displayId}</div>
+                    <div class="card-client-name">${nomeCliente}</div>
+                    ${prazoTagHtml}
+                    <button class="btn-detalhes" data-action="open-details-modal" data-deal-id="${deal.ID}">Detalhes</button>
+                </div>
+            `;
+        }
+        // --- FIM DA FUNÇÃO ATUALIZADA ---
+
+        // =======================================================
+        // CÓDIGO RESTANTE DO ARQUIVO (SEM ALTERAÇÕES)
+        // =======================================================
+
         async function carregarOpcoesDeFiltro() {
             try {
                 const response = await fetch('/api/getProductionFilters');
@@ -206,17 +187,46 @@
             }
         }
 
-        function createCardHtml(deal) {
-            const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
-            const statusId = deal[STATUS_IMPRESSAO_FIELD];
-            const statusInfo = STATUS_MAP[statusId] || {};
-            const displayId = deal.TITLE ? `#${deal.TITLE}` : `#${deal.ID}`;
-            return `
-                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
-                    <div class="card-id">${displayId}</div>
-                    <div class="card-client-name">${nomeCliente}</div>
-                    <button class="btn-detalhes" data-action="open-details-modal" data-deal-id="${deal.ID}">Detalhes</button>
-                </div>`;
+        function organizarPedidosNasColunas(deals) {
+            document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '');
+            const agora = new Date();
+            const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+            deals.forEach(deal => {
+                let colunaId = 'SEM_DATA';
+                const prazoFinalStr = deal[PRAZO_FINAL_FIELD];
+                if (prazoFinalStr) {
+                    const dateParts = prazoFinalStr.split('T')[0].split('-');
+                    if (dateParts.length === 3) {
+                        const ano = parseInt(dateParts[0], 10);
+                        const mes = parseInt(dateParts[1], 10) - 1;
+                        const dia = parseInt(dateParts[2], 10);
+                        const prazoData = new Date(ano, mes, dia);
+                        if (!isNaN(prazoData.getTime())) {
+                            const diffTime = prazoData.getTime() - hoje.getTime();
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            if (diffDays < 0) {
+                                colunaId = 'ATRASADO';
+                            } else if (diffDays === 0) {
+                                colunaId = 'HOJE';
+                            } else if (diffDays <= 7) {
+                                colunaId = 'ESSA_SEMANA';
+                            } else {
+                                colunaId = 'PROXIMA_SEMANA';
+                            }
+                        }
+                    }
+                }
+                const cardHtml = createCardHtml(deal);
+                const coluna = document.getElementById(`cards-${colunaId}`);
+                if (coluna) {
+                    coluna.innerHTML += cardHtml;
+                }
+            });
+            document.querySelectorAll('.column-cards').forEach(col => {
+                if (col.innerHTML === '') {
+                    col.innerHTML = '<p class="info-text">Nenhum pedido aqui.</p>';
+                }
+            });
         }
         
         async function loadAndDisplayChatHistory(dealId) {
