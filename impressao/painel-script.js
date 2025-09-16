@@ -1,4 +1,4 @@
-// /impressao/painel-script.js - VERSÃO COMPLETA E CORRIGIDA COM CARDS CLICÁVEIS
+// /impressao/painel-script.js - VERSÃO COM FUNDO DO CARD COLORIDO
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
@@ -47,8 +47,7 @@
 
         const style = document.createElement('style');
         style.textContent = `
-            /* --- ALTERAÇÃO 1: CSS --- */
-            /* Faz o card parecer clicável ao passar o mouse */
+            /* Efeito de card clicável */
             .kanban-card {
                 transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
             }
@@ -67,8 +66,26 @@
                 font-weight: 600;
                 color: #495057;
             }
-            /* --- FIM DA ALTERAÇÃO 1 --- */
             
+            /* --- ALTERAÇÃO PRINCIPAL: CORES DE FUNDO DOS CARDS --- */
+            .kanban-card.status-preparacao {
+                border-left-color: ${STATUS_MAP['2657'].cor} !important;
+                background-color: ${STATUS_MAP['2657'].corFundo};
+            }
+            .kanban-card.status-na-fila {
+                border-left-color: ${STATUS_MAP['2659'].cor} !important;
+                background-color: ${STATUS_MAP['2659'].corFundo};
+            }
+            .kanban-card.status-imprimindo {
+                border-left-color: ${STATUS_MAP['2661'].cor} !important;
+                background-color: ${STATUS_MAP['2661'].corFundo};
+            }
+            .kanban-card.status-pronto {
+                border-left-color: ${STATUS_MAP['2663'].cor} !important;
+                background-color: ${STATUS_MAP['2663'].corFundo};
+            }
+            /* --- FIM DA ALTERAÇÃO --- */
+
             #modal-detalhes-rapidos.modal-overlay,
             #modal-detalhes-rapidos .modal-content { transition: none !important; }
             .steps-container { display: flex; padding: 20px 10px; margin-bottom: 20px; border-bottom: 1px solid var(--borda); }
@@ -90,10 +107,6 @@
             .step.active.imprimindo:not(:last-child)::after, .step.active.imprimindo:not(:last-child)::before { border-left-color: ${STATUS_MAP['2661'].cor}; }
             .step.active.pronto { background-color: ${STATUS_MAP['2663'].cor}; border-color: ${STATUS_MAP['2663'].cor}; }
             .step.active.pronto:not(:last-child)::after, .step.active.pronto:not(:last-child)::before { border-left-color: ${STATUS_MAP['2663'].cor}; }
-            .kanban-card.status-preparacao { border-left-color: ${STATUS_MAP['2657'].cor} !important; }
-            .kanban-card.status-na-fila { border-left-color: ${STATUS_MAP['2659'].cor} !important; }
-            .kanban-card.status-imprimindo { border-left-color: ${STATUS_MAP['2661'].cor} !important; }
-            .kanban-card.status-pronto { border-left-color: ${STATUS_MAP['2663'].cor} !important; }
             .info-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--borda); }
             .info-item:last-child { border-bottom: none; }
             .info-item-label { font-weight: 600; }
@@ -125,7 +138,9 @@
             .detalhe-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
         `;
         document.head.appendChild(style);
-
+        
+        // As funções abaixo permanecem inalteradas, apenas a inclusão do CSS acima já resolve.
+        
         async function carregarOpcoesDeFiltro() {
             try {
                 const response = await fetch('/api/getProductionFilters');
@@ -202,13 +217,11 @@
             });
         }
         
-        // --- ALTERAÇÃO 2: HTML DO CARD ---
         function createCardHtml(deal) {
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
             const statusId = deal[STATUS_IMPRESSAO_FIELD];
             const statusInfo = STATUS_MAP[statusId] || {};
             const displayId = deal.TITLE ? `#${deal.TITLE}` : `#${deal.ID}`;
-
             let prazoTagHtml = '';
             const prazoFinalStr = deal[PRAZO_FINAL_FIELD];
             if (prazoFinalStr) {
@@ -218,13 +231,11 @@
                 });
                 prazoTagHtml = `<div class="card-deadline-tag">Prazo: ${dataFormatada}</div>`;
             }
-
             return `
                 <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
                     <div class="card-id">${displayId}</div>
                     <div class="card-client-name">${nomeCliente}</div>
                     ${prazoTagHtml}
-                    <!-- Botão de detalhes foi removido -->
                 </div>
             `;
         }
@@ -453,7 +464,6 @@
         closeModalBtn.addEventListener('click', () => modal.classList.remove('active'));
         modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
 
-        // --- ALTERAÇÃO 3: LISTENER DE CLIQUE ---
         board.addEventListener('click', (event) => {
             const card = event.target.closest('.kanban-card');
             if (card) {
