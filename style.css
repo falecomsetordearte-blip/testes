@@ -129,7 +129,8 @@ form { text-align: left; }
     z-index: 1000;
 
     width: 100%;
-    padding: 15px 0;
+    height: 70px; /* ALTURA MÁXIMA DEFINIDA */
+    padding: 0; /* Padding vertical removido para não interferir na altura */
 
     background-color: var(--branco);
     border-bottom: 1px solid var(--borda);
@@ -140,8 +141,9 @@ form { text-align: left; }
     display: flex;
     justify-content: space-between;
     align-items: center;
-    max-width: 100%; /* Faz o conteúdo ocupar toda a largura */
-    padding: 0 30px; /* Adiciona um espaçamento nas laterais */
+    max-width: 100%;
+    padding: 0 30px;
+    height: 100%; /* GARANTE QUE O CONTEÚDO OCUPE OS 70PX DO PAI */
 }
 
 .app-logo { height: 45px; }
