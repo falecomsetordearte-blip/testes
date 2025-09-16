@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Setor de Arte</title>
+    <!-- O ícone agora aponta para a nova logo -->
     <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
     <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
@@ -11,16 +12,18 @@
 </head>
 <body>
     
+    <!-- Nova estrutura de layout com Grid -->
     <div class="app-layout-grid">
 
-        <!-- Marcador que será substituído pelo sidebar.html (que agora contém a logo) -->
+        <!-- Marcador que será substituído pelo sidebar.html -->
         <div id="sidebar-placeholder"></div>
-
-        <!-- Marcador que será substituído pelo header.html -->
-        <div id="header-placeholder"></div>
         
-        <!-- Wrapper para o conteúdo que rola -->
+        <!-- Wrapper para o conteúdo que vai rolar -->
         <div class="app-content-wrapper">
+            <!-- Marcador do header agora está AQUI DENTRO -->
+            <div id="header-placeholder"></div>
+
+            <!-- Conteúdo específico desta página -->
             <main class="app-content">
                 <div class="container">
                     <div class="dashboard-header">
@@ -29,7 +32,6 @@
                     </div>
 
                     <div class="dashboard-nav-grid">
-                        <!-- Seus cards de navegação aqui -->
                         <a href="/painel.html" class="nav-card">
                             <div class="nav-card-icon"><i class="fas fa-list-alt"></i></div>
                             <h2>Painel de Pedidos</h2>
@@ -59,6 +61,7 @@
         </div>
     </div>
 
+    <!-- O único script necessário agora é o layout.js -->
     <script src="/layout.js"></script>
 
 </body>
