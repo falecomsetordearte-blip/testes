@@ -930,7 +930,7 @@ a.btn-ver-pedido:hover {
     width: 240px;
     flex-shrink: 0;
     background-color: #7893a5; /* SUA NOVA COR DE FUNDO */
-    padding: 20px 0;
+    padding: 50px 0;
     /* A borda direita não é mais necessária com o contraste de cores */
 }
 
