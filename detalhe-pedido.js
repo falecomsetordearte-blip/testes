@@ -4,7 +4,7 @@
         
         try {
             const sessionToken = localStorage.getItem('sessionToken');
-            const userName = localStorage.getItem('userName');
+            // const userName = localStorage.getItem('userName'); // Não precisamos mais dele aqui
             const urlParams = new URLSearchParams(window.location.search);
             const pedidoId = urlParams.get('id');
 
@@ -24,14 +24,13 @@
             const mensagensContainer = document.getElementById('mensagens-container');
             const btnAbrirAvaliacao = document.getElementById('btn-abrir-avaliacao');
 
-            if (!sessionToken) { window.location.href = 'login'; return; }
+            if (!sessionToken) { window.location.href = '/login.html'; return; } // Usar caminho absoluto
             if (!pedidoId) { tituloEl.textContent = 'Erro: ID do pedido não fornecido.'; return; }
             
-            document.getElementById('user-greeting').textContent = `Olá, ${userName}!`;
-            document.getElementById('logout-button').addEventListener('click', () => {
-                localStorage.clear();
-                window.location.href = 'login';
-            });
+            // REMOVEMOS AS LINHAS QUE CAUSAVAM O ERRO:
+            // document.getElementById('user-greeting').textContent = `Olá, ${userName}!`;
+            // document.getElementById('logout-button').addEventListener('click', ...);
+            // O layout.js já cuida disso!
 
             async function carregarDetalhesPedido() {
                 try {
