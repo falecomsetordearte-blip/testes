@@ -603,3 +603,125 @@ a.btn-ver-pedido:hover { text-decoration: underline; color: #2c89c8; }
 .hidden { display: none !important; }
 .spinner { width: 48px; height: 48px; margin: 0 auto 20px; border: 4px solid #e9ecef; border-radius: 50%; border-left-color: var(--azul-principal); animation: spin 1s linear infinite; }
 @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+/* ========================================================= */
+/* ===                COMPONENTE DE CHAT                 === */
+/* ========================================================= */
+
+/* O contêiner principal do chat */
+.chat-box {
+    display: flex;
+    flex-direction: column; /* Organiza os itens verticalmente */
+    height: 500px; /* Altura fixa para o chat, ajuste se necessário */
+    max-height: 70vh; /* Garante que não ocupe a tela toda em telas menores */
+    background-color: #f8f9fa;
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    overflow: hidden; /* Esconde qualquer coisa que transborde */
+}
+
+/* A área onde as mensagens aparecem */
+.chat-box #mensagens-container {
+    flex-grow: 1; /* Faz esta área crescer para ocupar o espaço disponível */
+    overflow-y: auto; /* Adiciona uma barra de rolagem vertical quando necessário */
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* Espaçamento entre as mensagens */
+    background-color: var(--branco);
+}
+
+/* Estilo base para todas as "bolhas" de mensagem */
+.chat-box .mensagem {
+    padding: 10px 15px;
+    border-radius: 18px;
+    line-height: 1.4;
+    max-width: 75%; /* Impede que a bolha ocupe a largura toda */
+    word-wrap: break-word; /* Quebra palavras longas para caber na bolha */
+}
+
+/* Estilo para as mensagens do CLIENTE (à esquerda) */
+.chat-box .mensagem.mensagem-cliente {
+    background-color: #e9ecef;
+    color: var(--texto-escuro);
+    border-bottom-left-radius: 4px; /* Achatado em um canto para dar estilo */
+    align-self: flex-start; /* Alinha à esquerda */
+}
+
+/* Estilo para as mensagens do DESIGNER (à direita) */
+.chat-box .mensagem.mensagem-designer {
+    background-color: var(--azul-principal);
+    color: var(--branco);
+    border-bottom-right-radius: 4px; /* Achatado no canto oposto */
+    align-self: flex-end; /* Alinha à direita */
+}
+
+/* O formulário para digitar a nova mensagem */
+.chat-box .form-mensagem {
+    display: flex;
+    gap: 10px;
+    padding: 15px;
+    border-top: 1px solid var(--borda);
+    background-color: #f8f9fa;
+}
+
+/* O campo de texto */
+.chat-box #input-mensagem {
+    flex-grow: 1; /* Ocupa todo o espaço disponível */
+    border: 1px solid #ced4da;
+    border-radius: 20px;
+    padding: 10px 18px;
+    font-size: 15px;
+    font-family: 'Poppins', sans-serif;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.chat-box #input-mensagem:focus {
+    outline: none;
+    border-color: var(--azul-principal);
+    box-shadow: 0 0 0 3px rgba(56, 169, 244, 0.25);
+}
+
+/* O botão de enviar */
+.chat-box #btn-enviar-mensagem {
+    flex-shrink: 0; /* Impede que o botão seja espremido */
+    background-color: var(--azul-principal);
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.chat-box #btn-enviar-mensagem:hover {
+    background-color: #2c98e0;
+}
+
+.chat-box #btn-enviar-mensagem svg {
+    fill: white;
+    width: 22px;
+    height: 22px;
+    transform: translateX(2px); /* Pequeno ajuste para centralizar o ícone */
+}
+
+/* Mensagens informativas dentro do chat */
+.chat-box .info-text {
+    text-align: center;
+    color: var(--cinza-texto);
+    padding: 20px;
+    margin: auto; /* Centraliza vertical e horizontalmente */
+}
+
+/* Aviso de envio de arquivos (se existir) */
+.chat-box .aviso-envio-arquivos {
+    font-size: 0.8rem;
+    text-align: center;
+    padding: 10px;
+    color: var(--cinza-texto);
+    background-color: #f8f9fa;
+    border-top: 1px solid var(--borda);
+}
