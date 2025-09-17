@@ -1,4 +1,4 @@
-// /impressao/painel-script.js - VERSÃO FINAL E LIMPA (SEM CSS INLINE)
+// /impressao/painel-script.js - VERSÃO FINAL COM TODO O CSS EMBUTIDO PARA GARANTIR A RENDERIZAÇÃO CORRETA
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
@@ -22,10 +22,10 @@
         const PRAZO_FINAL_FIELD = 'UF_CRM_1757794109';
 
         const STATUS_MAP = {
-            '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao' },
-            '2659': { nome: 'Na Fila',    cor: '#9b59b6', classe: 'na-fila' },
-            '2661': { nome: 'Imprimindo', cor: '#e74c3c', classe: 'imprimindo' },
-            '2663': { nome: 'Pronto',     cor: '#27ae60', classe: 'pronto' }
+            '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao', corFundo: '#74e7a6ff' },
+            '2659': { nome: 'Na Fila',    cor: '#9b59b6', classe: 'na-fila',    corFundo: '#d49af1ff' },
+            '2661': { nome: 'Imprimindo', cor: '#e74c3c', classe: 'imprimindo', corFundo: '#fdbab2' },
+            '2663': { nome: 'Pronto',     cor: '#27ae60', classe: 'pronto',     corFundo: '#58ac7cff' }
         };
         const STATUS_ORDER = ['2657', '2659', '2661', '2663'];
 
@@ -46,6 +46,69 @@
         const closeModalBtn = modal.querySelector('.close-modal');
 
         let allDealsData = [];
+
+        // --- INJEÇÃO DE ESTILOS DINÂMICOS ---
+        const style = document.createElement('style');
+        style.textContent = `
+            /* --- ESTILOS GERAIS DO PAINEL (INJETADOS) --- */
+            .kanban-card:hover { cursor: pointer; transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+            .card-deadline-tag { margin-top: 8px; display: inline-block; background-color: #e9ecef; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #495057; }
+            .kanban-card.status-preparacao { border-left-color: ${STATUS_MAP['2657'].cor} !important; background-color: ${STATUS_MAP['2657'].corFundo}; }
+            .kanban-card.status-na-fila { border-left-color: ${STATUS_MAP['2659'].cor} !important; background-color: ${STATUS_MAP['2659'].corFundo}; }
+            .kanban-card.status-imprimindo { border-left-color: ${STATUS_MAP['2661'].cor} !important; background-color: ${STATUS_MAP['2661'].corFundo}; }
+            .kanban-card.status-pronto { border-left-color: ${STATUS_MAP['2663'].cor} !important; background-color: ${STATUS_MAP['2663'].corFundo}; }
+            .steps-container { display: flex; padding: 20px 10px; margin-bottom: 20px; border-bottom: 1px solid var(--borda); }
+            .step { flex: 1; text-align: center; position: relative; color: #6c757d; font-weight: 600; font-size: 14px; padding: 10px 5px; background-color: #f8f9fa; border: 1px solid #dee2e6; cursor: pointer; transition: all 0.2s ease-in-out; }
+            .step:first-child { border-radius: 6px 0 0 6px; } .step:last-child { border-radius: 0 6px 6px 0; }
+            .step:not(:last-child)::after { content: ''; position: absolute; right: -13px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 21px solid transparent; border-bottom: 21px solid transparent; border-left: 13px solid #f8f9fa; z-index: 2; transition: border-left-color 0.2s ease-in-out; }
+            .step:not(:last-child)::before { content: ''; position: absolute; right: -14px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 21px solid transparent; border-bottom: 21px solid transparent; border-left: 13px solid #dee2e6; z-index: 1; }
+            .step.completed, .step.active { color: #fff; } .step.completed { background-color: #6c757d; border-color: #5c636a; }
+            .step.completed:not(:last-child)::after { border-left-color: #6c757d; } .step.completed:not(:last-child)::before { border-left-color: #5c636a; }
+            .step.active { z-index: 3; transform: scale(1.05); }
+            .step.active.preparacao { background-color: ${STATUS_MAP['2657'].cor}; border-color: ${STATUS_MAP['2657'].cor}; }
+            .step.active.preparacao:not(:last-child)::after, .step.active.preparacao:not(:last-child)::before { border-left-color: ${STATUS_MAP['2657'].cor}; }
+            .step.active.na-fila { background-color: ${STATUS_MAP['2659'].cor}; border-color: ${STATUS_MAP['2659'].cor}; }
+            .step.active.na-fila:not(:last-child)::after, .step.active.na-fila:not(:last-child)::before { border-left-color: ${STATUS_MAP['2659'].cor}; }
+            .step.active.imprimindo { background-color: ${STATUS_MAP['2661'].cor}; border-color: ${STATUS_MAP['2661'].cor}; }
+            .step.active.imprimindo:not(:last-child)::after, .step.active.imprimindo:not(:last-child)::before { border-left-color: ${STATUS_MAP['2661'].cor}; }
+            .step.active.pronto { background-color: ${STATUS_MAP['2663'].cor}; border-color: ${STATUS_MAP['2663'].cor}; }
+            .step.active.pronto:not(:last-child)::after, .step.active.pronto:not(:last-child)::before { border-left-color: ${STATUS_MAP['2663'].cor}; }
+            .info-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--borda); }
+            .tag-medidas { padding: 4px 10px; border-radius: 4px; color: white; font-weight: 600; font-size: 12px; }
+            .btn-approve-file { background-color: var(--sucesso); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+            .chat-bloqueado { position: relative; cursor: not-allowed; }
+            .chat-bloqueado::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255, 255, 255, 0.7); border-radius: 8px; z-index: 5; }
+            .modal-actions-container .btn-acao-modal { display: block; text-decoration: none; text-align: center; padding: 10px; border-radius: 6px; font-weight: 600; transition: background-color 0.2s; border: 1px solid transparent; }
+            .modal-actions-container .btn-acao-modal.principal { background-color: var(--azul-principal); color: white; }
+            .modal-actions-container .btn-acao-modal.secundario { background-color: #f1f1f1; border-color: #ddd; color: var(--texto-escuro); }
+            .card-detalhe { background-color: var(--branco); border-radius: 12px; padding: 25px; margin-bottom: 20px; }
+            .detalhe-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+            .revisao-wrapper { position: relative; }
+            .revisao-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(248, 249, 250, 0.95); backdrop-filter: blur(2px); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; z-index: 10; padding: 20px; border-radius: 12px; transition: opacity 0.3s ease, visibility 0.3s ease; }
+            .chat-iniciado .revisao-overlay { opacity: 0; visibility: hidden; pointer-events: none; }
+            .btn-request-revision { background-color: var(--erro); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 10px; }
+            .btn-request-revision:hover { background-color: #c0392b; transform: translateY(-2px); }
+
+            /* --- ESTILOS COMPLETOS DO COMPONENTE DE CHAT (AUTOSSUFICIENTE) --- */
+            #modal-detalhes-rapidos .chat-box { display: flex; flex-direction: column; background-color: #f8f9fa; overflow: hidden; }
+            #modal-detalhes-rapidos .chat-box #mensagens-container { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; background-color: var(--branco); }
+            #modal-detalhes-rapidos .chat-box .mensagem { padding: 10px 15px; border-radius: 18px; line-height: 1.4; max-width: 75%; word-wrap: break-word; }
+            #modal-detalhes-rapidos .chat-box .mensagem-cliente { background-color: #e9ecef; color: var(--texto-escuro); border-bottom-left-radius: 4px; align-self: flex-start; }
+            #modal-detalhes-rapidos .chat-box .mensagem-designer { background-color: var(--azul-principal); color: var(--branco); border-bottom-right-radius: 4px; align-self: flex-end; }
+            #modal-detalhes-rapidos .chat-box .form-mensagem { display: flex; gap: 10px; padding: 15px; border-top: 1px solid var(--borda); background-color: #f8f9fa; }
+            #modal-detalhes-rapidos .chat-box #input-mensagem { flex-grow: 1; border: 1px solid #ced4da; border-radius: 20px; padding: 10px 18px; font-size: 15px; font-family: 'Poppins', sans-serif; transition: border-color 0.2s, box-shadow 0.2s; }
+            #modal-detalhes-rapidos .chat-box #input-mensagem:focus { outline: none; border-color: var(--azul-principal); box-shadow: 0 0 0 3px rgba(56, 169, 244, 0.25); }
+            #modal-detalhes-rapidos .chat-box #btn-enviar-mensagem { flex-shrink: 0; background-color: var(--azul-principal); border: none; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background-color 0.2s; }
+            #modal-detalhes-rapidos .chat-box #btn-enviar-mensagem:hover { background-color: #2c98e0; }
+            #modal-detalhes-rapidos .chat-box #btn-enviar-mensagem svg { fill: white; width: 22px; height: 22px; transform: translateX(2px); }
+
+            /* --- AJUSTE DE ALTURA DO CHAT NO MODAL --- */
+            #modal-detalhes-rapidos .detalhe-col-principal { display: flex; flex-direction: column; }
+            #modal-detalhes-rapidos .revisao-wrapper.card-detalhe { flex-grow: 1; display: flex; flex-direction: column; padding: 0; }
+            #modal-detalhes-rapidos .revisao-wrapper > div:first-of-type { padding: 15px 25px; border-bottom: 1px solid var(--borda); flex-shrink: 0; }
+            #modal-detalhes-rapidos .chat-box { height: auto; max-height: none; flex-grow: 1; min-height: 0; border: none; border-radius: 0 0 12px 12px; }
+        `;
+        document.head.appendChild(style);
 
         // --- FUNÇÕES DE CARREGAMENTO DE DADOS ---
         async function carregarOpcoesDeFiltro() {
@@ -121,7 +184,7 @@
                 if (coluna) coluna.innerHTML += cardHtml;
             });
             document.querySelectorAll('.column-cards').forEach(col => {
-                if (col.innerHTML === '') col.innerHTML = '<p class="info-text" style="color: rgba(255,255,255,0.6); text-align: center;">Nenhum pedido aqui.</p>';
+                if (col.innerHTML === '') col.innerHTML = '<p class="info-text">Nenhum pedido aqui.</p>';
             });
         }
 
@@ -135,14 +198,13 @@
                 const dataFormatada = new Date(deal[PRAZO_FINAL_FIELD]).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
                 prazoTagHtml = `<div class="card-deadline-tag">Prazo: ${dataFormatada}</div>`;
             }
-            return `<div class="kanban-card status-${statusInfo.classe || 'default'}" style="border-left-color: ${statusInfo.cor || 'var(--cinza-neutro)'}" data-deal-id-card="${deal.ID}"><div class="card-id">${displayId}</div><div class="card-client-name">${nomeCliente}</div>${prazoTagHtml}</div>`;
+            return `<div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}"><div class="card-id">${displayId}</div><div class="card-client-name">${nomeCliente}</div>${prazoTagHtml}</div>`;
         }
 
         function limparTextoMensagem(texto) {
             if (!texto) return '';
             let textoLimpo = texto.replace(/^\[.+?\]\n-+\n/, '');
             textoLimpo = textoLimpo.replace(/^(?:\[.*?\]\s*)+(?:\[Message\]\s*)?/, '');
-            textoLimpo = textoLimpo.replace(/\[img\](.*?)\[\/img\]/gi, '$1');
             return textoLimpo.trim();
         }
 
@@ -158,8 +220,6 @@
                     chatContainer.innerHTML = messages.map(msg => {
                         const classe = msg.remetente === 'operador' ? 'mensagem-designer' : 'mensagem-cliente';
                         const textoLimpo = limparTextoMensagem(msg.texto);
-                        // Ignora mensagens que ficaram vazias após a limpeza
-                        if (!textoLimpo) return '';
                         return `<div class="mensagem ${classe}">${textoLimpo}</div>`;
                     }).join('');
                     chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -182,8 +242,8 @@
                 const status = STATUS_MAP[id];
                 let stepClass = 'step';
                 if (index < statusAtualIndex) stepClass += ' completed';
-                else if (index === statusAtualIndex) stepClass += ' active';
-                return `<div class="${stepClass}" data-status-id="${id}" style="--step-color: ${status.cor};">${status.nome}</div>`;
+                else if (index === statusAtualIndex) stepClass += ' active ' + status.classe;
+                return `<div class="${stepClass}" data-status-id="${id}">${status.nome}</div>`;
             }).join('');
             
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || '---';
@@ -194,20 +254,20 @@
             let actionsHtml = '';
             if (deal[LINK_ARQUIVO_FINAL_FIELD]) actionsHtml += `<a href="${deal[LINK_ARQUIVO_FINAL_FIELD]}" target="_blank" class="btn-acao-modal principal">Baixar Arquivo</a>`;
             if (deal[LINK_ATENDIMENTO_FIELD]) actionsHtml += `<a href="${deal[LINK_ATENDIMENTO_FIELD]}" target="_blank" class="btn-acao-modal secundario">Ver Atendimento</a>`;
-            if (deal.TITLE) actionsHtml += `<a href="https://setordearte.com.br/pedidos/detalhe?id=${encodeURIComponent(deal.ID)}" target="_blank" class="btn-acao-modal secundario">Ver Pedido do Cliente</a>`;
-            if (actionsHtml === '') actionsHtml = '<p class="info-text" style="text-align: center; color: var(--cinza-texto);">Nenhuma ação disponível.</p>';
+            if (deal.TITLE) actionsHtml += `<a href="https://www.visiva.com.br/admin/?imprimastore=pedidos/detalhes&id=${encodeURIComponent(deal.TITLE)}" target="_blank" class="btn-acao-modal secundario">Ver Pedido</a>`;
+            if (actionsHtml === '') actionsHtml = '<p class="info-text">Nenhuma ação disponível.</p>';
 
             const isPago = deal[FIELD_STATUS_PAGAMENTO_DESIGNER] === STATUS_PAGO_ID;
             const revisaoIniciada = deal[REVISAO_SOLICITADA_FIELD] === '1';
 
-            const approveButtonHtml = isPago ? '' : `<button class="btn btn-sm btn-success" data-action="approve-file" title="Aprovar arquivo"><i class="fas fa-check"></i> Aprovar Arquivo</button>`;
-            const chatInnerHtml = `<div style="display: flex; justify-content: space-between; align-items: center;"><h3>Conversa de Revisão</h3>${approveButtonHtml}</div><div id="chat-revisao-container" class="chat-box"><div id="mensagens-container"><div class="loading-pedidos"><div class="spinner"></div></div></div><form id="form-mensagem" class="form-mensagem"><input type="text" id="input-mensagem" placeholder="Digite sua mensagem..." required><button type="submit" id="btn-enviar-mensagem" title="Enviar Mensagem"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg></button></form></div>`;
+            const approveButtonHtml = isPago ? '' : `<button class="btn-approve-file" data-action="approve-file" title="Aprovar arquivo"><i class="fas fa-check"></i> Arquivo Aprovado</button>`;
+            const chatInnerHtml = `<div style="display: flex; justify-content: space-between; align-items: center;"><h3>Conversa de Revisão</h3>${approveButtonHtml}</div><div id="chat-revisao-container" class="chat-box"><div id="mensagens-container"><div class="loading-pedidos"><div class="spinner"></div></div></div><form id="form-mensagem" class="form-mensagem"><input type="text" id="input-mensagem" placeholder="Digite sua mensagem..." required><button type="submit" id="btn-enviar-mensagem" title="Enviar Mensagem"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg></button></form></div>`;
             const overlayHtml = `<div class="revisao-overlay"><p style="font-size: 1.1em; color: var(--cinza-texto); margin-bottom: 20px;">Este arquivo precisa de ajustes?</p><button class="btn-request-revision" data-action="request-revision"><i class="fas fa-exclamation-triangle"></i> Solicitar Revisão</button></div>`;
             const mainColumnWrapperClass = revisaoIniciada ? 'chat-iniciado' : '';
             let mainColumnHtml = `<div class="card-detalhe revisao-wrapper ${mainColumnWrapperClass}">${!revisaoIniciada ? overlayHtml : ''}${chatInnerHtml}</div>`;
             if (isPago) mainColumnHtml = `<div class="chat-bloqueado" title="Arquivo já aprovado.">${mainColumnHtml}</div>`;
             
-            modalBody.innerHTML = `<div class="steps-container">${stepsHtml}</div><div class="detalhe-layout"><div class="detalhe-col-principal">${mainColumnHtml}</div><div class="detalhe-col-lateral"><div class="card-detalhe">${actionsHtml}</div><div class="card-detalhe"><h3>Informações do Cliente</h3><div class="info-item"><span class="info-item-label">Nome:</span><span>${nomeCliente}</span></div><div class="info-item"><span class="info-item-label">Contato:</span><span>${contatoCliente}</span></div><div class="info-item"><span class="info-item-label">Medidas:</span>${medidasHtml}</div></div></div></div>`;
+            modalBody.innerHTML = `<div class="steps-container">${stepsHtml}</div><div class="detalhe-layout"><div class="detalhe-col-principal">${mainColumnHtml}</div><div class="detalhe-col-lateral"><div class="card-detalhe modal-actions-container">${actionsHtml}</div><div class="card-detalhe"><h3>Informações do Cliente</h3><div class="info-item"><span class="info-item-label">Nome:</span><span>${nomeCliente}</span></div><div class="info-item"><span class="info-item-label">Contato:</span><span>${contatoCliente}</span></div><div class="info-item"><span class="info-item-label">Medidas:</span>${medidasHtml}</div></div></div></div>`;
             modal.classList.add('active');
             
             if (revisaoIniciada) loadAndDisplayChatHistory(dealId);
@@ -261,17 +321,17 @@
                     if (!mensagem) return;
                     input.disabled = true; btn.disabled = true;
                     try {
+                        // O endpoint de sendMessage aqui precisa ser o genérico, não um específico de /impressao
                         await fetch('/api/sendMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionToken: sessionToken, dealId: dealId, message: mensagem }) });
                         input.value = '';
                         const div = document.createElement('div');
-                        div.className = 'mensagem mensagem-designer';
+                        div.className = 'mensagem mensagem-designer'; // No painel, quem envia é o operador/designer
                         div.textContent = mensagem;
                         if(container.querySelector('.info-text') || container.querySelector('.loading-pedidos')) container.innerHTML = '';
                         container.appendChild(div);
                         container.scrollTop = container.scrollHeight;
                     } catch (error) {
                         alert('Erro ao enviar mensagem.');
-                        input.value = mensagem;
                     } finally {
                         input.disabled = false; btn.disabled = false; input.focus();
                     }
@@ -293,7 +353,7 @@
                     } catch (error) {
                         alert(`Erro: ${error.message}`);
                         approveBtn.disabled = false;
-                        approveBtn.innerHTML = '<i class="fas fa-check"></i> Aprovar Arquivo';
+                        approveBtn.innerHTML = '<i class="fas fa-check"></i> Arquivo Aprovado';
                     }
                 });
             }
@@ -303,48 +363,53 @@
             const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
             if (dealIndex === -1) return;
             const stepsContainer = document.querySelector('.steps-container');
-            if (stepsContainer && modal.classList.contains('active')) {
+            if (stepsContainer && document.getElementById('modal-detalhes-rapidos').classList.contains('active')) {
                 const steps = stepsContainer.querySelectorAll('.step');
                 const newStatusIndex = STATUS_ORDER.indexOf(newStatusId);
                 steps.forEach((s, index) => {
-                    s.classList.remove('active', 'completed');
+                    const currentStatusId = s.dataset.statusId;
+                    const statusInfo = STATUS_MAP[currentStatusId];
+                    s.className = 'step';
                     if (index < newStatusIndex) s.classList.add('completed');
-                    else if (index === newStatusIndex) s.classList.add('active');
+                    else if (index === newStatusIndex) s.classList.add('active', statusInfo.classe);
                 });
             }
             const card = document.querySelector(`.kanban-card[data-deal-id-card="${dealId}"]`);
             if (card) {
                 card.className = 'kanban-card';
                 const newStatusInfo = STATUS_MAP[newStatusId];
-                if (newStatusInfo) card.classList.add(`status-${newStatusInfo.classe}`);
-                card.style.borderLeftColor = newStatusInfo.cor || 'var(--cinza-neutro)';
+                if (newStatusInfo) card.classList.add('status-' + newStatusInfo.classe);
             }
         }
 
         function attachStatusStepListeners(dealId) {
             const container = document.querySelector('.steps-container');
-            if (!container) return;
-        
+            if(!container) return;
+
+            // Usamos um handler para evitar múltiplos listeners se o modal for reaberto
             const clickHandler = (event) => {
                 const step = event.target.closest('.step');
                 if (!step) return;
-        
+                
+                // Remove o listener para não acumular
+                container.removeEventListener('click', clickHandler);
+                
                 const newStatusId = step.dataset.statusId;
                 const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
                 if (dealIndex === -1) return;
                 const oldStatusId = allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD];
                 if (newStatusId === oldStatusId) return;
-        
+                
                 updateVisualStatus(dealId, newStatusId);
                 allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = newStatusId;
-        
+
                 fetch('/api/impressao/updateStatus', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ dealId, statusId: newStatusId })
                 })
                 .then(response => {
-                    if (!response.ok) return response.json().then(err => { throw new Error(err.message || 'Erro do servidor') });
+                    if (!response.ok) { return response.json().then(err => { throw new Error(err.message || 'Erro do servidor') }); }
                     return response.json();
                 })
                 .then(data => {
@@ -356,23 +421,14 @@
                     }
                 })
                 .catch(error => {
-                    alert(`Não foi possível atualizar o status. Revertendo. Erro: ${error.message}`);
+                    alert(`Não foi possível atualizar o status para "${STATUS_MAP[newStatusId].nome}". Revertendo a alteração.`);
                     updateVisualStatus(dealId, oldStatusId);
                     allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = oldStatusId;
                 });
             };
-            
             container.addEventListener('click', clickHandler);
-        
-            const observer = new MutationObserver(() => {
-                if (!modal.classList.contains('active')) {
-                    container.removeEventListener('click', clickHandler);
-                    observer.disconnect();
-                }
-            });
-            observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
         }
-        
+
         // --- INICIALIZAÇÃO E EVENTOS GLOBAIS ---
         async function init() {
             await Promise.all([
