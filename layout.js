@@ -1,6 +1,6 @@
 // /layout.js
 document.addEventListener("DOMContentLoaded", async () => {
-    // Função genérica para carregar um componente HTML
+    // Função genérica para carregar um componente HTML (sem alterações, já estava boa)
     async function loadComponent(componentPath) {
         try {
             const response = await fetch(componentPath);
@@ -16,25 +16,30 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Função principal que monta o layout
     async function buildLayout() {
-        const headerPlaceholder = document.querySelector("body > #header-placeholder");
-        const sidebarPlaceholder = document.querySelector(".app-wrapper > #sidebar-placeholder");
-        const footerPlaceholder = document.querySelector("body > #footer-placeholder");
+        // CORREÇÃO 1: Simplificamos os seletores para buscar apenas pelo ID, 
+        // que é único e não depende da estrutura em volta.
+        const headerPlaceholder = document.getElementById("header-placeholder");
+        const sidebarPlaceholder = document.getElementById("sidebar-placeholder");
+        const footerPlaceholder = document.getElementById("footer-placeholder");
 
-        // Carrega e injeta os componentes em paralelo
+        // CORREÇÃO 2: Removemos a pasta "/components" do caminho, 
+        // já que seus arquivos estão na raiz.
         const [headerHtml, sidebarHtml, footerHtml] = await Promise.all([
-            headerPlaceholder ? loadComponent("/components/header.html") : Promise.resolve(null),
-            sidebarPlaceholder ? loadComponent("/components/sidebar.html") : Promise.resolve(null),
-            footerPlaceholder ? loadComponent("/components/footer.html") : Promise.resolve(null),
+            headerPlaceholder ? loadComponent("/header.html") : Promise.resolve(null),
+            sidebarPlaceholder ? loadComponent("/sidebar.html") : Promise.resolve(null),
+            footerPlaceholder ? loadComponent("/footer.html") : Promise.resolve(null),
         ]);
 
+        // Aqui usamos 'innerHTML' para substituir o conteúdo DENTRO do placeholder.
+        // O div placeholder continuará existindo, o que é mais consistente.
         if (headerPlaceholder && headerHtml) {
-            headerPlaceholder.outerHTML = headerHtml;
+            headerPlaceholder.innerHTML = headerHtml;
         }
         if (sidebarPlaceholder && sidebarHtml) {
-            sidebarPlaceholder.outerHTML = sidebarHtml;
+            sidebarPlaceholder.innerHTML = sidebarHtml;
         }
         if (footerPlaceholder && footerHtml) {
-            footerPlaceholder.outerHTML = footerHtml;
+            footerPlaceholder.innerHTML = footerHtml;
         }
         
         // Após carregar os componentes, podemos inicializar funcionalidades globais
@@ -45,20 +50,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Encontra o link da página atual e adiciona a classe 'active'
         const currentPage = window.location.pathname;
         const sidebarLinks = document.querySelectorAll(".sidebar-nav a");
+
         sidebarLinks.forEach(link => {
-            const linkPath = new URL(link.href).pathname;
-            if (linkPath === currentPage) {
+            // Garante que a comparação funcione mesmo com ou sem a barra final
+            const linkPath = new URL(link.href).pathname.replace(/\/$/, ""); 
+            const pagePath = currentPage.replace(/\/$/, "");
+
+            if (linkPath === pagePath || (pagePath === "" && linkPath === "/dashboard.html")) {
                 link.classList.add("active");
             }
         });
         
-        // Re-inicializa a lógica de saudação e logout que agora está no header
+        // O restante do script de inicialização para login/logout parece correto.
         const sessionToken = localStorage.getItem("sessionToken");
         const userName = localStorage.getItem("userName");
 
+        // Este if de redirecionamento estava com um seletor errado também
         if (!sessionToken || !userName) {
-            // Se estiver em uma página protegida e não houver token, redireciona
-            if (document.querySelector(".app-wrapper")) {
+            if (document.querySelector(".app-layout-grid")) { // Usar uma classe que existe
                 window.location.href = "/login.html";
             }
             return;
