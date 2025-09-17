@@ -1,4 +1,4 @@
-// /impressao/painel-script.js - VERSÃO COMPLETA, CORRIGIDA E COM MELHORIAS VISUAIS
+// /impressao/painel-script.js - VERSÃO FINAL COM TODO O CSS EMBUTIDO PARA GARANTIR A RENDERIZAÇÃO CORRETA
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
@@ -50,6 +50,7 @@
         // --- INJEÇÃO DE ESTILOS DINÂMICOS ---
         const style = document.createElement('style');
         style.textContent = `
+            /* --- ESTILOS GERAIS DO PAINEL (INJETADOS) --- */
             .kanban-card:hover { cursor: pointer; transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
             .card-deadline-tag { margin-top: 8px; display: inline-block; background-color: #e9ecef; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #495057; }
             .kanban-card.status-preparacao { border-left-color: ${STATUS_MAP['2657'].cor} !important; background-color: ${STATUS_MAP['2657'].corFundo}; }
@@ -87,6 +88,19 @@
             .chat-iniciado .revisao-overlay { opacity: 0; visibility: hidden; pointer-events: none; }
             .btn-request-revision { background-color: var(--erro); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 10px; }
             .btn-request-revision:hover { background-color: #c0392b; transform: translateY(-2px); }
+
+            /* --- ESTILOS COMPLETOS DO COMPONENTE DE CHAT (AUTOSSUFICIENTE) --- */
+            #modal-detalhes-rapidos .chat-box { display: flex; flex-direction: column; background-color: #f8f9fa; overflow: hidden; }
+            #modal-detalhes-rapidos .chat-box #mensagens-container { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; background-color: var(--branco); }
+            #modal-detalhes-rapidos .chat-box .mensagem { padding: 10px 15px; border-radius: 18px; line-height: 1.4; max-width: 75%; word-wrap: break-word; }
+            #modal-detalhes-rapidos .chat-box .mensagem-cliente { background-color: #e9ecef; color: var(--texto-escuro); border-bottom-left-radius: 4px; align-self: flex-start; }
+            #modal-detalhes-rapidos .chat-box .mensagem-designer { background-color: var(--azul-principal); color: var(--branco); border-bottom-right-radius: 4px; align-self: flex-end; }
+            #modal-detalhes-rapidos .chat-box .form-mensagem { display: flex; gap: 10px; padding: 15px; border-top: 1px solid var(--borda); background-color: #f8f9fa; }
+            #modal-detalhes-rapidos .chat-box #input-mensagem { flex-grow: 1; border: 1px solid #ced4da; border-radius: 20px; padding: 10px 18px; font-size: 15px; font-family: 'Poppins', sans-serif; transition: border-color 0.2s, box-shadow 0.2s; }
+            #modal-detalhes-rapidos .chat-box #input-mensagem:focus { outline: none; border-color: var(--azul-principal); box-shadow: 0 0 0 3px rgba(56, 169, 244, 0.25); }
+            #modal-detalhes-rapidos .chat-box #btn-enviar-mensagem { flex-shrink: 0; background-color: var(--azul-principal); border: none; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background-color 0.2s; }
+            #modal-detalhes-rapidos .chat-box #btn-enviar-mensagem:hover { background-color: #2c98e0; }
+            #modal-detalhes-rapidos .chat-box #btn-enviar-mensagem svg { fill: white; width: 22px; height: 22px; transform: translateX(2px); }
 
             /* --- AJUSTE DE ALTURA DO CHAT NO MODAL --- */
             #modal-detalhes-rapidos .detalhe-col-principal { display: flex; flex-direction: column; }
@@ -307,10 +321,11 @@
                     if (!mensagem) return;
                     input.disabled = true; btn.disabled = true;
                     try {
-                        await fetch('/api/sendMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealId, message: mensagem }) });
+                        // O endpoint de sendMessage aqui precisa ser o genérico, não um específico de /impressao
+                        await fetch('/api/sendMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionToken: sessionToken, dealId: dealId, message: mensagem }) });
                         input.value = '';
                         const div = document.createElement('div');
-                        div.className = 'mensagem mensagem-designer';
+                        div.className = 'mensagem mensagem-designer'; // No painel, quem envia é o operador/designer
                         div.textContent = mensagem;
                         if(container.querySelector('.info-text') || container.querySelector('.loading-pedidos')) container.innerHTML = '';
                         container.appendChild(div);
@@ -370,9 +385,15 @@
         function attachStatusStepListeners(dealId) {
             const container = document.querySelector('.steps-container');
             if(!container) return;
-            container.addEventListener('click', (event) => {
+
+            // Usamos um handler para evitar múltiplos listeners se o modal for reaberto
+            const clickHandler = (event) => {
                 const step = event.target.closest('.step');
                 if (!step) return;
+                
+                // Remove o listener para não acumular
+                container.removeEventListener('click', clickHandler);
+                
                 const newStatusId = step.dataset.statusId;
                 const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
                 if (dealIndex === -1) return;
@@ -404,7 +425,8 @@
                     updateVisualStatus(dealId, oldStatusId);
                     allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = oldStatusId;
                 });
-            });
+            };
+            container.addEventListener('click', clickHandler);
         }
 
         // --- INICIALIZAÇÃO E EVENTOS GLOBAIS ---
