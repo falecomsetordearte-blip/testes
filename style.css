@@ -479,104 +479,108 @@ a.btn-ver-pedido:hover { text-decoration: underline; color: #2c89c8; }
 /* ========================================================= */
 /* ===                MODAIS                              === */
 /* ========================================================= */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(44,62,80,0.7); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 2000; }
-.modal-overlay.active { display: flex; }
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(44, 62, 80, 0.7);
+    backdrop-filter: blur(4px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+.modal-overlay.active {
+    display: flex;
+}
 
-/* ALTERAÇÃO: Esta é a regra padrão para modais pequenos */
-.modal-content { 
-    background-color: var(--branco); 
-    border-radius: 12px; 
-    width: 90%; 
+/* 1. O container principal do modal */
+.modal-content {
+    background-color: var(--branco);
+    border-radius: 12px;
+    width: 90%;
     max-width: 480px; /* Largura padrão */
-    box-shadow: 0 20px 60px rgba(0,0,0,0.2); 
-    display: flex; 
-    flex-direction: column; 
-    max-height: 90vh; 
-    overflow: hidden; 
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    
+    /* ESSENCIAL: Transforma o modal em um container flex vertical */
+    display: flex;
+    flex-direction: column;
+    
+    /* ESSENCIAL: Limita a altura e esconde o que transbordar */
+    max-height: 90vh;
+    overflow: hidden;
 }
 
-/* NOVO: Regra específica para o modal grande */
+/* Regra para o modal largo */
 .modal-content.modal-lg {
-    max-width: 800px; /* Aumentamos a largura máxima para modais grandes */
+    max-width: 800px;
 }
 
-.modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borda); padding: 18px 25px; flex-shrink: 0; /* Impede que o header encolha */ }
+/* 2. O Header não muda */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--borda);
+    padding: 18px 25px;
+    flex-shrink: 0; /* Impede que ele seja espremido */
+}
 .modal-header h3 { font-size: 18px; font-weight: 600; color: var(--texto-escuro); margin: 0; }
 .close-modal { background: none; border: none; font-size: 26px; cursor: pointer; color: #999; border-radius: 50%; transition: all 0.2s ease; }
 .close-modal:hover { background-color: #f1f3f5; color: var(--texto-escuro); transform: rotate(90deg); }
 
-/* ALTERAÇÃO: Garantimos que o corpo do modal tenha rolagem */
-.modal-body { 
-    padding: 30px 25px; 
-    flex-grow: 1; 
-    overflow-y: auto; /* Esta é a propriedade chave para a barra de rolagem! */
-}
-.modal-footer { padding: 15px 25px; border-top: 1px solid var(--borda); background-color: #f8f9fa; text-align: right; flex-shrink: 0; /* Impede que o footer encolha */ }
-.form-feedback { padding: 15px; margin-bottom: 20px; border-radius: 8px; font-size: 0.9rem; }
-.form-feedback.error { color: var(--erro); background-color: #fbe9e7; border-color: #ffcdd2; }
 
+/* === AQUI ESTÁ A CORREÇÃO MÁGICA === */
+
+/* 3. O formulário agora também é um container flex que preenche o espaço */
 #novo-pedido-form {
     display: flex;
     flex-direction: column;
-    flex-grow: 1; /* Faz o formulário ocupar o espaço disponível */
-    min-height: 0; /* Truque essencial de flexbox para evitar que o conteúdo estoure o container */
+    flex: 1; /* Atalho para crescer e ocupar o espaço */
+    min-height: 0; /* Truque para o overflow funcionar corretamente */
 }
 
-/* NOVO: Estilos para organizar os campos do formulário em colunas */
-.form-row {
-    display: grid;
-    gap: 20px;
-    margin-bottom: 20px;
-}
-.form-row-three {
-    grid-template-columns: repeat(3, 1fr);
-}
-.form-row-four {
-    grid-template-columns: repeat(4, 1fr);
+/* 4. O Body é a área que deve crescer e ROLAR */
+.modal-body {
+    flex-grow: 1; /* Diz para ele crescer e ocupar o espaço que o form liberou */
+    overflow-y: auto; /* CRIA A BARRA DE ROLAGEM AQUI! */
+    padding: 30px 25px;
 }
 
-/* NOVO: Estilos para o botão e container de adicionar material */
-.materiais-header {
-    margin-top: 25px;
-    margin-bottom: 15px;
-    border-bottom: 1px solid var(--borda);
-    padding-bottom: 10px;
-}
-.material-item {
-    padding: 15px;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    background-color: #fdfdfd;
-}
-.item-label {
-    font-weight: 600;
-    color: var(--cinza-texto);
-    display: block;
-    margin-bottom: 10px;
-}
-.btn-add-material {
-    width: 100%;
-    margin-top: 5px;
+/* 5. O Footer não muda */
+.modal-footer {
+    padding: 15px 25px;
+    border-top: 1px solid var(--borda);
+    background-color: #f8f9fa;
+    text-align: right;
+    flex-shrink: 0; /* Impede que ele seja espremido */
 }
 
-/* NOVO: Estilos para o vídeo explicativo */
-.video-toggle-link {
-    display: inline-block;
-    margin-bottom: 20px;
-    font-weight: 600;
-    color: var(--azul-principal);
-    text-decoration: none;
-}
-.video-container {
-    margin-bottom: 20px;
-    border-radius: 8px;
-    overflow: hidden;
-}
+
+/* Outros estilos do modal que já estavam corretos */
+.form-feedback { padding: 15px; margin-bottom: 20px; border-radius: 8px; font-size: 0.9rem; }
+.form-feedback.error { color: var(--erro); background-color: #fbe9e7; border-color: #ffcdd2; }
+
+/* Estilos para organizar os campos do formulário em colunas */
+.form-row { display: grid; gap: 20px; margin-bottom: 20px; }
+.form-row-three { grid-template-columns: repeat(3, 1fr); }
+.form-row-four { grid-template-columns: repeat(4, 1fr); }
+
+/* Estilos para o botão e container de adicionar material */
+.materiais-header { margin-top: 25px; margin-bottom: 15px; border-bottom: 1px solid var(--borda); padding-bottom: 10px; }
+.material-item { padding: 15px; border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 15px; background-color: #fdfdfd; }
+.item-label { font-weight: 600; color: var(--cinza-texto); display: block; margin-bottom: 10px; }
+.btn-add-material { width: 100%; margin-top: 5px; }
+
+/* Estilos para o vídeo explicativo */
+.video-toggle-link { display: inline-block; margin-bottom: 20px; font-weight: 600; color: var(--azul-principal); text-decoration: none; }
+.video-container { margin-bottom: 20px; border-radius: 8px; overflow: hidden; }
 
 @media (max-width: 768px) {
     .form-row-three, .form-row-four {
-        grid-template-columns: 1fr; /* Em telas pequenas, os campos ficam um embaixo do outro */
+        grid-template-columns: 1fr;
     }
 }
 
