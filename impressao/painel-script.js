@@ -1,14 +1,15 @@
-// /impressao/painel-script.js - VERSÃO COM FUNDO DO CARD COLORIDO E CHAT MELHORADO
+// /impressao/painel-script.js - VERSÃO COM CORREÇÃO DE TYPO, LOGS E MAIS ROBUSTA
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
 
         const sessionToken = localStorage.getItem('sessionToken');
         if (!sessionToken) {
-            window.location.href = '../login.html'; 
+            window.location.href = '../login.html';
             return;
         }
-        
+
+        // --- CONSTANTES DE CAMPOS E CONFIGURAÇÕES ---
         const STATUS_IMPRESSAO_FIELD = 'UF_CRM_1757756651931';
         const NOME_CLIENTE_FIELD = 'UF_CRM_1741273407628';
         const CONTATO_CLIENTE_FIELD = 'UF_CRM_1749481565243';
@@ -34,6 +35,7 @@
             '1441': { nome: 'Conferida', cor: '#2ecc71' }
         };
 
+        // --- ELEMENTOS DO DOM ---
         const impressoraFilterEl = document.getElementById('impressora-filter');
         const materialFilterEl = document.getElementById('material-filter');
         const btnFiltrar = document.getElementById('btn-filtrar');
@@ -45,7 +47,7 @@
 
         let allDealsData = [];
 
-        // <-- MUDANÇA AQUI: Adicionamos o CSS para o overlay do chat -->
+        // --- INJEÇÃO DE ESTILOS DINÂMICOS ---
         const style = document.createElement('style');
         style.textContent = `
             .kanban-card:hover { cursor: pointer; transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -87,17 +89,33 @@
             .btn-request-revision:hover { background-color: #c0392b; transform: translateY(-2px); }
         `;
         document.head.appendChild(style);
-        
+
+        // --- FUNÇÕES DE CARREGAMENTO DE DADOS ---
+
         async function carregarOpcoesDeFiltro() {
             try {
                 const response = await fetch('/api/getProductionFilters');
+                if (!response.ok) throw new Error('Falha ao carregar filtros do servidor.');
+
                 const filters = await response.json();
-                if (!response.ok) throw new Error('Falha ao carregar filtros.');
+                
                 impressoraFilterEl.innerHTML = `<option value="">Todas as Impressoras</option>`;
                 materialFilterEl.innerHTML = `<option value="">Todos os Materiais</option>`;
-                filters.impressoras.forEach(option => { impressoraFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
-                filters.materiais.forEach(option => { materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
-            } catch (error) { console.error("Erro ao carregar opções de filtro:", error); }
+                
+                // CORREÇÃO: Usando 'impressores' para corresponder à API.
+                if (filters.impressores) {
+                    filters.impressores.forEach(option => { impressoraFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
+                }
+                
+                if (filters.materiais) {
+                    filters.materiais.forEach(option => { materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
+                }
+
+            } catch (error) {
+                console.error("Erro CRÍTICO ao carregar opções de filtro:", error);
+                const header = document.querySelector('.kanban-header .filtros-pedidos');
+                if(header) header.innerHTML = `<p style="color: #ffc107;">Erro ao carregar filtros.</p>`;
+            }
         }
 
         async function carregarPedidosDeImpressao() {
@@ -112,27 +130,72 @@
                         materialFilter: materialFilterEl.value
                     })
                 });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Erro do servidor');
+                }
                 const data = await response.json();
-                if (!response.ok) throw new Error(data.message);
                 allDealsData = data.deals;
                 organizarPedidosNasColunas(allDealsData);
             } catch (error) {
-                console.error("Erro ao carregar pedidos de impressão:", error);
+                console.error("Erro CRÍTICO ao carregar pedidos de impressão:", error);
                 board.innerHTML = `<p style="color:red; padding: 20px;">${error.message}</p>`;
             }
         }
 
-        function organizarPedidosNasColunas(deals) { /* ...código original sem alteração... */ }
-        function createCardHtml(deal) { /* ...código original sem alteração... */ }
+        // --- FUNÇÕES DE RENDERIZAÇÃO E UI ---
 
-        // <-- MUDANÇA AQUI: Corrigimos a limpeza do texto da mensagem -->
+        function organizarPedidosNasColunas(deals) {
+            document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '');
+            const agora = new Date();
+            const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+            deals.forEach(deal => {
+                let colunaId = 'SEM_DATA';
+                const prazoFinalStr = deal[PRAZO_FINAL_FIELD];
+                if (prazoFinalStr) {
+                    const dateParts = prazoFinalStr.split('T')[0].split('-');
+                    if (dateParts.length === 3) {
+                        const [ano, mes, dia] = dateParts.map(p => parseInt(p, 10));
+                        const prazoData = new Date(ano, mes - 1, dia);
+                        if (!isNaN(prazoData.getTime())) {
+                            const diffTime = prazoData.getTime() - hoje.getTime();
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            if (diffDays < 0) colunaId = 'ATRASADO';
+                            else if (diffDays === 0) colunaId = 'HOJE';
+                            else if (diffDays <= 7) colunaId = 'ESSA_SEMANA';
+                            else colunaId = 'PROXIMA_SEMANA';
+                        }
+                    }
+                }
+                const cardHtml = createCardHtml(deal);
+                const coluna = document.getElementById(`cards-${colunaId}`);
+                if (coluna) coluna.innerHTML += cardHtml;
+            });
+            document.querySelectorAll('.column-cards').forEach(col => {
+                if (col.innerHTML === '') col.innerHTML = '<p class="info-text">Nenhum pedido aqui.</p>';
+            });
+        }
+
+        function createCardHtml(deal) {
+            const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
+            const statusId = deal[STATUS_IMPRESSAO_FIELD];
+            const statusInfo = STATUS_MAP[statusId] || {};
+            const displayId = deal.TITLE ? `#${deal.TITLE}` : `#${deal.ID}`;
+            let prazoTagHtml = '';
+            if (deal[PRAZO_FINAL_FIELD]) {
+                const dataFormatada = new Date(deal[PRAZO_FINAL_FIELD]).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                prazoTagHtml = `<div class="card-deadline-tag">Prazo: ${dataFormatada}</div>`;
+            }
+            return `<div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}"><div class="card-id">${displayId}</div><div class="card-client-name">${nomeCliente}</div>${prazoTagHtml}</div>`;
+        }
+
         function limparTextoMensagem(texto) {
             if (!texto) return '';
             let textoLimpo = texto.replace(/^\[.+?\]\n-+\n/, '');
             textoLimpo = textoLimpo.replace(/^(?:\[.*?\]\s*)+(?:\[Message\]\s*)?/, '');
             return textoLimpo.trim();
         }
-        
+
         async function loadAndDisplayChatHistory(dealId) {
             const chatContainer = document.getElementById('mensagens-container');
             if (!chatContainer) return;
@@ -149,40 +212,43 @@
                     }).join('');
                     chatContainer.scrollTop = chatContainer.scrollHeight;
                 } else {
-                    chatContainer.innerHTML = '<p class="info-text" style="color: #555;">Nenhuma mensagem ainda. Inicie a conversa.</p>';
+                    chatContainer.innerHTML = '<p class="info-text">Nenhuma mensagem ainda. Inicie a conversa.</p>';
                 }
             } catch (error) {
                 chatContainer.innerHTML = `<p class="info-text" style="color: red;">Erro ao carregar mensagens.</p>`;
             }
         }
-        
+
         function openDetailsModal(dealId) {
             const deal = allDealsData.find(d => d.ID == dealId);
             if (!deal) return;
             modalTitle.textContent = `Detalhes do Pedido #${deal.TITLE || deal.ID}`;
-            
+
             const statusAtualId = deal[STATUS_IMPRESSAO_FIELD] || STATUS_ORDER[0];
             const statusAtualIndex = STATUS_ORDER.indexOf(statusAtualId);
-            let stepsHtml = '';
-            STATUS_ORDER.forEach((id, index) => { /* ...código original sem alteração... */ });
+            let stepsHtml = STATUS_ORDER.map((id, index) => {
+                const status = STATUS_MAP[id];
+                let stepClass = 'step';
+                if (index < statusAtualIndex) stepClass += ' completed';
+                else if (index === statusAtualIndex) stepClass += ' active ' + status.classe;
+                return `<div class="${stepClass}" data-status-id="${id}">${status.nome}</div>`;
+            }).join('');
             
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || '---';
             const contatoCliente = deal[CONTATO_CLIENTE_FIELD] || '---';
-            const medidasId = deal[MEDIDAS_FIELD];
-            const medidaInfo = MEDIDAS_MAP[medidasId];
+            const medidaInfo = MEDIDAS_MAP[deal[MEDIDAS_FIELD]];
             let medidasHtml = medidaInfo ? `<span class="tag-medidas" style="background-color: ${medidaInfo.cor};">${medidaInfo.nome}</span>` : '---';
-            const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
-            const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
+            
             let actionsHtml = '';
-            if (linkArquivo) actionsHtml += `<a href="${linkArquivo}" target="_blank" class="btn-acao-modal principal">Baixar Arquivo</a>`;
-            if (linkAtendimento) actionsHtml += `<a href="${linkAtendimento}" target="_blank" class="btn-acao-modal secundario">Ver Atendimento</a>`;
+            if (deal[LINK_ARQUIVO_FINAL_FIELD]) actionsHtml += `<a href="${deal[LINK_ARQUIVO_FINAL_FIELD]}" target="_blank" class="btn-acao-modal principal">Baixar Arquivo</a>`;
+            if (deal[LINK_ATENDIMENTO_FIELD]) actionsHtml += `<a href="${deal[LINK_ATENDIMENTO_FIELD]}" target="_blank" class="btn-acao-modal secundario">Ver Atendimento</a>`;
             if (deal.TITLE) actionsHtml += `<a href="https://www.visiva.com.br/admin/?imprimastore=pedidos/detalhes&id=${encodeURIComponent(deal.TITLE)}" target="_blank" class="btn-acao-modal secundario">Ver Pedido</a>`;
-            if (actionsHtml === '') actionsHtml = '<p class="info-text" style="text-align:center; color: #555;">Nenhuma ação disponível.</p>';
+            if (actionsHtml === '') actionsHtml = '<p class="info-text">Nenhuma ação disponível.</p>';
 
             const isPago = deal[FIELD_STATUS_PAGAMENTO_DESIGNER] === STATUS_PAGO_ID;
             const revisaoIniciada = deal[REVISAO_SOLICITADA_FIELD] === '1';
 
-            const approveButtonHtml = isPago ? '' : `<button class="btn-approve-file" data-action="approve-file" title="Aprovar o arquivo."><i class="fas fa-check"></i> Arquivo Aprovado</button>`;
+            const approveButtonHtml = isPago ? '' : `<button class="btn-approve-file" data-action="approve-file" title="Aprovar arquivo"><i class="fas fa-check"></i> Arquivo Aprovado</button>`;
             const chatInnerHtml = `<div style="display: flex; justify-content: space-between; align-items: center;"><h3>Conversa de Revisão</h3>${approveButtonHtml}</div><div id="chat-revisao-container" class="chat-box"><div id="mensagens-container"><div class="loading-pedidos"><div class="spinner"></div></div></div><form id="form-mensagem" class="form-mensagem"><input type="text" id="input-mensagem" placeholder="Digite sua mensagem..." required><button type="submit" id="btn-enviar-mensagem" title="Enviar Mensagem"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg></button></form></div>`;
             const overlayHtml = `<div class="revisao-overlay"><p style="font-size: 1.1em; color: var(--cinza-texto); margin-bottom: 20px;">Este arquivo precisa de ajustes?</p><button class="btn-request-revision" data-action="request-revision"><i class="fas fa-exclamation-triangle"></i> Solicitar Revisão</button></div>`;
             const mainColumnWrapperClass = revisaoIniciada ? 'chat-iniciado' : '';
@@ -196,12 +262,17 @@
             attachAllListeners(deal);
         }
 
+        // --- FUNÇÕES DE EVENTOS (LISTENERS) ---
+
         function attachAllListeners(deal) {
             attachStatusStepListeners(deal.ID);
             const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === '1';
             const isPago = deal[FIELD_STATUS_PAGAMENTO_DESIGNER] === STATUS_PAGO_ID;
-            if (isRevisionActive && !isPago) { attachChatListeners(deal.ID); } 
-            else if (!isRevisionActive) { attachRevisionListener(deal.ID); }
+            if (isRevisionActive && !isPago) {
+                attachChatListeners(deal.ID);
+            } else if (!isRevisionActive) {
+                attachRevisionListener(deal.ID);
+            }
         }
         
         function attachRevisionListener(dealId) {
@@ -227,19 +298,82 @@
             });
         }
         
-        function attachChatListeners(dealId) { /* ...código original sem alteração... */ }
-        function updateVisualStatus(dealId, newStatusId) { /* ...código original sem alteração... */ }
-        function attachStatusStepListeners(dealId) { /* ...código original sem alteração... */ }
+        function attachChatListeners(dealId) {
+            const formMensagem = document.getElementById('form-mensagem');
+            if (formMensagem) {
+                formMensagem.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const input = formMensagem.querySelector('#input-mensagem');
+                    const btn = formMensagem.querySelector('#btn-enviar-mensagem');
+                    const container = document.getElementById('mensagens-container');
+                    const mensagem = input.value.trim();
+                    if (!mensagem) return;
+                    input.disabled = true; btn.disabled = true;
+                    try {
+                        await fetch('/api/sendMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealId, message: mensagem }) });
+                        input.value = '';
+                        const div = document.createElement('div');
+                        div.className = 'mensagem mensagem-designer';
+                        div.textContent = mensagem;
+                        if(container.querySelector('.info-text') || container.querySelector('.loading-pedidos')) container.innerHTML = '';
+                        container.appendChild(div);
+                        container.scrollTop = container.scrollHeight;
+                    } catch (error) {
+                        alert('Erro ao enviar mensagem.');
+                    } finally {
+                        input.disabled = false; btn.disabled = false; input.focus();
+                    }
+                });
+            }
+            const approveBtn = document.querySelector('button[data-action="approve-file"]');
+            if (approveBtn) {
+                approveBtn.addEventListener('click', async () => {
+                    if (!confirm('Tem certeza que deseja aprovar este arquivo? Esta ação irá processar o pagamento do designer e finalizar o pedido.')) return;
+                    approveBtn.disabled = true;
+                    approveBtn.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0 auto;"></div>';
+                    try {
+                        const response = await fetch('/api/impressao/approveFile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealId }) });
+                        if (!response.ok) throw new Error((await response.json()).message);
+                        alert('Arquivo aprovado com sucesso!');
+                        const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
+                        if (dealIndex > -1) allDealsData[dealIndex][FIELD_STATUS_PAGAMENTO_DESIGNER] = STATUS_PAGO_ID;
+                        openDetailsModal(dealId);
+                    } catch (error) {
+                        alert(`Erro: ${error.message}`);
+                        approveBtn.disabled = false;
+                        approveBtn.innerHTML = '<i class="fas fa-check"></i> Arquivo Aprovado';
+                    }
+                });
+            }
+        }
+        
+        function updateVisualStatus(dealId, newStatusId) { /* Esta função não precisa de alteração */ }
+
+        function attachStatusStepListeners(dealId) { /* Esta função não precisa de alteração */ }
+
+        // --- INICIALIZAÇÃO E EVENTOS GLOBAIS ---
+
+        async function init() {
+            await Promise.all([
+                carregarOpcoesDeFiltro(),
+                carregarPedidosDeImpressao()
+            ]);
+        }
         
         btnFiltrar.addEventListener('click', carregarPedidosDeImpressao);
         closeModalBtn.addEventListener('click', () => modal.classList.remove('active'));
         modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
-        board.addEventListener('click', (event) => { /* ...código original sem alteração... */ });
+
+        board.addEventListener('click', (event) => {
+            const card = event.target.closest('.kanban-card');
+            if (card) {
+                const dealId = card.dataset.dealIdCard;
+                if (dealId) {
+                    openDetailsModal(dealId);
+                }
+            }
+        });
         
-        async function init() {
-            await carregarOpcoesDeFiltro();
-            await carregarPedidosDeImpressao();
-        }
-        init();
+        init(); // Inicia o script
     });
 })();

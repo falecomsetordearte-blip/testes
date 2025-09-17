@@ -7,6 +7,7 @@ const FIELD_MATERIAL = 'UF_CRM_1685624742';
 const FIELD_TIPO_ENTREGA = 'UF_CRM_1658492661';
 
 module.exports = async (req, res) => {
+    console.log('[getProductionFilters] Recebida requisição para buscar filtros.');
     if (req.method !== 'GET') {
         return res.status(405).json({ message: 'Método não permitido.' });
     }
@@ -20,15 +21,17 @@ module.exports = async (req, res) => {
         const tipoEntregaOptions = allFields[FIELD_TIPO_ENTREGA]?.items || [];
 
         const filters = {
-            impressoras: impressoraOptions.map(item => ({ id: item.ID, value: item.VALUE })),
+            // AQUI ESTÁ A CHAVE ORIGINAL: "impressores"
+            impressores: impressoraOptions.map(item => ({ id: item.ID, value: item.VALUE })),
             materiais: materialOptions.map(item => ({ id: item.ID, value: item.VALUE })),
             tiposEntrega: tipoEntregaOptions.map(item => ({ id: item.ID, value: item.VALUE }))
         };
-
+        
+        console.log(`[getProductionFilters] Filtros encontrados: ${filters.impressores.length} impressores, ${filters.materiais.length} materiais.`);
         return res.status(200).json(filters);
 
     } catch (error) {
-        console.error('Erro ao buscar opções de filtros:', error.response ? error.response.data : error.message);
+        console.error('[getProductionFilters] Erro ao buscar opções de filtros:', error.response ? error.response.data : error.message);
         return res.status(500).json({ message: 'Ocorreu um erro ao carregar os filtros.' });
     }
 };
