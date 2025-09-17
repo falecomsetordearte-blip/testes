@@ -1,37 +1,35 @@
 // /layout.js
 document.addEventListener("DOMContentLoaded", async () => {
-    // Função genérica para carregar um componente HTML (sem alterações, já estava boa)
+    // Função genérica para carregar um componente HTML
     async function loadComponent(componentPath) {
         try {
             const response = await fetch(componentPath);
             if (!response.ok) {
+                // Se a resposta falhar, o erro será capturado pelo .catch()
                 throw new Error(`Componente não encontrado: ${componentPath}`);
             }
             return await response.text();
         } catch (error) {
             console.error(error);
-            return `<p style="color:red;">Erro ao carregar componente: ${componentPath}</p>`;
+            // Esta é a linha que está mostrando a mensagem vermelha na sua tela
+            return `<p style="color:red; font-family: monospace; padding: 10px;">Erro ao carregar componente: ${componentPath}</p>`;
         }
     }
 
     // Função principal que monta o layout
     async function buildLayout() {
-        // CORREÇÃO 1: Simplificamos os seletores para buscar apenas pelo ID, 
-        // que é único e não depende da estrutura em volta.
         const headerPlaceholder = document.getElementById("header-placeholder");
         const sidebarPlaceholder = document.getElementById("sidebar-placeholder");
         const footerPlaceholder = document.getElementById("footer-placeholder");
 
-        // CORREÇÃO 2: Removemos a pasta "/components" do caminho, 
-        // já que seus arquivos estão na raiz.
+        // ===== A ÚNICA MUDANÇA É AQUI =====
+        // Trocamos os caminhos de "/arquivo.html" para "./arquivo.html"
         const [headerHtml, sidebarHtml, footerHtml] = await Promise.all([
-            headerPlaceholder ? loadComponent("/header.html") : Promise.resolve(null),
-            sidebarPlaceholder ? loadComponent("/sidebar.html") : Promise.resolve(null),
-            footerPlaceholder ? loadComponent("/footer.html") : Promise.resolve(null),
+            headerPlaceholder ? loadComponent("./header.html") : Promise.resolve(null),
+            sidebarPlaceholder ? loadComponent("./sidebar.html") : Promise.resolve(null),
+            footerPlaceholder ? loadComponent("./footer.html") : Promise.resolve(null),
         ]);
 
-        // Aqui usamos 'innerHTML' para substituir o conteúdo DENTRO do placeholder.
-        // O div placeholder continuará existindo, o que é mais consistente.
         if (headerPlaceholder && headerHtml) {
             headerPlaceholder.innerHTML = headerHtml;
         }
@@ -42,17 +40,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             footerPlaceholder.innerHTML = footerHtml;
         }
         
-        // Após carregar os componentes, podemos inicializar funcionalidades globais
         initializeGlobalScripts();
     }
 
     function initializeGlobalScripts() {
-        // Encontra o link da página atual e adiciona a classe 'active'
         const currentPage = window.location.pathname;
         const sidebarLinks = document.querySelectorAll(".sidebar-nav a");
 
         sidebarLinks.forEach(link => {
-            // Garante que a comparação funcione mesmo com ou sem a barra final
             const linkPath = new URL(link.href).pathname.replace(/\/$/, ""); 
             const pagePath = currentPage.replace(/\/$/, "");
 
@@ -61,13 +56,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         });
         
-        // O restante do script de inicialização para login/logout parece correto.
         const sessionToken = localStorage.getItem("sessionToken");
         const userName = localStorage.getItem("userName");
 
-        // Este if de redirecionamento estava com um seletor errado também
         if (!sessionToken || !userName) {
-            if (document.querySelector(".app-layout-grid")) { // Usar uma classe que existe
+            if (document.querySelector(".app-layout-grid")) {
                 window.location.href = "/login.html";
             }
             return;
@@ -83,6 +76,5 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // Executa a montagem do layout
     await buildLayout();
 });
