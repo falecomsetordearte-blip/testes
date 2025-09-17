@@ -164,23 +164,20 @@ form { text-align: left; }
     z-index: 1010;
     display: flex;
     flex-direction: column;
-    background-color: var(--texto-escuro); /* ALTERADO: Fundo escuro para contraste */
-    overflow-y: auto; 
+    background-color: var(--texto-escuro); 
+    /* Removemos o overflow-y daqui para evitar duas barras de rolagem */
 }
 
-/* ALTERADO: Header da sidebar mais compacto */
 .sidebar-header { 
     padding: 25px 20px; 
     text-align: center; 
     border-bottom: 1px solid rgba(255, 255, 255, 0.1); 
-    flex-shrink: 0; 
+    flex-shrink: 0;  /* Garante que o header não encolha */
 }
 
-/* ALTERADO: Estilos da logo menor e branca */
 .sidebar-header .sidebar-logo { 
     height: 45px; 
     transition: transform 0.3s ease;
-    /* NOVO: Filtro para deixar a imagem PNG toda branca */
     filter: brightness(0) invert(1);
 }
 
@@ -188,9 +185,11 @@ form { text-align: left; }
     transform: scale(1.1); 
 }
 
+/* ===== A MUDANÇA PRINCIPAL ESTÁ AQUI ===== */
 .sidebar-nav { 
-    flex-grow: 1; 
+    flex-grow: 1; /* Faz o <nav> crescer para ocupar o espaço restante */
     padding: 20px 0; 
+    overflow-y: auto; /* A barra de rolagem fica aqui, apenas se o menu for muito grande */
 }
 
 .sidebar-nav ul { 
@@ -211,7 +210,6 @@ form { text-align: left; }
     border-left: 3px solid transparent; 
 }
 
-/* ALTERADO: Cor de hover para fundo escuro */
 .sidebar-nav a:hover { 
     color: #fff; 
     background-color: #34495e; 
@@ -227,18 +225,6 @@ form { text-align: left; }
     color: #97a6b2; 
     cursor: not-allowed; 
     background: none !important; 
-}
-
-.sidebar-nav a.disabled { 
-    color: #97a6b2; 
-    cursor: not-allowed; 
-    background: none !important; 
-}
-
-/* NOVO: Regra para o espaçador crescer e ocupar o espaço vazio */
-.sidebar-spacer {
-    flex-grow: 1;
-}
 
 /* O header não é mais um item do grid, então removemos suas propriedades de grid */
 .app-header {
