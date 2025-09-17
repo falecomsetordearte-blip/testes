@@ -4,64 +4,120 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Setor de Arte</title>
-    <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
-    <link rel="stylesheet" href="style.css">
+    <!-- Ícone e CSS padronizados -->
+    <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
+    <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
-    <div class="app-layout">
-        <header class="app-header">
-            <div class="container header-content">
-                <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte" class="app-logo">
-                <div class="user-menu">
-                    <!-- A saudação pode ser adicionada via JS se esta for uma área logada -->
-                    <span id="user-greeting">Olá!</span>
-                    <button id="logout-button">Sair</button>
+
+    <div class="app-layout-grid">
+        <!-- Sidebar será injetada aqui -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- Wrapper para o conteúdo que rola -->
+        <div class="app-content-wrapper">
+            <!-- Header será injetado aqui -->
+            <div id="header-placeholder"></div>
+
+            <!-- Conteúdo específico do Dashboard -->
+            <main class="app-content">
+                <div class="container">
+                    
+                    <!-- 1. Cabeçalho de Boas-Vindas e Ações Rápidas -->
+                    <section class="dashboard-header">
+                        <div class="welcome-message">
+                            <h1 id="welcome-user-name">Carregando...</h1>
+                            <p>Aqui está um resumo da sua atividade na plataforma.</p>
+                        </div>
+                        <div class="acoes-box">
+                            <a href="painel.html" class="btn btn-secondary"><i class="fa-solid fa-list-check"></i> Ver Todos Pedidos</a>
+                            <a href="#" class="btn btn-primary btn-novo-pedido"><strong>+</strong> Novo Pedido</a>
+                        </div>
+                    </section>
+
+                    <!-- 2. Grid de Métricas Rápidas (KPIs) -->
+                    <section class="dashboard-grid">
+                        <div class="dash-card">
+                            <i class="fa-solid fa-wallet card-icon" style="color: #27ae60;"></i>
+                            <span class="dash-card-label">Saldo de Créditos</span>
+                            <span class="dash-card-value" id="saldo-valor-dash">R$ 0,00</span>
+                        </div>
+                        <div class="dash-card">
+                            <i class="fa-solid fa-hourglass-half card-icon" style="color: #3498db;"></i>
+                            <span class="dash-card-label">Pedidos em Andamento</span>
+                            <span class="dash-card-value" id="pedidos-andamento-dash">0</span>
+                        </div>
+                        <div class="dash-card">
+                             <i class="fa-solid fa-circle-check card-icon" style="color: #8e44ad;"></i>
+                            <span class="dash-card-label">Pedidos Concluídos (Total)</span>
+                            <span class="dash-card-value" id="pedidos-concluidos-dash">0</span>
+                        </div>
+                        <div class="dash-card">
+                            <i class="fa-solid fa-headset card-icon" style="color: #e67e22;"></i>
+                            <span class="dash-card-label">Suporte</span>
+                            <a href="ajuda.html" class="dash-card-link">Acessar Ajuda</a>
+                        </div>
+                    </section>
+
+                    <!-- 3. Layout de duas colunas para Atividade e Treinamentos -->
+                    <section class="dashboard-columns">
+                        <!-- Coluna Principal: Pedidos Recentes -->
+                        <div class="main-panel">
+                            <div class="panel-header">
+                                <h2><i class="fa-solid fa-clock-rotate-left"></i> Atividade Recente</h2>
+                                <a href="painel.html" class="view-all-link">Ver todos →</a>
+                            </div>
+                            <div id="recentes-pedidos-list">
+                                <!-- Pedidos recentes serão inseridos aqui pelo JS -->
+                                <div class="loading-pedidos"><div class="spinner"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- Coluna Lateral: Treinamentos -->
+                        <div class="side-panel">
+                            <div class="panel-header">
+                                <h2><i class="fa-solid fa-graduation-cap"></i> Treinamentos</h2>
+                            </div>
+                            <div class="training-list">
+                                <a href="#" class="training-item">
+                                    <i class="fa-solid fa-circle-play"></i>
+                                    <div class="training-info">
+                                        <h4>Como criar seu primeiro pedido</h4>
+                                        <p>Aprenda o passo a passo para enviar uma arte.</p>
+                                    </div>
+                                </a>
+                                <a href="#" class="training-item">
+                                    <i class="fa-solid fa-circle-play"></i>
+                                    <div class="training-info">
+                                        <h4>Entendendo os status dos pedidos</h4>
+                                        <p>Saiba o que cada etapa significa.</p>
+                                    </div>
+                                </a>
+                                <a href="#" class="training-item">
+                                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                                    <div class="training-info">
+                                        <h4>Adicionando e utilizando créditos</h4>
+                                        <p>Veja como é fácil gerenciar seu saldo.</p>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </section>
+
                 </div>
-            </div>
-        </header>
+            </main>
 
-        <main class="main-painel">
-            <div class="container">
-                <div class="dashboard-header">
-                    <h1>Bem-vindo(a) ao seu Painel de Controle</h1>
-                    <p>Selecione uma das opções abaixo para começar.</p>
-                </div>
-
-                <div class="dashboard-nav-grid">
-                    <!-- Card de Navegação 1 -->
-                    <a href="painel.html" class="nav-card">
-                        <div class="nav-card-icon"><i class="fas fa-list-alt"></i></div>
-                        <h2>Painel de Pedidos</h2>
-                        <p>Acompanhe seus pedidos de arte, envie novas solicitações e interaja com os designers.</p>
-                    </a>
-
-                    <!-- Card de Navegação 2 -->
-                    <a href="financeiro.html" class="nav-card">
-                        <div class="nav-card-icon"><i class="fas fa-dollar-sign"></i></div>
-                        <h2>Painel Financeiro</h2>
-                        <p>Gerencie pendências financeiras e visualize status de pagamentos.</p>
-                    </a>
-
-                    <!-- Card de Navegação 3 (Exemplo futuro) -->
-                    <a href="#" class="nav-card disabled">
-                        <div class="nav-card-icon"><i class="fas fa-user-cog"></i></div>
-                        <h2>Meu Perfil</h2>
-                        <p>Atualize suas informações de contato e dados da empresa. (Em breve)</p>
-                    </a>
-
-                    <!-- Card de Navegação 4 (Exemplo futuro) -->
-                    <a href="#" class="nav-card disabled">
-                        <div class="nav-card-icon"><i class="fas fa-question-circle"></i></div>
-                        <h2>Central de Ajuda</h2>
-                        <p>Encontre respostas para suas dúvidas ou entre em contato. (Em breve)</p>
-                    </a>
-                </div>
-            </div>
-        </main>
+            <!-- Footer será injetado aqui -->
+            <div id="footer-placeholder"></div>
+        </div>
     </div>
-    <!-- Script principal pode ser usado para logout e saudação -->
-    <script src="script.js"></script>
+    
+    <!-- O modal de novo pedido pode ser reaproveitado aqui, se desejar -->
+
+    <script src="/layout.js"></script>
+    <script src="/dashboard.js"></script> <!-- Novo script para esta página -->
+
 </body>
 </html>

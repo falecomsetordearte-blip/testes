@@ -4,83 +4,91 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Acabamento - Setor de Arte</title>
-    <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
-    <link rel="stylesheet" href="../style.css">
+    <!-- Ícone e CSS padronizados -->
+    <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
+    <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
-    <div class="app-layout">
-        <header class="app-header">
-            <div class="container header-content">
-                <a href="../dashboard.html"><img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte" class="app-logo"></a>
-                <div class="user-menu">
-                    <span id="user-greeting"></span>
-                    <button id="logout-button">Sair</button>
-                </div>
-            </div>
-        </header>
 
-        <main class="main-kanban">
-            <div class="kanban-header">
-                <h1>Painel de Acabamento</h1>
-                <div class="filtros-pedidos">
-                    <select id="impressora-filter">
-                        <option value="">Todas as Impressoras</option>
-                        <!-- Opções serão adicionadas via JS -->
-                    </select>
-                    <select id="material-filter">
-                        <option value="">Todos os Materiais</option>
-                        <!-- Opções serão adicionadas via JS -->
-                    </select>
-                    <button id="btn-filtrar">Filtrar</button>
-                </div>
-            </div>
+    <!-- NOVA ESTRUTURA DE LAYOUT COM GRID -->
+    <div class="app-layout-grid">
 
-            <div class="kanban-board">
-                <!-- Colunas de Prazo com as novas classes de status para cores -->
-                <div class="kanban-column status-atrasado" data-column-id="ATRASADO">
-                    <div class="column-header">
-                        <span class="column-title">ATRASADO</span>
-                    </div>
-                    <div class="column-cards" id="cards-ATRASADO"></div>
-                </div>
-                
-                <div class="kanban-column status-hoje" data-column-id="HOJE">
-                    <div class="column-header">
-                        <span class="column-title">HOJE</span>
-                    </div>
-                    <div class="column-cards" id="cards-HOJE"></div>
-                </div>
+        <!-- Sidebar será injetada aqui -->
+        <div id="sidebar-placeholder"></div>
 
-                <div class="kanban-column status-esta-semana" data-column-id="ESSA_SEMANA">
-                    <div class="column-header">
-                        <span class="column-title">ESTA SEMANA</span>
-                    </div>
-                    <div class="column-cards" id="cards-ESSA_SEMANA"></div>
-                </div>
+        <!-- Wrapper para o conteúdo que rola -->
+        <div class="app-content-wrapper">
+        
+            <!-- Header será injetado aqui -->
+            <div id="header-placeholder"></div>
 
-                <div class="kanban-column status-proxima-semana" data-column-id="PROXIMA_SEMANA">
-                    <div class="column-header">
-                        <span class="column-title">PRÓXIMA SEMANA</span>
+            <!-- Conteúdo específico desta página -->
+            <!-- Note que o <main> da página Kanban não precisa de um .container interno -->
+            <main class="main-kanban app-content" style="padding: 0;">
+                <div class="kanban-header">
+                    <h1>Painel de Acabamento</h1>
+                    <div class="filtros-pedidos">
+                        <select id="impressora-filter">
+                            <option value="">Todas as Impressoras</option>
+                            <!-- Opções serão adicionadas via JS -->
+                        </select>
+                        <select id="material-filter">
+                            <option value="">Todos os Materiais</option>
+                            <!-- Opções serão adicionadas via JS -->
+                        </select>
+                        <button id="btn-filtrar" class="btn btn-primary">Filtrar</button>
                     </div>
-                    <div class="column-cards" id="cards-PROXIMA_SEMANA"></div>
                 </div>
+    
+                <div class="kanban-board">
+                    <!-- Colunas de Prazo -->
+                    <div class="kanban-column status-atrasado" data-column-id="ATRASADO">
+                        <div class="column-header">
+                            <span class="column-title">ATRASADO</span>
+                        </div>
+                        <div class="column-cards" id="cards-ATRASADO"></div>
+                    </div>
+                    
+                    <div class="kanban-column status-hoje" data-column-id="HOJE">
+                        <div class="column-header">
+                            <span class="column-title">HOJE</span>
+                        </div>
+                        <div class="column-cards" id="cards-HOJE"></div>
+                    </div>
+    
+                    <div class="kanban-column status-esta-semana" data-column-id="ESSA_SEMANA">
+                        <div class="column-header">
+                            <span class="column-title">ESTA SEMANA</span>
+                        </div>
+                        <div class="column-cards" id="cards-ESSA_SEMANA"></div>
+                    </div>
+    
+                    <div class="kanban-column status-proxima-semana" data-column-id="PROXIMA_SEMANA">
+                        <div class="column-header">
+                            <span class="column-title">PRÓXIMA SEMANA</span>
+                        </div>
+                        <div class="column-cards" id="cards-PROXIMA_SEMANA"></div>
+                    </div>
+    
+                    <div class="kanban-column status-sem-data" data-column-id="SEM_DATA">
+                        <div class="column-header">
+                            <span class="column-title">SEM DATA</span>
+                        </div>
+                        <div class="column-cards" id="cards-SEM_DATA"></div>
+                    </div>
+                </div>
+            </main>
 
-                <div class="kanban-column status-sem-data" data-column-id="SEM_DATA">
-                    <div class="column-header">
-                        <span class="column-title">SEM DATA</span>
-                    </div>
-                    <div class="column-cards" id="cards-SEM_DATA"></div>
-                </div>
-            </div>
-        </main>
+            <!-- O Footer não é necessário em páginas Kanban de tela cheia,
+                 mas o placeholder pode ser mantido caso mude de ideia no futuro. -->
+            <div id="footer-placeholder" class="hidden"></div>
+            
+        </div>
     </div>
 
-    <!-- O script agora aponta para o novo arquivo dentro desta pasta -->
-    <script src="acabamento-script.js"></script>
-
-    <!-- MODAL DE DETALHES RÁPIDOS DO PEDIDO -->
+    <!-- MODAIS FICAM AQUI -->
     <div class="modal-overlay" id="modal-detalhes-rapidos">
         <div class="modal-content modal-lg">
             <div class="modal-header">
@@ -92,6 +100,10 @@
             </div>
         </div>
     </div>
+
+    <!-- SCRIPTS -->
+    <script src="/layout.js"></script>
+    <script src="/acabamento/acabamento-script.js"></script>
 
 </body>
 </html>

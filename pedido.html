@@ -1,182 +1,182 @@
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detalhes do Pedido - Setor de Arte</title>
-    <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
-    <link rel="stylesheet" href="style.css?v=1.1">
-    <link rel="stylesheet" href="detalhe-pedido.css?v=1.1">
+    <!-- Ícone e CSS padronizados -->
+    <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
+    <link rel="stylesheet" href="/style.css">
+    <!-- CSS Específico da página (mantido) -->
+    <link rel="stylesheet" href="/detalhe-pedido.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
 
-    <div class="app-layout">
-        <header class="app-header">
-            <div class="container header-content">
-                <a href="painel"><img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte" class="app-logo"></a>
-                <div class="user-menu">
-                    <span id="user-greeting">Olá!</span>
-                    <button id="logout-button">Sair</button>
-                </div>
-            </div>
-        </header>
+    <!-- NOVA ESTRUTURA DE LAYOUT COM GRID -->
+    <div class="app-layout-grid">
 
-        <main class="main-painel">
-            <div class="container">
+        <!-- Sidebar será injetada aqui -->
+        <div id="sidebar-placeholder"></div>
 
-                <!-- ===== INÍCIO DA ÁREA CORRIGIDA ===== -->
+        <!-- Wrapper para o conteúdo que rola -->
+        <div class="app-content-wrapper">
 
-                <!-- 1. Este wrapper conterá apenas os dados que podem falhar ao carregar -->
-                <div id="detalhes-wrapper">
-                    <div class="pedido-detalhe-header">
-                        <h1 id="pedido-titulo-detalhe">Carregando detalhes do pedido...</h1>
-                        <div id="pedido-status-detalhe"></div>
-                    </div>
+            <!-- Header será injetado aqui -->
+            <div id="header-placeholder"></div>
 
-                    <!-- Banner de Aviso "Em Análise" -->
-                    <div id="aviso-analise-banner" class="aviso-banner hidden">
-                        <div class="aviso-banner-content">
-                            <div class="aviso-principal">
-                                <span>
-                                    <strong style="font-size: 1.1em;">Pedido em Análise:</strong> Seu pedido está sendo analisado pelos Designers. Use o chat para se comunicar.
-                                </span>
-                                <span id="aviso-toggle-icon" class="aviso-icon">&#9432;</span> <!-- Ícone de informação -->
-                            </div>
-                            <div id="aviso-detalhes" class="aviso-detalhes hidden">
-                                <p><strong>Detalhes Importantes:</strong></p>
-                                <p>A equipe de designers está revisando cuidadosamente os detalhes do seu pedido. Se houver a necessidade de ajustes ou se identificarem qualquer problema que impeça a continuidade do serviço, entrarão em contato pelo chat. Em casos específicos onde a arte não possa ser desenvolvida conforme o solicitado ou haja inconsistências nos dados fornecidos, o valor pago poderá ser estornado integralmente.</p>
-                                <p>Agradecemos a sua paciência e compreensão.</p>
+            <!-- Conteúdo específico desta página -->
+            <main class="app-content">
+                <div class="container">
+
+                    <!-- Este wrapper conterá apenas os dados que podem falhar ao carregar -->
+                    <div id="detalhes-wrapper">
+                        <div class="pedido-detalhe-header">
+                            <h1 id="pedido-titulo-detalhe">Carregando detalhes do pedido...</h1>
+                            <div id="pedido-status-detalhe"></div>
+                        </div>
+
+                        <!-- Banner de Aviso "Em Análise" -->
+                        <div id="aviso-analise-banner" class="aviso-banner hidden">
+                            <div class="aviso-banner-content">
+                                <div class="aviso-principal">
+                                    <span>
+                                        <strong style="font-size: 1.1em;">Pedido em Análise:</strong> Seu pedido está sendo analisado pelos Designers. Use o chat para se comunicar.
+                                    </span>
+                                    <span id="aviso-toggle-icon" class="aviso-icon">&#9432;</span> <!-- Ícone de informação -->
+                                </div>
+                                <div id="aviso-detalhes" class="aviso-detalhes hidden">
+                                    <p><strong>Detalhes Importantes:</strong></p>
+                                    <p>A equipe de designers está revisando cuidadosamente os detalhes do seu pedido. Se houver a necessidade de ajustes ou se identificarem qualquer problema que impeça a continuidade do serviço, entrarão em contato pelo chat. Em casos específicos onde a arte não possa ser desenvolvida conforme o solicitado ou haja inconsistências nos dados fornecidos, o valor pago poderá ser estornado integralmente.</p>
+                                    <p>Agradecemos a sua paciência e compreensão.</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="detalhe-layout">
-                        <div class="detalhe-col-principal">
-                            <!-- Módulo de Perfil do Designer REMOVIDO -->
-                            
-                            <div class="card-detalhe">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                    <h3>Conversa com o Designer</h3>
-                                    <a href="#" id="btn-ver-atendimento" class="btn-ver-atendimento disabled">
-    Ver Atendimento
-    <span class="tag-em-breve">Em Breve</span>
-</a>
-                                </div>
-                                <div id="chat-box" class="chat-box">
-                                    <div id="mensagens-container">
-                                        <p class="info-text">Carregando histórico de mensagens...</p>
-                                        <div class="loading-pedidos"><div class="spinner"></div></div>
+                        <div class="detalhe-layout">
+                            <div class="detalhe-col-principal">
+                                <div class="card-detalhe">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                        <h3>Conversa com o Designer</h3>
+                                        <a href="#" id="btn-ver-atendimento" class="btn-ver-atendimento disabled">
+                                            Ver Atendimento
+                                            <span class="tag-em-breve">Em Breve</span>
+                                        </a>
                                     </div>
-                                    <form id="form-mensagem" class="form-mensagem">
-                                        <input type="text" id="input-mensagem" name="mensagem" placeholder="Digite sua mensagem para o designer..." required>
-                                        <button type="submit" id="btn-enviar-mensagem" title="Enviar Mensagem">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
-                                        </button>
-                                    </form>
-                                    <p class="aviso-envio-arquivos">
-        Envie arquivos para designers@setordearte.com.br
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="vertical-align: middle; margin-left: 4px;">
-                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-            </svg>
-    </p>
+                                    <div id="chat-box" class="chat-box">
+                                        <div id="mensagens-container">
+                                            <p class="info-text">Carregando histórico de mensagens...</p>
+                                            <div class="loading-pedidos"><div class="spinner"></div></div>
+                                        </div>
+                                        <form id="form-mensagem" class="form-mensagem">
+                                            <input type="text" id="input-mensagem" name="mensagem" placeholder="Digite sua mensagem para o designer..." required>
+                                            <button type="submit" id="btn-enviar-mensagem" title="Enviar Mensagem">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+                                            </button>
+                                        </form>
+                                        <p class="aviso-envio-arquivos">
+                                            Envie arquivos para designers@setordearte.com.br
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="vertical-align: middle; margin-left: 4px;">
+                                                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                                            </svg>
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="detalhe-col-lateral">
-                             <div class="card-detalhe">
-                                 <h3>Informações do Pedido</h3>
-                                 <ul class="info-list">
-                                     <li><strong>ID do Pedido:</strong> <span id="info-id">---</span></li>
-                                     <li><strong>Valor:</strong> <span id="info-valor">---</span> <button id="btn-adicionar-credito" class="btn-acao btn-adicionar-credito" title="Adicionar valor ao pedido.">$ Adicionar</button></li>
-                                     <li><strong>Cliente Final:</strong> <span id="info-cliente">---</span></li>
-                                 </ul>
-                             </div>
-                            <div class="card-detalhe">
-                                <h3>Arquivos do Projeto</h3>
-                                <div id="arquivos-box">
-                                    <p class="info-text">Verificando arquivos...</p>
+                            <div class="detalhe-col-lateral">
+                                 <div class="card-detalhe">
+                                     <h3>Informações do Pedido</h3>
+                                     <ul class="info-list">
+                                         <li><strong>ID do Pedido:</strong> <span id="info-id">---</span></li>
+                                         <li><strong>Valor:</strong> <span id="info-valor">---</span> <button id="btn-adicionar-credito" class="btn-acao btn-adicionar-credito" title="Adicionar valor ao pedido.">$ Adicionar</button></li>
+                                         <li><strong>Cliente Final:</strong> <span id="info-cliente">---</span></li>
+                                     </ul>
+                                 </div>
+                                <div class="card-detalhe">
+                                    <h3>Arquivos do Projeto</h3>
+                                    <div id="arquivos-box">
+                                        <p class="info-text">Verificando arquivos...</p>
+                                    </div>
+                                    <button id="btn-marcar-verificado" class="btn-acao btn-verificado" style="display: none;">Marcar como Verificado</button>
                                 </div>
-                                <button id="btn-marcar-verificado" class="btn-acao btn-verificado" style="display: none;">Marcar como Verificado</button>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- ADICIONADO: Contêiner para o novo botão de avaliação -->
-                <div class="avaliacao-container">
-                    <button id="btn-abrir-avaliacao" class="btn-avaliacao-abrir">Avaliar Designer</button>
-                </div>
+                    <!-- Contêiner para o novo botão de avaliação -->
+                    <div class="avaliacao-container">
+                        <button id="btn-abrir-avaliacao" class="btn-avaliacao-abrir">Avaliar Designer</button>
+                    </div>
 
-                <!-- O botão de cancelar agora está fora do wrapper, seguro contra erros de carregamento -->
-                <div class="cancelar-container">
-                    <button id="btn-cancelar" class="btn-cancelar">Cancelar Pedido</button>
+                    <!-- O botão de cancelar agora está fora do wrapper -->
+                    <div class="cancelar-container">
+                        <button id="btn-cancelar" class="btn-cancelar">Cancelar Pedido</button>
+                    </div>
                 </div>
-                
-                 <!-- ===== FIM DA ÁREA CORRIGIDA ===== -->
-            </div>
-        </main>
+            </main>
+
+            <!-- Footer será injetado aqui -->
+            <div id="footer-placeholder"></div>
+
+        </div>
     </div>
 
- 
-</body>
-</html>
-
-<!-- MODAL DE ADQUIRIR CRÉDITOS -->
-<div class="modal-overlay" id="modal-adquirir-creditos">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Adicionar Valor ao Pedido</h3>
-            <button class="close-modal" title="Fechar">×</button>
+    <!-- MODAIS FICAM AQUI, FORA DO GRID PRINCIPAL -->
+    <div class="modal-overlay" id="modal-adquirir-creditos">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Adicionar Valor ao Pedido</h3>
+                <button class="close-modal" title="Fechar">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="adquirir-creditos-form">
+                    <div id="creditos-form-error" class="form-feedback error hidden"></div>
+                    <div class="form-group">
+                        <label for="creditos-valor">Valor (R$)</label>
+                        <input type="number" id="creditos-valor" placeholder="Ex: 100,00" min="5" step="5" required>
+                    </div>
+                    <button type="submit" class="btn-submit">Pagar</button>
+                </form>
+            </div>
         </div>
-        <div class="modal-body">
-            <form id="adquirir-creditos-form">
-                <div id="creditos-form-error" class="form-feedback error hidden"></div>
-                <div class="form-group">
-                    <label for="creditos-valor">Valor (R$)</label>
-                    <input type="number" id="creditos-valor" placeholder="Ex: 100,00" min="5" step="5" required>
+    </div>
+
+    <div class="modal-overlay" id="modal-avaliacao-designer">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Como foi sua experiência?</h3>
+                <button class="close-modal" title="Fechar">×</button>
+            </div>
+            <form id="form-avaliacao">
+                <div class="modal-body">
+                    <p style="text-align: center; margin-top: 0; color: #555;">Selecione uma opção para avaliar o designer deste pedido.</p>
+                    <div class="avaliacao-opcoes">
+                        <button type="button" class="btn-avaliacao dislike" data-avaliacao="negativa">
+                            <span class="icone-avaliacao">👎</span>
+                            <span>Negativa</span>
+                        </button>
+                        <button type="button" class="btn-avaliacao like" data-avaliacao="positiva">
+                            <span class="icone-avaliacao">👍</span>
+                            <span>Positiva</span>
+                        </button>
+                    </div>
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label for="avaliacao-comentario">Deixe um comentário (opcional):</label>
+                        <textarea id="avaliacao-comentario" rows="4" placeholder="Sua opinião nos ajuda a melhorar..."></textarea>
+                    </div>
                 </div>
-                <button type="submit" class="btn-submit">Pagar</button>
+                <div class="modal-footer">
+                    <button type="submit" class="btn-submit">Enviar Avaliação</button>
+                </div>
             </form>
         </div>
     </div>
-</div>
 
-<!-- ADICIONADO: Novo Modal de Avaliação -->
-<div class="modal-overlay" id="modal-avaliacao-designer">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Como foi sua experiência?</h3>
-            <button class="close-modal" title="Fechar">×</button>
-        </div>
-        <form id="form-avaliacao">
-            <div class="modal-body">
-                <p style="text-align: center; margin-top: 0; color: #555;">Selecione uma opção para avaliar o designer deste pedido.</p>
-                <div class="avaliacao-opcoes">
-                    <button type="button" class="btn-avaliacao dislike" data-avaliacao="negativa">
-                        <span class="icone-avaliacao">👎</span>
-                        <span>Negativa</span>
-                    </button>
-                    <button type="button" class="btn-avaliacao like" data-avaliacao="positiva">
-                        <span class="icone-avaliacao">👍</span>
-                        <span>Positiva</span>
-                    </button>
-                </div>
-                <div class="form-group" style="margin-top: 20px;">
-                    <label for="avaliacao-comentario">Deixe um comentário (opcional):</label>
-                    <textarea id="avaliacao-comentario" rows="4" placeholder="Sua opinião nos ajuda a melhorar..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="submit" class="btn-submit">Enviar Avaliação</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-
-    <script src="script.js?v=1.1"></script>
-    <script src="detalhe-pedido.js?v=1.1"></script>
-    <script src="bitrix24-widget.js"></script>
+    <!-- SCRIPTS -->
+    <script src="/layout.js"></script>
+    <script src="/detalhe-pedido.js"></script>
+    <script src="/bitrix24-widget.js"></script>
 
 </body>
 </html>
