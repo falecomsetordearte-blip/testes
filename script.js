@@ -87,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (isAuthPage) {
         initializeAuthPages();
-    } else if (document.querySelector(".app-layout")) {
+    } else if (document.querySelector(".app-layout-grid")) {
         initializeProtectedPage();
     }
 });
