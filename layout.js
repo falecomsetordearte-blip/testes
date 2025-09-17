@@ -5,13 +5,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             const response = await fetch(componentPath);
             if (!response.ok) {
-                // Se a resposta falhar, o erro será capturado pelo .catch()
                 throw new Error(`Componente não encontrado: ${componentPath}`);
             }
             return await response.text();
         } catch (error) {
             console.error(error);
-            // Esta é a linha que está mostrando a mensagem vermelha na sua tela
             return `<p style="color:red; font-family: monospace; padding: 10px;">Erro ao carregar componente: ${componentPath}</p>`;
         }
     }
@@ -22,12 +20,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         const sidebarPlaceholder = document.getElementById("sidebar-placeholder");
         const footerPlaceholder = document.getElementById("footer-placeholder");
 
-        // ===== A ÚNICA MUDANÇA É AQUI =====
-        // Trocamos os caminhos de "/arquivo.html" para "./arquivo.html"
+        // ===== CORREÇÃO DEFINITIVA =====
+        // Adicionamos a pasta "components" ao caminho relativo.
         const [headerHtml, sidebarHtml, footerHtml] = await Promise.all([
-            headerPlaceholder ? loadComponent("./header.html") : Promise.resolve(null),
-            sidebarPlaceholder ? loadComponent("./sidebar.html") : Promise.resolve(null),
-            footerPlaceholder ? loadComponent("./footer.html") : Promise.resolve(null),
+            headerPlaceholder ? loadComponent("./components/header.html") : Promise.resolve(null),
+            sidebarPlaceholder ? loadComponent("./components/sidebar.html") : Promise.resolve(null),
+            footerPlaceholder ? loadComponent("./components/footer.html") : Promise.resolve(null),
         ]);
 
         if (headerPlaceholder && headerHtml) {
@@ -51,7 +49,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             const linkPath = new URL(link.href).pathname.replace(/\/$/, ""); 
             const pagePath = currentPage.replace(/\/$/, "");
 
-            if (linkPath === pagePath || (pagePath === "" && linkPath === "/dashboard.html")) {
+            if (linkPath === pagePath || (pagePath.endsWith('index.html') && linkPath === '/dashboard.html') || (pagePath === '/' && linkPath === '/dashboard.html')) {
                 link.classList.add("active");
             }
         });
