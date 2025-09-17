@@ -83,32 +83,7 @@
 }
 
 
-/* --- CHAT E BOTÕES --- */
-#input-mensagem {
-    flex: 1;
-    height: 50px;
-    padding: 0 20px;
-    border: 2px solid #a8d5f3;
-    border-radius: 50px;
-    font-size: 16px;
-    background-color: #f7fcff;
-    outline: none;
-    transition: border-color 0.2s;
-}
-#input-mensagem:focus {
-    border-color: #3498db;
-}
-#btn-enviar-mensagem {
-    width: 50px;
-    height: 50px;
-    flex-shrink: 0;
-}
-.aviso-envio-arquivos {
-    font-size: 13px;
-    color: var(--cinza-texto);
-    text-align: center;
-    margin-top: 15px;
-}
+
 .btn-adicionar-credito {
     padding: 4px 8px;
     font-size: 12px;
