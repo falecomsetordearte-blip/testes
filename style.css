@@ -165,6 +165,7 @@ form { text-align: left; }
     display: flex;
     flex-direction: column;
     background-color: var(--texto-escuro); 
+    height: 100%;
     /* Removemos o overflow-y daqui para evitar duas barras de rolagem */
 }
 
