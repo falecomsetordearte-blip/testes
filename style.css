@@ -229,6 +229,17 @@ form { text-align: left; }
     background: none !important; 
 }
 
+.sidebar-nav a.disabled { 
+    color: #97a6b2; 
+    cursor: not-allowed; 
+    background: none !important; 
+}
+
+/* NOVO: Regra para o espaçador crescer e ocupar o espaço vazio */
+.sidebar-spacer {
+    flex-grow: 1;
+}
+
 /* O header não é mais um item do grid, então removemos suas propriedades de grid */
 .app-header {
     display: flex;
