@@ -21,11 +21,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         const footerPlaceholder = document.getElementById("footer-placeholder");
 
         // ===== CORREÇÃO DEFINITIVA =====
-        // Adicionamos a pasta "components" ao caminho relativo.
+        // Trocamos o caminho relativo "./" pelo caminho absoluto "/"
+        // Isso garante que o script encontre os componentes a partir da raiz do site,
+        // não importa em qual subpasta a página atual esteja.
         const [headerHtml, sidebarHtml, footerHtml] = await Promise.all([
-            headerPlaceholder ? loadComponent("./components/header.html") : Promise.resolve(null),
-            sidebarPlaceholder ? loadComponent("./components/sidebar.html") : Promise.resolve(null),
-            footerPlaceholder ? loadComponent("./components/footer.html") : Promise.resolve(null),
+            headerPlaceholder ? loadComponent("/components/header.html") : Promise.resolve(null),
+            sidebarPlaceholder ? loadComponent("/components/sidebar.html") : Promise.resolve(null),
+            footerPlaceholder ? loadComponent("/components/footer.html") : Promise.resolve(null),
         ]);
 
         if (headerPlaceholder && headerHtml) {
