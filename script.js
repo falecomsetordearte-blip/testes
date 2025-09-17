@@ -366,9 +366,9 @@ function renderizarPedidos() {
             }
             const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(pedido.OPPORTUNITY) || 0);
             
-            // AQUI ESTÁ A CORREÇÃO: cada informação vai para sua própria div de coluna.
+            // AQUI ESTÁ A CORREÇÃO: Adicionamos o estilo de grid na div principal do item.
             html += `
-                <div class="pedido-item">
+                <div class="pedido-item" style="grid-template-columns: 1fr 4fr 1.5fr 1.5fr 1.5fr;">
                     <div class="col-id"><strong>#${pedido.ID}</strong></div>
                     <div class="col-titulo">
                         <div class="col-content">
