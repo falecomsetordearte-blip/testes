@@ -1,4 +1,4 @@
-// /impressao/painel-script.js - VERSÃO COM FUNDO DO CARD COLORIDO
+// /impressao/painel-script.js - VERSÃO COM FUNDO DO CARD COLORIDO E CHAT BLOQUEADO
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
@@ -139,8 +139,6 @@
         `;
         document.head.appendChild(style);
         
-        // As funções abaixo permanecem inalteradas, apenas a inclusão do CSS acima já resolve.
-        
         async function carregarOpcoesDeFiltro() {
             try {
                 const response = await fetch('/api/getProductionFilters');
@@ -239,29 +237,6 @@
                 </div>
             `;
         }
-
-        async function loadAndDisplayChatHistory(dealId) {
-            const chatContainer = document.getElementById('mensagens-container');
-            if (!chatContainer) return;
-            try {
-                const response = await fetch('/api/impressao/getChatHistory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealId }) });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message);
-                const messages = data.messages || [];
-                if (messages.length > 0) {
-                    chatContainer.innerHTML = messages.map(msg => {
-                        const classe = msg.remetente === 'operador' ? 'mensagem-designer' : 'mensagem-cliente';
-                        const textoLimpo = msg.texto ? msg.texto.replace(/^\[.+?\]\n-+\n/, '') : '';
-                        return `<div class="mensagem ${classe}">${textoLimpo}</div>`;
-                    }).join('');
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                } else {
-                    chatContainer.innerHTML = '<p class="info-text" style="color: #555;">Nenhuma mensagem ainda. Inicie a conversa.</p>';
-                }
-            } catch (error) {
-                chatContainer.innerHTML = `<p class="info-text" style="color: red;">Erro ao carregar mensagens.</p>`;
-            }
-        }
         
         function openDetailsModal(dealId) {
             const deal = allDealsData.find(d => d.ID == dealId);
@@ -285,8 +260,7 @@
             if (medidaInfo) { medidasHtml = `<span class="tag-medidas" style="background-color: ${medidaInfo.cor};">${medidaInfo.nome}</span>`; }
             const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
-            const revisaoSolicitada = deal[REVISAO_SOLICITADA_FIELD] === '1';
-            const isPago = deal[FIELD_STATUS_PAGAMENTO_DESIGNER] === STATUS_PAGO_ID;
+
             let actionsHtml = '';
             if (linkArquivo) { actionsHtml += `<a href="${linkArquivo}" target="_blank" class="btn-acao-modal principal">Baixar Arquivo</a>`; }
             if (linkAtendimento) { actionsHtml += `<a href="${linkAtendimento}" target="_blank" class="btn-acao-modal secundario">Ver Atendimento</a>`; }
@@ -295,14 +269,17 @@
                 actionsHtml += `<a href="${urlVerPedido}" target="_blank" class="btn-acao-modal secundario">Ver Pedido</a>`;
             }
             if (actionsHtml === '') { actionsHtml = '<p class="info-text" style="text-align:center; color: #555;">Nenhuma ação disponível.</p>'; }
-            let mainColumnHtml = '';
-            if (revisaoSolicitada) {
-                const approveButtonHtml = isPago ? '' : `<button class="btn-approve-file" data-action="approve-file" title="Aprovar o arquivo, processar pagamento e finalizar."><i class="fas fa-check"></i> Arquivo Aprovado</button>`;
-                let chatHtml = `<div class="card-detalhe"><div style="display: flex; justify-content: space-between; align-items: center;"><h3>Conversa de Revisão</h3>${approveButtonHtml}</div><div id="chat-revisao-container" class="chat-box"><div id="mensagens-container" style="flex-grow: 1; overflow-y: auto; padding-right: 10px;"><div class="loading-pedidos"><div class="spinner"></div></div></div><form id="form-mensagem" class="form-mensagem"><input type="text" id="input-mensagem" placeholder="Digite sua mensagem..." required><button type="submit" id="btn-enviar-mensagem" title="Enviar Mensagem"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg></button></form></div></div>`;
-                mainColumnHtml = isPago ? `<div class="chat-bloqueado" title="Arquivo desse Pedido já foi aprovado.">${chatHtml}</div>` : chatHtml;
-            } else {
-                mainColumnHtml = `<div class="card-detalhe"><div class="revision-area"><button class="btn-request-revision" data-action="request-revision">Solicitar Revisão</button></div></div>`;
-            }
+            
+            // <<-- ÚNICA ALTERAÇÃO REALIZADA -->>
+            // Substituímos toda a lógica complexa do chat por este bloco estático.
+            const mainColumnHtml = `
+                <div class="card-detalhe" style="text-align: center; color: var(--cinza-texto); padding: 50px 20px; border-style: dashed; background-color: #f8f9fa;">
+                    <i class="fas fa-comments" style="font-size: 2.5rem; margin-bottom: 15px; opacity: 0.4;"></i>
+                    <h3 style="margin: 0 0 10px 0; color: var(--texto-escuro);">Chat de Revisão</h3>
+                    <p style="font-size: 1.1rem; font-weight: 600; color: var(--cinza-neutro);">EM BREVE</p>
+                </div>
+            `;
+
             modalBody.innerHTML = `
                 <div class="steps-container">${stepsHtml}</div>
                 <div class="detalhe-layout">
@@ -318,87 +295,11 @@
                     </div>
                 </div>`;
             modal.classList.add('active');
-            if (revisaoSolicitada) { loadAndDisplayChatHistory(dealId); }
-            attachAllListeners(deal);
+            
+            // Apenas o listener dos steps é anexado. O resto foi removido.
+            attachStatusStepListeners(deal.ID);
         }
 
-        function attachAllListeners(deal) {
-            attachStatusStepListeners(deal.ID);
-            const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === '1';
-            const isPago = deal[FIELD_STATUS_PAGAMENTO_DESIGNER] === STATUS_PAGO_ID;
-            if (isRevisionActive && !isPago) { attachChatListeners(deal.ID); } 
-            else if (!isRevisionActive) { attachRevisionListener(deal.ID); }
-        }
-        
-        function attachRevisionListener(dealId) {
-            const requestRevisionBtn = modalBody.querySelector('button[data-action="request-revision"]');
-            if (!requestRevisionBtn) return;
-            requestRevisionBtn.addEventListener('click', async () => {
-                const container = requestRevisionBtn.closest('.revision-area');
-                container.innerHTML = '<div class="loading-pedidos"><div class="spinner"></div></div>';
-                try {
-                    const response = await fetch('/api/impressao/requestRevision', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealId }) });
-                    if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message); }
-                    const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
-                    if (dealIndex > -1) { allDealsData[dealIndex][REVISAO_SOLICITADA_FIELD] = '1'; }
-                    openDetailsModal(dealId);
-                } catch (error) {
-                    alert('Erro: ' + error.message);
-                    openDetailsModal(dealId);
-                }
-            });
-        }
-        
-        function attachChatListeners(dealId) {
-            const formMensagem = document.getElementById('form-mensagem');
-            if (formMensagem) {
-                formMensagem.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const input = formMensagem.querySelector('#input-mensagem');
-                    const btn = formMensagem.querySelector('#btn-enviar-mensagem');
-                    const container = document.getElementById('mensagens-container');
-                    const mensagem = input.value.trim();
-                    if (!mensagem) return;
-                    input.disabled = true; btn.disabled = true;
-                    try {
-                        await fetch('/api/sendMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealId, message: mensagem }) });
-                        input.value = '';
-                        const div = document.createElement('div');
-                        div.className = 'mensagem mensagem-designer';
-                        div.textContent = mensagem;
-                        if(container.querySelector('.info-text') || container.querySelector('.loading-pedidos')) container.innerHTML = '';
-                        container.appendChild(div);
-                        container.scrollTop = container.scrollHeight;
-                    } catch (error) {
-                        alert('Erro ao enviar mensagem.');
-                    } finally {
-                        input.disabled = false; btn.disabled = false; input.focus();
-                    }
-                });
-            }
-            const approveBtn = document.querySelector('button[data-action="approve-file"]');
-            if (approveBtn) {
-                approveBtn.addEventListener('click', async () => {
-                    if (!confirm('Tem certeza que deseja aprovar este arquivo? Esta ação irá processar o pagamento do designer e finalizar o pedido.')) return;
-                    approveBtn.disabled = true;
-                    approveBtn.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0 auto;"></div>';
-                    try {
-                        const response = await fetch('/api/impressao/approveFile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealId }) });
-                        const data = await response.json();
-                        if (!response.ok) throw new Error(data.message);
-                        alert('Arquivo aprovado com sucesso!');
-                        const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
-                        if (dealIndex > -1) { allDealsData[dealIndex][FIELD_STATUS_PAGAMENTO_DESIGNER] = STATUS_PAGO_ID; }
-                        openDetailsModal(dealId);
-                    } catch (error) {
-                        alert(`Erro: ${error.message}`);
-                        approveBtn.disabled = false;
-                        approveBtn.innerHTML = '<i class="fas fa-check"></i> Arquivo Aprovado';
-                    }
-                });
-            }
-        }
-        
         function updateVisualStatus(dealId, newStatusId) {
             const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
             if (dealIndex === -1) return;
