@@ -279,22 +279,122 @@ form { text-align: left; }
 /* ========================================================= */
 /* ===                DASHBOARD                          === */
 /* ========================================================= */
-.dashboard-header { margin-bottom: 30px; }
-.dashboard-nav-grid, .dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 25px;
-}
-.nav-card, .dash-card {
-    display: block;
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 30px;
     padding: 20px;
+    background-color: var(--branco);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+}
+.welcome-message h1 {
+    margin: 0 0 5px 0;
+    font-size: 2rem;
+    color: var(--texto-escuro);
+}
+.welcome-message p {
+    margin: 0;
+    color: var(--cinza-texto);
+    font-size: 1rem;
+}
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 25px;
+    margin-bottom: 30px;
+}
+.dash-card {
+    display: flex;
+    flex-direction: column;
+    padding: 25px;
     background-color: var(--branco);
     border-radius: 12px;
     border: 1px solid var(--borda);
     box-shadow: 0 4px 15px rgba(0,0,0,0.06);
     transition: all 0.2s ease;
 }
-.nav-card:hover, .dash-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+.dash-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+.card-icon { font-size: 2rem; margin-bottom: 15px; }
+.dash-card-label { font-size: 0.9rem; color: var(--cinza-texto); margin-bottom: 5px; }
+.dash-card-value { font-size: 2.2rem; font-weight: 700; color: var(--texto-escuro); line-height: 1.2; }
+.dash-card-link { font-size: 1.2rem; font-weight: 600; color: var(--azul-principal); text-decoration: none; margin-top: auto; }
+.dash-card-link:hover { text-decoration: underline; }
+
+.dashboard-columns {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 25px;
+}
+.main-panel, .side-panel {
+    background-color: var(--branco);
+    border-radius: 12px;
+    padding: 25px;
+    border: 1px solid var(--borda);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+}
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--borda);
+    padding-bottom: 15px;
+}
+.panel-header h2 { font-size: 1.2rem; margin: 0; display: flex; align-items: center; gap: 10px; }
+.view-all-link { text-decoration: none; font-weight: 600; color: var(--azul-principal); }
+
+.recent-pedido-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--texto-escuro);
+    transition: background-color 0.2s ease;
+}
+.recent-pedido-item:not(:last-child) { border-bottom: 1px solid #f0f0f0; }
+.recent-pedido-item:hover { background-color: #f8f9fa; }
+.pedido-info { display: flex; flex-direction: column; }
+.pedido-id { font-weight: 700; color: var(--azul-principal); font-size: 0.9rem; }
+.pedido-title { color: var(--cinza-texto); }
+.empty-state { padding: 40px 20px; text-align: center; color: var(--cinza-texto); }
+.empty-state.error { color: var(--erro); }
+
+.training-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--texto-escuro);
+    transition: background-color 0.2s ease;
+}
+.training-item:not(:last-child) { border-bottom: 1px solid #f0f0f0; }
+.training-item:hover { background-color: #f8f9fa; transform: translateX(5px); }
+.training-item i { font-size: 1.8rem; color: var(--azul-principal); }
+.training-info h4 { margin: 0 0 4px 0; font-size: 1rem; }
+.training-info p { margin: 0; font-size: 0.85rem; color: var(--cinza-texto); }
+
+/* Responsividade para o dashboard */
+@media (max-width: 992px) {
+    .dashboard-columns {
+        grid-template-columns: 1fr;
+    }
+}
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .welcome-message h1 { font-size: 1.5rem; }
+    .dash-card-value { font-size: 1.8rem; }
+}
 
 /* ========================================================= */
 /* ===                LISTA DE PEDIDOS                   === */
