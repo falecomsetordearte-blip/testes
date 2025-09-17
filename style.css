@@ -515,6 +515,13 @@ a.btn-ver-pedido:hover { text-decoration: underline; color: #2c89c8; }
 .form-feedback { padding: 15px; margin-bottom: 20px; border-radius: 8px; font-size: 0.9rem; }
 .form-feedback.error { color: var(--erro); background-color: #fbe9e7; border-color: #ffcdd2; }
 
+#novo-pedido-form {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Faz o formulário ocupar o espaço disponível */
+    min-height: 0; /* Truque essencial de flexbox para evitar que o conteúdo estoure o container */
+}
+
 /* NOVO: Estilos para organizar os campos do formulário em colunas */
 .form-row {
     display: grid;
