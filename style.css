@@ -304,6 +304,34 @@ form { text-align: left; }
 .pedidos-header-bar h2 { font-size: 24px; margin: 0; }
 .filtros-pedidos { display: flex; gap: 10px; }
 .filtros-pedidos input, .filtros-pedidos select { padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; }
+
+/* Adicione este novo bloco de código */
+.pedidos-list-header {
+    display: grid; /* A correção principal: torna o container um grid. */
+    grid-template-columns: 1fr 4fr 1.5fr 1.5fr 1.5fr; /* Mesma estrutura de colunas dos itens */
+    gap: 20px;
+    align-items: center;
+    padding: 15px 20px;
+    font-weight: 700; /* Deixa o texto em negrito */
+    color: var(--cinza-texto);
+    font-size: 0.9rem;
+    border-bottom: 2px solid var(--borda); /* Linha divisória */
+    margin-bottom: 10px;
+}
+
+/* A classe .pedido-item já existe, você não precisa adicionar novamente */
+.pedido-item { 
+    display: grid; 
+    gap: 20px; 
+    align-items: center; 
+    margin-bottom: 15px; 
+    padding: 20px; 
+    background-color: var(--branco); 
+    border: 1px solid var(--borda); 
+    border-radius: 8px; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
+}
+
 .pedido-item { display: grid; gap: 20px; align-items: center; margin-bottom: 15px; padding: 20px; background-color: var(--branco); border: 1px solid var(--borda); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 .col-id { font-weight: 700; color: var(--azul-principal); }
 a.btn-ver-pedido { font-size: 0.9rem; font-weight: 600; color: var(--azul-principal); text-decoration: none; cursor: pointer; }
