@@ -1,4 +1,4 @@
-// /impressao/painel-script.js - VERSÃO COM CORREÇÃO DE TYPO, LOGS E MAIS ROBUSTA
+// /impressao/painel-script.js - VERSÃO COMPLETA, CORRIGIDA E COM MELHORIAS VISUAIS
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
@@ -87,34 +87,33 @@
             .chat-iniciado .revisao-overlay { opacity: 0; visibility: hidden; pointer-events: none; }
             .btn-request-revision { background-color: var(--erro); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 10px; }
             .btn-request-revision:hover { background-color: #c0392b; transform: translateY(-2px); }
+
+            /* --- AJUSTE DE ALTURA DO CHAT NO MODAL --- */
+            #modal-detalhes-rapidos .detalhe-col-principal { display: flex; flex-direction: column; }
+            #modal-detalhes-rapidos .revisao-wrapper.card-detalhe { flex-grow: 1; display: flex; flex-direction: column; padding: 0; }
+            #modal-detalhes-rapidos .revisao-wrapper > div:first-of-type { padding: 15px 25px; border-bottom: 1px solid var(--borda); flex-shrink: 0; }
+            #modal-detalhes-rapidos .chat-box { height: auto; max-height: none; flex-grow: 1; min-height: 0; border: none; border-radius: 0 0 12px 12px; }
         `;
         document.head.appendChild(style);
 
         // --- FUNÇÕES DE CARREGAMENTO DE DADOS ---
-
         async function carregarOpcoesDeFiltro() {
             try {
                 const response = await fetch('/api/getProductionFilters');
                 if (!response.ok) throw new Error('Falha ao carregar filtros do servidor.');
-
                 const filters = await response.json();
-                
                 impressoraFilterEl.innerHTML = `<option value="">Todas as Impressoras</option>`;
                 materialFilterEl.innerHTML = `<option value="">Todos os Materiais</option>`;
-                
-                // CORREÇÃO: Usando 'impressores' para corresponder à API.
                 if (filters.impressores) {
                     filters.impressores.forEach(option => { impressoraFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
                 }
-                
                 if (filters.materiais) {
                     filters.materiais.forEach(option => { materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
                 }
-
             } catch (error) {
                 console.error("Erro CRÍTICO ao carregar opções de filtro:", error);
                 const header = document.querySelector('.kanban-header .filtros-pedidos');
-                if(header) header.innerHTML = `<p style="color: #ffc107;">Erro ao carregar filtros.</p>`;
+                if (header) header.innerHTML = `<p style="color: #ffc107;">Erro ao carregar filtros.</p>`;
             }
         }
 
@@ -144,7 +143,6 @@
         }
 
         // --- FUNÇÕES DE RENDERIZAÇÃO E UI ---
-
         function organizarPedidosNasColunas(deals) {
             document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '');
             const agora = new Date();
@@ -263,7 +261,6 @@
         }
 
         // --- FUNÇÕES DE EVENTOS (LISTENERS) ---
-
         function attachAllListeners(deal) {
             attachStatusStepListeners(deal.ID);
             const isRevisionActive = deal[REVISAO_SOLICITADA_FIELD] === '1';
@@ -347,12 +344,70 @@
             }
         }
         
-        function updateVisualStatus(dealId, newStatusId) { /* Esta função não precisa de alteração */ }
+        function updateVisualStatus(dealId, newStatusId) {
+            const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
+            if (dealIndex === -1) return;
+            const stepsContainer = document.querySelector('.steps-container');
+            if (stepsContainer && document.getElementById('modal-detalhes-rapidos').classList.contains('active')) {
+                const steps = stepsContainer.querySelectorAll('.step');
+                const newStatusIndex = STATUS_ORDER.indexOf(newStatusId);
+                steps.forEach((s, index) => {
+                    const currentStatusId = s.dataset.statusId;
+                    const statusInfo = STATUS_MAP[currentStatusId];
+                    s.className = 'step';
+                    if (index < newStatusIndex) s.classList.add('completed');
+                    else if (index === newStatusIndex) s.classList.add('active', statusInfo.classe);
+                });
+            }
+            const card = document.querySelector(`.kanban-card[data-deal-id-card="${dealId}"]`);
+            if (card) {
+                card.className = 'kanban-card';
+                const newStatusInfo = STATUS_MAP[newStatusId];
+                if (newStatusInfo) card.classList.add('status-' + newStatusInfo.classe);
+            }
+        }
 
-        function attachStatusStepListeners(dealId) { /* Esta função não precisa de alteração */ }
+        function attachStatusStepListeners(dealId) {
+            const container = document.querySelector('.steps-container');
+            if(!container) return;
+            container.addEventListener('click', (event) => {
+                const step = event.target.closest('.step');
+                if (!step) return;
+                const newStatusId = step.dataset.statusId;
+                const dealIndex = allDealsData.findIndex(d => d.ID == dealId);
+                if (dealIndex === -1) return;
+                const oldStatusId = allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD];
+                if (newStatusId === oldStatusId) return;
+                
+                updateVisualStatus(dealId, newStatusId);
+                allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = newStatusId;
+
+                fetch('/api/impressao/updateStatus', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dealId, statusId: newStatusId })
+                })
+                .then(response => {
+                    if (!response.ok) { return response.json().then(err => { throw new Error(err.message || 'Erro do servidor') }); }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.movedToNextStage) {
+                        setTimeout(() => {
+                            modal.classList.remove('active');
+                            carregarPedidosDeImpressao();
+                        }, 500);
+                    }
+                })
+                .catch(error => {
+                    alert(`Não foi possível atualizar o status para "${STATUS_MAP[newStatusId].nome}". Revertendo a alteração.`);
+                    updateVisualStatus(dealId, oldStatusId);
+                    allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = oldStatusId;
+                });
+            });
+        }
 
         // --- INICIALIZAÇÃO E EVENTOS GLOBAIS ---
-
         async function init() {
             await Promise.all([
                 carregarOpcoesDeFiltro(),
@@ -374,6 +429,6 @@
             }
         });
         
-        init(); // Inicia o script
+        init();
     });
 })();
