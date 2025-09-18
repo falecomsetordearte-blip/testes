@@ -52,7 +52,8 @@ document.addEventListener("DOMContentLoaded", () => {
             saldoEl.textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.saldo || 0);
 
             const pedidos = data.pedidos || [];
-            const pedidosEmAndamento = pedidos.filter(p => !p.STAGE_ID.includes('WON') && !p.STAGE_ID.includes('LOSE')).length;
+            // CORRIGIDO: Pedidos em andamento não devem incluir os que aguardam pagamento
+            const pedidosEmAndamento = pedidos.filter(p => !p.STAGE_ID.includes('WON') && !p.STAGE_ID.includes('LOSE') && !p.STAGE_ID.includes('NEW')).length;
             const pedidosConcluidos = pedidos.filter(p => p.STAGE_ID.includes('WON')).length;
             
             andamentoEl.textContent = pedidosEmAndamento;
@@ -85,6 +86,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Carrega os dados ao entrar na página
+    // Chama a função para inicializar o modal de novo pedido
+    if (typeof inicializarModalNovoPedido === 'function') {
+        inicializarModalNovoPedido();
+    }
+
+    // Carrega os dados do dashboard ao entrar na página
     loadDashboardData();
 });
