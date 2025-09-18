@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
         }
 
         const resetToken = randomBytes(32).toString('hex');
-        const resetTokenExpires = new Date(Date.now() + 3600000).toISOString();
+        const resetTokenExpires = new Date(Date.now() + 172800000).toISOString();
 
         await axios.post(`${BITRIX24_API_URL}crm.contact.update.json`, {
             id: user.ID,
