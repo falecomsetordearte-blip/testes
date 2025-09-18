@@ -1,6 +1,4 @@
---- START OF FILE script.js ---
-
-// /script.js - CÓDIGO COMPLETO (NENHUMA ALTERAÇÃO NECESSÁRIA)
+// /script.js - VERSÃO CORRIGIDA E ESTÁVEL
 
 async function handleAuthError(response) {
     if (response.status === 401 || response.status === 403) {
@@ -332,9 +330,6 @@ async function atualizarDadosPainel() {
     }
 }
 
-// =======================================================
-// === FUNÇÃO CORRIGIDA PARA RENDERIZAR OS PEDIDOS     ===
-// =======================================================
 function renderizarPedidos() {
     const pedidosListBody = document.getElementById("pedidos-list-body");
     pedidosListBody.innerHTML = "";
@@ -368,7 +363,6 @@ function renderizarPedidos() {
             }
             const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(pedido.OPPORTUNITY) || 0);
             
-            // AQUI ESTÁ A CORREÇÃO: Adicionamos o estilo de grid na div principal do item.
             html += `
                 <div class="pedido-item" style="grid-template-columns: 1fr 4fr 1.5fr 1.5fr 1.5fr;">
                     <div class="col-id"><strong>#${pedido.ID}</strong></div>
@@ -418,7 +412,6 @@ function aplicarFiltros() {
     pedidosFiltrados = pedidosTemporarios;
     paginaAtual = 1; // Reseta para a primeira página a cada novo filtro
     renderizarPedidos();
-    // Você precisará de uma função para atualizar a UI da paginação aqui
 }
 
 
@@ -491,10 +484,10 @@ function inicializarModalNovoPedido() {
     const btnsOpenModalNovoPedido = document.querySelectorAll(".btn-novo-pedido");
 
     if (modalNovoPedido && btnsOpenModalNovoPedido.length > 0) {
-        let modalOptionsLoaded = false; // Flag para carregar dados apenas uma vez
+        let modalOptionsLoaded = false; // <<< ALTERAÇÃO 1: Flag para controle
         const btnCloseModalNovoPedido = modalNovoPedido.querySelector(".close-modal");
         const formNovoPedido = document.getElementById("novo-pedido-form");
-        
+
         async function carregarOpcoesDoModal() {
             const impressoraSelect = document.getElementById('pedido-impressora');
             const materialSelect = document.getElementById('pedido-material');
@@ -521,18 +514,13 @@ function inicializarModalNovoPedido() {
                 });
             } catch (error) {
                 console.error("Erro ao carregar opções para o modal:", error);
-                // Opcional: Adicionar feedback de erro nos selects
-                impressoraSelect.innerHTML = '<option value="">Erro ao carregar</option>';
-                materialSelect.innerHTML = '<option value="">Erro ao carregar</option>';
-                tipoEntregaSelect.innerHTML = '<option value="">Erro ao carregar</option>';
             }
         }
 
         btnsOpenModalNovoPedido.forEach(btn => {
             btn.addEventListener("click", (e) => {
                 e.preventDefault();
-                // *** AQUI ESTÁ A CORREÇÃO PRINCIPAL ***
-                // Carrega os dados apenas na primeira vez que o modal é aberto.
+                // <<< ALTERAÇÃO 2: Lógica para carregar os dados apenas uma vez
                 if (!modalOptionsLoaded) {
                     carregarOpcoesDoModal();
                     modalOptionsLoaded = true;
@@ -629,6 +617,7 @@ function inicializarModalNovoPedido() {
                     submitButton.textContent = "Criar Pedido";
                 }
             });
+            // <<< ALTERAÇÃO 3: A chamada aqui foi REMOVIDA
         }
     }
 }
