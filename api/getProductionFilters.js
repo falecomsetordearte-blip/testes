@@ -1,4 +1,5 @@
-// /api/getProductionFilters.js
+// /api/getProductionFilters.js - ARQUIVO CORRIGIDO
+
 const axios = require('axios');
 
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
@@ -21,13 +22,13 @@ module.exports = async (req, res) => {
         const tipoEntregaOptions = allFields[FIELD_TIPO_ENTREGA]?.items || [];
 
         const filters = {
-            // AQUI ESTÁ A CHAVE ORIGINAL: "impressores"
-            impressores: impressoraOptions.map(item => ({ id: item.ID, value: item.VALUE })),
+            // <<< AQUI ESTÁ A CORREÇÃO: "impressores" virou "impressoras"
+            impressoras: impressoraOptions.map(item => ({ id: item.ID, value: item.VALUE })),
             materiais: materialOptions.map(item => ({ id: item.ID, value: item.VALUE })),
             tiposEntrega: tipoEntregaOptions.map(item => ({ id: item.ID, value: item.VALUE }))
         };
         
-        console.log(`[getProductionFilters] Filtros encontrados: ${filters.impressores.length} impressores, ${filters.materiais.length} materiais.`);
+        console.log(`[getProductionFilters] Filtros encontrados: ${filters.impressoras.length} impressoras, ${filters.materiais.length} materiais.`);
         return res.status(200).json(filters);
 
     } catch (error) {

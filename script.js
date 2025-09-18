@@ -1,4 +1,4 @@
-// /script.js - CÓDIGO COMPLETO (NENHUMA ALTERAÇÃO NECESSÁRIA)
+// /script.js - VERSÃO FINAL ESTÁVEL E CORRIGIDA
 
 async function handleAuthError(response) {
     if (response.status === 401 || response.status === 403) {
@@ -301,7 +301,7 @@ let todosPedidos = [];
 let paginaAtual = 1;
 const itensPorPagina = 20;
 let pedidosFiltrados = [];
-let currentStatusFilter = 'todos'; // Adicionado para controlar o filtro de aba
+let currentStatusFilter = 'todos';
 
 async function atualizarDadosPainel() {
     const sessionToken = localStorage.getItem("sessionToken");
@@ -330,9 +330,6 @@ async function atualizarDadosPainel() {
     }
 }
 
-// =======================================================
-// === FUNÇÃO CORRIGIDA PARA RENDERIZAR OS PEDIDOS     ===
-// =======================================================
 function renderizarPedidos() {
     const pedidosListBody = document.getElementById("pedidos-list-body");
     pedidosListBody.innerHTML = "";
@@ -366,7 +363,6 @@ function renderizarPedidos() {
             }
             const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(pedido.OPPORTUNITY) || 0);
             
-            // AQUI ESTÁ A CORREÇÃO: Adicionamos o estilo de grid na div principal do item.
             html += `
                 <div class="pedido-item" style="grid-template-columns: 1fr 4fr 1.5fr 1.5fr 1.5fr;">
                     <div class="col-id"><strong>#${pedido.ID}</strong></div>
@@ -394,7 +390,6 @@ function aplicarFiltros() {
     
     let pedidosTemporarios = todosPedidos;
 
-    // 1. Filtro por Aba de Status
     if (currentStatusFilter !== 'todos') {
         pedidosTemporarios = pedidosTemporarios.filter(pedido => {
             const stageId = pedido.STAGE_ID || "";
@@ -405,7 +400,6 @@ function aplicarFiltros() {
         });
     }
 
-    // 2. Filtro por Barra de Busca
     if (searchTerm) {
         pedidosTemporarios = pedidosTemporarios.filter(p => 
             (p.TITLE || "").toLowerCase().includes(searchTerm) || 
@@ -414,9 +408,8 @@ function aplicarFiltros() {
     }
 
     pedidosFiltrados = pedidosTemporarios;
-    paginaAtual = 1; // Reseta para a primeira página a cada novo filtro
+    paginaAtual = 1;
     renderizarPedidos();
-    // Você precisará de uma função para atualizar a UI da paginação aqui
 }
 
 
@@ -486,16 +479,54 @@ function ativarDropdownsDePagamento() {
 
 function inicializarModalNovoPedido() {
     const modalNovoPedido = document.getElementById("modal-novo-pedido");
-    // Alterado para querySelectorAll para funcionar em ambas as páginas
     const btnsOpenModalNovoPedido = document.querySelectorAll(".btn-novo-pedido");
 
     if (modalNovoPedido && btnsOpenModalNovoPedido.length > 0) {
+        let modalOptionsLoaded = false;
         const btnCloseModalNovoPedido = modalNovoPedido.querySelector(".close-modal");
         const formNovoPedido = document.getElementById("novo-pedido-form");
 
+        async function carregarOpcoesDoModal() {
+            const impressoraSelect = document.getElementById('pedido-impressora');
+            const materialSelect = document.getElementById('pedido-material');
+            const tipoEntregaSelect = document.getElementById('pedido-tipo-entrega');
+            if(!impressoraSelect || !materialSelect || !tipoEntregaSelect) return;
+
+            try {
+                const response = await fetch('/api/getProductionFilters');
+                const filters = await response.json();
+                if (!response.ok) throw new Error('Falha ao carregar opções.');
+
+                // ESTA LINHA ABAIXO BUSCA PELA CHAVE CORRETA: 'impressoras'
+                const impressoraOptions = filters.impressoras || []; 
+                const materialOptions = filters.materiais || [];
+                const tipoEntregaOptions = filters.tiposEntrega || [];
+
+                impressoraSelect.innerHTML = '<option value="">Selecione a Impressora</option>';
+                materialSelect.innerHTML = '<option value="">Selecione o Material</option>';
+                tipoEntregaSelect.innerHTML = '<option value="">Selecione o Tipo de Entrega</option>';
+
+                impressoraOptions.forEach(option => {
+                    impressoraSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
+                });
+                materialOptions.forEach(option => {
+                    materialSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
+                });
+                tipoEntregaOptions.forEach(option => {
+                    tipoEntregaSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
+                });
+            } catch (error) {
+                console.error("Erro ao carregar opções para o modal:", error);
+            }
+        }
+
         btnsOpenModalNovoPedido.forEach(btn => {
-            btn.addEventListener("click", (e) => {
-                e.preventDefault(); // Previne o comportamento padrão do link <a>
+            btn.addEventListener("click", async (e) => {
+                e.preventDefault();
+                if (!modalOptionsLoaded) {
+                    await carregarOpcoesDoModal(); 
+                    modalOptionsLoaded = true;
+                }
                 modalNovoPedido.classList.add("active");
             });
         });
@@ -503,7 +534,6 @@ function inicializarModalNovoPedido() {
         btnCloseModalNovoPedido.addEventListener("click", () => modalNovoPedido.classList.remove("active"));
         
         const wppInput = document.getElementById('cliente-final-wpp');
-        // Verifica se IMask está disponível antes de usar
         if (wppInput && typeof IMask !== 'undefined') {
             IMask(wppInput, { mask: '(00) 00000-0000' });
         }
@@ -537,35 +567,6 @@ function inicializarModalNovoPedido() {
         function resetMateriaisForm() {
             if (materiaisContainer) {
                 materiaisContainer.innerHTML = `<div class="material-item"><label class="item-label">Item 1</label><div class="form-group"><label for="material-descricao-1">Descreva o Material</label><input type="text" id="material-descricao-1" class="material-descricao" required></div><div class="form-group"><label for="material-detalhes-1">Como o cliente deseja a arte?</label><textarea id="material-detalhes-1" class="material-detalhes" rows="3" required></textarea></div></div>`;
-            }
-        }
-
-        async function carregarOpcoesDoModal() {
-            const impressoraSelect = document.getElementById('pedido-impressora');
-            const materialSelect = document.getElementById('pedido-material');
-            const tipoEntregaSelect = document.getElementById('pedido-tipo-entrega');
-            if(!impressoraSelect || !materialSelect || !tipoEntregaSelect) return;
-
-            try {
-                const response = await fetch('/api/getProductionFilters');
-                const filters = await response.json();
-                if (!response.ok) throw new Error('Falha ao carregar opções.');
-
-                impressoraSelect.innerHTML = '<option value="">Selecione a Impressora</option>';
-                materialSelect.innerHTML = '<option value="">Selecione o Material</option>';
-                tipoEntregaSelect.innerHTML = '<option value="">Selecione o Tipo de Entrega</option>';
-
-                filters.impressoras.forEach(option => {
-                    impressoraSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
-                });
-                filters.materiais.forEach(option => {
-                    materialSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
-                });
-                filters.tiposEntrega.forEach(option => {
-                    tipoEntregaSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
-                });
-            } catch (error) {
-                console.error("Erro ao carregar opções para o modal:", error);
             }
         }
         
@@ -605,13 +606,11 @@ function inicializarModalNovoPedido() {
                     modalNovoPedido.classList.remove("active");
                     formNovoPedido.reset();
                     resetMateriaisForm();
-                    // Se estiver na página do painel, atualiza os dados.
                     if (typeof atualizarDadosPainel === 'function') {
                         await atualizarDadosPainel();
                     } else {
-                        // Se estiver no dashboard, talvez recarregar a página ou apenas dar um alerta.
                         alert("Pedido criado com sucesso!");
-                        window.location.reload(); // Recarrega para ver o pedido na lista de recentes.
+                        window.location.reload();
                     }
                 } catch (error) {
                     showFeedback("pedido-form-error", error.message, true);
@@ -620,17 +619,14 @@ function inicializarModalNovoPedido() {
                     submitButton.textContent = "Criar Pedido";
                 }
             });
-            carregarOpcoesDoModal();
         }
     }
 }
 
 
 function inicializarPainelDePedidos() {
-    // A lógica do modal de novo pedido agora está em sua própria função
     inicializarModalNovoPedido();
     
-    // Lógica para o modal de créditos
     const modalCreditos = document.getElementById("modal-adquirir-creditos");
     const btnOpenModalCreditos = document.querySelector(".btn-add-credito");
     if (modalCreditos && btnOpenModalCreditos) {
@@ -670,7 +666,6 @@ function inicializarPainelDePedidos() {
         });
     }
 
-    // Lógica para as abas
     const tabButtonsContainer = document.querySelector('.tab-buttons');
     if (tabButtonsContainer) {
         tabButtonsContainer.addEventListener('click', (event) => {
