@@ -518,11 +518,11 @@ function inicializarModalNovoPedido() {
         }
 
         btnsOpenModalNovoPedido.forEach(btn => {
-            btn.addEventListener("click", (e) => {
+            btn.addEventListener("click", async (e) => {
                 e.preventDefault();
                 // <<< ALTERAÇÃO 2: Lógica para carregar os dados apenas uma vez
                 if (!modalOptionsLoaded) {
-                    carregarOpcoesDoModal();
+                    await carregarOpcoesDoModal(); 
                     modalOptionsLoaded = true;
                 }
                 modalNovoPedido.classList.add("active");
