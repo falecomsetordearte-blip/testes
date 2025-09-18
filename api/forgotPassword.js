@@ -28,7 +28,8 @@ module.exports = async (req, res) => {
         }
 
         const resetToken = randomBytes(32).toString('hex');
-        const resetTokenExpires = new Date(Date.now() + 172800000).toISOString();
+        // O tempo de expiração foi alterado para 48 horas.
+        const resetTokenExpires = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 
         await axios.post(`${BITRIX24_API_URL}crm.contact.update.json`, {
             id: user.ID,
@@ -90,7 +91,7 @@ module.exports = async (req, res) => {
                         </div>
                         <p>Se você não solicitou esta alteração, pode ignorar este e-mail com segurança. Nenhuma alteração será feita na sua conta.</p>
                         <div class="info-box">
-                            Este link de redefinição de senha é válido por <strong>1 hora</strong>.
+                            Este link de redefinição de senha é válido por <strong>48 horas</strong>.
                         </div>
                     </div>
                     <div class="email-footer">
