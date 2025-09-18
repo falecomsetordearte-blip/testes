@@ -1,4 +1,4 @@
-// /script.js - VERSÃO CORRIGIDA E ESTÁVEL
+// /script.js - VERSÃO FINAL ESTÁVEL E CORRIGIDA
 
 async function handleAuthError(response) {
     if (response.status === 401 || response.status === 403) {
@@ -301,7 +301,7 @@ let todosPedidos = [];
 let paginaAtual = 1;
 const itensPorPagina = 20;
 let pedidosFiltrados = [];
-let currentStatusFilter = 'todos'; // Adicionado para controlar o filtro de aba
+let currentStatusFilter = 'todos';
 
 async function atualizarDadosPainel() {
     const sessionToken = localStorage.getItem("sessionToken");
@@ -390,7 +390,6 @@ function aplicarFiltros() {
     
     let pedidosTemporarios = todosPedidos;
 
-    // 1. Filtro por Aba de Status
     if (currentStatusFilter !== 'todos') {
         pedidosTemporarios = pedidosTemporarios.filter(pedido => {
             const stageId = pedido.STAGE_ID || "";
@@ -401,7 +400,6 @@ function aplicarFiltros() {
         });
     }
 
-    // 2. Filtro por Barra de Busca
     if (searchTerm) {
         pedidosTemporarios = pedidosTemporarios.filter(p => 
             (p.TITLE || "").toLowerCase().includes(searchTerm) || 
@@ -410,7 +408,7 @@ function aplicarFiltros() {
     }
 
     pedidosFiltrados = pedidosTemporarios;
-    paginaAtual = 1; // Reseta para a primeira página a cada novo filtro
+    paginaAtual = 1;
     renderizarPedidos();
 }
 
@@ -484,7 +482,7 @@ function inicializarModalNovoPedido() {
     const btnsOpenModalNovoPedido = document.querySelectorAll(".btn-novo-pedido");
 
     if (modalNovoPedido && btnsOpenModalNovoPedido.length > 0) {
-        let modalOptionsLoaded = false; // <<< ALTERAÇÃO 1: Flag para controle
+        let modalOptionsLoaded = false;
         const btnCloseModalNovoPedido = modalNovoPedido.querySelector(".close-modal");
         const formNovoPedido = document.getElementById("novo-pedido-form");
 
@@ -499,17 +497,22 @@ function inicializarModalNovoPedido() {
                 const filters = await response.json();
                 if (!response.ok) throw new Error('Falha ao carregar opções.');
 
+                // ESTA LINHA ABAIXO BUSCA PELA CHAVE CORRETA: 'impressoras'
+                const impressoraOptions = filters.impressoras || []; 
+                const materialOptions = filters.materiais || [];
+                const tipoEntregaOptions = filters.tiposEntrega || [];
+
                 impressoraSelect.innerHTML = '<option value="">Selecione a Impressora</option>';
                 materialSelect.innerHTML = '<option value="">Selecione o Material</option>';
                 tipoEntregaSelect.innerHTML = '<option value="">Selecione o Tipo de Entrega</option>';
 
-                filters.impressoras.forEach(option => {
+                impressoraOptions.forEach(option => {
                     impressoraSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
                 });
-                filters.materiais.forEach(option => {
+                materialOptions.forEach(option => {
                     materialSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
                 });
-                filters.tiposEntrega.forEach(option => {
+                tipoEntregaOptions.forEach(option => {
                     tipoEntregaSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
                 });
             } catch (error) {
@@ -520,7 +523,6 @@ function inicializarModalNovoPedido() {
         btnsOpenModalNovoPedido.forEach(btn => {
             btn.addEventListener("click", async (e) => {
                 e.preventDefault();
-                // <<< ALTERAÇÃO 2: Lógica para carregar os dados apenas uma vez
                 if (!modalOptionsLoaded) {
                     await carregarOpcoesDoModal(); 
                     modalOptionsLoaded = true;
@@ -617,7 +619,6 @@ function inicializarModalNovoPedido() {
                     submitButton.textContent = "Criar Pedido";
                 }
             });
-            // <<< ALTERAÇÃO 3: A chamada aqui foi REMOVIDA
         }
     }
 }
