@@ -1,3 +1,5 @@
+--- START OF FILE script.js ---
+
 // /script.js - CÓDIGO COMPLETO (NENHUMA ALTERAÇÃO NECESSÁRIA)
 
 async function handleAuthError(response) {
@@ -486,16 +488,55 @@ function ativarDropdownsDePagamento() {
 
 function inicializarModalNovoPedido() {
     const modalNovoPedido = document.getElementById("modal-novo-pedido");
-    // Alterado para querySelectorAll para funcionar em ambas as páginas
     const btnsOpenModalNovoPedido = document.querySelectorAll(".btn-novo-pedido");
 
     if (modalNovoPedido && btnsOpenModalNovoPedido.length > 0) {
+        let modalOptionsLoaded = false; // Flag para carregar dados apenas uma vez
         const btnCloseModalNovoPedido = modalNovoPedido.querySelector(".close-modal");
         const formNovoPedido = document.getElementById("novo-pedido-form");
+        
+        async function carregarOpcoesDoModal() {
+            const impressoraSelect = document.getElementById('pedido-impressora');
+            const materialSelect = document.getElementById('pedido-material');
+            const tipoEntregaSelect = document.getElementById('pedido-tipo-entrega');
+            if(!impressoraSelect || !materialSelect || !tipoEntregaSelect) return;
+
+            try {
+                const response = await fetch('/api/getProductionFilters');
+                const filters = await response.json();
+                if (!response.ok) throw new Error('Falha ao carregar opções.');
+
+                impressoraSelect.innerHTML = '<option value="">Selecione a Impressora</option>';
+                materialSelect.innerHTML = '<option value="">Selecione o Material</option>';
+                tipoEntregaSelect.innerHTML = '<option value="">Selecione o Tipo de Entrega</option>';
+
+                filters.impressoras.forEach(option => {
+                    impressoraSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
+                });
+                filters.materiais.forEach(option => {
+                    materialSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
+                });
+                filters.tiposEntrega.forEach(option => {
+                    tipoEntregaSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
+                });
+            } catch (error) {
+                console.error("Erro ao carregar opções para o modal:", error);
+                // Opcional: Adicionar feedback de erro nos selects
+                impressoraSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+                materialSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+                tipoEntregaSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+            }
+        }
 
         btnsOpenModalNovoPedido.forEach(btn => {
             btn.addEventListener("click", (e) => {
-                e.preventDefault(); // Previne o comportamento padrão do link <a>
+                e.preventDefault();
+                // *** AQUI ESTÁ A CORREÇÃO PRINCIPAL ***
+                // Carrega os dados apenas na primeira vez que o modal é aberto.
+                if (!modalOptionsLoaded) {
+                    carregarOpcoesDoModal();
+                    modalOptionsLoaded = true;
+                }
                 modalNovoPedido.classList.add("active");
             });
         });
@@ -503,7 +544,6 @@ function inicializarModalNovoPedido() {
         btnCloseModalNovoPedido.addEventListener("click", () => modalNovoPedido.classList.remove("active"));
         
         const wppInput = document.getElementById('cliente-final-wpp');
-        // Verifica se IMask está disponível antes de usar
         if (wppInput && typeof IMask !== 'undefined') {
             IMask(wppInput, { mask: '(00) 00000-0000' });
         }
@@ -537,35 +577,6 @@ function inicializarModalNovoPedido() {
         function resetMateriaisForm() {
             if (materiaisContainer) {
                 materiaisContainer.innerHTML = `<div class="material-item"><label class="item-label">Item 1</label><div class="form-group"><label for="material-descricao-1">Descreva o Material</label><input type="text" id="material-descricao-1" class="material-descricao" required></div><div class="form-group"><label for="material-detalhes-1">Como o cliente deseja a arte?</label><textarea id="material-detalhes-1" class="material-detalhes" rows="3" required></textarea></div></div>`;
-            }
-        }
-
-        async function carregarOpcoesDoModal() {
-            const impressoraSelect = document.getElementById('pedido-impressora');
-            const materialSelect = document.getElementById('pedido-material');
-            const tipoEntregaSelect = document.getElementById('pedido-tipo-entrega');
-            if(!impressoraSelect || !materialSelect || !tipoEntregaSelect) return;
-
-            try {
-                const response = await fetch('/api/getProductionFilters');
-                const filters = await response.json();
-                if (!response.ok) throw new Error('Falha ao carregar opções.');
-
-                impressoraSelect.innerHTML = '<option value="">Selecione a Impressora</option>';
-                materialSelect.innerHTML = '<option value="">Selecione o Material</option>';
-                tipoEntregaSelect.innerHTML = '<option value="">Selecione o Tipo de Entrega</option>';
-
-                filters.impressoras.forEach(option => {
-                    impressoraSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
-                });
-                filters.materiais.forEach(option => {
-                    materialSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
-                });
-                filters.tiposEntrega.forEach(option => {
-                    tipoEntregaSelect.innerHTML += `<option value="${option.id}">${option.value}</option>`;
-                });
-            } catch (error) {
-                console.error("Erro ao carregar opções para o modal:", error);
             }
         }
         
@@ -605,13 +616,11 @@ function inicializarModalNovoPedido() {
                     modalNovoPedido.classList.remove("active");
                     formNovoPedido.reset();
                     resetMateriaisForm();
-                    // Se estiver na página do painel, atualiza os dados.
                     if (typeof atualizarDadosPainel === 'function') {
                         await atualizarDadosPainel();
                     } else {
-                        // Se estiver no dashboard, talvez recarregar a página ou apenas dar um alerta.
                         alert("Pedido criado com sucesso!");
-                        window.location.reload(); // Recarrega para ver o pedido na lista de recentes.
+                        window.location.reload();
                     }
                 } catch (error) {
                     showFeedback("pedido-form-error", error.message, true);
@@ -620,17 +629,14 @@ function inicializarModalNovoPedido() {
                     submitButton.textContent = "Criar Pedido";
                 }
             });
-            carregarOpcoesDoModal();
         }
     }
 }
 
 
 function inicializarPainelDePedidos() {
-    // A lógica do modal de novo pedido agora está em sua própria função
     inicializarModalNovoPedido();
     
-    // Lógica para o modal de créditos
     const modalCreditos = document.getElementById("modal-adquirir-creditos");
     const btnOpenModalCreditos = document.querySelector(".btn-add-credito");
     if (modalCreditos && btnOpenModalCreditos) {
@@ -670,7 +676,6 @@ function inicializarPainelDePedidos() {
         });
     }
 
-    // Lógica para as abas
     const tabButtonsContainer = document.querySelector('.tab-buttons');
     if (tabButtonsContainer) {
         tabButtonsContainer.addEventListener('click', (event) => {
