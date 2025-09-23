@@ -282,25 +282,17 @@
             const medidaInfo = MEDIDAS_MAP[medidasId];
             let medidasHtml = '---';
             if (medidaInfo) { medidasHtml = `<span class="tag-medidas" style="background-color: ${medidaInfo.cor};">${medidaInfo.nome}</span>`; }
-            const linkArquivoOriginal = deal[LINK_ARQUIVO_FINAL_FIELD];
+            const temArquivoFinal = deal[LINK_ARQUIVO_FINAL_FIELD];
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
 
             let actionsHtml = '';
 
-            // Lógica para o botão de download
-            if (linkArquivoOriginal) {
-                const linkParaDownloadDireto = criarLinkDownloadGoogleDrive(linkArquivoOriginal);
-                
-                if (linkParaDownloadDireto) {
-                    // Se a conversão funcionou (é um link do Google Drive)
-                    actionsHtml += `<a href="${linkParaDownloadDireto}" download class="btn-acao-modal principal">Baixar Arquivo</a>`;
-                } else {
-                    // Fallback: se não for um link do GDrive ou der erro, mantém o comportamento antigo
-                    actionsHtml += `<a href="${linkArquivoOriginal}" target="_blank" class="btn-acao-modal principal">Baixar Arquivo</a>`;
-                }
+            // Lógica para o novo botão de download via API
+            if (temArquivoFinal) {
+                const urlDownloadProxy = `/api/impressao/downloadArquivo?dealId=${deal.ID}`;
+                actionsHtml += `<a href="${urlDownloadProxy}" class="btn-acao-modal principal">Baixar Arquivo</a>`;
             }
             
-            // A lógica para os outros botões continua a mesma
             if (linkAtendimento) { actionsHtml += `<a href="${linkAtendimento}" target="_blank" class="btn-acao-modal secundario">Ver Atendimento</a>`; }
             if (deal.TITLE) {
                 const urlVerPedido = `https://www.visiva.com.br/admin/?imprimastore=pedidos/detalhes&id=${encodeURIComponent(deal.TITLE)}`;
