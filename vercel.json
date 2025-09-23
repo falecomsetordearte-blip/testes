@@ -6,11 +6,5 @@
     { "source": "/esqueci-senha", "destination": "/esqueci-senha.html" },
     { "source": "/redefinir-senha", "destination": "/redefinir-senha.html" },
     { "source": "/verificacao", "destination": "/ajuda-verificacao.html" }
-  ],
-  "crons": [
-    {
-      "path": "/api/cron/limparDropbox",
-      "schedule": "0 5 * * *"
-    }
   ]
 }
