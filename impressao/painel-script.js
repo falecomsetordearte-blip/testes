@@ -1,6 +1,30 @@
 // /impressao/painel-script.js - VERSÃO COM FUNDO DO CARD COLORIDO E CHAT BLOQUEADO
 
 (function() {
+    // >>> INÍCIO DO CÓDIGO A SER ADICIONADO <<<
+    /**
+     * Converte uma URL de compartilhamento do Google Drive em uma URL de download direto.
+     * @param {string} shareUrl A URL de compartilhamento copiada pelo designer.
+     * @returns {string|null} A URL de download direto ou null se a URL for inválida.
+     */
+    function criarLinkDownloadGoogleDrive(shareUrl) {
+      if (!shareUrl || typeof shareUrl !== 'string') {
+        return null;
+      }
+      // Regex para extrair o ID do arquivo de diferentes formatos de URL do Google Drive
+      const regex = /drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/;
+      const match = shareUrl.match(regex);
+
+      if (match && match[1]) {
+        const fileId = match[1];
+        return `https://drive.google.com/uc?export=download&id=${fileId}`;
+      }
+      
+      // Se não for um link válido do Google Drive, retorna null
+      return null;
+    }
+    // >>> FIM DO CÓDIGO A SER ADICIONADO <<<
+
     document.addEventListener('DOMContentLoaded', () => {
 
         const sessionToken = localStorage.getItem('sessionToken');
@@ -258,11 +282,25 @@
             const medidaInfo = MEDIDAS_MAP[medidasId];
             let medidasHtml = '---';
             if (medidaInfo) { medidasHtml = `<span class="tag-medidas" style="background-color: ${medidaInfo.cor};">${medidaInfo.nome}</span>`; }
-            const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
+            const linkArquivoOriginal = deal[LINK_ARQUIVO_FINAL_FIELD];
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
 
             let actionsHtml = '';
-            if (linkArquivo) { actionsHtml += `<a href="${linkArquivo}" target="_blank" class="btn-acao-modal principal">Baixar Arquivo</a>`; }
+
+            // Lógica para o botão de download
+            if (linkArquivoOriginal) {
+                const linkParaDownloadDireto = criarLinkDownloadGoogleDrive(linkArquivoOriginal);
+                
+                if (linkParaDownloadDireto) {
+                    // Se a conversão funcionou (é um link do Google Drive)
+                    actionsHtml += `<a href="${linkParaDownloadDireto}" download class="btn-acao-modal principal">Baixar Arquivo</a>`;
+                } else {
+                    // Fallback: se não for um link do GDrive ou der erro, mantém o comportamento antigo
+                    actionsHtml += `<a href="${linkArquivoOriginal}" target="_blank" class="btn-acao-modal principal">Baixar Arquivo</a>`;
+                }
+            }
+            
+            // A lógica para os outros botões continua a mesma
             if (linkAtendimento) { actionsHtml += `<a href="${linkAtendimento}" target="_blank" class="btn-acao-modal secundario">Ver Atendimento</a>`; }
             if (deal.TITLE) {
                 const urlVerPedido = `https://www.visiva.com.br/admin/?imprimastore=pedidos/detalhes&id=${encodeURIComponent(deal.TITLE)}`;
