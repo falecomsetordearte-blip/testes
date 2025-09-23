@@ -3,25 +3,39 @@
 (function() {
     // >>> INÍCIO DO CÓDIGO A SER ADICIONADO <<<
     /**
-     * Converte uma URL de compartilhamento do Google Drive em uma URL de download direto.
-     * @param {string} shareUrl A URL de compartilhamento copiada pelo designer.
-     * @returns {string|null} A URL de download direto ou null se a URL for inválida.
-     */
-    function criarLinkDownloadGoogleDrive(shareUrl) {
-      if (!shareUrl || typeof shareUrl !== 'string') {
-        return null;
-      }
-      // Regex para extrair o ID do arquivo de diferentes formatos de URL do Google Drive
-      const regex = /drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/;
-      const match = shareUrl.match(regex);
+     * Converte URLs de serviços de nuvem (Google Drive, Dropbox) em links de download direto.
+ * @param {string} url A URL original do campo do Bitrix24.
+ * @returns {{link: string, targetBlank: boolean}} Um objeto com o link convertido e se deve abrir em nova aba.
+ */
+function criarLinkDownloadDireto(url) {
+    if (!url || typeof url !== 'string') {
+        return { link: url, targetBlank: true };
+    }
 
-      if (match && match[1]) {
-        const fileId = match[1];
-        return `https://drive.google.com/uc?export=download&id=${fileId}`;
-      }
-      
-      // Se não for um link válido do Google Drive, retorna null
-      return null;
+    // --- Lógica para o Dropbox ---
+    if (url.includes('dropbox.com')) {
+        try {
+            const linkDropbox = new URL(url);
+            linkDropbox.searchParams.set('dl', '1'); // Força o download
+            return { link: linkDropbox.href, targetBlank: false }; // Dropbox não precisa de nova aba
+        } catch (e) {
+             return { link: url, targetBlank: true }; // Fallback se a URL for mal formada
+        }
+    }
+
+    // --- Lógica para o Google Drive (mantém compatibilidade) ---
+    const googleRegex = /drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/;
+    const googleMatch = url.match(googleRegex);
+    if (googleMatch && googleMatch[1]) {
+        const fileId = googleMatch[1];
+        return {
+            link: `https://drive.google.com/uc?export=download&id=${fileId}`,
+            targetBlank: true // Google Drive precisa de nova aba
+        };
+    }
+    
+    // --- Fallback para qualquer outra URL ---
+    return { link: url, targetBlank: true };
     }
     // >>> FIM DO CÓDIGO A SER ADICIONADO <<<
 
@@ -282,17 +296,19 @@
             const medidaInfo = MEDIDAS_MAP[medidasId];
             let medidasHtml = '---';
             if (medidaInfo) { medidasHtml = `<span class="tag-medidas" style="background-color: ${medidaInfo.cor};">${medidaInfo.nome}</span>`; }
-            const temArquivoFinal = deal[LINK_ARQUIVO_FINAL_FIELD];
+            const linkArquivoOriginal = deal[LINK_ARQUIVO_FINAL_FIELD];
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
 
             let actionsHtml = '';
 
-            // Lógica para o novo botão de download via API
-            if (temArquivoFinal) {
-                const urlDownloadProxy = `/api/impressao/downloadArquivo?dealId=${deal.ID}`;
-                actionsHtml += `<a href="${urlDownloadProxy}" class="btn-acao-modal principal">Baixar Arquivo</a>`;
+            // Lógica unificada para o botão de download com Dropbox e Google Drive
+            if (linkArquivoOriginal) {
+                const downloadInfo = criarLinkDownloadDireto(linkArquivoOriginal);
+                const targetAttribute = downloadInfo.targetBlank ? 'target="_blank"' : '';
+                actionsHtml += `<a href="${downloadInfo.link}" ${targetAttribute} class="btn-acao-modal principal">Baixar Arquivo</a>`;
             }
             
+            // A lógica para os outros botões continua a mesma
             if (linkAtendimento) { actionsHtml += `<a href="${linkAtendimento}" target="_blank" class="btn-acao-modal secundario">Ver Atendimento</a>`; }
             if (deal.TITLE) {
                 const urlVerPedido = `https://www.visiva.com.br/admin/?imprimastore=pedidos/detalhes&id=${encodeURIComponent(deal.TITLE)}`;
