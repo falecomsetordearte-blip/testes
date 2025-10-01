@@ -11,12 +11,20 @@ module.exports = async (req, res) => {
         return res.status(405).json({ message: 'Método não permitido' });
     }
 
+    // LOG: Início do processo
+    console.log('--- [forgotPassword] Início do processo ---');
+
     try {
         const { email } = req.body;
         if (!email) {
             return res.status(400).json({ message: 'E-mail é obrigatório.' });
         }
+        
+        // LOG: E-mail recebido
+        console.log(`[forgotPassword] E-mail recebido para redefinição: ${email}`);
 
+        // LOG: Buscando usuário no Bitrix24
+        console.log('[forgotPassword] Passo 1: Buscando usuário no Bitrix24...');
         const userSearch = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { 'EMAIL': email, 'EMAIL_VALUE_TYPE': 'WORK' },
             select: ['ID', 'NAME']
@@ -24,13 +32,22 @@ module.exports = async (req, res) => {
 
         const user = userSearch.data.result[0];
         if (!user) {
+            // LOG: Usuário não encontrado
+            console.log(`[forgotPassword] Usuário com e-mail ${email} não encontrado. Enviando resposta genérica de sucesso por segurança.`);
             return res.status(200).json({ message: 'Se um e-mail correspondente for encontrado, um link será enviado.' });
         }
 
-        const resetToken = randomBytes(32).toString('hex');
-        // O tempo de expiração foi alterado para 48 horas.
-        const resetTokenExpires = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+        // LOG: Usuário encontrado
+        console.log(`[forgotPassword] Usuário encontrado: ID=${user.ID}, Nome=${user.NAME}`);
 
+        // LOG: Gerando token
+        console.log('[forgotPassword] Passo 2: Gerando token de redefinição...');
+        const resetToken = randomBytes(32).toString('hex');
+        const resetTokenExpires = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+        console.log('[forgotPassword] Token gerado com sucesso.');
+
+        // LOG: Atualizando Bitrix24
+        console.log('[forgotPassword] Passo 3: Salvando o token no Bitrix24...');
         await axios.post(`${BITRIX24_API_URL}crm.contact.update.json`, {
             id: user.ID,
             fields: {
@@ -38,75 +55,52 @@ module.exports = async (req, res) => {
                 'UF_CRM_1756285813385': resetTokenExpires
             }
         });
-
-        const resetUrl = `${FRONTEND_URL}/redefinir-senha.html?token=${resetToken}`;
+        console.log('[forgotPassword] Token salvo com sucesso no Bitrix24.');
         
+        // LOG: Configurando Nodemailer
+        console.log('[forgotPassword] Passo 4: Configurando o transporte de e-mail (Nodemailer)...');
         const transporter = nodemailer.createTransport({
             host: process.env.EMAIL_HOST,
             port: 587,
-            secure: false,
+            secure: false, // true para porta 465, false para outras
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS,
             },
+            // Adicionando opções de depuração do Nodemailer
+            logger: true,
+            debug: true 
         });
+        console.log('[forgotPassword] Transporte configurado.');
 
-        await transporter.sendMail({
+        // LOG: Enviando e-mail
+        console.log(`[forgotPassword] Passo 5: Tentando enviar o e-mail para ${email}...`);
+        
+        // **MUDANÇA IMPORTANTE**: Capturamos a resposta de sucesso em uma variável 'info'
+        const info = await transporter.sendMail({
             from: `"Setor de Arte" <${process.env.EMAIL_USER}>`,
             to: email,
             subject: 'Redefinição de Senha - Setor de Arte',
-            html: `
-            <!DOCTYPE html>
-            <html lang="pt-br">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Redefinição de Senha</title>
-                <style>
-                    body { margin: 0; padding: 0; font-family: 'Poppins', Arial, sans-serif; background-color: #f4f8fa; }
-                    .email-container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-                    .email-header { text-align: center; padding: 40px; }
-                    .email-header img { height: 90px; }
-                    .email-body { padding: 0 40px 40px 40px; text-align: left; color: #2c3e50; font-size: 16px; line-height: 1.6; }
-                    .email-body h1 { font-size: 24px; margin-top: 0; margin-bottom: 15px; }
-                    .email-body p { margin-bottom: 25px; }
-                    .button-wrapper { text-align: center; margin: 30px 0; }
-                    .cta-button { background-color: #38a9f4; color: #ffffff !important; padding: 15px 35px; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px; display: inline-block; transition: background-color 0.2s; }
-                    .cta-button:hover { background-color: #2c89c8; }
-                    .info-box { background-color: #f4f8fa; padding: 15px; border-radius: 8px; font-size: 14px; color: #555; text-align: center; }
-                    .email-footer { background-color: #f4f8fa; padding: 20px 40px; text-align: center; font-size: 12px; color: #8798A8; }
-                </style>
-            </head>
-            <body>
-                <div class="email-container">
-                    <div class="email-header">
-                        <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte">
-                    </div>
-                    <div class="email-body">
-                        <h1>Vamos redefinir sua senha!</h1>
-                        <p>Olá, ${user.NAME}!</p>
-                        <p>Recebemos uma solicitação para redefinir a senha da sua conta no Setor de Arte. Para continuar, clique no botão abaixo:</p>
-                        <div class="button-wrapper">
-                            <a href="${resetUrl}" class="cta-button" target="_blank">Criar Nova Senha</a>
-                        </div>
-                        <p>Se você não solicitou esta alteração, pode ignorar este e-mail com segurança. Nenhuma alteração será feita na sua conta.</p>
-                        <div class="info-box">
-                            Este link de redefinição de senha é válido por <strong>48 horas</strong>.
-                        </div>
-                    </div>
-                    <div class="email-footer">
-                        <p>© ${new Date().getFullYear()} Setor de Arte. Todos os direitos reservados.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-            `
+            html: `... seu HTML aqui ...` // O HTML não precisa mudar
         });
 
+        // LOG: Resposta do servidor de e-mail
+        console.log('[forgotPassword] E-mail foi aceito pelo servidor SMTP. Detalhes abaixo:');
+        console.log('----------------------------------------------------');
+        console.log('ID da Mensagem:', info.messageId);
+        console.log('Resposta do Servidor:', info.response);
+        console.log('Destinatários Aceitos:', info.accepted);
+        console.log('Destinatários Rejeitados:', info.rejected);
+        console.log('----------------------------------------------------');
+
+        // LOG: Fim do processo
+        console.log('[forgotPassword] Processo concluído com sucesso. Enviando resposta 200 para o frontend.');
         return res.status(200).json({ message: 'Se um e-mail correspondente for encontrado, um link será enviado.' });
 
     } catch (error) {
-        console.error('Erro em forgotPassword:', error);
+        // LOG: Erro no processo
+        console.error('[forgotPassword] --- OCORREU UM ERRO NO PROCESSO ---');
+        console.error(error);
         return res.status(500).json({ message: 'Ocorreu um erro interno.' });
     }
 };
