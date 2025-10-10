@@ -11,14 +11,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "stream-chat": "^9.19.1",
+    "@prisma/client": "^5.15.1",
+    "@vercel/postgres": "^0.10.0",
     "axios": "^1.7.2",
     "bcryptjs": "^2.4.3",
-    "nodemailer": "^6.9.14",
-    "uuid": "^10.0.0",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.9.14",
     "prisma": "^5.15.1",
-    "@prisma/client": "^5.15.1"
+    "stream-chat": "^9.19.1",
+    "uuid": "^10.0.0"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
