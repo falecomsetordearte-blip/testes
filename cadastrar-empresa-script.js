@@ -1,52 +1,50 @@
-// testes/cadastrar-empresa-script.js
-
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('form-cadastro-empresa');
-    const mensagemElement = document.getElementById('mensagem');
+    const mensagemDiv = document.getElementById('mensagem');
+    const btnCadastrar = document.getElementById('btn-cadastrar');
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault(); // Impede o recarregamento da página
 
-        // Pegar os valores dos campos do formulário
-        const cnpj = document.getElementById('cnpj').value;
-        const nomeFantasia = document.getElementById('nomeFantasia').value;
-        const logo = document.getElementById('logo').value;
-        const whatsapp = document.getElementById('whatsapp').value;
-        
-        // Limpar mensagens anteriores
-        mensagemElement.textContent = 'Enviando...';
-        mensagemElement.style.color = 'black';
+        // Desabilita o botão para evitar cliques duplos
+        btnCadastrar.disabled = true;
+        btnCadastrar.textContent = 'Cadastrando...';
+        mensagemDiv.style.display = 'none';
+
+        // Coleta os dados do formulário
+        const formData = new FormData(form);
+        const dados = Object.fromEntries(formData.entries());
 
         try {
-            const response = await fetch('/api/empresas/create', {
+            const response = await fetch('/api/empresas/cadastrar', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    cnpj,
-                    nomeFantasia,
-                    logo,
-                    whatsapp,
-                }),
+                body: JSON.stringify(dados),
             });
 
-            const data = await response.json();
+            const resultado = await response.json();
 
             if (!response.ok) {
-                // Se a resposta da API não for de sucesso, lança um erro
-                throw new Error(data.message || 'Ocorreu um erro desconhecido.');
+                // Se a resposta não for de sucesso (ex: erro 409, 500)
+                throw new Error(resultado.message || 'Ocorreu um erro.');
             }
 
             // Se tudo deu certo
-            mensagemElement.textContent = `Empresa "${data.empresa.nome_fantasia}" cadastrada com sucesso!`;
-            mensagemElement.style.color = 'green';
-            form.reset(); // Limpa os campos do formulário
+            mensagemDiv.textContent = `Empresa "${resultado.nome_fantasia}" cadastrada com sucesso!`;
+            mensagemDiv.className = 'sucesso';
+            form.reset(); // Limpa o formulário
 
         } catch (error) {
-            // Se ocorreu um erro na requisição ou na API
-            mensagemElement.textContent = `Erro: ${error.message}`;
-            mensagemElement.style.color = 'red';
+            // Se ocorreu um erro na chamada da API
+            mensagemDiv.textContent = error.message;
+            mensagemDiv.className = 'erro';
+        } finally {
+            // Reabilita o botão e exibe a mensagem
+            btnCadastrar.disabled = false;
+            btnCadastrar.textContent = 'Cadastrar';
+            mensagemDiv.style.display = 'block';
         }
     });
 });
