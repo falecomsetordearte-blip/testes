@@ -1,10 +1,15 @@
 {
-  "rewrites": [
-    { "source": "/cadastro", "destination": "/cadastro.html" },
-    { "source": "/login", "destination": "/login.html" },
-    { "source": "/painel", "destination": "/painel.html" },
-    { "source": "/esqueci-senha", "destination": "/esqueci-senha.html" },
-    { "source": "/redefinir-senha", "destination": "/redefinir-senha.html" },
-    { "source": "/verificacao", "destination": "/ajuda-verificacao.html" }
+  "version": 2,
+  "builds": [
+    {
+      "src": "index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "index.js"
+    }
   ]
 }
