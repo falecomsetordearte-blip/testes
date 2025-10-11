@@ -17,12 +17,12 @@ export default async function handler(req, res) {
     }
 
     // Usar o Prisma para criar a nova empresa no banco de dados
-    const novaEmpresa = await prisma.empresas.create({
+    const novaEmpresa = await prisma.empresa.create({ // <-- CORREÇÃO AQUI
       data: {
         cnpj,
         nome_fantasia,
-        logo,       // O Prisma ignora se for nulo ou undefined
-        whatsapp,   // O Prisma ignora se for nulo ou undefined
+        logo: logo ? logo.toString() : null, // Garante que o número seja salvo como texto
+        whatsapp,
       },
     });
 
