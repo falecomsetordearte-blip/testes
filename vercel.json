@@ -1,21 +1,11 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/index.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "api/index.js"
-    },
-    { "src": "/cadastro", "destination": "/cadastro.html" },
-    { "src": "/login", "destination": "/login.html" },
-    { "src": "/painel", "destination": "/painel.html" },
-    { "src": "/esqueci-senha", "destination": "/esqueci-senha.html" },
-    { "src": "/redefinir-senha", "destination": "/redefinir-senha.html" },
-    { "src": "/verificacao", "destination": "/ajuda-verificacao.html" }
+  "rewrites": [
+    { "source": "/cadastro", "destination": "/cadastro.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/painel", "destination": "/dashboard.html" },
+    { "source": "/esqueci-senha", "destination": "/esqueci-senha.html" },
+    { "source": "/redefinir-senha", "destination": "/redefinir-senha.html" },
+    { "source": "/verificacao", "destination": "/ajuda-verificacao.html" },
+    { "source": "/", "destination": "/index.html" }
   ]
 }
