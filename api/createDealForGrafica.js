@@ -1,3 +1,5 @@
+// /api/createDealForGrafica.js - VERSÃO COMPLETA E CORRIGIDA
+
 // Usando require para todos os módulos para consistência
 const { PrismaClient } = require('@prisma/client');
 const axios = require('axios');
@@ -5,7 +7,7 @@ const axios = require('axios');
 const prisma = new PrismaClient();
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
-// Mapeamento dos campos customizados (incluindo os novos)
+// Mapeamento dos campos customizados
 const FIELD_BRIEFING_COMPLETO = 'UF_CRM_1738249371';
 const FIELD_NOME_CLIENTE = 'UF_CRM_1741273407628';
 const FIELD_WHATSAPP_CLIENTE = 'UF_CRM_1749481565243';
@@ -28,9 +30,16 @@ module.exports = async (req, res) => {
             return res.status(400).json({ message: 'O WhatsApp da Gráfica é obrigatório.' });
         }
 
+        // --- INÍCIO DA CORREÇÃO ---
+        // Limpa a máscara do WhatsApp, deixando apenas os números
+        const wppLimpo = graficaWpp.replace(/\D/g, '');
+        // --- FIM DA CORREÇÃO ---
+
+        // Buscar a empresa no banco de dados usando o WhatsApp limpo
+        console.log(`Buscando empresa com WhatsApp limpo: ${wppLimpo}`);
         const empresa = await prisma.empresa.findFirst({
             where: {
-                whatsapp: graficaWpp,
+                whatsapp: wppLimpo, // Usando o número limpo para a busca
             },
         });
 
@@ -42,6 +51,7 @@ module.exports = async (req, res) => {
         const logoId = empresa.logo;
         console.log(`Empresa encontrada: ${empresa.nome_fantasia}, ID do Logo: ${logoId}`);
 
+        // Lógica para encontrar o usuário/contato no Bitrix24
         const searchUserResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken },
             select: ['ID', 'NAME', 'COMPANY_ID']
@@ -55,6 +65,7 @@ module.exports = async (req, res) => {
             return res.status(400).json({ message: 'Usuário não associado a uma empresa.' });
         }
 
+        // Montar o objeto do Deal com os campos adicionais
         const opportunityValue = parseFloat(formData.valorDesigner) * 0.9;
         const dealFields = {
             'TITLE': formData.titulo,
@@ -66,10 +77,11 @@ module.exports = async (req, res) => {
             [FIELD_BRIEFING_COMPLETO]: formData.briefingFormatado,
             [FIELD_NOME_CLIENTE]: formData.nomeCliente,
             [FIELD_WHATSAPP_CLIENTE]: formData.wppCliente,
-            [FIELD_WHATSAPP_GRAFICA]: graficaWpp,
+            [FIELD_WHATSAPP_GRAFICA]: graficaWpp, // Enviamos o WhatsApp com máscara para o Bitrix
             [FIELD_LOGO_ID]: logoId,
         };
 
+        // Enviar requisição para criar o negócio no Bitrix24
         const createDealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.add.json`, {
             fields: dealFields
         });
@@ -79,6 +91,7 @@ module.exports = async (req, res) => {
             throw new Error('Falha ao criar o negócio no Bitrix24.');
         }
 
+        // Retornar sucesso
         return res.status(200).json({ success: true, dealId: newDealId });
 
     } catch (error) {
