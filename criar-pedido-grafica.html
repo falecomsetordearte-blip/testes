@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Pedido para Gráfica - Setor de Arte</title>
+    <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
+    <link rel="stylesheet" href="/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="app-layout-grid">
+        <div id="sidebar-placeholder"></div>
+        <div class="app-content-wrapper">
+            <div id="header-placeholder"></div>
+
+            <main class="app-content">
+                <div class="container">
+                    
+                    <form id="novo-pedido-form" style="max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.06);">
+                        <h2 style="margin-top:0;">Criar Pedido para Gráfica</h2>
+                        <div id="pedido-form-feedback" class="form-feedback hidden"></div>
+
+                        <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                            <div class="form-group">
+                                <label for="pedido-titulo">Título do Pedido</label>
+                                <input type="text" id="pedido-titulo" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="valor-designer">Valor para o Designer (R$)</label>
+                                <input type="number" id="valor-designer" min="35" step="5" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                             <div class="form-group">
+                                <label for="grafica-wpp">WhatsApp da Gráfica</label>
+                                <input type="tel" id="grafica-wpp" required placeholder="(00) 00000-0000">
+                            </div>
+                            <div class="form-group">
+                                <label for="cliente-final-nome">Nome do Cliente Final</label>
+                                <input type="text" id="cliente-final-nome" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="cliente-final-wpp">WhatsApp do Cliente Final</label>
+                                <input type="tel" id="cliente-final-wpp" required placeholder="(00) 00000-0000">
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="materiais-header">Materiais do Pedido</h4>
+                            <div id="materiais-container">
+                                <div class="material-item">
+                                    <label class="item-label">Item 1</label>
+                                    <div class="form-group">
+                                        <label for="material-descricao-1">Descreva o Material</label>
+                                        <input type="text" id="material-descricao-1" class="material-descricao" placeholder="Ex. Banner 60x100 3 unidades" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="material-detalhes-1">Como o cliente deseja a arte?</label>
+                                        <textarea id="material-detalhes-1" class="material-detalhes" rows="3" required></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" id="btn-add-material" class="btn btn-light btn-add-material">+ Adicionar Material</button>
+                        </div>
+                        
+                        <div class="form-group" style="margin-top: 25px;">
+                            <label for="pedido-formato">Formato Desejado</label>
+                            <input type="text" id="pedido-formato" placeholder="Ex: PDF, CDR, AI" required>
+                        </div>
+                        
+                        <div style="margin-top: 20px;">
+                            <button type="submit" class="btn btn-primary btn-lg w-100">Criar Pedido</button>
+                        </div>
+                    </form>
+
+                </div>
+            </main>
+            <div id="footer-placeholder"></div>
+        </div>
+    </div>
+
+    <script src="/layout.js"></script>
+    <script src="https://unpkg.com/imask"></script>
+    <script src="criar-pedido-grafica-script.js"></script>
+
+</body>
+</html>

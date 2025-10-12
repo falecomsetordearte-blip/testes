@@ -2,9 +2,10 @@
   "rewrites": [
     { "source": "/cadastro", "destination": "/cadastro.html" },
     { "source": "/login", "destination": "/login.html" },
-    { "source": "/painel", "destination": "/painel.html" },
+    { "source": "/painel", "destination": "/dashboard.html" },
     { "source": "/esqueci-senha", "destination": "/esqueci-senha.html" },
     { "source": "/redefinir-senha", "destination": "/redefinir-senha.html" },
-    { "source": "/verificacao", "destination": "/ajuda-verificacao.html" }
+    { "source": "/verificacao", "destination": "/ajuda-verificacao.html" },
+    { "source": "/", "destination": "/index.html" }
   ]
 }
