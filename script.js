@@ -83,7 +83,7 @@ function hideFeedback(containerId) {
 
 document.addEventListener("DOMContentLoaded", () => {
     const path = window.location.pathname;
-    const isAuthPage = ['/login.html', '/esqueci-senha.html', '/redefinir-senha.html', '/cadastro.html', '/verificacao.html'].some(p => path.endsWith(p));
+    const isAuthPage = ['/', '/index.html', '/login.html', '/esqueci-senha.html', '/redefinir-senha.html', '/cadastro.html', '/verificacao.html'].some(p => path.endsWith(p));
 
     if (isAuthPage) {
         initializeAuthPages();
@@ -95,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function initializeAuthPages() {
     const path = window.location.pathname;
 
-    if (path.endsWith('/login.html')) {
+    if (path.endsWith('/login.html') || path.endsWith('/index.html') || path === '/') {
         const loginForm = document.getElementById('login-form');
         if (loginForm) {
             loginForm.addEventListener('submit', async (event) => {
