@@ -1,0 +1,45 @@
+<!-- testes/cadastrar-empresa.html -->
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Empresas</title>
+    <!-- Você pode adicionar seu arquivo de CSS aqui se quiser -->
+</head>
+<body>
+
+    <h1>Cadastrar Nova Empresa</h1>
+    
+    <form id="form-cadastro-empresa">
+        <div>
+            <label for="cnpj">CNPJ:</label>
+            <input id="cnpj" type="text" required>
+        </div>
+        <br>
+        <div>
+            <label for="nomeFantasia">Nome Fantasia:</label>
+            <input id="nomeFantasia" type="text" required>
+        </div>
+        <br>
+        <div>
+            <label for="logo">URL do Logo:</label>
+            <input id="logo" type="text">
+        </div>
+        <br>
+        <div>
+            <label for="whatsapp">WhatsApp:</label>
+            <input id="whatsapp" type="text">
+        </div>
+        <br>
+        <button type="submit">Cadastrar</button>
+    </form>
+
+    <p id="mensagem"></p> <!-- Elemento para exibir mensagens de sucesso ou erro -->
+
+    <!-- Importando o script que vai cuidar da lógica do formulário -->
+    <script src="cadastrar-empresa-script.js"></script>
+
+</body>
+</html>
