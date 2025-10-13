@@ -83,7 +83,7 @@ function hideFeedback(containerId) {
 
 document.addEventListener("DOMContentLoaded", () => {
     const path = window.location.pathname;
-    const isAuthPage = ['/login.html', '/esqueci-senha.html', '/redefinir-senha.html', '/cadastro.html', '/verificacao.html'].some(p => path.endsWith(p));
+    const isAuthPage = ['/', '/index.html', '/login.html', '/esqueci-senha.html', '/redefinir-senha.html', '/cadastro.html', '/verificacao.html'].some(p => path.endsWith(p));
 
     if (isAuthPage) {
         initializeAuthPages();
@@ -95,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function initializeAuthPages() {
     const path = window.location.pathname;
 
-    if (path.endsWith('/login.html')) {
+    if (path.endsWith('/login.html') || path.endsWith('/index.html') || path === '/') {
         const loginForm = document.getElementById('login-form');
         if (loginForm) {
             loginForm.addEventListener('submit', async (event) => {
@@ -497,7 +497,6 @@ function inicializarModalNovoPedido() {
                 const filters = await response.json();
                 if (!response.ok) throw new Error('Falha ao carregar opções.');
 
-                // ESTA LINHA ABAIXO BUSCA PELA CHAVE CORRETA: 'impressoras'
                 const impressoraOptions = filters.impressoras || []; 
                 const materialOptions = filters.materiais || [];
                 const tipoEntregaOptions = filters.tiposEntrega || [];
@@ -623,8 +622,78 @@ function inicializarModalNovoPedido() {
     }
 }
 
+// *** NOVA FUNÇÃO ADICIONADA ***
+// Injeta os estilos CSS necessários para o dropdown de pagamento funcionar.
+function injectDropdownStyles() {
+    // Verifica se os estilos já foram injetados para não duplicar
+    if (document.getElementById('dropdown-styles')) return;
+
+    const styles = document.createElement('style');
+    styles.id = 'dropdown-styles';
+    styles.textContent = `
+        .dropdown-pagamento {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-pagamento .dropdown-content {
+            display: none; /* Oculta o conteúdo por padrão */
+            position: absolute;
+            background-color: #ffffff;
+            min-width: 130px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.15);
+            z-index: 100;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            overflow: hidden;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-top: 5px;
+        }
+        .dropdown-pagamento.active .dropdown-content {
+            display: block; /* Exibe o dropdown quando o container tem a classe 'active' */
+        }
+        .dropdown-pagamento .dropdown-content button {
+            color: #333;
+            padding: 10px 15px;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            text-align: center;
+            background-color: transparent;
+            border: none;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .dropdown-pagamento .dropdown-content button:last-child {
+            border-bottom: none;
+        }
+        .dropdown-pagamento .dropdown-content button:hover {
+            background-color: #f7f7f7;
+        }
+        .btn-pagar {
+            position: relative;
+            padding-right: 25px !important; /* Adiciona espaço para a seta */
+        }
+        .btn-pagar::after {
+            content: '▼';
+            font-size: 0.6em;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: inherit;
+        }
+    `;
+    document.head.appendChild(styles);
+}
 
 function inicializarPainelDePedidos() {
+    // *** CHAMADA DA NOVA FUNÇÃO ***
+    // Garante que os estilos do dropdown estejam prontos antes de qualquer coisa.
+    injectDropdownStyles();
+
     inicializarModalNovoPedido();
     
     const modalCreditos = document.getElementById("modal-adquirir-creditos");
