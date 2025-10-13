@@ -1,20 +1,18 @@
-// /api/createDealForGrafica.js - VERSÃO COMPLETA E CORRIGIDA
+// /api/createDealForGrafica.js - VERSÃO COM ATUALIZAÇÃO DE SALDO DEVEDOR USANDO PRISMA
 
-// Usando require para todos os módulos para consistência
 const { PrismaClient } = require('@prisma/client');
 const axios = require('axios');
 
 const prisma = new PrismaClient();
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
-// Mapeamento dos campos customizados
+// Mapeamento dos campos customizados (sem alterações)
 const FIELD_BRIEFING_COMPLETO = 'UF_CRM_1738249371';
 const FIELD_NOME_CLIENTE = 'UF_CRM_1741273407628';
 const FIELD_WHATSAPP_CLIENTE = 'UF_CRM_1749481565243';
 const FIELD_WHATSAPP_GRAFICA = 'UF_CRM_1760171265';
 const FIELD_LOGO_ID = 'UF_CRM_1760171060';
 
-// A Vercel espera uma função exportada via module.exports
 module.exports = async (req, res) => {
     console.log("--- INICIANDO FUNÇÃO /api/createDealForGrafica ---");
 
@@ -30,17 +28,12 @@ module.exports = async (req, res) => {
             return res.status(400).json({ message: 'O WhatsApp da Gráfica é obrigatório.' });
         }
 
-        // --- INÍCIO DA CORREÇÃO ---
-        // Limpa a máscara do WhatsApp, deixando apenas os números
         const wppLimpo = graficaWpp.replace(/\D/g, '');
-        // --- FIM DA CORREÇÃO ---
 
-        // Buscar a empresa no banco de dados usando o WhatsApp limpo
+        // Buscar a empresa no banco de dados
         console.log(`Buscando empresa com WhatsApp limpo: ${wppLimpo}`);
         const empresa = await prisma.empresa.findFirst({
-            where: {
-                whatsapp: wppLimpo, // Usando o número limpo para a busca
-            },
+            where: { whatsapp: wppLimpo },
         });
 
         if (!empresa) {
@@ -49,24 +42,43 @@ module.exports = async (req, res) => {
         }
 
         const logoId = empresa.logo;
-        console.log(`Empresa encontrada: ${empresa.nome_fantasia}, ID do Logo: ${logoId}`);
+        const opportunityValue = parseFloat(formData.valorDesigner) * 0.9;
+        console.log(`Empresa encontrada: ${empresa.nome_fantasia}. Valor do pedido: ${opportunityValue}`);
 
-        // Lógica para encontrar o usuário/contato no Bitrix24
+        // --- INÍCIO DA NOVA LÓGICA DE ATUALIZAÇÃO DE SALDO ---
+
+        console.log(`Atualizando saldo devedor para a empresa ID: ${empresa.id}`);
+        
+        // Usamos o 'update' do Prisma com a operação 'increment' para somar o valor.
+        // É a forma mais segura e eficiente de fazer isso.
+        await prisma.empresa.update({
+            where: {
+                id: empresa.id,
+            },
+            data: {
+                saldo_devedor: {
+                    increment: opportunityValue,
+                },
+            },
+        });
+        
+        console.log("Saldo devedor atualizado com sucesso no banco de dados.");
+
+        // --- FIM DA NOVA LÓGICA DE ATUALIZAÇÃO DE SALDO ---
+
+
+        // Lógica para encontrar o usuário/contato no Bitrix24 continua normalmente
         const searchUserResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken },
             select: ['ID', 'NAME', 'COMPANY_ID']
         });
 
         const user = searchUserResponse.data.result[0];
-        if (!user) {
-            return res.status(401).json({ message: 'Sessão inválida.' });
-        }
-        if (!user.COMPANY_ID) {
-            return res.status(400).json({ message: 'Usuário não associado a uma empresa.' });
+        if (!user || !user.COMPANY_ID) {
+            return res.status(400).json({ message: 'Sessão inválida ou usuário não associado a uma empresa.' });
         }
 
-        // Montar o objeto do Deal com os campos adicionais
-        const opportunityValue = parseFloat(formData.valorDesigner) * 0.9;
+        // Montar o objeto do Deal para o Bitrix24
         const dealFields = {
             'TITLE': formData.titulo,
             'OPPORTUNITY': opportunityValue.toFixed(2),
@@ -77,7 +89,7 @@ module.exports = async (req, res) => {
             [FIELD_BRIEFING_COMPLETO]: formData.briefingFormatado,
             [FIELD_NOME_CLIENTE]: formData.nomeCliente,
             [FIELD_WHATSAPP_CLIENTE]: formData.wppCliente,
-            [FIELD_WHATSAPP_GRAFICA]: graficaWpp, // Enviamos o WhatsApp com máscara para o Bitrix
+            [FIELD_WHATSAPP_GRAFICA]: graficaWpp,
             [FIELD_LOGO_ID]: logoId,
         };
 
@@ -96,17 +108,15 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error("--- OCORREU UM ERRO DURANTE A EXECUÇÃO ---");
-        // Log detalhado para depuração
         if (error.response) {
             console.error("ERRO DETALHADO DA API EXTERNA:", JSON.stringify(error.response.data, null, 2));
-        } else if (error.code) { // Erro do Prisma
+        } else if (error.code) { 
              console.error("ERRO DO PRISMA:", error.message, "CÓDIGO:", error.code);
         }
         else {
             console.error("Erro geral:", error.message);
         }
         
-        // Retorna a mensagem de erro para o frontend
         return res.status(500).json({ message: error.message || 'Ocorreu um erro interno ao criar o pedido.' });
     }
 };
