@@ -1,4 +1,3 @@
-// /api/solicitarSaqueDesigner.js
 const { PrismaClient } = require('@prisma/client');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
@@ -7,6 +6,9 @@ const { Decimal } = require('@prisma/client/runtime/library');
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET;
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
+
+// ID do campo customizado para a data de emissão
+const FIELD_DATA_EMISSAO = 'UF_CRM_1760392935167';
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
@@ -17,16 +19,18 @@ module.exports = async (req, res) => {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ message: 'Token não fornecido.' });
         
-        const { valor } = req.body;
+        const { valor, dataEmissao } = req.body; 
+        
         if (!valor || isNaN(valor) || Number(valor) <= 0) {
             return res.status(400).json({ message: 'Valor de saque inválido.' });
+        }
+        if (!dataEmissao) {
+            return res.status(400).json({ message: 'A Data de Emissão da NF é obrigatória.' });
         }
         const valorSaque = new Decimal(valor);
 
         const decoded = jwt.verify(token, JWT_SECRET);
         const designerId = parseInt(decoded.designerId, 10);
-
-        // Precisamos do nome do designer para o título do negócio
         const designerInfo = JSON.parse(req.headers['x-designer-info'] || '{}');
         const designerName = designerInfo.name || 'Designer';
 
@@ -46,17 +50,11 @@ module.exports = async (req, res) => {
             }
         }
 
-        const novoSaldo = financeiro.saldo_disponivel.minus(valorSaque);
-        
-         await prisma.designerFinanceiro.update({
+        await prisma.designerFinanceiro.update({
             where: { designer_id: designerId },
             data: {
-                saldo_disponivel: {
-                    decrement: valorSaque, // Subtrai do disponível
-                },
-                saldo_pendente: {
-                    increment: valorSaque, // Adiciona ao pendente
-                },
+                saldo_disponivel: { decrement: valorSaque },
+                saldo_pendente: { increment: valorSaque },
                 ultimo_saque_em: new Date(),
             },
         });
@@ -66,7 +64,8 @@ module.exports = async (req, res) => {
                 'TITLE': `Solicitação de Saque - ${designerName}`,
                 'OPPORTUNITY': valor,
                 'CATEGORY_ID': 31,
-                'ASSIGNED_BY_ID': designerId
+                'ASSIGNED_BY_ID': designerId,
+                'UF_CRM_1760392935167': dataEmissao, // Enviando a data para o Bitrix24
             }
         });
 

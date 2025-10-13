@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Painel do Designer - Setor de Arte</title>
     <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
-    <!-- O caminho para o style.css pode precisar de ajuste dependendo da sua estrutura de pastas -->
     <link rel="stylesheet" href="../style.css"> 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -26,7 +25,6 @@
         <main class="main-painel">
             <div class="container">
 
-                <!-- Cards de Resumo (Intocados, conforme solicitado) -->
                 <div class="dashboard-grid">
                     <div class="dash-card">
                         <div class="card-header">
@@ -34,7 +32,7 @@
                             <i class="fas fa-wallet card-icon"></i>
                         </div>
                         <div class="card-body"><span id="designer-saldo-disponivel" class="card-value">Carregando...</span></div>
-                        <div class="card-footer"><button id="btn-solicitar-saque" class="card-button">Solicitar Saque</button></div>
+                        <div class="card-footer"><a href="solicitar-saque.html" class="card-button">Solicitar Saque</a></div>
                     </div>
                     <div class="dash-card">
                         <div class="card-header">
@@ -54,14 +52,12 @@
                     </div>
                 </div>
 
-                <!-- Sistema de Abas com o padrão global -->
                 <div class="tabs-component">
                     <div class="tab-buttons">
                         <button class="tab-btn active" data-tab="atendimentos">Meus Atendimentos</button>
                         <button class="tab-btn" data-tab="saques">Histórico de Saques</button>
                     </div>
                     <div class="tab-content">
-                        <!-- Conteúdo da Aba 1: Atendimentos -->
                         <div id="atendimentos" class="tab-pane active">
                             <div class="pedidos-list-header" style="grid-template-columns: 1fr 4fr 2fr 1.5fr 1.5fr;">
                                 <div class="col-id">ID</div>
@@ -74,7 +70,6 @@
                                 <div class="loading-pedidos"><div class="spinner"></div></div>
                             </div>
                         </div>
-                        <!-- Conteúdo da Aba 2: Saques -->
                         <div id="saques" class="tab-pane">
                              <div class="pedidos-list-header" style="grid-template-columns: 1fr 4fr 2fr 1.5fr;">
                                 <div class="col-id">ID</div>

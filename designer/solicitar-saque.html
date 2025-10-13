@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Solicitar Saque - Setor de Arte</title>
+    <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
+    <link rel="stylesheet" href="../style.css"> 
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-layout">
+        <header class="app-header">
+            <div class="container header-content">
+                 <img src="https://app.setordearte.com.br/images/logo-fundo-claro-100x100.png" alt="Logo Setor de Arte" class="app-logo">
+                 <a href="painel.html" style="color: white; text-decoration: none;">Voltar ao Painel</a>
+            </div>
+        </header>
+        
+        <main class="main-painel">
+            <div class="container">
+                <div class="form-container" style="max-width: 600px; margin: 40px auto; padding: 30px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    <h1 style="text-align: center; margin-bottom: 20px;">Solicitação de Saque</h1>
+                    
+                    <div class="nf-instructions" style="background-color: #f0f4f8; padding: 15px; border-radius: 8px; margin-bottom: 25px; text-align: center;">
+                        <h3 style="margin-top: 0; color: #333;">Nota Fiscal</h3>
+                        <p style="margin-bottom: 0; line-height: 1.6;">
+                            Emita sua NF para o CNPJ <strong>50.775.322/0001-80</strong>.
+                            <br>
+                            Não é necessário enviar o arquivo, apenas emitir e preencher corretamente a data de emissão abaixo.
+                        </p>
+                    </div>
+
+                    <form id="form-solicitar-saque">
+                        <div class="form-group">
+                            <label for="valor-saque">Valor a Sacar (R$)</label>
+                            <input type="number" id="valor-saque" step="0.01" min="1" placeholder="Ex: 50.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="data-emissao">Data da Emissão da NF</label>
+                            <input type="date" id="data-emissao" required>
+                        </div>
+                        <div id="form-feedback" class="form-feedback hidden"></div>
+                        <button type="submit" class="card-button" style="width: 100%; margin-top: 10px;">Enviar Solicitação</button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="solicitar-saque-script.js"></script>
+</body>
+</html>
