@@ -1,4 +1,4 @@
-// /api/createDealForGrafica.js - VERSÃO COM ATUALIZAÇÃO DE SALDO DEVEDOR USANDO PRISMA
+// /api/createDealForGrafica.js - VERSÃO COM ATUALIZAÇÃO DE SALDO DEVEDOR (VALOR INTEGRAL)
 
 const { PrismaClient } = require('@prisma/client');
 const axios = require('axios');
@@ -42,29 +42,37 @@ module.exports = async (req, res) => {
         }
 
         const logoId = empresa.logo;
-        const opportunityValue = parseFloat(formData.valorDesigner) * 0.9;
-        console.log(`Empresa encontrada: ${empresa.nome_fantasia}. Valor do pedido: ${opportunityValue}`);
+        
+        // --- INÍCIO DA ALTERAÇÃO ---
+        const valorIntegral = parseFloat(formData.valorDesigner); // Valor cheio para o saldo devedor
+        const opportunityValue = valorIntegral * 0.9; // Valor com desconto para o Bitrix24
+        
+        // Verificação para garantir que o valor é um número válido
+        if (isNaN(valorIntegral)) {
+            return res.status(400).json({ message: 'O valor para o Designer deve ser um número válido.' });
+        }
+        
+        console.log(`Empresa encontrada: ${empresa.nome_fantasia}. Valor Integral: ${valorIntegral}. Valor Opportunity: ${opportunityValue}`);
+        // --- FIM DA ALTERAÇÃO ---
 
-        // --- INÍCIO DA NOVA LÓGICA DE ATUALIZAÇÃO DE SALDO ---
+        // --- ATUALIZAÇÃO DE SALDO COM O VALOR CORRETO ---
 
         console.log(`Atualizando saldo devedor para a empresa ID: ${empresa.id}`);
         
-        // Usamos o 'update' do Prisma com a operação 'increment' para somar o valor.
-        // É a forma mais segura e eficiente de fazer isso.
         await prisma.empresa.update({
             where: {
                 id: empresa.id,
             },
             data: {
                 saldo_devedor: {
-                    increment: opportunityValue,
+                    increment: valorIntegral, // <-- ALTERAÇÃO: Usando o valor integral aqui
                 },
             },
         });
         
         console.log("Saldo devedor atualizado com sucesso no banco de dados.");
 
-        // --- FIM DA NOVA LÓGICA DE ATUALIZAÇÃO DE SALDO ---
+        // --- FIM DA ATUALIZAÇÃO DE SALDO ---
 
 
         // Lógica para encontrar o usuário/contato no Bitrix24 continua normalmente
@@ -81,7 +89,7 @@ module.exports = async (req, res) => {
         // Montar o objeto do Deal para o Bitrix24
         const dealFields = {
             'TITLE': formData.titulo,
-            'OPPORTUNITY': opportunityValue.toFixed(2),
+            'OPPORTUNITY': opportunityValue.toFixed(2), // Continua usando o valor com desconto aqui
             'CURRENCY_ID': 'BRL',
             'COMPANY_ID': user.COMPANY_ID,
             'CATEGORY_ID': 17,
