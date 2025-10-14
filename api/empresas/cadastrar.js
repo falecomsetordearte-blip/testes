@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 export default async function handler(req, res) {
   // Apenas permitir requisições do tipo POST
