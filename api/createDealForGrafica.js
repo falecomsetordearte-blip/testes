@@ -3,7 +3,7 @@
 const { PrismaClient } = require('@prisma/client');
 const axios = require('axios');
 
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
 // Mapeamento dos campos customizados (sem alterações)
