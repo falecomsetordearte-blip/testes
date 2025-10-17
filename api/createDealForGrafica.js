@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
         
         // --- INÍCIO DA ALTERAÇÃO ---
         const valorIntegral = parseFloat(formData.valorDesigner); // Valor cheio para o saldo devedor
-        const opportunityValue = valorIntegral * 0.9; // Valor com desconto para o Bitrix24
+        const opportunityValue = valorIntegral * 0.8; // Valor com desconto para o Bitrix24
         
         // Verificação para garantir que o valor é um número válido
         if (isNaN(valorIntegral)) {
