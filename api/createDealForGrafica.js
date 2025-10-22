@@ -1,4 +1,4 @@
-// /api/createDealForGrafica.js - VERSÃO COM ATUALIZAÇÃO DE SALDO DEVEDOR (VALOR INTEGRAL)
+// /api/createDealForGrafica.js - VERSÃO CORRIGIDA E COMPLETA
 
 const { PrismaClient } = require('@prisma/client');
 const axios = require('axios');
@@ -12,7 +12,7 @@ const FIELD_NOME_CLIENTE = 'UF_CRM_1741273407628';
 const FIELD_WHATSAPP_CLIENTE = 'UF_CRM_1749481565243';
 const FIELD_WHATSAPP_GRAFICA = 'UF_CRM_1760171265';
 const FIELD_LOGO_ID = 'UF_CRM_1760171060';
-const FIELD_SERVICO = 'UF_CRM_1761123161542'; // <-- NOVA CONSTANTE ADICIONADA
+const FIELD_SERVICO = 'UF_CRM_1761123161542';
 
 module.exports = async (req, res) => {
     console.log("--- INICIANDO FUNÇÃO /api/createDealForGrafica ---");
@@ -22,23 +22,30 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { sessionToken, graficaWpp, servico, ...formData } = req.body; // <-- 'servico' ADICIONADO AQUI
+        const { sessionToken, graficaWpp, servico, ...formData } = req.body;
         console.log("Dados recebidos:", { sessionToken, graficaWpp, servico, ...formData });
 
         if (!graficaWpp) {
             return res.status(400).json({ message: 'O WhatsApp da Gráfica é obrigatório.' });
         }
-        if (!servico) { // <-- VALIDAÇÃO ADICIONADA
+        if (!servico) {
              return res.status(400).json({ message: 'O campo Serviço é obrigatório.' });
         }
 
         const wppLimpo = graficaWpp.replace(/\D/g, '');
 
-        // Buscar a empresa no banco de dados
-        console.log(`Buscando empresa com WhatsApp limpo: ${wppLimpo}`);
-        const empresa = await prisma.empresa.findFirst({
-            where: { whatsapp: wppLimpo },
-        });
+        // --- INÍCIO DA CORREÇÃO ---
+        // Em vez de buscar por um valor exato, buscamos todas as empresas
+        // e filtramos na aplicação. Isso torna a busca resiliente a dados
+        // mal formatados (com espaços, hífens, etc.) no banco de dados.
+        // ATENÇÃO: Para tabelas com muitas empresas, essa abordagem pode ser lenta.
+        // A solução ideal a longo prazo é garantir que todos os WhatsApps no banco
+        // sejam salvos sem formatação.
+
+        console.log(`Buscando em todas as empresas por um WhatsApp correspondente a: ${wppLimpo}`);
+        const todasEmpresas = await prisma.empresa.findMany();
+        const empresa = todasEmpresas.find(e => e.whatsapp && e.whatsapp.replace(/\D/g, '') === wppLimpo);
+        // --- FIM DA CORREÇÃO ---
 
         if (!empresa) {
             console.error(`ERRO: Nenhuma empresa encontrada com o WhatsApp ${graficaWpp}.`);
@@ -95,7 +102,7 @@ module.exports = async (req, res) => {
             [FIELD_WHATSAPP_CLIENTE]: formData.wppCliente,
             [FIELD_WHATSAPP_GRAFICA]: graficaWpp,
             [FIELD_LOGO_ID]: logoId,
-            [FIELD_SERVICO]: servico, // <-- NOVO CAMPO ADICIONADO AO DEAL
+            [FIELD_SERVICO]: servico,
         };
 
         // Enviar requisição para criar o negócio no Bitrix24
