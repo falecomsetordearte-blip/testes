@@ -1,5 +1,3 @@
---- START OF FILE criar-pedido-grafica-script.js ---
-
 document.addEventListener('DOMContentLoaded', () => {
     // Máscaras para os campos de WhatsApp
     const wppGraficaInput = document.getElementById('grafica-wpp');
@@ -86,4 +84,3 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
---- END OF FILE criar-pedido-grafica-script.js ---

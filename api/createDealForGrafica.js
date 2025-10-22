@@ -1,5 +1,3 @@
---- START OF FILE createDealForGrafica.js ---
-
 // /api/createDealForGrafica.js - VERSÃO COM ATUALIZAÇÃO DE SALDO DEVEDOR (VALOR INTEGRAL)
 
 const { PrismaClient } = require('@prisma/client');
@@ -127,4 +125,3 @@ module.exports = async (req, res) => {
         return res.status(500).json({ message: error.message || 'Ocorreu um erro interno ao criar o pedido.' });
     }
 };
---- END OF FILE createDealForGrafica.js ---
