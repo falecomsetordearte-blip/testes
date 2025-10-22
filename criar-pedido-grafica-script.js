@@ -1,3 +1,5 @@
+--- START OF FILE criar-pedido-grafica-script.js ---
+
 document.addEventListener('DOMContentLoaded', () => {
     // Máscaras para os campos de WhatsApp
     const wppGraficaInput = document.getElementById('grafica-wpp');
@@ -49,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 sessionToken: localStorage.getItem("sessionToken"),
                 titulo: document.getElementById("pedido-titulo").value,
                 valorDesigner: document.getElementById("valor-designer").value,
+                servico: document.getElementById("pedido-servico").value, // <-- NOVO CAMPO ADICIONADO
                 graficaWpp: document.getElementById("grafica-wpp").value,
                 nomeCliente: document.getElementById("cliente-final-nome").value,
                 wppCliente: document.getElementById("cliente-final-wpp").value,
@@ -83,3 +86,4 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+--- END OF FILE criar-pedido-grafica-script.js ---
