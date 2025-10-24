@@ -7,6 +7,22 @@
     <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
     <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos para o ícone de ajuda */
+        .help-tooltip {
+            display: inline-block;
+            margin-left: 5px;
+            cursor: help;
+            color: #6c757d;
+            border: 1px solid #ced4da;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            text-align: center;
+            line-height: 16px;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
 
@@ -22,33 +38,11 @@
                         <h2 style="margin-top:0;">Criar Pedido para Gráfica</h2>
                         <div id="pedido-form-feedback" class="form-feedback hidden"></div>
 
-                        <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                        <!-- Linha 1: ID, Nome Cliente, WPP Cliente -->
+                        <div class="form-row" style="grid-template-columns: 1fr 2fr 2fr;">
                             <div class="form-group">
-                                <label for="pedido-titulo">Título do Pedido</label>
-                                <input type="text" id="pedido-titulo" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="valor-designer">Valor para o Designer (R$)</label>
-                                <input type="number" id="valor-designer" step="5" required>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="pedido-servico">Serviço</label>
-                                <select id="pedido-servico" required>
-                                    <option value="" disabled selected>Selecione o tipo de serviço</option>
-                                    <option value="Arte Impressão">Arte Impressão</option>
-                                    <option value="Arte Digital">Arte Digital</option>
-                                    <option value="Edição de Vídeo">Edição de Vídeo</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
-                             <div class="form-group">
-                                <label for="grafica-wpp">WhatsApp da Gráfica</label>
-                                <input type="tel" id="grafica-wpp" required placeholder="(00) 00000-0000">
+                                <label for="pedido-id">ID do Pedido</label>
+                                <input type="text" id="pedido-id" required maxlength="10">
                             </div>
                             <div class="form-group">
                                 <label for="cliente-final-nome">Nome do Cliente Final</label>
@@ -59,8 +53,80 @@
                                 <input type="tel" id="cliente-final-wpp" required placeholder="(00) 00000-0000">
                             </div>
                         </div>
+                        
+                        <!-- Linha 2: Dropdown de Arte (Controlador) -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="pedido-arte">Arte</label>
+                                <select id="pedido-arte" required>
+                                    <option value="" disabled selected>Selecione a origem da arte</option>
+                                    <option value="Arquivo do Cliente">Arquivo do Cliente</option>
+                                    <option value="Setor de Arte">Setor de Arte</option>
+                                    <option value="Designer Próprio">Designer Próprio</option>
+                                </select>
+                            </div>
+                        </div>
 
-                        <div>
+                        <!-- Campos para "Arquivo do Cliente" -->
+                        <div id="arquivo-cliente-fields" class="hidden">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="link-arquivo">Link do Arquivo para Impressão</label>
+                                    <input type="url" id="link-arquivo" placeholder="https://exemplo.com/arquivo.pdf">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Campos para "Setor de Arte" -->
+                        <div id="setor-arte-fields" class="hidden">
+                             <div class="form-row">
+                                <div class="form-group">
+                                    <label for="pedido-servico">Serviço</label>
+                                    <select id="pedido-servico">
+                                        <option value="" disabled selected>Selecione o tipo de serviço</option>
+                                        <option value="Arte Impressão">Arte Impressão</option>
+                                        <option value="Arte Digital">Arte Digital</option>
+                                        <option value="Edição de Vídeo">Edição de Vídeo</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                                <div class="form-group">
+                                    <label for="pedido-supervisao">Supervisão 
+                                        <span class="help-tooltip" title="Preencha com o número de WhatsApp que irá acompanhar o atendimento do designer.">?</span>
+                                    </label>
+                                    <input type="tel" id="pedido-supervisao" placeholder="(00) 00000-0000">
+                                </div>
+                                <div class="form-group">
+                                    <label for="valor-designer">Valor para o Designer (R$)</label>
+                                    <input type="number" id="valor-designer" step="5">
+                                    <div id="valor-designer-alerta" class="form-feedback error hidden" style="font-size: 0.8em; margin-top: 5px;">
+                                        Valores abaixo de R$ 50,00 têm maior probabilidade de serem recusados pelos Freelancers.
+                                    </div>
+                                </div>
+                            </div>
+                             <div class="form-row">
+                                <div class="form-group">
+                                    <label for="pedido-formato">Formato Desejado</label>
+                                    <select id="pedido-formato">
+                                        <option value="" disabled selected>Selecione um formato</option>
+                                        <option value="PDF">PDF</option>
+                                        <option value="JPG">JPG</option>
+                                        <option value="MP4">MP4</option>
+                                        <option value="CDR">CDR</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="cdr-versao-container" class="form-row hidden">
+                                <div class="form-group">
+                                    <label for="cdr-versao">Digite a versão do CorelDRAW</label>
+                                    <input type="text" id="cdr-versao" placeholder="Ex: 18, 20, 21, etc.">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Materiais do Pedido (Sempre visível) -->
+                        <div style="margin-top: 25px;">
                             <h4 class="materiais-header">Materiais do Pedido</h4>
                             <div id="materiais-container">
                                 <div class="material-item">
@@ -78,12 +144,7 @@
                             <button type="button" id="btn-add-material" class="btn btn-light btn-add-material">+ Adicionar Material</button>
                         </div>
                         
-                        <div class="form-group" style="margin-top: 25px;">
-                            <label for="pedido-formato">Formato Desejado</label>
-                            <input type="text" id="pedido-formato" placeholder="Ex: PDF, CDR, AI" required>
-                        </div>
-                        
-                        <div style="margin-top: 20px;">
+                        <div style="margin-top: 30px;">
                             <button type="submit" class="btn btn-primary btn-lg w-100">Criar Pedido</button>
                         </div>
                     </form>
