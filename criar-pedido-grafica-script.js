@@ -1,5 +1,3 @@
---- START OF FILE criar-pedido-grafica-script.js ---
-
 document.addEventListener('DOMContentLoaded', () => {
     // --- Seletores dos Elementos ---
     const wppClienteInput = document.getElementById('cliente-final-wpp');
