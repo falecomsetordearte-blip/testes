@@ -86,11 +86,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Chama a função para inicializar o modal de novo pedido
-    if (typeof inicializarModalNovoPedido === 'function') {
-        inicializarModalNovoPedido();
-    }
-
+    // REMOVIDO: A chamada para inicializar o modal de novo pedido foi removida.
+    
     // Carrega os dados do dashboard ao entrar na página
     loadDashboardData();
 });

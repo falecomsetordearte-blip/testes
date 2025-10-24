@@ -37,7 +37,8 @@
                         </div>
                         <div class="acoes-box">
                             <button class="btn-acao btn-add-credito">Adicionar Créditos</button>
-                            <button class="btn-acao btn-novo-pedido"><strong>+</strong> Novo Pedido</button>
+                            <!-- MODIFICAÇÃO AQUI: O botão agora é um link -->
+                            <a href="/criar-pedido-grafica.html" class="btn-acao"><strong>+</strong> Novo Pedido</a>
                         </div>
                     </section>
     
@@ -105,93 +106,7 @@
         </div>
     </div>
 
-    <!-- MODAIS FICAM AQUI, FORA DO GRID PRINCIPAL -->
-    <div class="modal-overlay" id="modal-novo-pedido">
-        <div class="modal-content modal-lg">
-            <div class="modal-header">
-                <h3>Criar um Novo Pedido de Arte</h3>
-                <button class="close-modal" title="Fechar">×</button>
-            </div>
-            <form id="novo-pedido-form">
-                <div class="modal-body">
-                    <div id="pedido-form-error" class="form-feedback error hidden"></div>
-                    
-                    <div class="video-explicativo-wrapper">
-                        <a href="#" id="video-explicativo-toggle" class="video-toggle-link">Assistir Vídeo Explicativo</a>
-                        <div id="video-explicativo-container" class="video-container hidden">
-                            <iframe width="100%" height="315" src="https://www.youtube.com/embed/lae4DJIYXoA" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                        </div>
-                    </div>
-
-                    <div class="form-row form-row-four">
-                        <div class="form-group">
-                            <label for="pedido-titulo">Título do Pedido</label>
-                            <input type="text" id="pedido-titulo" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="cliente-final-nome">Nome do Cliente Final</label>
-                            <input type="text" id="cliente-final-nome" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="cliente-final-wpp">WhatsApp do Cliente Final</label>
-                            <input type="tel" id="cliente-final-wpp" required placeholder="(00) 00000-0000">
-                        </div>
-                        <div class="form-group">
-                            <label for="pedido-valor">Valor para o Designer (R$)</label>
-                            <input type="number" id="pedido-valor" min="35" step="5" required>
-                        </div>
-                    </div>
-
-                    <div class="form-row form-row-three">
-                        <div class="form-group">
-                            <label for="pedido-impressora">Impressora</label>
-                            <select id="pedido-impressora" required>
-                                <option value="">Carregando...</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="pedido-material">Material</label>
-                            <select id="pedido-material" required>
-                                <option value="">Carregando...</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="pedido-tipo-entrega">Tipo de Entrega</label>
-                            <select id="pedido-tipo-entrega" required>
-                                <option value="">Carregando...</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h4 class="materiais-header">Materiais do Pedido</h4>
-                        <div id="materiais-container">
-                            <div class="material-item">
-                                <label class="item-label">Item 1</label>
-                                <div class="form-group">
-                                    <label for="material-descricao-1">Descreva o Material</label>
-                                    <input type="text" id="material-descricao-1" class="material-descricao" placeholder="Ex. Banner 60x100 3 unidades" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="material-detalhes-1">Como o cliente deseja a arte?</label>
-                                    <textarea id="material-detalhes-1" class="material-detalhes" rows="3" required></textarea>
-                                </div>
-                            </div>
-                        </div>
-                        <button type="button" id="btn-add-material" class="btn btn-light btn-add-material">+ Adicionar Material</button>
-                    </div>
-                    
-                    <div class="form-group" style="margin-top: 25px;">
-                        <label for="pedido-formato">Formato Desejado</label>
-                        <input type="text" id="pedido-formato" placeholder="Ex: PDF, CDR, AI" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary btn-lg w-100">Criar Pedido</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <!-- REMOVIDO: O modal 'modal-novo-pedido' foi completamente removido daqui. -->
     
     <div class="modal-overlay" id="modal-adquirir-creditos">
         <div class="modal-content">
