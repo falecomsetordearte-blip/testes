@@ -1,158 +1,126 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // --- Seletores dos Elementos ---
-    const wppClienteInput = document.getElementById('cliente-final-wpp');
-    const wppSupervisaoInput = document.getElementById('pedido-supervisao');
-    const pedidoArteSelect = document.getElementById('pedido-arte');
-    const arquivoClienteFields = document.getElementById('arquivo-cliente-fields');
-    const setorArteFields = document.getElementById('setor-arte-fields');
-    const valorDesignerInput = document.getElementById('valor-designer');
-    const valorDesignerAlerta = document.getElementById('valor-designer-alerta');
-    const pedidoFormatoSelect = document.getElementById('pedido-formato');
-    const cdrVersaoContainer = document.getElementById('cdr-versao-container');
+// /api/createDealForGrafica.js - VERSÃO CORRETA E FINAL
 
-    // --- Máscaras de Input ---
-    if (typeof IMask !== 'undefined') {
-        if (wppClienteInput) IMask(wppClienteInput, { mask: '(00) 00000-0000' });
-        if (wppSupervisaoInput) IMask(wppSupervisaoInput, { mask: '(00) 00000-0000' });
+const prisma = require('../lib/prisma');
+const axios = require('axios');
+
+const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
+
+// Mapeamento dos campos customizados do Bitrix24
+const FIELD_BRIEFING_COMPLETO = 'UF_CRM_1738249371';
+const FIELD_NOME_CLIENTE = 'UF_CRM_1741273407628';
+const FIELD_WHATSAPP_CLIENTE = 'UF_CRM_1749481565243';
+const FIELD_WHATSAPP_GRAFICA = 'UF_CRM_1760171265'; // Usado para Supervisão
+const FIELD_LOGO_ID = 'UF_CRM_1760171060';
+const FIELD_SERVICO = 'UF_CRM_1761123161542';
+const FIELD_LINK_ARQUIVO_CLIENTE = 'UF_CRM_1748277308731';
+const FIELD_ARTE_ORIGEM = 'UF_CRM_1761269158';
+
+module.exports = async (req, res) => {
+    console.log("--- INICIANDO FUNÇÃO /api/createDealForGrafica ---");
+
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Método não permitido' });
     }
 
-    // --- Lógica de Exibição Condicional ---
+    try {
+        const { sessionToken, arte, supervisaoWpp, valorDesigner, ...formData } = req.body;
+        console.log("Dados recebidos no backend:", req.body);
 
-    // 1. Lógica principal baseada no tipo de "Arte"
-    pedidoArteSelect.addEventListener('change', (e) => {
-        const selection = e.target.value;
-        
-        // Esconde todos os containers condicionais
-        arquivoClienteFields.classList.add('hidden');
-        setorArteFields.classList.add('hidden');
-        
-        // Remove 'required' de todos os inputs condicionais para não bloquear o submit
-        document.querySelectorAll('#arquivo-cliente-fields input, #setor-arte-fields input, #setor-arte-fields select').forEach(input => input.required = false);
-
-        if (selection === 'Arquivo do Cliente') {
-            arquivoClienteFields.classList.remove('hidden');
-            document.getElementById('link-arquivo').required = true;
-        } else if (selection === 'Setor de Arte') {
-            setorArteFields.classList.remove('hidden');
-            // Torna os campos de "Setor de Arte" obrigatórios
-            document.getElementById('pedido-servico').required = true;
-            document.getElementById('pedido-supervisao').required = true;
-            document.getElementById('valor-designer').required = true;
-            document.getElementById('pedido-formato').required = true;
+        if (!arte) {
+            return res.status(400).json({ message: 'O campo "Arte" é obrigatório.' });
         }
-    });
 
-    // 2. Lógica para o alerta de valor do designer
-    valorDesignerInput.addEventListener('input', (e) => {
-        const valor = parseFloat(e.target.value);
-        if (valor > 0 && valor < 50) {
-            valorDesignerAlerta.classList.remove('hidden');
-        } else {
-            valorDesignerAlerta.classList.add('hidden');
-        }
-    });
-
-    // 3. Lógica para exibir o campo de versão do CorelDRAW
-    pedidoFormatoSelect.addEventListener('change', (e) => {
-        const cdrVersaoInput = document.getElementById('cdr-versao');
-        if (e.target.value === 'CDR') {
-            cdrVersaoContainer.classList.remove('hidden');
-            cdrVersaoInput.required = true;
-        } else {
-            cdrVersaoContainer.classList.add('hidden');
-            cdrVersaoInput.required = false;
-        }
-    });
-    
-    // --- Lógica de Adicionar Materiais (Inalterada) ---
-    const btnAddMaterial = document.getElementById('btn-add-material');
-    const materiaisContainer = document.getElementById('materiais-container');
-    if (btnAddMaterial && materiaisContainer) {
-        btnAddMaterial.addEventListener('click', () => {
-            const itemCount = materiaisContainer.querySelectorAll('.material-item').length;
-            const newItemNumber = itemCount + 1;
-            const newItemDiv = document.createElement('div');
-            newItemDiv.classList.add('material-item');
-            newItemDiv.innerHTML = `
-                <label class="item-label">Item ${newItemNumber}</label>
-                <div class="form-group"><label for="material-descricao-${newItemNumber}">Descreva o Material</label><input type="text" id="material-descricao-${newItemNumber}" class="material-descricao" placeholder="Ex. Banner 60x100 3 unidades" required></div>
-                <div class="form-group"><label for="material-detalhes-${newItemNumber}">Como o cliente deseja a arte?</label><textarea id="material-detalhes-${newItemNumber}" class="material-detalhes" rows="3" required></textarea></div>`;
-            materiaisContainer.appendChild(newItemDiv);
+        // Busca o usuário logado no Bitrix para obter o COMPANY_ID
+        const searchUserResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
+            filter: { '%UF_CRM_1751824225': sessionToken },
+            select: ['ID', 'NAME', 'COMPANY_ID']
         });
-    }
+        const user = searchUserResponse.data.result[0];
+        if (!user || !user.COMPANY_ID) {
+            return res.status(400).json({ message: 'Sessão inválida ou usuário não associado a uma empresa.' });
+        }
 
-    // --- Lógica de Submissão do Formulário (Atualizada) ---
-    const form = document.getElementById('novo-pedido-form');
-    const feedbackDiv = document.getElementById('pedido-form-feedback');
-    if (form && feedbackDiv) {
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const submitButton = form.querySelector("button[type='submit']");
-            submitButton.disabled = true;
-            submitButton.textContent = "Criando...";
-            feedbackDiv.classList.add('hidden');
+        // Monta os campos base do Deal, comuns a todos os tipos
+        const dealFields = {
+            'TITLE': formData.titulo, // "ID do Pedido" do formulário
+            'CURRENCY_ID': 'BRL',
+            'COMPANY_ID': user.COMPANY_ID,
+            'CATEGORY_ID': 17,
+            'STAGE_ID': 'C17:NEW',
+            [FIELD_BRIEFING_COMPLETO]: formData.briefingFormatado,
+            [FIELD_NOME_CLIENTE]: formData.nomeCliente,
+            [FIELD_WHATSAPP_CLIENTE]: formData.wppCliente,
+            [FIELD_ARTE_ORIGEM]: arte,
+        };
+        
+        // Lógica condicional baseada na origem da "Arte"
+        if (arte === 'Setor de Arte') {
+            if (!supervisaoWpp || !valorDesigner) {
+                return res.status(400).json({ message: 'Para "Setor de Arte", os campos Supervisão e Valor para o Designer são obrigatórios.' });
+            }
 
-            // --- Formatação do Briefing e Coleta de Dados ---
-            let briefingFormatado = '';
-            document.querySelectorAll('#materiais-container .material-item').forEach((item, index) => {
-                const descricao = item.querySelector('.material-descricao').value;
-                const detalhes = item.querySelector('.material-detalhes').value;
-                briefingFormatado += `--- Item ${index + 1} ---\nMaterial: ${descricao}\nDetalhes da Arte: ${detalhes}\n\n`;
-            });
+            const wppLimpo = supervisaoWpp.replace(/\D/g, '');
+            const todasEmpresas = await prisma.empresa.findMany();
+            const empresa = todasEmpresas.find(e => e.whatsapp && e.whatsapp.replace(/\D/g, '') === wppLimpo);
 
-            const arteSelecionada = document.getElementById("pedido-arte").value;
-            const pedidoData = {
-                sessionToken: localStorage.getItem("sessionToken"),
-                titulo: document.getElementById("pedido-id").value,
-                arte: arteSelecionada,
-                nomeCliente: document.getElementById("cliente-final-nome").value,
-                wppCliente: document.getElementById("cliente-final-wpp").value,
-                briefingFormatado: briefingFormatado.trim()
-            };
+            if (!empresa) {
+                return res.status(404).json({ message: `Nenhuma empresa encontrada com o WhatsApp de supervisão ${supervisaoWpp}.` });
+            }
+
+            const valorIntegral = parseFloat(valorDesigner);
+            if (isNaN(valorIntegral)) {
+                return res.status(400).json({ message: 'O valor para o Designer deve ser um número válido.' });
+            }
+            const opportunityValue = valorIntegral * 0.8;
+
+            console.log(`Empresa de supervisão encontrada: ${empresa.nome_fantasia}. Incrementando saldo devedor em R$ ${valorIntegral}.`);
             
-            // Adiciona dados condicionais baseados na seleção de "Arte"
-            if (arteSelecionada === 'Setor de Arte') {
-                pedidoData.servico = document.getElementById("pedido-servico").value;
-                pedidoData.supervisaoWpp = document.getElementById("pedido-supervisao").value;
-                pedidoData.valorDesigner = document.getElementById("valor-designer").value;
-                
-                let formato = document.getElementById("pedido-formato").value;
-                if (formato === 'CDR') {
-                    const versao = document.getElementById("cdr-versao").value;
-                    formato += ` (Versão: ${versao})`;
-                }
-                pedidoData.formato = formato;
-                 // Adiciona formato ao briefing
-                pedidoData.briefingFormatado += `\n\n--- Formato de Entrega ---\n${formato}`;
+            await prisma.empresa.update({
+                where: { id: empresa.id },
+                data: { saldo_devedor: { increment: valorIntegral } },
+            });
+            console.log("Saldo devedor atualizado com sucesso.");
 
-            } else if (arteSelecionada === 'Arquivo do Cliente') {
-                pedidoData.linkArquivo = document.getElementById("link-arquivo").value;
+            // Adiciona campos específicos do "Setor de Arte" ao deal
+            dealFields.OPPORTUNITY = opportunityValue.toFixed(2);
+            dealFields[FIELD_WHATSAPP_GRAFICA] = supervisaoWpp;
+            dealFields[FIELD_LOGO_ID] = empresa.logo;
+            dealFields[FIELD_SERVICO] = formData.servico;
+
+        } else if (arte === 'Arquivo do Cliente') {
+            if (!formData.linkArquivo) {
+                 return res.status(400).json({ message: 'O link do arquivo é obrigatório para a opção "Arquivo do Cliente".' });
             }
+            dealFields[FIELD_LINK_ARQUIVO_CLIENTE] = formData.linkArquivo;
+            dealFields.OPPORTUNITY = 0;
+        
+        } else if (arte === 'Designer Próprio') {
+            dealFields.OPPORTUNITY = 0;
+        }
 
-            try {
-                const response = await fetch('/api/createDealForGrafica', {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(pedidoData)
-                });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message || "Erro ao criar pedido.");
-
-                feedbackDiv.textContent = `Pedido #${data.dealId} criado com sucesso! Redirecionando...`;
-                feedbackDiv.className = 'form-feedback success';
-                
-                setTimeout(() => {
-                    window.location.href = '/painel.html';
-                }, 2000);
-
-            } catch (error) {
-                feedbackDiv.textContent = error.message;
-                feedbackDiv.className = 'form-feedback error';
-                submitButton.disabled = false;
-                submitButton.textContent = "Criar Pedido";
-            } finally {
-                feedbackDiv.classList.remove('hidden');
-            }
+        // Envia a requisição para criar o negócio no Bitrix24
+        console.log("Enviando dados para criar deal no Bitrix24:", dealFields);
+        const createDealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.add.json`, {
+            fields: dealFields
         });
+        
+        const newDealId = createDealResponse.data.result;
+        if (!newDealId) {
+            console.error("Falha ao criar deal no Bitrix:", createDealResponse.data);
+            throw new Error('Falha ao criar o negócio no Bitrix24.');
+        }
+
+        console.log(`Deal #${newDealId} criado com sucesso!`);
+        return res.status(200).json({ success: true, dealId: newDealId });
+
+    } catch (error) {
+        console.error("--- OCORREU UM ERRO DURANTE A EXECUÇÃO ---");
+        if (error.response) {
+            console.error("ERRO DETALHADO DA API EXTERNA:", JSON.stringify(error.response.data, null, 2));
+        } else {
+            console.error("Erro geral:", error.message);
+        }
+        
+        return res.status(500).json({ message: error.message || 'Ocorreu um erro interno ao criar o pedido.' });
     }
-});
+};
