@@ -1,4 +1,4 @@
-// /api/createDealForGrafica.js - VERSÃO CORRETA E FINAL
+// /api/createDealForGrafica.js - VERSÃO CORRIGIDA E FINAL
 
 const prisma = require('../lib/prisma');
 const axios = require('axios');
@@ -23,6 +23,7 @@ module.exports = async (req, res) => {
     }
 
     try {
+        // O frontend agora envia 'formato' e 'cdrVersao' separadamente
         const { sessionToken, arte, supervisaoWpp, valorDesigner, ...formData } = req.body;
         console.log("Dados recebidos no backend:", req.body);
 
@@ -40,6 +41,8 @@ module.exports = async (req, res) => {
             return res.status(400).json({ message: 'Sessão inválida ou usuário não associado a uma empresa.' });
         }
 
+        let briefingFinal = formData.briefingFormatado;
+
         // Monta os campos base do Deal, comuns a todos os tipos
         const dealFields = {
             'TITLE': formData.titulo, // "ID do Pedido" do formulário
@@ -47,7 +50,6 @@ module.exports = async (req, res) => {
             'COMPANY_ID': user.COMPANY_ID,
             'CATEGORY_ID': 17,
             'STAGE_ID': 'C17:NEW',
-            [FIELD_BRIEFING_COMPLETO]: formData.briefingFormatado,
             [FIELD_NOME_CLIENTE]: formData.nomeCliente,
             [FIELD_WHATSAPP_CLIENTE]: formData.wppCliente,
             [FIELD_ARTE_ORIGEM]: arte,
@@ -55,8 +57,9 @@ module.exports = async (req, res) => {
         
         // Lógica condicional baseada na origem da "Arte"
         if (arte === 'Setor de Arte') {
-            if (!supervisaoWpp || !valorDesigner) {
-                return res.status(400).json({ message: 'Para "Setor de Arte", os campos Supervisão e Valor para o Designer são obrigatórios.' });
+            // VALIDAÇÃO ADICIONADA AQUI!
+            if (!supervisaoWpp || !valorDesigner || !formData.servico || !formData.formato) {
+                return res.status(400).json({ message: 'Para "Setor de Arte", os campos Serviço, Supervisão, Valor e Formato são obrigatórios.' });
             }
 
             const wppLimpo = supervisaoWpp.replace(/\D/g, '');
@@ -87,6 +90,13 @@ module.exports = async (req, res) => {
             dealFields[FIELD_LOGO_ID] = empresa.logo;
             dealFields[FIELD_SERVICO] = formData.servico;
 
+            // Monta a string de formato no backend
+            let formatoEntrega = formData.formato;
+            if (formatoEntrega === 'CDR' && formData.cdrVersao) {
+                formatoEntrega += ` (Versão: ${formData.cdrVersao})`;
+            }
+            briefingFinal += `\n\n--- Formato de Entrega ---\n${formatoEntrega}`;
+
         } else if (arte === 'Arquivo do Cliente') {
             if (!formData.linkArquivo) {
                  return res.status(400).json({ message: 'O link do arquivo é obrigatório para a opção "Arquivo do Cliente".' });
@@ -97,6 +107,9 @@ module.exports = async (req, res) => {
         } else if (arte === 'Designer Próprio') {
             dealFields.OPPORTUNITY = 0;
         }
+
+        // Adiciona o briefing final (com as informações de formato, se houver)
+        dealFields[FIELD_BRIEFING_COMPLETO] = briefingFinal;
 
         // Envia a requisição para criar o negócio no Bitrix24
         console.log("Enviando dados para criar deal no Bitrix24:", dealFields);

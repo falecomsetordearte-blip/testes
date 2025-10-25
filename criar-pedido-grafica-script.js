@@ -115,15 +115,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 pedidoData.servico = document.getElementById("pedido-servico").value;
                 pedidoData.supervisaoWpp = document.getElementById("pedido-supervisao").value;
                 pedidoData.valorDesigner = document.getElementById("valor-designer").value;
+                pedidoData.formato = document.getElementById("pedido-formato").value;
                 
-                let formato = document.getElementById("pedido-formato").value;
-                if (formato === 'CDR') {
-                    const versao = document.getElementById("cdr-versao").value;
-                    formato += ` (Versão: ${versao})`;
+                if (pedidoData.formato === 'CDR') {
+                    pedidoData.cdrVersao = document.getElementById("cdr-versao").value;
                 }
-                pedidoData.formato = formato;
-                // Adiciona formato ao briefing
-                pedidoData.briefingFormatado += `\n\n--- Formato de Entrega ---\n${formato}`;
 
             } else if (arteSelecionada === 'Arquivo do Cliente') {
                 pedidoData.linkArquivo = document.getElementById("link-arquivo").value;
