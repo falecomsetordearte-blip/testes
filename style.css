@@ -408,7 +408,7 @@ form { text-align: left; }
 /* Adicione este novo bloco de código */
 .pedidos-list-header {
     display: grid; /* A correção principal: torna o container um grid. */
-    grid-template-columns: 1fr 4fr 1.5fr 1.5fr 1.5fr; /* Mesma estrutura de colunas dos itens */
+    grid-template-columns: 1fr 4fr 1.5fr 1.5fr; /* ALTERAÇÃO: Removida a 5ª coluna */
     gap: 20px;
     align-items: center;
     padding: 15px 20px;
@@ -422,6 +422,7 @@ form { text-align: left; }
 /* A classe .pedido-item já existe, você não precisa adicionar novamente */
 .pedido-item { 
     display: grid; 
+    grid-template-columns: 1fr 4fr 1.5fr 1.5fr; /* ALTERAÇÃO: Removida a 5ª coluna para alinhar com o header */
     gap: 20px; 
     align-items: center; 
     margin-bottom: 15px; 
@@ -432,7 +433,14 @@ form { text-align: left; }
     box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
 }
 
+/* Duplicata da regra acima, mantendo a consistência */
 .pedido-item { display: grid; gap: 20px; align-items: center; margin-bottom: 15px; padding: 20px; background-color: var(--branco); border: 1px solid var(--borda); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+/* NOVO: Esconde a coluna de ações e o botão de adicionar crédito */
+.col-acoes, .btn-add-credito {
+    display: none;
+}
+
 .col-id { font-weight: 700; color: var(--azul-principal); }
 a.btn-ver-pedido { font-size: 0.9rem; font-weight: 600; color: var(--azul-principal); text-decoration: none; cursor: pointer; }
 a.btn-ver-pedido:hover { text-decoration: underline; color: #2c89c8; }
