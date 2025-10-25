@@ -36,8 +36,6 @@ module.exports = async (req, res) => {
             }
         }
         
-        // --- ALTERAÇÃO APLICADA AQUI ---
-        // Adicionamos a condição '!STAGE_ID' ao filtro para excluir os estágios indesejados.
         const dealsResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
             filter: {
                 'COMPANY_ID': user.COMPANY_ID,
@@ -48,7 +46,6 @@ module.exports = async (req, res) => {
                     'C17:UC_ZPMNF9'  // Stage de Acabamento Concluído
                 ]
             },
-            // --- FIM DA ALTERAÇÃO ---
             order: { 'ID': 'DESC' },
             select: [
                 'ID', 'TITLE', 'STAGE_ID', 'OPPORTUNITY', 'COMMENTS',
@@ -76,7 +73,8 @@ module.exports = async (req, res) => {
                 ID: pedido.ID,
                 TITLE: pedido.TITLE,
                 STAGE_ID: pedido.STAGE_ID,
-                OPPORTUNITY: parseFloat(pedido.OPPORTUNITY || 0) / 0.9,
+                // ALTERAÇÃO APLICADA AQUI: mudado de / 0.9 para / 0.85 para refletir +15%
+                OPPORTUNITY: parseFloat(pedido.OPPORTUNITY || 0) / 0.85,
                 COMMENTS: pedido.COMMENTS,
                 notificacao: temNotificacao
             };
