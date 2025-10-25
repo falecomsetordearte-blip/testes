@@ -25,7 +25,6 @@ const findAndLinkContact = async (dealId, contactNameToFind) => {
         // 2. Verifica se o contato foi encontrado
         if (!contact) {
             console.warn(`[AVISO] Contato "${contactNameToFind}" não encontrado.`);
-            // Retorna para não interromper a execução caso um dos contatos não exista
             return; 
         }
 
@@ -40,23 +39,19 @@ const findAndLinkContact = async (dealId, contactNameToFind) => {
 
         console.log(`[SUCESSO] Contato ${contactId} ("${contactNameToFind}") vinculado ao negócio ${dealId}.`);
     } catch (error) {
-        // Lança o erro para que o bloco catch principal possa capturá-lo
         console.error(`Erro ao processar o contato "${contactNameToFind}":`, error.response ? error.response.data : error.message);
         throw error; 
     }
 };
 
 module.exports = async (req, res) => {
-    // Agora aceitamos GET, pois o Bitrix24 envia assim
     if (req.method !== 'GET' && req.method !== 'POST') {
         return res.status(405).json({ message: 'Método não permitido' });
     }
 
     try {
-        // Lendo os dados da URL (req.query)
         const { dealTitle, dealId, token } = req.query;
 
-        // Validação de segurança
         if (INTERNAL_WEBHOOK_TOKEN && token !== INTERNAL_WEBHOOK_TOKEN) {
             console.warn('Tentativa de acesso não autorizado ao webhook.');
             return res.status(401).json({ message: 'Token de acesso inválido.' });
@@ -67,21 +62,20 @@ module.exports = async (req, res) => {
         }
 
         // Nomes dos dois contatos a serem procurados
-        const whatsappContactName = `WhatsApp group - ${dealTitle} | ${dealId}`;
-        const designerContactName = `Designer | ${dealId}`;
+        const mainWhatsappContactName = `WhatsApp group - ${dealTitle} | ${dealId}`;
+        // <-- ALTERAÇÃO AQUI: Ajustado o nome do segundo contato conforme solicitado
+        const designerWhatsappContactName = `WhatsApp group - Designer | ${dealId}`;
 
         // Executa as duas operações de busca e vínculo em paralelo
         await Promise.all([
-            findAndLinkContact(dealId, whatsappContactName),
-            findAndLinkContact(dealId, designerContactName)
+            findAndLinkContact(dealId, mainWhatsappContactName),
+            findAndLinkContact(dealId, designerWhatsappContactName)
         ]);
 
         console.log(`[FINAL] Processamento de vinculação de contatos concluído para o negócio ${dealId}.`);
-        // O Bitrix24 espera uma resposta de texto simples em webhooks de saída
         return res.status(200).send('Sucesso');
 
     } catch (error) {
-        // O erro já foi logado na função auxiliar
         console.error('Erro geral no webhook:', error.message);
         return res.status(500).send('Erro Interno');
     }
