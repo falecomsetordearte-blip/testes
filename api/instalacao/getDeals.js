@@ -1,16 +1,16 @@
-// /api/instalacao/getDeals.js
+// /api/instalacao/getDeals.js - VERSÃO ATUALIZADA E COMPLETA
 
 const axios = require('axios');
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
-// Campos que queremos buscar do Bitrix24 (pode ajustar se precisar de outros)
+// Campos que queremos buscar do Bitrix24
 const REQUIRED_FIELDS = [
     'ID', 'TITLE', 'COMPANY_ID',
     'UF_CRM_1741273407628', // NOME_CLIENTE_FIELD
     'UF_CRM_1749481565243', // CONTATO_CLIENTE_FIELD
     'UF_CRM_1752712769666', // LINK_ATENDIMENTO_FIELD
     'UF_CRM_1727464924690', // MEDIDAS_FIELD
-    'UF_CRM_1748277308731', // LINK_ARQUIVO_FINAL_FIELD
+    'UF_CRM_1748273308731', // LINK_ARQUIVO_FINAL_FIELD (Corrigi um digito aqui para bater com outros arquivos)
     'UF_CRM_1757794109'      // PRAZO_FINAL_FIELD
 ];
 
@@ -45,13 +45,10 @@ module.exports = async (req, res) => {
             return res.status(401).json({ message: 'Sessão inválida ou empresa não encontrada.' });
         }
 
-        //
-        // TODO: CONFIRME ESTE STAGE_ID!
-        // Este deve ser o ID da etapa onde os negócios aguardando instalação ficam.
-        // Eu assumi que é a etapa de "Acabamento" ('C17:UC_QA8TN5'). Se for outra, troque aqui.
-        //
+        // CORREÇÃO APLICADA AQUI:
+        // O filtro agora busca negócios na etapa 'C17:UC_ZPMNF9', conforme solicitado.
         const filterParams = {
-            'STAGE_ID': 'C17:UC_QA8TN5', 
+            'STAGE_ID': 'C17:UC_ZPMNF9', 
             'COMPANY_ID': user.COMPANY_ID
         };
 
