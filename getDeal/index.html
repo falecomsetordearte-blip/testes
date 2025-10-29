@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inspecionar Negócio (Deal) - Bitrix24</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f6f8; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        h1 { color: #007bff; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; }
+        input { width: calc(100% - 20px); padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: background-color 0.2s; }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #aaa; cursor: not-allowed; }
+        #status { margin-top: 20px; font-weight: bold; }
+        #result { background-color: #2d333b; color: #cdd9e5; padding: 15px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; font-family: "Courier New", Courier, monospace; margin-top: 20px; max-height: 400px; overflow-y: auto; }
+        .highlight { color: #f0a055; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Inspecionador de Negócios (Deals)</h1>
+        <div class="form-group">
+            <label for="dealIdInput">ID do Negócio (Deal ID):</label>
+            <input type="number" id="dealIdInput" placeholder="Ex: 1742">
+        </div>
+        <button id="searchButton">Buscar Informações</button>
+
+        <p id="status"></p>
+        <pre id="result"></pre>
+    </div>
+
+    <script>
+        const dealIdInput = document.getElementById('dealIdInput');
+        const searchButton = document.getElementById('searchButton');
+        const statusEl = document.getElementById('status');
+        const resultEl = document.getElementById('result');
+
+        searchButton.addEventListener('click', async () => {
+            const dealId = dealIdInput.value.trim();
+            if (!dealId) {
+                alert('Por favor, insira um ID de Negócio.');
+                return;
+            }
+
+            // Limpa resultados anteriores e desabilita o botão
+            statusEl.textContent = 'Buscando...';
+            statusEl.style.color = '#333';
+            resultEl.textContent = '';
+            searchButton.disabled = true;
+
+            try {
+                // Chama a nossa API Vercel
+                const response = await fetch(`/api/getDeal/getDealInfo?dealId=${dealId}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Erro desconhecido.');
+                }
+                
+                statusEl.textContent = 'Resultado encontrado:';
+                
+                // Formata o JSON para exibição
+                let resultText = JSON.stringify(data.deal, null, 2);
+
+                // Destaca o STAGE_ID para facilitar a visualização
+                resultText = resultText.replace(/"STAGE_ID": "(.+?)"/, `"STAGE_ID": "<span class='highlight'>$1</span>"`);
+                
+                resultEl.innerHTML = resultText; // Usamos innerHTML por causa do <span>
+
+            } catch (error) {
+                statusEl.textContent = 'Erro ao buscar:';
+                statusEl.style.color = 'red';
+                resultEl.textContent = error.message;
+            } finally {
+                // Reabilita o botão
+                searchButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
