@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Instalação - Setor de Arte</title>
+    <!-- Ícone e CSS padronizados -->
+    <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
+    <link rel="stylesheet" href="/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+    <div class="app-layout-grid">
+        <div id="sidebar-placeholder"></div>
+        <div class="app-content-wrapper">
+            <div id="header-placeholder"></div>
+
+            <main class="main-kanban app-content" style="padding: 0;">
+                <div class="kanban-header">
+                    <h1>Painel de Instalação</h1>
+                    <!-- Filtros foram removidos para simplificar -->
+                </div>
+
+                <div class="kanban-board">
+                    <!-- As colunas são as mesmas da impressão (Atrasado, Hoje, etc.) -->
+                    <div class="kanban-column status-atrasado" data-column-id="ATRASADO">
+                        <div class="column-header"><span class="column-title">ATRASADO</span></div>
+                        <div class="column-cards" id="cards-ATRASADO"></div>
+                    </div>
+                    <div class="kanban-column status-hoje" data-column-id="HOJE">
+                        <div class="column-header"><span class="column-title">HOJE</span></div>
+                        <div class="column-cards" id="cards-HOJE"></div>
+                    </div>
+                    <div class="kanban-column status-esta-semana" data-column-id="ESSA_SEMANA">
+                        <div class="column-header"><span class="column-title">ESTA SEMANA</span></div>
+                        <div class="column-cards" id="cards-ESSA_SEMANA"></div>
+                    </div>
+                    <div class="kanban-column status-proxima-semana" data-column-id="PROXIMA_SEMANA">
+                        <div class="column-header"><span class="column-title">PRÓXIMA SEMANA</span></div>
+                        <div class="column-cards" id="cards-PROXIMA_SEMANA"></div>
+                    </div>
+                    <div class="kanban-column status-sem-data" data-column-id="SEM_DATA">
+                        <div class="column-header"><span class="column-title">SEM DATA</span></div>
+                        <div class="column-cards" id="cards-SEM_DATA"></div>
+                    </div>
+                </div>
+            </main>
+            <div id="footer-placeholder" class="hidden"></div>
+        </div>
+    </div>
+
+    <!-- MODAL (estrutura idêntica) -->
+    <div class="modal-overlay" id="modal-detalhes-rapidos">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3 id="modal-titulo">Detalhes do Pedido</h3>
+                <button class="close-modal" title="Fechar">×</button>
+            </div>
+            <div class="modal-body" id="modal-body-content">
+                <div class="loading-pedidos"><div class="spinner"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="/layout.js"></script>
+    <script src="/instalacao/painel-script.js"></script> <!-- APONTANDO PARA O SCRIPT CORRETO -->
+
+</body>
+</html>
