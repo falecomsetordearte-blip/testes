@@ -1,10 +1,11 @@
-// /criar-pedido-grafica-script.js - VERSÃO ATUALIZADA E COMPLETA
-
 document.addEventListener('DOMContentLoaded', () => {
     // --- Seletores dos Elementos ---
     const wppClienteInput = document.getElementById('cliente-final-wpp');
     const wppSupervisaoInput = document.getElementById('pedido-supervisao');
-    const pedidoArteSelect = document.getElementById('pedido-arte');
+    
+    // ATUALIZADO: Seleciona o container dos radios de "Arte"
+    const pedidoArteContainer = document.getElementById('pedido-arte-container'); 
+    
     const arquivoClienteFields = document.getElementById('arquivo-cliente-fields');
     const setorArteFields = document.getElementById('setor-arte-fields');
     const valorDesignerInput = document.getElementById('valor-designer');
@@ -12,15 +13,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const pedidoFormatoSelect = document.getElementById('pedido-formato');
     const cdrVersaoContainer = document.getElementById('cdr-versao-container');
 
-    // --- Máscaras de Input ---
+    // --- Máscaras de Input (sem alterações) ---
     if (typeof IMask !== 'undefined') {
         if (wppClienteInput) IMask(wppClienteInput, { mask: '(00) 00000-0000' });
         if (wppSupervisaoInput) IMask(wppSupervisaoInput, { mask: '(00) 00000-0000' });
     }
 
     // --- Lógica de Exibição Condicional ---
-    pedidoArteSelect.addEventListener('change', (e) => {
-        const selection = e.target.value;
+
+    // 1. ATUALIZADO: Lógica agora escuta o 'change' no container dos radios
+    pedidoArteContainer.addEventListener('change', (e) => {
+        const selection = e.target.value; // Pega o valor do radio selecionado
         
         arquivoClienteFields.classList.add('hidden');
         setorArteFields.classList.add('hidden');
@@ -39,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // O resto da lógica condicional permanece igual
     valorDesignerInput.addEventListener('input', (e) => {
         const valor = parseFloat(e.target.value);
         if (valor > 0 && valor < 50) {
@@ -47,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
             valorDesignerAlerta.classList.add('hidden');
         }
     });
-
     pedidoFormatoSelect.addEventListener('change', (e) => {
         const cdrVersaoInput = document.getElementById('cdr-versao');
         if (e.target.value === 'CDR') {
@@ -59,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // --- Lógica de Adicionar Materiais ---
+    // --- Lógica de Adicionar Materiais (sem alterações) ---
     const btnAddMaterial = document.getElementById('btn-add-material');
     const materiaisContainer = document.getElementById('materiais-container');
     if (btnAddMaterial && materiaisContainer) {
@@ -93,8 +96,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 const detalhes = item.querySelector('.material-detalhes').value;
                 briefingFormatado += `--- Item ${index + 1} ---\nMaterial: ${descricao}\nDetalhes da Arte: ${detalhes}\n\n`;
             });
+            
+            // ATUALIZADO: Nova forma de pegar o valor do radio button selecionado
+            const arteSelecionadaNode = document.querySelector('input[name="pedido-arte"]:checked');
+            const tipoEntregaNode = document.querySelector('input[name="tipo-entrega"]:checked');
 
-            const arteSelecionada = document.getElementById("pedido-arte").value;
+            // Validação para garantir que uma opção foi selecionada
+            if (!arteSelecionadaNode || !tipoEntregaNode) {
+                feedbackDiv.textContent = "Por favor, selecione uma opção para 'Arte' e 'Tipo de Entrega'.";
+                feedbackDiv.className = 'form-feedback error';
+                feedbackDiv.classList.remove('hidden');
+                submitButton.disabled = false;
+                submitButton.textContent = "Criar Pedido";
+                return;
+            }
+
+            const arteSelecionada = arteSelecionadaNode.value;
+            const tipoEntrega = tipoEntregaNode.value;
+
             const pedidoData = {
                 sessionToken: localStorage.getItem("sessionToken"),
                 titulo: document.getElementById("pedido-id").value,
@@ -102,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 nomeCliente: document.getElementById("cliente-final-nome").value,
                 wppCliente: document.getElementById("cliente-final-wpp").value,
                 briefingFormatado: briefingFormatado.trim(),
-                tipoEntrega: document.getElementById("tipo-entrega").value // <-- Coleta o valor do novo campo
+                tipoEntrega: tipoEntrega
             };
             
             if (arteSelecionada === 'Setor de Arte') {
@@ -110,11 +129,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 pedidoData.supervisaoWpp = document.getElementById("pedido-supervisao").value;
                 pedidoData.valorDesigner = document.getElementById("valor-designer").value;
                 pedidoData.formato = document.getElementById("pedido-formato").value;
-                
                 if (pedidoData.formato === 'CDR') {
                     pedidoData.cdrVersao = document.getElementById("cdr-versao").value;
                 }
-
             } else if (arteSelecionada === 'Arquivo do Cliente') {
                 pedidoData.linkArquivo = document.getElementById("link-arquivo").value;
             }
@@ -127,14 +144,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.message || "Erro ao criar pedido.");
-
                 feedbackDiv.textContent = `Pedido #${data.dealId} criado com sucesso! Redirecionando...`;
                 feedbackDiv.className = 'form-feedback success';
-                
                 setTimeout(() => {
                     window.location.href = '/painel.html';
                 }, 2000);
-
             } catch (error) {
                 feedbackDiv.textContent = error.message;
                 feedbackDiv.className = 'form-feedback error';
