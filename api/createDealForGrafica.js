@@ -1,4 +1,4 @@
-// /api/createDealForGrafica.js - VERSÃO CORRIGIDA E FINAL
+// /api/createDealForGrafica.js - VERSÃO ATUALIZADA E COMPLETA
 
 const prisma = require('../lib/prisma');
 const axios = require('axios');
@@ -14,6 +14,7 @@ const FIELD_LOGO_ID = 'UF_CRM_1760171060';
 const FIELD_SERVICO = 'UF_CRM_1761123161542';
 const FIELD_LINK_ARQUIVO_CLIENTE = 'UF_CRM_1748277308731';
 const FIELD_ARTE_ORIGEM = 'UF_CRM_1761269158';
+const FIELD_TIPO_ENTREGA = 'UF_CRM_1658492661'; // <-- Novo campo mapeado
 
 module.exports = async (req, res) => {
     console.log("--- INICIANDO FUNÇÃO /api/createDealForGrafica ---");
@@ -23,12 +24,13 @@ module.exports = async (req, res) => {
     }
 
     try {
-        // O frontend agora envia 'formato' e 'cdrVersao' separadamente
-        const { sessionToken, arte, supervisaoWpp, valorDesigner, ...formData } = req.body;
+        // Recebendo o novo campo 'tipoEntrega' do frontend
+        const { sessionToken, arte, supervisaoWpp, valorDesigner, tipoEntrega, ...formData } = req.body;
         console.log("Dados recebidos no backend:", req.body);
 
-        if (!arte) {
-            return res.status(400).json({ message: 'O campo "Arte" é obrigatório.' });
+        // Validação para os campos principais
+        if (!arte || !tipoEntrega) { // <-- Validação atualizada
+            return res.status(400).json({ message: 'Os campos "Arte" e "Tipo de Entrega" são obrigatórios.' });
         }
 
         // Busca o usuário logado no Bitrix para obter o COMPANY_ID
@@ -45,7 +47,7 @@ module.exports = async (req, res) => {
 
         // Monta os campos base do Deal, comuns a todos os tipos
         const dealFields = {
-            'TITLE': formData.titulo, // "ID do Pedido" do formulário
+            'TITLE': formData.titulo,
             'CURRENCY_ID': 'BRL',
             'COMPANY_ID': user.COMPANY_ID,
             'CATEGORY_ID': 17,
@@ -53,62 +55,48 @@ module.exports = async (req, res) => {
             [FIELD_NOME_CLIENTE]: formData.nomeCliente,
             [FIELD_WHATSAPP_CLIENTE]: formData.wppCliente,
             [FIELD_ARTE_ORIGEM]: arte,
+            [FIELD_TIPO_ENTREGA]: tipoEntrega // <-- Novo campo adicionado ao objeto do Deal
         };
         
         // Lógica condicional baseada na origem da "Arte"
         if (arte === 'Setor de Arte') {
-            // VALIDAÇÃO ADICIONADA AQUI!
             if (!supervisaoWpp || !valorDesigner || !formData.servico || !formData.formato) {
                 return res.status(400).json({ message: 'Para "Setor de Arte", os campos Serviço, Supervisão, Valor e Formato são obrigatórios.' });
             }
-
             const wppLimpo = supervisaoWpp.replace(/\D/g, '');
             const todasEmpresas = await prisma.empresa.findMany();
             const empresa = todasEmpresas.find(e => e.whatsapp && e.whatsapp.replace(/\D/g, '') === wppLimpo);
-
             if (!empresa) {
                 return res.status(404).json({ message: `Nenhuma empresa encontrada com o WhatsApp de supervisão ${supervisaoWpp}.` });
             }
-
             const valorIntegral = parseFloat(valorDesigner);
             if (isNaN(valorIntegral)) {
                 return res.status(400).json({ message: 'O valor para o Designer deve ser um número válido.' });
             }
             const opportunityValue = valorIntegral * 0.8;
-
-            console.log(`Empresa de supervisão encontrada: ${empresa.nome_fantasia}. Incrementando saldo devedor em R$ ${valorIntegral}.`);
-            
             await prisma.empresa.update({
                 where: { id: empresa.id },
                 data: { saldo_devedor: { increment: valorIntegral } },
             });
-            console.log("Saldo devedor atualizado com sucesso.");
-
-            // Adiciona campos específicos do "Setor de Arte" ao deal
             dealFields.OPPORTUNITY = opportunityValue.toFixed(2);
             dealFields[FIELD_WHATSAPP_GRAFICA] = supervisaoWpp;
             dealFields[FIELD_LOGO_ID] = empresa.logo;
             dealFields[FIELD_SERVICO] = formData.servico;
-
-            // Monta a string de formato no backend
             let formatoEntrega = formData.formato;
             if (formatoEntrega === 'CDR' && formData.cdrVersao) {
                 formatoEntrega += ` (Versão: ${formData.cdrVersao})`;
             }
             briefingFinal += `\n\n--- Formato de Entrega ---\n${formatoEntrega}`;
-
         } else if (arte === 'Arquivo do Cliente') {
             if (!formData.linkArquivo) {
                  return res.status(400).json({ message: 'O link do arquivo é obrigatório para a opção "Arquivo do Cliente".' });
             }
             dealFields[FIELD_LINK_ARQUIVO_CLIENTE] = formData.linkArquivo;
             dealFields.OPPORTUNITY = 0;
-        
         } else if (arte === 'Designer Próprio') {
             dealFields.OPPORTUNITY = 0;
         }
 
-        // Adiciona o briefing final (com as informações de formato, se houver)
         dealFields[FIELD_BRIEFING_COMPLETO] = briefingFinal;
 
         // Envia a requisição para criar o negócio no Bitrix24

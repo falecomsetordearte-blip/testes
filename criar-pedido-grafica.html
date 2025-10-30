@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Estilos para o ícone de ajuda */
         .help-tooltip {
             display: inline-block;
             margin-left: 5px;
@@ -54,8 +53,8 @@
                             </div>
                         </div>
                         
-                        <!-- Linha 2: Dropdown de Arte (Controlador) -->
-                        <div class="form-row">
+                        <!-- Linha 2: Dropdowns de Arte e Tipo de Entrega -->
+                        <div class="form-row" style="grid-template-columns: 1fr 1fr;">
                             <div class="form-group">
                                 <label for="pedido-arte">Arte</label>
                                 <select id="pedido-arte" required>
@@ -63,6 +62,18 @@
                                     <option value="Arquivo do Cliente">Arquivo do Cliente</option>
                                     <option value="Setor de Arte">Setor de Arte</option>
                                     <option value="Designer Próprio">Designer Próprio</option>
+                                </select>
+                            </div>
+                            <!-- NOVO CAMPO ADICIONADO AQUI -->
+                            <div class="form-group">
+                                <label for="tipo-entrega">Tipo de Entrega</label>
+                                <select id="tipo-entrega" required>
+                                    <option value="" disabled selected>Selecione a entrega</option>
+                                    <option value="RETIRADA NO BALCÃO">RETIRADA NO BALCÃO</option>
+                                    <option value="INSTALAÇÃO NA LOJA">INSTALAÇÃO NA LOJA</option>
+                                    <option value="INSTALAÇÃO EXTERNA">INSTALAÇÃO EXTERNA</option>
+                                    <option value="DIGITAL">DIGITAL</option>
+                                    <option value="ENVIO">ENVIO</option>
                                 </select>
                             </div>
                         </div>
@@ -77,7 +88,7 @@
                             </div>
                         </div>
 
-                        <!-- Campos para "Setor de Arte" -->
+                        <!-- Campos para "Setor de Arte" (sem alterações) -->
                         <div id="setor-arte-fields" class="hidden">
                              <div class="form-row">
                                 <div class="form-group">
@@ -125,7 +136,7 @@
                             </div>
                         </div>
 
-                        <!-- Materiais do Pedido (Sempre visível) -->
+                        <!-- Materiais do Pedido (sem alterações) -->
                         <div style="margin-top: 25px;">
                             <h4 class="materiais-header">Materiais do Pedido</h4>
                             <div id="materiais-container">

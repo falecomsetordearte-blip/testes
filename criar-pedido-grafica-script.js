@@ -1,3 +1,5 @@
+// /criar-pedido-grafica-script.js - VERSÃO ATUALIZADA E COMPLETA
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- Seletores dos Elementos ---
     const wppClienteInput = document.getElementById('cliente-final-wpp');
@@ -17,16 +19,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Lógica de Exibição Condicional ---
-
-    // 1. Lógica principal baseada no tipo de "Arte"
     pedidoArteSelect.addEventListener('change', (e) => {
         const selection = e.target.value;
         
-        // Esconde todos os containers condicionais
         arquivoClienteFields.classList.add('hidden');
         setorArteFields.classList.add('hidden');
         
-        // Remove 'required' de todos os inputs condicionais para não bloquear o submit
         document.querySelectorAll('#arquivo-cliente-fields input, #setor-arte-fields input, #setor-arte-fields select').forEach(input => input.required = false);
 
         if (selection === 'Arquivo do Cliente') {
@@ -34,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('link-arquivo').required = true;
         } else if (selection === 'Setor de Arte') {
             setorArteFields.classList.remove('hidden');
-            // Torna os campos de "Setor de Arte" obrigatórios
             document.getElementById('pedido-servico').required = true;
             document.getElementById('pedido-supervisao').required = true;
             document.getElementById('valor-designer').required = true;
@@ -42,7 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 2. Lógica para o alerta de valor do designer
     valorDesignerInput.addEventListener('input', (e) => {
         const valor = parseFloat(e.target.value);
         if (valor > 0 && valor < 50) {
@@ -52,7 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 3. Lógica para exibir o campo de versão do CorelDRAW
     pedidoFormatoSelect.addEventListener('change', (e) => {
         const cdrVersaoInput = document.getElementById('cdr-versao');
         if (e.target.value === 'CDR') {
@@ -92,7 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.textContent = "Criando...";
             feedbackDiv.classList.add('hidden');
 
-            // --- Formatação do Briefing e Coleta de Dados ---
             let briefingFormatado = '';
             document.querySelectorAll('#materiais-container .material-item').forEach((item, index) => {
                 const descricao = item.querySelector('.material-descricao').value;
@@ -107,10 +101,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 arte: arteSelecionada,
                 nomeCliente: document.getElementById("cliente-final-nome").value,
                 wppCliente: document.getElementById("cliente-final-wpp").value,
-                briefingFormatado: briefingFormatado.trim()
+                briefingFormatado: briefingFormatado.trim(),
+                tipoEntrega: document.getElementById("tipo-entrega").value // <-- Coleta o valor do novo campo
             };
             
-            // Adiciona dados condicionais baseados na seleção de "Arte"
             if (arteSelecionada === 'Setor de Arte') {
                 pedidoData.servico = document.getElementById("pedido-servico").value;
                 pedidoData.supervisaoWpp = document.getElementById("pedido-supervisao").value;
