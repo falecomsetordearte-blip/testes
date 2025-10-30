@@ -7,198 +7,145 @@
     <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
     <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Adicione Font Awesome para os ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        .help-tooltip {
-            display: inline-block; margin-left: 5px; cursor: help; color: #6c757d; border: 1px solid #ced4da;
-            border-radius: 50%; width: 18px; height: 18px; text-align: center; line-height: 16px; font-weight: bold;
+        /* --- ESTILOS PARA OS NOVOS BLOCOS DE SERVIÇO --- */
+        #servico-selection-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            transition: all 0.5s ease-in-out;
         }
 
-        /* --- NOVOS ESTILOS PARA OS RADIO BUTTONS (ESTILO DA IMAGEM) --- */
-        .radio-group {
+        .servico-card {
+            padding: 30px 20px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .servico-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .servico-card i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            transition: font-size 0.5s ease;
+        }
+        .servico-card span {
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: block;
+            transition: font-size 0.5s ease;
+        }
+        .servico-card.impressao { background-color: #eaf5ff; color: #3498db; }
+        .servico-card.digital { background-color: #e8f8f5; color: #2ecc71; }
+        .servico-card.video { background-color: #fdedec; color: #e74c3c; }
+        .servico-card.active { border-color: currentColor; }
+
+        /* --- ESTILOS PARA QUANDO UMA SELEÇÃO É FEITA (ANIMAÇÃO DE RETRAÇÃO) --- */
+        #servico-selection-container.selection-made {
+            grid-template-columns: 1fr; /* Muda para uma única coluna */
+            gap: 0;
+        }
+        #servico-selection-container.selection-made .servico-card:not(.active) {
+            display: none; /* Esconde os não selecionados */
+        }
+        #servico-selection-container.selection-made .servico-card.active {
             display: flex;
-            flex-wrap: nowrap; /* Garante que fiquem sempre em uma linha */
-            gap: 15px;
-            margin-top: 5px;
-            overflow-x: auto; /* Adiciona rolagem horizontal se não couber na tela */
-            padding-bottom: 10px; /* Espaço para a barra de rolagem não ficar colada */
+            flex-direction: row;
+            align-items: center;
+            padding: 10px 20px;
+            text-align: left;
+        }
+        #servico-selection-container.selection-made .servico-card.active i {
+            font-size: 1.5rem;
+            margin-bottom: 0;
+            margin-right: 15px;
+        }
+        #servico-selection-container.selection-made .servico-card.active span {
+            font-size: 1rem;
+        }
+
+        /* --- ESTILOS PARA O WRAPPER DO CONTEÚDO DO FORMULÁRIO --- */
+        #form-content-wrapper {
+            transition: max-height 0.7s ease-in-out, opacity 0.5s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        #form-content-wrapper.visible {
+            max-height: 3000px; /* Um valor alto para permitir a expansão */
+            opacity: 1;
         }
         
-        .radio-option input[type="radio"] {
-            /* Esconde o rádio padrão de forma acessível */
-            opacity: 0;
-            position: fixed;
-            width: 0;
-        }
-
-        .radio-option label {
-            display: flex; /* Alinha o círculo customizado com o texto */
-            align-items: center;
-            background-color: #fff;
-            padding: 10px 15px;
-            border: 2px solid #e1e1e1; /* Borda padrão cinza claro */
-            border-radius: 8px;
-            transition: all 0.2s ease-in-out;
-            cursor: pointer;
-            position: relative; /* Necessário para o círculo customizado */
-            padding-left: 40px; /* Espaço para o nosso círculo */
-            white-space: nowrap; /* Evita que o texto quebre linha */
-        }
-
-        /* Círculo externo customizado */
-        .radio-option label::before {
-            content: '';
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 20px;
-            height: 20px;
-            border: 2px solid #adb5bd;
-            border-radius: 50%;
-            background-color: #fff;
-            transition: border-color 0.2s;
-        }
-
-        /* Círculo interno (ponto azul) customizado - escondido por padrão */
-        .radio-option label::after {
-            content: '';
-            position: absolute;
-            left: 17px; /* 12px do container + 5px de margem */
-            top: 50%;
-            transform: translateY(-50%) scale(0); /* Começa invisível (escala 0) */
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background-color: var(--azul-principal);
-            transition: transform 0.2s;
-        }
-
-        /* Quando o rádio está selecionado (checked), aplicamos os estilos */
-        .radio-option input[type="radio"]:checked + label {
-            border-color: var(--azul-principal); /* Borda azul ao redor de tudo */
-            background-color: #f0f7ff; /* Fundo azul bem claro para destaque */
-            box-shadow: 0 0 0 1px var(--azul-principal);
-        }
-
-        .radio-option input[type="radio"]:checked + label::before {
-            border-color: var(--azul-principal); /* Borda do círculo externo fica azul */
-        }
-
-        .radio-option input[type="radio"]:checked + label::after {
-            transform: translateY(-50%) scale(1); /* Ponto azul aparece (escala 1) */
-        }
-
-        .radio-option input[type="radio"]:focus + label {
-             box-shadow: 0 0 0 2px rgba(56, 169, 244, 0.4); /* Efeito de foco para acessibilidade */
-        }
-
-        .radio-option label:hover {
-            border-color: #999;
-        }
-        /* --- FIM DOS NOVOS ESTILOS --- */
+        /* Estilos dos Radio Buttons (da resposta anterior) */
+        .radio-group { display: flex; flex-wrap: nowrap; gap: 15px; margin-top: 5px; overflow-x: auto; padding-bottom: 10px; }
+        .radio-option input[type="radio"] { opacity: 0; position: fixed; width: 0; }
+        .radio-option label { display: flex; align-items: center; background-color: #fff; padding: 10px 15px 10px 40px; border: 2px solid #e1e1e1; border-radius: 8px; transition: all 0.2s ease-in-out; cursor: pointer; position: relative; white-space: nowrap; }
+        .radio-option label::before { content: ''; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border: 2px solid #adb5bd; border-radius: 50%; background-color: #fff; transition: border-color 0.2s; }
+        .radio-option label::after { content: ''; position: absolute; left: 17px; top: 50%; transform: translateY(-50%) scale(0); width: 10px; height: 10px; border-radius: 50%; background-color: var(--azul-principal); transition: transform 0.2s; }
+        .radio-option input[type="radio"]:checked + label { border-color: var(--azul-principal); background-color: #f0f7ff; box-shadow: 0 0 0 1px var(--azul-principal); }
+        .radio-option input[type="radio"]:checked + label::before { border-color: var(--azul-principal); }
+        .radio-option input[type="radio"]:checked + label::after { transform: translateY(-50%) scale(1); }
     </style>
 </head>
 <body>
-
     <div class="app-layout-grid">
         <div id="sidebar-placeholder"></div>
         <div class="app-content-wrapper">
             <div id="header-placeholder"></div>
-
             <main class="app-content">
                 <div class="container">
-                    
                     <form id="novo-pedido-form" style="max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.06);">
                         <h2 style="margin-top:0;">Criar Pedido para Gráfica</h2>
                         <div id="pedido-form-feedback" class="form-feedback hidden"></div>
 
-                        <div class="form-row" style="grid-template-columns: 1fr 2fr 2fr;">
-                            <div class="form-group">
-                                <label for="pedido-id">ID do Pedido</label>
-                                <input type="text" id="pedido-id" required maxlength="10">
+                        <!-- ETAPA 1: SELEÇÃO DE SERVIÇO -->
+                        <div id="servico-selection-container">
+                            <div class="servico-card impressao" data-value="Arte Impressão">
+                                <i class="fas fa-print"></i>
+                                <span>Arte para Impressão</span>
                             </div>
-                            <div class="form-group">
-                                <label for="cliente-final-nome">Nome do Cliente Final</label>
-                                <input type="text" id="cliente-final-nome" required>
+                            <div class="servico-card digital" data-value="Arte Digital">
+                                <i class="fas fa-desktop"></i>
+                                <span>Arte Digital</span>
                             </div>
-                            <div class="form-group">
-                                <label for="cliente-final-wpp">WhatsApp do Cliente Final</label>
-                                <input type="tel" id="cliente-final-wpp" required placeholder="(00) 00000-0000">
+                            <div class="servico-card video" data-value="Edição de Vídeo">
+                                <i class="fas fa-video"></i>
+                                <span>Edição de Vídeo</span>
                             </div>
                         </div>
                         
-                        <!-- SEÇÃO "ARTE" COM RADIO BUTTONS -->
-                        <div class="form-group">
-                            <label>Arte</label>
-                            <div class="radio-group" id="pedido-arte-container">
-                                <div class="radio-option">
-                                    <input type="radio" id="arte-arquivo" name="pedido-arte" value="Arquivo do Cliente" required>
-                                    <label for="arte-arquivo">Arquivo do Cliente</label>
-                                </div>
-                                <div class="radio-option">
-                                    <input type="radio" id="arte-setor" name="pedido-arte" value="Setor de Arte">
-                                    <label for="arte-setor">Setor de Arte</label>
-                                </div>
-                                <div class="radio-option">
-                                    <input type="radio" id="arte-proprio" name="pedido-arte" value="Designer Próprio">
-                                    <label for="arte-proprio">Designer Próprio</label>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Input oculto para armazenar o valor do serviço -->
+                        <input type="hidden" id="pedido-servico-hidden" name="servico">
 
-                        <!-- SEÇÃO "TIPO DE ENTREGA" COM RADIO BUTTONS -->
-                        <div class="form-group" style="margin-top: 20px;">
-                            <label>Tipo de Entrega</label>
-                            <div class="radio-group">
-                                <div class="radio-option">
-                                    <input type="radio" id="entrega-balcao" name="tipo-entrega" value="RETIRADA NO BALCÃO" required>
-                                    <label for="entrega-balcao">Retirada no Balcão</label>
-                                </div>
-                                <div class="radio-option">
-                                    <input type="radio" id="entrega-loja" name="tipo-entrega" value="INSTALAÇÃO NA LOJA">
-                                    <label for="entrega-loja">Instalação na Loja</label>
-                                </div>
-                                <div class="radio-option">
-                                    <input type="radio" id="entrega-externa" name="tipo-entrega" value="INSTALAÇÃO EXTERNA">
-                                    <label for="entrega-externa">Instalação Externa</label>
-                                </div>
-                                <div class="radio-option">
-                                    <input type="radio" id="entrega-digital" name="tipo-entrega" value="DIGITAL">
-                                    <label for="entrega-digital">Digital</label>
-                                </div>
-                                 <div class="radio-option">
-                                    <input type="radio" id="entrega-envio" name="tipo-entrega" value="ENVIO">
-                                    <label for="entrega-envio">Envio</label>
-                                </div>
+                        <!-- ETAPA 2: RESTO DO FORMULÁRIO (INICIALMENTE OCULTO) -->
+                        <div id="form-content-wrapper">
+                            <div class="form-row" style="grid-template-columns: 1fr 2fr 2fr;">
+                                <div class="form-group"><label for="pedido-id">ID do Pedido</label><input type="text" id="pedido-id" required maxlength="10"></div>
+                                <div class="form-group"><label for="cliente-final-nome">Nome do Cliente Final</label><input type="text" id="cliente-final-nome" required></div>
+                                <div class="form-group"><label for="cliente-final-wpp">WhatsApp do Cliente Final</label><input type="tel" id="cliente-final-wpp" required placeholder="(00) 00000-0000"></div>
                             </div>
+                            <div class="form-group"><label>Arte</label><div class="radio-group" id="pedido-arte-container"><div class="radio-option"><input type="radio" id="arte-arquivo" name="pedido-arte" value="Arquivo do Cliente" required><label for="arte-arquivo">Arquivo do Cliente</label></div><div class="radio-option"><input type="radio" id="arte-setor" name="pedido-arte" value="Setor de Arte"><label for="arte-setor">Setor de Arte</label></div><div class="radio-option"><input type="radio" id="arte-proprio" name="pedido-arte" value="Designer Próprio"><label for="arte-proprio">Designer Próprio</label></div></div></div>
+                            <div class="form-group" style="margin-top: 20px;"><label>Tipo de Entrega</label><div class="radio-group"><div class="radio-option"><input type="radio" id="entrega-balcao" name="tipo-entrega" value="RETIRADA NO BALCÃO" required><label for="entrega-balcao">Retirada no Balcão</label></div><div class="radio-option"><input type="radio" id="entrega-loja" name="tipo-entrega" value="INSTALAÇÃO NA LOJA"><label for="entrega-loja">Instalação na Loja</label></div><div class="radio-option"><input type="radio" id="entrega-externa" name="tipo-entrega" value="INSTALAÇÃO EXTERNA"><label for="entrega-externa">Instalação Externa</label></div><div class="radio-option"><input type="radio" id="entrega-digital" name="tipo-entrega" value="DIGITAL"><label for="entrega-digital">Digital</label></div><div class="radio-option"><input type="radio" id="entrega-envio" name="tipo-entrega" value="ENVIO"><label for="entrega-envio">Envio</label></div></div></div>
+                            <div id="arquivo-cliente-fields" class="hidden"><div class="form-row"><div class="form-group"><label for="link-arquivo">Link do Arquivo para Impressão</label><input type="url" id="link-arquivo" placeholder="https://exemplo.com/arquivo.pdf"></div></div></div>
+                            <div id="setor-arte-fields" class="hidden"><div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));"><div class="form-group"><label for="pedido-supervisao">Supervisão</label><input type="tel" id="pedido-supervisao" placeholder="(00) 00000-0000"></div><div class="form-group"><label for="valor-designer">Valor para o Designer (R$)</label><input type="number" id="valor-designer" step="5"><div id="valor-designer-alerta" class="form-feedback error hidden" style="font-size: 0.8em; margin-top: 5px;">Valores abaixo de R$ 50,00 têm maior probabilidade de serem recusados pelos Freelancers.</div></div></div><div class="form-row"><div class="form-group"><label for="pedido-formato">Formato Desejado</label><select id="pedido-formato"><option value="" disabled selected>Selecione um formato</option><option value="PDF">PDF</option><option value="JPG">JPG</option><option value="MP4">MP4</option><option value="CDR">CDR</option></select></div></div><div id="cdr-versao-container" class="form-row hidden"><div class="form-group"><label for="cdr-versao">Digite a versão do CorelDRAW</label><input type="text" id="cdr-versao" placeholder="Ex: 18, 20, 21, etc."></div></div></div>
+                            <div style="margin-top: 25px;"><h4 class="materiais-header">Materiais do Pedido</h4><div id="materiais-container"><div class="material-item"><label class="item-label">Item 1</label><div class="form-group"><label for="material-descricao-1">Descreva o Material</label><input type="text" id="material-descricao-1" class="material-descricao" placeholder="Ex. Banner 60x100 3 unidades" required></div><div class="form-group"><label for="material-detalhes-1">Como o cliente deseja a arte?</label><textarea id="material-detalhes-1" class="material-detalhes" rows="3" required></textarea></div></div></div><button type="button" id="btn-add-material" class="btn btn-light btn-add-material">+ Adicionar Material</button></div>
+                            <div style="margin-top: 30px;"><button type="submit" class="btn btn-primary btn-lg w-100">Criar Pedido</button></div>
                         </div>
-
-                        <!-- O restante do formulário permanece o mesmo -->
-                        <div id="arquivo-cliente-fields" class="hidden">
-                            <div class="form-row"><div class="form-group"><label for="link-arquivo">Link do Arquivo para Impressão</label><input type="url" id="link-arquivo" placeholder="https://exemplo.com/arquivo.pdf"></div></div>
-                        </div>
-                        <div id="setor-arte-fields" class="hidden">
-                            <div class="form-row"><div class="form-group"><label for="pedido-servico">Serviço</label><select id="pedido-servico"><option value="" disabled selected>Selecione o tipo de serviço</option><option value="Arte Impressão">Arte Impressão</option><option value="Arte Digital">Arte Digital</option><option value="Edição de Vídeo">Edição de Vídeo</option></select></div></div>
-                            <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
-                                <div class="form-group"><label for="pedido-supervisao">Supervisão <span class="help-tooltip" title="Preencha com o número de WhatsApp que irá acompanhar o atendimento do designer.">?</span></label><input type="tel" id="pedido-supervisao" placeholder="(00) 00000-0000"></div>
-                                <div class="form-group"><label for="valor-designer">Valor para o Designer (R$)</label><input type="number" id="valor-designer" step="5"><div id="valor-designer-alerta" class="form-feedback error hidden" style="font-size: 0.8em; margin-top: 5px;">Valores abaixo de R$ 50,00 têm maior probabilidade de serem recusados pelos Freelancers.</div></div>
-                            </div>
-                            <div class="form-row"><div class="form-group"><label for="pedido-formato">Formato Desejado</label><select id="pedido-formato"><option value="" disabled selected>Selecione um formato</option><option value="PDF">PDF</option><option value="JPG">JPG</option><option value="MP4">MP4</option><option value="CDR">CDR</option></select></div></div>
-                            <div id="cdr-versao-container" class="form-row hidden"><div class="form-group"><label for="cdr-versao">Digite a versão do CorelDRAW</label><input type="text" id="cdr-versao" placeholder="Ex: 18, 20, 21, etc."></div></div>
-                        </div>
-                        <div style="margin-top: 25px;"><h4 class="materiais-header">Materiais do Pedido</h4><div id="materiais-container"><div class="material-item"><label class="item-label">Item 1</label><div class="form-group"><label for="material-descricao-1">Descreva o Material</label><input type="text" id="material-descricao-1" class="material-descricao" placeholder="Ex. Banner 60x100 3 unidades" required></div><div class="form-group"><label for="material-detalhes-1">Como o cliente deseja a arte?</label><textarea id="material-detalhes-1" class="material-detalhes" rows="3" required></textarea></div></div></div><button type="button" id="btn-add-material" class="btn btn-light btn-add-material">+ Adicionar Material</button></div>
-                        <div style="margin-top: 30px;"><button type="submit" class="btn btn-primary btn-lg w-100">Criar Pedido</button></div>
                     </form>
-
                 </div>
             </main>
             <div id="footer-placeholder"></div>
         </div>
     </div>
-
     <script src="/layout.js"></script>
     <script src="https://unpkg.com/imask"></script>
     <script src="criar-pedido-grafica-script.js"></script>
-
 </body>
 </html>
