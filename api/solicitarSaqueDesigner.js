@@ -42,20 +42,35 @@ module.exports = async (req, res) => {
             return res.status(402).json({ message: 'Saldo insuficiente.' });
         }
         
-        if (financeiro.ultimo_saque_em) {
-            const seteDiasAtras = new Date();
-            seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
-            if (new Date(financeiro.ultimo_saque_em) > seteDiasAtras) {
-                return res.status(429).json({ message: 'Você só pode solicitar um saque a cada 7 dias.' });
-            }
+        // <<< INÍCIO DA ALTERAÇÃO >>>
+        // Nova regra: Valida se o dia da semana é sexta-feira no fuso horário de Brasília.
+        const hoje = new Date();
+        const options = { timeZone: 'America/Sao_Paulo', weekday: 'long' };
+        // Usamos 'en-US' para obter o nome do dia em inglês ("Friday"), o que simplifica a comparação.
+        const diaDaSemanaEmBrasilia = new Intl.DateTimeFormat('en-US', options).format(hoje);
+
+        if (diaDaSemanaEmBrasilia !== 'Friday') {
+            return res.status(403).json({ message: 'Saques são permitidos apenas às sextas-feiras.' });
         }
+
+        /*
+            // Bloco de código antigo removido:
+            if (financeiro.ultimo_saque_em) {
+                const seteDiasAtras = new Date();
+                seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
+                if (new Date(financeiro.ultimo_saque_em) > seteDiasAtras) {
+                    return res.status(429).json({ message: 'Você só pode solicitar um saque a cada 7 dias.' });
+                }
+            }
+        */
+        // <<< FIM DA ALTERAÇÃO >>>
 
         await prisma.designerFinanceiro.update({
             where: { designer_id: designerId },
             data: {
                 saldo_disponivel: { decrement: valorSaque },
                 saldo_pendente: { increment: valorSaque },
-                ultimo_saque_em: new Date(),
+                ultimo_saque_em: new Date(), // Continuamos atualizando a data do último saque para registro
             },
         });
         
