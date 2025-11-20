@@ -1,4 +1,4 @@
-// /script.js - VERSÃO FINAL ESTÁVEL E CORRIGIDA
+// /script.js - VERSÃO ATUALIZADA (FLUXO GRATUITO)
 
 async function handleAuthError(response) {
     if (response.status === 401 || response.status === 403) {
@@ -9,63 +9,16 @@ async function handleAuthError(response) {
     return false;
 }
 
-function detectarErroSessaoSubstituida(error) {
-    const mensagemErro = error.message || error.toString();
-    const padroesSessaoInvalida = [
+function detectingSessionError(error) {
+    const message = error.message || error.toString();
+    const patterns = [
         'Unexpected token',
         'is not valid JSON',
         'Você entrou',
         'message\': Você',
         'SyntaxError'
     ];
-    const isErroSessao = padroesSessaoInvalida.some(padrao =>
-        mensagemErro.includes(padrao)
-    );
-    return isErroSessao;
-}
-
-function exibirAlertaSessaoSubstituida() {
-    let modal = document.getElementById('modal-sessao-substituida');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'modal-sessao-substituida';
-        modal.innerHTML = `
-            <div class="modal-overlay">
-                <div class="modal-content sessao-substituida">
-                    <div class="modal-body"><h3>Sessão Expirada</h3><p>Entre novamente.</p></div>
-                    <div class="modal-footer"><button id="btn-ok-login" class="btn btn-primary">OK</button></div>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        if (!document.getElementById('sessao-substituida-styles')) {
-            const styles = document.createElement('style');
-            styles.id = 'sessao-substituida-styles';
-            styles.textContent = `
-                #modal-sessao-substituida .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 10000; }
-                #modal-sessao-substituida .modal-content.sessao-substituida { background: white; border-radius: 12px; padding: 0; max-width: 350px; width: 90%; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); animation: slideIn 0.3s ease-out; }
-                #modal-sessao-substituida .modal-body { padding: 30px 25px 20px 25px; text-align: center; }
-                #modal-sessao-substituida .modal-body h3 { margin: 0 0 15px 0; color: #333; font-size: 1.3em; font-weight: 600; }
-                #modal-sessao-substituida .modal-body p { margin: 0; color: #666; line-height: 1.5; }
-                #modal-sessao-substituida .modal-footer { padding: 0 25px 25px 25px; text-align: center; }
-                #modal-sessao-substituida .btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 30px; border-radius: 8px; font-size: 1em; font-weight: 500; cursor: pointer; transition: all 0.3s ease; min-width: 100px; }
-                #modal-sessao-substituida .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
-                @keyframes slideIn { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
-            `;
-            document.head.appendChild(styles);
-        }
-    }
-    modal.style.display = 'block';
-    document.getElementById('btn-ok-login').onclick = () => {
-        localStorage.clear();
-        window.location.href = "login.html";
-    };
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            localStorage.clear();
-            window.location.href = "login.html";
-        }
-    });
+    return patterns.some(p => message.includes(p));
 }
 
 function showFeedback(containerId, message, isError = false) {
@@ -74,6 +27,8 @@ function showFeedback(containerId, message, isError = false) {
     container.textContent = message;
     container.className = `form-feedback ${isError ? 'error' : 'success'}`;
     container.classList.remove('hidden');
+    // Se for sucesso, scrolla para ver a mensagem
+    if (!isError) container.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function hideFeedback(containerId) {
@@ -83,11 +38,14 @@ function hideFeedback(containerId) {
 
 document.addEventListener("DOMContentLoaded", () => {
     const path = window.location.pathname;
+    
+    // Verifica se é página de autenticação
     const isAuthPage = ['/', '/index.html', '/login.html', '/esqueci-senha.html', '/redefinir-senha.html', '/cadastro.html', '/verificacao.html'].some(p => path.endsWith(p));
 
     if (isAuthPage) {
         initializeAuthPages();
-    } else if (document.querySelector(".app-layout-grid")) {
+    } else {
+        // Assume que qualquer outra página precisa de proteção (Dashboard, Pedido, etc)
         initializeProtectedPage();
     }
 });
@@ -95,6 +53,9 @@ document.addEventListener("DOMContentLoaded", () => {
 function initializeAuthPages() {
     const path = window.location.pathname;
 
+    // ============================================================
+    // LOGIN
+    // ============================================================
     if (path.endsWith('/login.html') || path.endsWith('/index.html') || path === '/') {
         const loginForm = document.getElementById('login-form');
         if (loginForm) {
@@ -125,35 +86,44 @@ function initializeAuthPages() {
                 }
             });
         }
+        // Mensagens de URL (Reset de senha ou verificação)
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('verified') === 'true') {
             showFeedback('form-error-feedback', 'E-mail verificado com sucesso! Você já pode fazer o login.', false);
         }
         if (urlParams.get('reset') === 'success') {
-             showFeedback('form-error-feedback', 'Senha redefinida com sucesso! Você já pode fazer o login com a nova senha.', false);
+             showFeedback('form-error-feedback', 'Senha redefinida com sucesso! Faça login com a nova senha.', false);
         }
     }
 
+    // ============================================================
+    // CADASTRO (ATUALIZADO PARA FLUXO DIRETO)
+    // ============================================================
     if (path.endsWith('/cadastro.html')) {
         const cadastroForm = document.getElementById('cadastro-form');
         if (cadastroForm) {
             cadastroForm.addEventListener('submit', async (event) => {
                 event.preventDefault();
+                
                 const formWrapper = document.getElementById('form-wrapper');
                 const loadingFeedback = document.getElementById('loading-feedback');
                 const submitButton = cadastroForm.querySelector('button[type="submit"]');
+                
                 const senha = document.getElementById('senha').value;
                 const confirmarSenha = document.getElementById('confirmar-senha').value;
                 const aceiteTermos = document.getElementById('termos-aceite').checked;
 
                 hideFeedback('form-error-feedback');
+
+                // Validações Front-end
                 if (!aceiteTermos) return showFeedback('form-error-feedback', 'Você precisa aceitar os Termos para continuar.', true);
                 if (senha.length < 6) return showFeedback('form-error-feedback', 'Sua senha precisa ter no mínimo 6 caracteres.', true);
                 if (senha !== confirmarSenha) return showFeedback('form-error-feedback', 'As senhas não coincidem.', true);
 
+                // UI Loading
                 submitButton.disabled = true;
-                formWrapper.classList.add('hidden');
-                loadingFeedback.classList.remove('hidden');
+                if (formWrapper) formWrapper.classList.add('hidden');
+                if (loadingFeedback) loadingFeedback.classList.remove('hidden');
 
                 const empresaData = {
                     nomeEmpresa: document.getElementById('nome_empresa').value,
@@ -163,25 +133,29 @@ function initializeAuthPages() {
                     email: document.getElementById('email').value,
                     senha: senha
                 };
+
                 try {
                     const response = await fetch('/api/registerUser', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(empresaData)
                     });
+                    
                     const data = await response.json();
                     if (!response.ok) throw new Error(data.message || 'Ocorreu um erro desconhecido.');
 
-                    const registrationData = {
-                        contactId: data.contactId, companyId: data.companyId,
-                        asaasCustomerId: data.asaasCustomerId, companyName: empresaData.nomeEmpresa,
-                        responsibleName: empresaData.nomeResponsavel
-                    };
-                    localStorage.setItem('pendingRegistration', JSON.stringify(registrationData));
-                    window.location.href = 'assinatura.html';
+                    // SUCESSO: Login Automático
+                    localStorage.setItem('sessionToken', data.token);
+                    localStorage.setItem('userName', data.userName);
+                    
+                    // Redireciona direto para o Dashboard
+                    window.location.href = 'dashboard.html';
+
                 } catch (error) {
-                    loadingFeedback.classList.add('hidden');
-                    formWrapper.classList.remove('hidden');
+                    // ERRO: Volta a mostrar o formulário
+                    if (loadingFeedback) loadingFeedback.classList.add('hidden');
+                    if (formWrapper) formWrapper.classList.remove('hidden');
+                    
                     showFeedback('form-error-feedback', error.message, true);
                     submitButton.disabled = false;
                 }
@@ -189,6 +163,9 @@ function initializeAuthPages() {
         }
     }
 
+    // ============================================================
+    // ESQUECI MINHA SENHA
+    // ============================================================
     if (path.endsWith('/esqueci-senha.html')) {
         const esqueciSenhaForm = document.getElementById('esqueci-senha-form');
         if (esqueciSenhaForm) {
@@ -206,14 +183,17 @@ function initializeAuthPages() {
                     });
                     const data = await response.json();
                     if (!response.ok) { throw new Error(data.message); }
-                    formWrapper.innerHTML = `<div class="auth-header"><img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte"><h1>Link Enviado!</h1><p>${data.message || 'Se um e-mail correspondente for encontrado em nosso sistema, um link para redefinição de senha será enviado.'}</p></div>`;
+                    formWrapper.innerHTML = `<div class="auth-header"><img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo"><h1>Link Enviado!</h1><p>${data.message || 'Verifique seu e-mail.'}</p></div>`;
                 } catch (error) {
-                    formWrapper.innerHTML = `<div class="auth-header"><img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte"><h1>Ocorreu um Erro</h1><p>${error.message || 'Não foi possível processar a solicitação. Por favor, tente novamente mais tarde.'}</p></div>`;
+                    formWrapper.innerHTML = `<div class="auth-header"><h1>Erro</h1><p>${error.message}</p> <a href="esqueci-senha.html">Tentar novamente</a></div>`;
                 }
             });
         }
     }
 
+    // ============================================================
+    // REDEFINIR SENHA
+    // ============================================================
     if (path.endsWith('/redefinir-senha.html')) {
         const redefinirSenhaForm = document.getElementById('redefinir-senha-form');
         if (redefinirSenhaForm) {
@@ -223,17 +203,14 @@ function initializeAuthPages() {
                 const confirmarSenha = document.getElementById('confirmar-senha').value;
                 const submitButton = redefinirSenhaForm.querySelector('button[type="submit"]');
                 hideFeedback('form-error-feedback');
-                if (novaSenha.length < 6) return showFeedback('form-error-feedback', 'Sua senha precisa ter no mínimo 6 caracteres.', true);
+                
+                if (novaSenha.length < 6) return showFeedback('form-error-feedback', 'Mínimo 6 caracteres.', true);
                 if (novaSenha !== confirmarSenha) return showFeedback('form-error-feedback', 'As senhas não coincidem.', true);
                 
                 submitButton.disabled = true;
                 submitButton.textContent = 'Salvando...';
                 const token = new URLSearchParams(window.location.search).get('token');
-                if (!token) {
-                    showFeedback('form-error-feedback', 'Token de redefinição não encontrado. Link inválido.', true);
-                    submitButton.disabled = false;
-                    return;
-                }
+                
                 try {
                     const response = await fetch('/api/resetPassword', {
                         method: 'POST',
@@ -246,32 +223,16 @@ function initializeAuthPages() {
                 } catch (error) {
                     showFeedback('form-error-feedback', error.message, true);
                     submitButton.disabled = false;
+                    submitButton.textContent = 'Redefinir Senha';
                 }
             });
         }
     }
-
-    if (path.endsWith('/verificacao.html')) {
-        const feedbackText = document.getElementById('feedback-text');
-        const token = new URLSearchParams(window.location.search).get('token');
-        (async () => {
-            if (!token || !feedbackText) return;
-            feedbackText.textContent = 'Verificando...';
-            try {
-                const response = await fetch('/api/verifyEmail', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: token })
-                });
-                const data = await response.json();
-                if (!response.ok) { throw new Error(data.message); }
-                window.location.href = 'login.html?verified=true';
-            } catch (error) {
-                feedbackText.textContent = `Erro: ${error.message || 'Não foi possível verificar seu e-mail.'}`;
-            }
-        })();
-    }
 }
+
+// ============================================================
+// FUNÇÕES DE PÁGINAS PROTEGIDAS (DASHBOARD)
+// ============================================================
 
 function initializeProtectedPage() {
     const sessionToken = localStorage.getItem("sessionToken");
@@ -283,15 +244,18 @@ function initializeProtectedPage() {
         return;
     }
 
+    // Exibe nome do usuário
     const greetingEl = document.getElementById('user-greeting');
     if(greetingEl) greetingEl.textContent = `Olá, ${userName}!`;
     
+    // Logout
     const logoutButton = document.getElementById('logout-button');
     if(logoutButton) logoutButton.addEventListener('click', () => {
         localStorage.clear();
         window.location.href = 'login.html';
     });
 
+    // Se estiver no Dashboard (tem lista de pedidos), carrega os dados
     if (document.getElementById('pedidos-list-body')) {
         inicializarPainelDePedidos();
     }
@@ -307,7 +271,9 @@ async function atualizarDadosPainel() {
     const sessionToken = localStorage.getItem("sessionToken");
     const pedidosListBody = document.getElementById("pedidos-list-body");
     const saldoValorEl = document.getElementById("saldo-valor");
-    pedidosListBody.innerHTML = `<div class="loading-pedidos"><div class="spinner"></div><span>Carregando seus pedidos...</span></div>`;
+    
+    if(pedidosListBody) pedidosListBody.innerHTML = `<div class="loading-pedidos"><div class="spinner"></div><span>Carregando seus pedidos...</span></div>`;
+    
     try {
         const response = await fetch('/api/getPanelData', {
             method: "POST",
@@ -320,36 +286,38 @@ async function atualizarDadosPainel() {
             throw new Error(data.message || "Erro ao buscar dados.");
         }
         
-        saldoValorEl.textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.saldo || 0);
+        if(saldoValorEl) saldoValorEl.textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.saldo || 0);
         todosPedidos = data.pedidos || [];
         paginaAtual = 1;
         aplicarFiltros();
     } catch (error) {
-        console.error(`Falha ao carregar dados do painel. Causa: ${error.message}`);
-        pedidosListBody.innerHTML = `<div class="loading-pedidos" style="color: var(--erro);">${error.message}</div>`;
+        console.error(`Falha ao carregar dados: ${error.message}`);
+        if(pedidosListBody) pedidosListBody.innerHTML = `<div class="loading-pedidos" style="color: red;">${error.message}</div>`;
     }
 }
 
 function renderizarPedidos() {
     const pedidosListBody = document.getElementById("pedidos-list-body");
+    if(!pedidosListBody) return;
+
     pedidosListBody.innerHTML = "";
     if (pedidosFiltrados && pedidosFiltrados.length > 0) {
         const indiceInicio = (paginaAtual - 1) * itensPorPagina;
         const indiceFim = indiceInicio + itensPorPagina;
         const pedidosPagina = pedidosFiltrados.slice(indiceInicio, indiceFim);
         let html = "";
+        
         pedidosPagina.forEach(pedido => {
             let statusInfo = { texto: "Desconhecido", classe: "" };
-            let notificacaoHtml = '';
-            if (pedido.notificacao === true) {
-                notificacaoHtml = '<span class="notificacao-badge"><i class="fa-solid fa-circle"></i></span>';
-            }
-            let acaoHtml = `<a href="pedido.html?id=${pedido.ID}" class="btn-ver-pedido">Ver Detalhes${notificacaoHtml}</a>`;
+            let notificacaoHtml = pedido.notificacao ? '<span class="notificacao-badge">●</span>' : '';
+            let acaoHtml = `<a href="pedido.html?id=${pedido.ID}" class="btn-ver-pedido">Ver Detalhes ${notificacaoHtml}</a>`;
+            
             const stageId = pedido.STAGE_ID || "";
 
+            // Lógica de Status (Personalize conforme seus Stages do Bitrix)
             if (stageId.includes("NEW")) {
                 statusInfo = { texto: 'Aguardando Pagamento', classe: 'status-pagamento' };
-                acaoHtml = `<div class="dropdown-pagamento"><button class="btn-pagar" data-deal-id="${pedido.ID}">Pagar Agora</button><div class="dropdown-content"><button class="btn-pagar-saldo" data-deal-id="${pedido.ID}">Usar Saldo</button><button class="btn-gerar-cobranca" data-deal-id="${pedido.ID}">PIX</button></div></div>`;
+                acaoHtml = `<div class="dropdown-pagamento"><button class="btn-pagar" data-deal-id="${pedido.ID}">Pagar</button><div class="dropdown-content"><button class="btn-pagar-saldo" data-deal-id="${pedido.ID}">Usar Saldo</button><button class="btn-gerar-cobranca" data-deal-id="${pedido.ID}">PIX</button></div></div>`;
             } else if (stageId.includes("LOSE")) {
                 statusInfo = { texto: 'Cancelado', classe: 'status-cancelado' };
             } else if (stageId === "C17:UC_2OEE24") {
@@ -361,16 +329,13 @@ function renderizarPedidos() {
             } else {
                 statusInfo = { texto: 'Em Andamento', classe: 'status-andamento' };
             }
+            
             const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(pedido.OPPORTUNITY) || 0);
             
             html += `
-                <div class="pedido-item" style="grid-template-columns: 1fr 4fr 1.5fr 1.5fr 1.5fr;">
+                <div class="pedido-item">
                     <div class="col-id"><strong>#${pedido.ID}</strong></div>
-                    <div class="col-titulo">
-                        <div class="col-content">
-                            <span>${pedido.TITLE}</span>
-                        </div>
-                    </div>
+                    <div class="col-titulo">${pedido.TITLE}</div>
                     <div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div>
                     <div class="col-valor">${valorFormatado}</div>
                     <div class="col-acoes">${acaoHtml}</div>
@@ -379,10 +344,9 @@ function renderizarPedidos() {
         });
         pedidosListBody.innerHTML = html;
     } else {
-        pedidosListBody.innerHTML = `<div class="loading-pedidos" style="padding: 50px 20px;">Nenhum pedido encontrado.</div>`;
+        pedidosListBody.innerHTML = `<div class="loading-pedidos" style="padding: 40px;">Nenhum pedido encontrado.</div>`;
     }
 }
-
 
 function aplicarFiltros() {
     const searchInput = document.getElementById("search-input");
@@ -412,7 +376,6 @@ function aplicarFiltros() {
     renderizarPedidos();
 }
 
-
 function ativarDropdownsDePagamento() {
     const pedidosListBody = document.getElementById('pedidos-list-body');
     if (!pedidosListBody) return;
@@ -420,16 +383,20 @@ function ativarDropdownsDePagamento() {
     pedidosListBody.addEventListener('click', async function(event) {
         const target = event.target;
         const dropdown = target.closest('.dropdown-pagamento');
+        
+        // Botão Principal "Pagar" (Abre menu)
         if (target.classList.contains('btn-pagar')) {
             document.querySelectorAll('.dropdown-pagamento.active').forEach(d => d !== dropdown && d.classList.remove('active'));
             if(dropdown) dropdown.classList.toggle('active');
             return;
         }
+        
+        // Botão "Usar Saldo"
         if (target.classList.contains('btn-pagar-saldo')) {
             const dealId = target.dataset.dealId;
             if (!confirm('Tem certeza que deseja usar seu saldo para pagar este pedido?')) return;
             target.disabled = true;
-            target.textContent = 'Processando...';
+            target.textContent = '...';
             try {
                 const response = await fetch('/api/payWithBalance', {
                     method: 'POST',
@@ -446,10 +413,12 @@ function ativarDropdownsDePagamento() {
                 target.textContent = 'Usar Saldo';
             }
         }
+
+        // Botão "PIX"
         if (target.classList.contains('btn-gerar-cobranca')) {
             const dealId = target.dataset.dealId;
             target.disabled = true;
-            target.textContent = 'Gerando...';
+            target.textContent = '...';
             try {
                 const response = await fetch('/api/generatePixForDeal', {
                     method: 'POST',
@@ -468,6 +437,8 @@ function ativarDropdownsDePagamento() {
             }
         }
     });
+
+    // Fecha dropdown ao clicar fora
     window.addEventListener('click', function(event) {
         if (!event.target.closest('.dropdown-pagamento')) {
             document.querySelectorAll('.dropdown-pagamento.active').forEach(dropdown => {
@@ -477,92 +448,46 @@ function ativarDropdownsDePagamento() {
     });
 }
 
-// REMOVIDO: Toda a função inicializarModalNovoPedido() foi removida daqui.
-
-function injectDropdownStyles() {
-    if (document.getElementById('dropdown-styles')) return;
-
+function injectStyles() {
+    if (document.getElementById('dynamic-styles')) return;
     const styles = document.createElement('style');
-    styles.id = 'dropdown-styles';
+    styles.id = 'dynamic-styles';
     styles.textContent = `
-        .dropdown-pagamento {
-            position: relative;
-            display: inline-block;
-        }
-        .dropdown-pagamento .dropdown-content {
-            display: none; 
-            position: absolute;
-            background-color: #ffffff;
-            min-width: 130px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.15);
-            z-index: 100;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-            overflow: hidden;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            margin-top: 5px;
-        }
-        .dropdown-pagamento.active .dropdown-content {
-            display: block;
-        }
-        .dropdown-pagamento .dropdown-content button {
-            color: #333;
-            padding: 10px 15px;
-            text-decoration: none;
-            display: block;
-            width: 100%;
-            text-align: center;
-            background-color: transparent;
-            border: none;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            font-size: 0.9em;
-        }
-        .dropdown-pagamento .dropdown-content button:last-child {
-            border-bottom: none;
-        }
-        .dropdown-pagamento .dropdown-content button:hover {
-            background-color: #f7f7f7;
-        }
-        .btn-pagar {
-            position: relative;
-            padding-right: 25px !important;
-        }
-        .btn-pagar::after {
-            content: '▼';
-            font-size: 0.6em;
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: inherit;
-        }
+        .dropdown-pagamento { position: relative; display: inline-block; }
+        .dropdown-pagamento .dropdown-content { display: none; position: absolute; background: #fff; min-width: 120px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 99; border-radius: 4px; border: 1px solid #eee; top: 100%; right: 0; }
+        .dropdown-pagamento.active .dropdown-content { display: block; }
+        .dropdown-pagamento button { display: block; width: 100%; padding: 8px; text-align: left; border: none; background: none; cursor: pointer; font-size: 13px; }
+        .dropdown-pagamento button:hover { background: #f5f5f5; }
+        .loading-pedidos { padding: 20px; text-align: center; color: #666; }
+        .spinner { width: 20px; height: 20px; border: 2px solid #ddd; border-top: 2px solid #333; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; margin-right: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     `;
     document.head.appendChild(styles);
 }
 
 function inicializarPainelDePedidos() {
-    injectDropdownStyles();
-
-    // REMOVIDO: A chamada para inicializar o modal de novo pedido não é mais necessária.
+    injectStyles();
     
+    // Aba de Créditos
     const modalCreditos = document.getElementById("modal-adquirir-creditos");
     const btnOpenModalCreditos = document.querySelector(".btn-add-credito");
     if (modalCreditos && btnOpenModalCreditos) {
         const btnCloseModalCreditos = modalCreditos.querySelector(".close-modal");
         const formCreditos = document.getElementById("adquirir-creditos-form");
+        
         btnOpenModalCreditos.addEventListener("click", () => modalCreditos.classList.add("active"));
         btnCloseModalCreditos.addEventListener("click", () => modalCreditos.classList.remove("active"));
+        
         formCreditos.addEventListener('submit', async (event) => {
             event.preventDefault();
             const submitButton = formCreditos.querySelector("button[type='submit']");
             const valorInput = document.getElementById("creditos-valor");
             hideFeedback("creditos-form-error");
+            
             const valor = valorInput.value;
             const sessionToken = localStorage.getItem("sessionToken");
-            if (!valor || parseFloat(valor) < 5) return showFeedback("creditos-form-error", "Por favor, insira um valor de no mínimo R$ 5,00.", true);
+            
+            if (!valor || parseFloat(valor) < 5) return showFeedback("creditos-form-error", "Mínimo R$ 5,00.", true);
             
             submitButton.disabled = true;
             submitButton.textContent = "Gerando...";
@@ -573,11 +498,10 @@ function inicializarPainelDePedidos() {
                     body: JSON.stringify({ token: sessionToken, valor: valor })
                 });
                 const data = await response.json();
-                if (!response.ok) throw new Error(data.message || "Erro desconhecido ao gerar cobrança.");
+                if (!response.ok) throw new Error(data.message || "Erro desconhecido.");
                 window.open(data.url, '_blank');
                 modalCreditos.classList.remove("active");
                 formCreditos.reset();
-                alert("Sua cobrança foi gerada! Conclua o pagamento na nova aba que foi aberta.");
             } catch (error) {
                 showFeedback("creditos-form-error", error.message, true);
             } finally {
@@ -587,6 +511,7 @@ function inicializarPainelDePedidos() {
         });
     }
 
+    // Filtros de Abas
     const tabButtonsContainer = document.querySelector('.tab-buttons');
     if (tabButtonsContainer) {
         tabButtonsContainer.addEventListener('click', (event) => {
