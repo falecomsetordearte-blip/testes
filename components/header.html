@@ -1,12 +1,198 @@
-<!-- components/header.html - VERSÃO ATUALIZADA SEM A LOGO -->
+<!-- components/header.html -->
+<style>
+    /* CSS EXCLUSIVO DA BUSCA DO HEADER */
+    .search-container {
+        flex-grow: 1;
+        max-width: 400px;
+        margin: 0 20px;
+        position: relative;
+    }
+
+    .search-box {
+        display: flex;
+        background: rgba(255,255,255,0.1);
+        border-radius: 8px;
+        padding: 5px 10px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .search-box input {
+        border: none;
+        background: transparent;
+        outline: none;
+        flex-grow: 1;
+        padding: 5px;
+        font-size: 14px;
+    }
+
+    .search-box button {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        color: #555;
+    }
+
+    /* MODAL DE RESULTADOS */
+    #search-results-modal {
+        display: none; /* Escondido por padrão */
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal-content {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .result-item {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .result-item:hover {
+        background-color: #f9f9f9;
+    }
+
+    .result-info h4 { margin: 0 0 5px 0; color: #333; }
+    .result-info p { margin: 0; font-size: 0.9em; color: #666; }
+    
+    /* Destaque para a fase */
+    .stage-badge {
+        background-color: #e3f2fd;
+        color: #1565c0;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.85em;
+        font-weight: bold;
+        white-space: nowrap;
+    }
+
+    .close-modal {
+        float: right;
+        cursor: pointer;
+        font-size: 20px;
+        color: #999;
+    }
+</style>
+
 <header class="app-header">
     <div class="header-content">
-        <!-- Este div vazio ajuda a empurrar o user-menu para a direita -->
-        <div></div> 
+        <!-- Logo ou Espaço -->
+        <div class="logo-area">Minha App</div>
         
+        <!-- NOVA BARRA DE BUSCA -->
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" id="header-search-input" placeholder="Buscar pedido (ID ou Nome)...">
+                <button onclick="executarBuscaHeader()">🔍</button>
+            </div>
+        </div>
+
+        <!-- Menu do Usuário -->
         <div class="user-menu">
             <span id="user-greeting">Olá!</span>
             <button id="logout-button">Sair</button>
         </div>
     </div>
 </header>
+
+<!-- O MODAL FICARÁ ESCONDIDO ATÉ A BUSCA -->
+<div id="search-results-modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="fecharModalBusca()">&times;</span>
+        <h3>Resultados da Busca</h3>
+        <div id="results-list">
+            <!-- Resultados aparecerão aqui -->
+            <p style="text-align:center; color:#999;">Carregando...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Funcionalidade de busca
+    const searchInput = document.getElementById('header-search-input');
+    
+    // Permitir apertar ENTER para buscar
+    searchInput.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            executarBuscaHeader();
+        }
+    });
+
+    function fecharModalBusca() {
+        document.getElementById('search-results-modal').style.display = 'none';
+    }
+
+    async function executarBuscaHeader() {
+        const query = document.getElementById('header-search-input').value;
+        if (!query || query.length < 2) {
+            alert("Digite pelo menos 2 caracteres.");
+            return;
+        }
+
+        const modal = document.getElementById('search-results-modal');
+        const list = document.getElementById('results-list');
+        const sessionToken = localStorage.getItem('sessionToken'); // Ou de onde você pega o token
+
+        modal.style.display = 'flex';
+        list.innerHTML = '<p style="text-align:center;">Buscando...</p>';
+
+        try {
+            const response = await fetch('/api/searchDeal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionToken, query })
+            });
+
+            const data = await response.json();
+
+            if (data.results && data.results.length > 0) {
+                list.innerHTML = '';
+                data.results.forEach(deal => {
+                    // Cria o HTML de cada item
+                    const item = document.createElement('div');
+                    item.className = 'result-item';
+                    item.onclick = () => {
+                        // Ação ao clicar: Redirecionar para a página do pedido ou abrir detalhe
+                        // Exemplo: window.location.href = `/pedido.html?id=${deal.id}`;
+                        alert(`Abrindo pedido ${deal.id}`); 
+                        fecharModalBusca();
+                    };
+
+                    item.innerHTML = `
+                        <div class="result-info">
+                            <h4>#${deal.id} - ${deal.titulo}</h4>
+                            <p>Criado em: ${new Date(deal.data).toLocaleDateString('pt-BR')}</p>
+                        </div>
+                        <div class="stage-badge">
+                            ${deal.fase}
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            } else {
+                list.innerHTML = '<p style="text-align:center; padding: 20px;">Nenhum pedido encontrado nesta fase ou com este nome.</p>';
+            }
+
+        } catch (error) {
+            console.error(error);
+            list.innerHTML = '<p style="text-align:center; color:red;">Erro ao buscar.</p>';
+        }
+    }
+</script>
