@@ -1,191 +1,252 @@
 <!-- components/header.html -->
 <style>
-/* --- ESTILOS DA BARRA DE BUSCA --- */
-.search-container {
-flex-grow: 1;
-max-width: 450px; /* Largura máxima da barra */
-margin: 0 20px;
-position: relative;
-}
+    /* --- ESTILOS DA BARRA DE BUSCA --- */
+    .search-container {
+        flex-grow: 1;
+        max-width: 450px; /* Um pouco mais largo */
+        margin: 0 20px;
+        position: relative;
+    }
 
-.search-box {
-display: flex;
-align-items: center;
-background: #f5f5f5; /* Fundo cinza claro (Flat) */
-border-radius: 6px; /* Bordas levemente arredondadas */
-padding: 0 10px;
-border: 1px solid #ddd; /* Borda sutil */
-transition: all 0.2s ease;
-}
+    .search-box {
+        display: flex;
+        align-items: center;
+        background: #f5f5f5; /* Fundo cinza bem claro */
+        border-radius: 6px;  /* Bordas levemente arredondadas (Flat) */
+        padding: 0 10px;
+        border: 1px solid #ddd;
+        transition: border-color 0.2s, background 0.2s;
+    }
 
-/* Efeito ao clicar na busca */
-.search-box:focus-within {
-background: #fff;
-border-color: #bbb;
-box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
+    .search-box:focus-within {
+        background: #fff;
+        border-color: #bbb;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
 
-.search-box input {
-border: none;
-background: transparent;
-outline: none;
-flex-grow: 1;
-padding: 10px 5px;
-font-size: 14px;
-color: #333;
-width: 100%;
-}
+    .search-box input {
+        border: none;
+        background: transparent;
+        outline: none;
+        flex-grow: 1;
+        padding: 10px 5px;
+        font-size: 14px;
+        color: #333;
+    }
 
-.search-btn {
-background: transparent;
-border: none;
-cursor: pointer;
-padding: 8px;
-display: flex;
-align-items: center;
-justify-content: center;
-opacity: 0.6;
-transition: opacity 0.2s;
-}
+    .search-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+    }
 
-.search-btn:hover {
-opacity: 1;
-}
+    .search-btn:hover {
+        opacity: 1;
+    }
 
-/* Ícone SVG Cinza Escuro */
-.search-btn svg {
-width: 20px;
-height: 20px;
-fill: #4a4a4a;
-}
+    /* Ícone SVG Cinza Escuro */
+    .search-btn svg {
+        width: 20px;
+        height: 20px;
+        fill: #4a4a4a; 
+    }
 
-/* --- MODAL DE RESULTADOS (JANELA FLUTUANTE) --- */
-#search-results-modal {
-display: none; /* Escondido por padrão */
-position: fixed;
-top: 0; left: 0; width: 100%; height: 100%;
-background: rgba(0,0,0,0.4); /* Fundo escuro transparente */
-z-index: 9999; /* Fica acima de tudo */
-justify-content: center;
-align-items: flex-start; /* Alinha no topo */
-padding-top: 80px;
-backdrop-filter: blur(2px); /* Desfoque leve no fundo */
-}
+    /* --- MODAL DE RESULTADOS --- */
+    #search-results-modal {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.4); /* Fundo escuro mais suave */
+        z-index: 9999;
+        justify-content: center;
+        align-items: flex-start; /* Alinha mais ao topo */
+        padding-top: 80px;
+        backdrop-filter: blur(2px); /* Desfoque leve no fundo */
+    }
 
-.modal-content {
-background: white;
-border-radius: 8px;
-width: 90%;
-max-width: 600px;
-max-height: 70vh;
-overflow-y: auto; /* Barra de rolagem se tiver muitos resultados */
-box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-position: relative;
-display: flex;
-flex-direction: column;
-}
+    .modal-content {
+        background: white;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 70vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        position: relative;
+    }
+    
+    .modal-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-.modal-header {
-padding: 15px 20px;
-border-bottom: 1px solid #eee;
-display: flex;
-justify-content: space-between;
-align-items: center;
-background: #fff;
-position: sticky;
-top: 0;
-z-index: 10;
-}
+    .modal-header h3 { margin: 0; font-size: 16px; color: #333; }
 
-.modal-header h3 { margin: 0; font-size: 16px; color: #333; font-weight: 600; }
+    .close-modal {
+        cursor: pointer;
+        font-size: 24px;
+        color: #999;
+        line-height: 20px;
+    }
+    .close-modal:hover { color: #333; }
 
-.close-modal {
-cursor: pointer;
-font-size: 24px;
-color: #999;
-line-height: 20px;
-transition: color 0.2s;
-}
-.close-modal:hover { color: #333; }
+    /* Lista de Resultados */
+    .result-item {
+        padding: 15px 20px;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: background 0.1s;
+    }
 
-/* --- LISTA DE RESULTADOS --- */
-#results-list {
-padding-bottom: 10px;
-}
+    .result-item:hover {
+        background-color: #f8f9fa;
+    }
 
-.result-item {
-padding: 15px 20px;
-border-bottom: 1px solid #f0f0f0;
-display: flex;
-justify-content: space-between;
-align-items: center;
-cursor: pointer;
-transition: background 0.1s;
-}
+    .result-item:last-child { border-bottom: none; }
 
-.result-item:hover {
-background-color: #f8f9fa;
-}
-
-.result-item:last-child { border-bottom: none; }
-
-.result-info h4 { margin: 0 0 4px 0; color: #222; font-size: 15px; font-weight: 600; }
-.result-info p { margin: 0; font-size: 12px; color: #777; }
-
-/* Badge da Fase (Destaque visual) */
-.stage-badge {
-background-color: #eef2f5;
-color: #4a5568;
-padding: 6px 12px;
-border-radius: 4px;
-font-size: 11px;
-font-weight: 700;
-text-transform: uppercase;
-letter-spacing: 0.5px;
-border: 1px solid #dce1e6;
-white-space: nowrap;
-}
+    .result-info h4 { margin: 0 0 4px 0; color: #222; font-size: 15px; }
+    .result-info p { margin: 0; font-size: 12px; color: #777; }
+    
+    /* Badge da Fase (Destaque) */
+    .stage-badge {
+        background-color: #eef2f5;
+        color: #4a5568;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border: 1px solid #dce1e6;
+    }
 </style>
+
 <header class="app-header">
-<div class="header-content">
-<!-- Espaço vazio para empurrar o conteúdo ou Logo -->
-<div class="logo-area"></div>
-code
-Code
-<!-- BARRA DE BUSCA CENTRAL -->
-    <div class="search-container">
-        <div class="search-box">
-            <!-- Input detecta o ENTER chamando window.executarBuscaHeader() -->
-            <input type="text" id="header-search-input" 
-                   placeholder="Buscar pedido (ID ou Nome)..." 
-                   autocomplete="off"
-                   onkeyup="if(event.key === 'Enter') window.executarBuscaHeader()">
-            
-            <!-- Botão com ícone SVG Flat -->
-            <button class="search-btn" onclick="window.executarBuscaHeader()" title="Buscar">
-                <svg viewBox="0 0 24 24">
-                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                </svg>
-            </button>
+    <div class="header-content">
+        <!-- Espaçador ou Logo -->
+        <div class="logo-area"></div> 
+        
+        <!-- BARRA DE BUSCA -->
+        <div class="search-container">
+            <div class="search-box">
+                <!-- O evento onkeyup garante que o Enter funcione -->
+                <input type="text" id="header-search-input" 
+                       placeholder="Buscar pedido..." 
+                       onkeyup="if(event.key === 'Enter') executarBuscaHeader()">
+                
+                <button class="search-btn" onclick="executarBuscaHeader()">
+                    <!-- Ícone SVG Flat (Lupa) -->
+                    <svg viewBox="0 0 24 24">
+                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Menu do Usuário -->
+        <div class="user-menu">
+            <span id="user-greeting">Olá!</span>
+            <button id="logout-button">Sair</button>
         </div>
     </div>
+</header>
 
-    <!-- Menu do Usuário (Direita) -->
-    <div class="user-menu">
-        <span id="user-greeting">Olá!</span>
-        <button id="logout-button">Sair</button>
+<!-- MODAL FLUTUANTE -->
+<div id="search-results-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Resultados da Busca</h3>
+            <span class="close-modal" onclick="fecharModalBusca()">&times;</span>
+        </div>
+        <div id="results-list">
+            <!-- Resultados serão injetados aqui -->
+        </div>
     </div>
 </div>
-</header>
-<!-- MODAL QUE APARECE COM OS RESULTADOS -->
-<div id="search-results-modal">
-<div class="modal-content">
-<div class="modal-header">
-<h3>Resultados da Busca</h3>
-<span class="close-modal" onclick="window.fecharModalBusca()">&times;</span>
-</div>
-<div id="results-list">
-<!-- Os itens serão inseridos aqui via JavaScript (layout.js) -->
-</div>
-</div>
-</div>
+
+<script>
+    function fecharModalBusca() {
+        document.getElementById('search-results-modal').style.display = 'none';
+    }
+
+    async function executarBuscaHeader() {
+        const input = document.getElementById('header-search-input');
+        const query = input.value.trim(); // Remove espaços extras
+        
+        if (!query) return; // Não busca se estiver vazio
+
+        const modal = document.getElementById('search-results-modal');
+        const list = document.getElementById('results-list');
+        
+        // Tenta pegar o token do localStorage (ajuste a chave conforme seu login)
+        const sessionToken = localStorage.getItem('sessionToken') || localStorage.getItem('token'); 
+
+        modal.style.display = 'flex';
+        list.innerHTML = '<p style="text-align:center; padding: 20px; color:#666;">Buscando no sistema...</p>';
+
+        try {
+            const response = await fetch('/api/searchDeal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionToken, query })
+            });
+
+            const data = await response.json();
+
+            if (data.results && data.results.length > 0) {
+                list.innerHTML = ''; // Limpa o carregando
+                data.results.forEach(deal => {
+                    // Formata data
+                    const dataCriacao = deal.data ? new Date(deal.data).toLocaleDateString('pt-BR') : 'Data n/a';
+
+                    const item = document.createElement('div');
+                    item.className = 'result-item';
+                    item.onclick = () => {
+                        // LÓGICA AO CLICAR NO RESULTADO
+                        // Altere aqui para redirecionar para onde você deseja
+                        // Exemplo: window.location.href = `/detalhes-pedido.html?id=${deal.id}`;
+                        alert(`Redirecionando para pedido: #${deal.id}`); 
+                        fecharModalBusca();
+                    };
+
+                    item.innerHTML = `
+                        <div class="result-info">
+                            <h4>#${deal.id} - ${deal.titulo}</h4>
+                            <p>Criado em: ${dataCriacao}</p>
+                        </div>
+                        <div class="stage-badge">
+                            ${deal.fase}
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            } else {
+                list.innerHTML = '<p style="text-align:center; padding: 30px; color:#888;">Nenhum pedido encontrado.</p>';
+            }
+
+        } catch (error) {
+            console.error(error);
+            list.innerHTML = '<p style="text-align:center; padding: 20px; color:#d9534f;">Erro ao realizar a busca.</p>';
+        }
+    }
+    
+    // Fecha o modal se clicar fora dele (fundo escuro)
+    window.onclick = function(event) {
+        const modal = document.getElementById('search-results-modal');
+        if (event.target === modal) {
+            fecharModalBusca();
+        }
+    }
+</script>
