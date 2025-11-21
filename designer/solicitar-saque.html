@@ -2,47 +2,332 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solicitar Saque - Setor de Arte</title>
     <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
-    <link rel="stylesheet" href="../style.css"> 
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        /* --- VARIÁVEIS & RESET (Mesmo padrão do Painel) --- */
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary-color: #64748b;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #94a3b8;
+            --border-color: #e2e8f0;
+            --input-focus: #c7d2fe;
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --radius: 16px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- HEADER --- */
+        .app-header {
+            background-color: var(--card-bg);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            height: 80px;
+            display: flex;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-content {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-logo {
+            height: 50px;
+            width: auto;
+        }
+
+        .back-link {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.3s;
+            padding: 8px 16px;
+            border-radius: 50px;
+            background: #f8fafc;
+        }
+
+        .back-link:hover {
+            background: #e2e8f0;
+            color: var(--primary-color);
+        }
+
+        /* --- MAIN --- */
+        .main-painel {
+            flex: 1;
+            display: flex;
+            align-items: center; /* Centraliza verticalmente */
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        /* --- CARD DO FORMULÁRIO --- */
+        .form-card {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 500px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+            padding: 40px;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .page-title {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 10px;
+        }
+        
+        .page-subtitle {
+            text-align: center;
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+
+        /* --- ÁREA DE INSTRUÇÕES (NF) --- */
+        .nf-box {
+            background-color: #eff6ff; /* Azul bem claro */
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .nf-icon {
+            background: #bfdbfe;
+            color: #1e40af;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.1rem;
+        }
+
+        .nf-content h3 {
+            font-size: 0.95rem;
+            color: #1e3a8a;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .nf-content p {
+            font-size: 0.85rem;
+            color: #334155;
+            line-height: 1.5;
+        }
+
+        .cnpj-badge {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: 600;
+            color: #0f172a;
+            border: 1px solid #bfdbfe;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        /* --- FORMULÁRIO --- */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px 12px 40px; /* Espaço para o ícone */
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            transition: all 0.3s ease;
+            background-color: #fff;
+        }
+
+        /* Ajuste para input de data que pode não ter ícone customizado facilmente */
+        input[type="date"].form-control {
+            padding-left: 15px; /* Remove padding extra se não usar ícone sobreposto */
+            color: var(--secondary-color);
+        }
+        
+        /* Forçando a cor preta quando uma data é selecionada */
+        input[type="date"]:valid { color: var(--text-main); }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px var(--input-focus);
+        }
+
+        /* --- BOTÃO --- */
+        .btn-submit {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        /* --- FEEDBACK --- */
+        .form-feedback {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        
+        .form-feedback.hidden { display: none; }
+        
+        .form-feedback.success {
+            background-color: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+        
+        .form-feedback.error {
+            background-color: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        /* Responsividade */
+        @media (max-width: 600px) {
+            .form-card { padding: 25px; }
+            .nf-box { flex-direction: column; align-items: center; text-align: center; }
+        }
+    </style>
 </head>
 <body>
     <div class="app-layout">
         <header class="app-header">
             <div class="container header-content">
                  <img src="https://app.setordearte.com.br/images/logo-fundo-claro-100x100.png" alt="Logo Setor de Arte" class="app-logo">
-                 <a href="painel.html" style="color: white; text-decoration: none;">Voltar ao Painel</a>
+                 <!-- Link estilizado -->
+                 <a href="painel.html" class="back-link">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Voltar</span>
+                 </a>
             </div>
         </header>
         
         <main class="main-painel">
-            <div class="container">
-                <div class="form-container" style="max-width: 600px; margin: 40px auto; padding: 30px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                    <h1 style="text-align: center; margin-bottom: 20px;">Solicitação de Saque</h1>
-                    
-                    <div class="nf-instructions" style="background-color: #f0f4f8; padding: 15px; border-radius: 8px; margin-bottom: 25px; text-align: center;">
-                        <h3 style="margin-top: 0; color: #333;">Nota Fiscal</h3>
-                        <p style="margin-bottom: 0; line-height: 1.6;">
-                            Emita sua NF para o CNPJ <strong>50.775.322/0001-80</strong>.
-                            <br>
-                            Não é necessário enviar o arquivo, apenas emitir e preencher corretamente a data de emissão abaixo.
+            <div class="form-card">
+                <h1 class="page-title">Solicitação de Saque</h1>
+                <p class="page-subtitle">Preencha os dados abaixo para processar seu pagamento.</p>
+                
+                <div class="nf-box">
+                    <div class="nf-icon">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </div>
+                    <div class="nf-content">
+                        <h3>Nota Fiscal Obrigatória</h3>
+                        <p>
+                            Emita sua NF para o CNPJ <span class="cnpj-badge">50.775.322/0001-80</span>.
+                            Não é necessário enviar o arquivo, apenas preencha a data de emissão.
                         </p>
                     </div>
-
-                    <form id="form-solicitar-saque">
-                        <div class="form-group">
-                            <label for="valor-saque">Valor a Sacar (R$)</label>
-                            <input type="number" id="valor-saque" step="0.01" min="1" placeholder="Ex: 50.00" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="data-emissao">Data da Emissão da NF</label>
-                            <input type="date" id="data-emissao" required>
-                        </div>
-                        <div id="form-feedback" class="form-feedback hidden"></div>
-                        <button type="submit" class="card-button" style="width: 100%; margin-top: 10px;">Enviar Solicitação</button>
-                    </form>
                 </div>
+
+                <form id="form-solicitar-saque">
+                    <div class="form-group">
+                        <label for="valor-saque">Valor a Sacar (R$)</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-dollar-sign input-icon"></i>
+                            <input type="number" id="valor-saque" class="form-control" step="0.01" min="1" placeholder="0,00" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="data-emissao">Data da Emissão da NF</label>
+                        <div class="input-wrapper">
+                            <!-- input type date geralmente tem seu próprio ícone, então removemos o ícone customizado aqui para não quebrar o layout nativo -->
+                            <input type="date" id="data-emissao" class="form-control" required style="padding-left: 15px;">
+                        </div>
+                    </div>
+
+                    <div id="form-feedback" class="form-feedback hidden"></div>
+                    
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-paper-plane"></i> Enviar Solicitação
+                    </button>
+                </form>
             </div>
         </main>
     </div>
