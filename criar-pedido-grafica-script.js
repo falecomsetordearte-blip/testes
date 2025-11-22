@@ -1,5 +1,3 @@
-// --- START OF FILE criar-pedido-grafica-script.js ---
-
 document.addEventListener('DOMContentLoaded', () => {
     // --- Seletores dos Elementos ---
     const servicoSelectionContainer = document.getElementById('servico-selection-container');
@@ -45,8 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (selection === 'Arquivo do Cliente') {
             arquivoClienteFields.classList.remove('hidden');
-            // Agora o obrigatório é o FILE upload, não mais URL
-            document.getElementById('file-upload-cliente').required = true;
+            // Agora o campo obrigatório é o FILE upload, não mais a URL
+            const fileCliente = document.getElementById('file-upload-cliente');
+            if (fileCliente) fileCliente.required = true;
             
         } else if (selection === 'Setor de Arte') {
             setorArteFields.classList.remove('hidden');
@@ -108,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const submitButton = form.querySelector("button[type='submit']");
             const originalBtnText = submitButton.textContent;
             submitButton.disabled = true;
-            submitButton.textContent = "Processando arquivo..."; // Feedback visual
+            submitButton.textContent = "Lendo arquivos..."; // Feedback visual
             feedbackDiv.classList.add('hidden');
 
             const arteSelecionadaNode = document.querySelector('input[name="pedido-arte"]:checked');
