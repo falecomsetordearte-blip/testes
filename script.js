@@ -43,7 +43,6 @@ document.addEventListener("DOMContentLoaded", () => {
     initializeAuthPages();
 
     // 2. Verifica se estamos no painel (Dashboard) para iniciar a proteção e lógica
-    // A verificação busca elementos únicos do painel
     if (document.getElementById('pedidos-list-body') || document.querySelector(".app-layout-grid")) {
         initializeProtectedPage();
     }
@@ -89,7 +88,7 @@ function initializeAuthPages() {
             }
         });
 
-        // Mensagens via URL (ex: após verificar email)
+        // Mensagens via URL
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('verified') === 'true') {
             showFeedback('form-error-feedback', 'E-mail verificado com sucesso! Você já pode fazer o login.', false);
@@ -99,7 +98,7 @@ function initializeAuthPages() {
         }
     }
 
-    // --- CADASTRO ---
+    // --- CADASTRO (ATUALIZADO COM UPLOAD) ---
     const cadastroForm = document.getElementById('cadastro-form');
     if (cadastroForm) {
         cadastroForm.addEventListener('submit', async (event) => {
@@ -121,22 +120,55 @@ function initializeAuthPages() {
             if (senha.length < 6) return showFeedback(feedbackId, 'Sua senha precisa ter no mínimo 6 caracteres.', true);
             if (senha !== confirmarSenha) return showFeedback(feedbackId, 'As senhas não coincidem.', true);
 
-            // UI Loading
+            // UI Loading Inicial
             submitButton.disabled = true;
             submitButton.textContent = "Processando...";
-            if (formWrapper) formWrapper.classList.add('hidden');
-            if (loadingFeedback) loadingFeedback.classList.remove('hidden');
 
-            const empresaData = {
-                nomeEmpresa: document.getElementById('nome_empresa').value,
-                cnpj: document.getElementById('cnpj').value,
-                telefoneEmpresa: document.getElementById('telefone_empresa').value,
-                nomeResponsavel: document.getElementById('nome_responsavel').value,
-                email: document.getElementById('email').value,
-                senha: senha
+            // --- LÓGICA DE ARQUIVO ---
+            const fileInput = document.getElementById('logo_arquivo');
+            let fileData = null;
+
+            // Função interna para converter imagem em texto (Base64)
+            const convertBase64 = (file) => {
+                return new Promise((resolve, reject) => {
+                    const fileReader = new FileReader();
+                    fileReader.readAsDataURL(file);
+                    fileReader.onload = () => resolve(fileReader.result);
+                    fileReader.onerror = (error) => reject(error);
+                });
             };
 
             try {
+                // Se o usuário selecionou um arquivo, converte ele agora
+                if (fileInput && fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    
+                    // Validação de tamanho (Max 5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                        throw new Error("O logo deve ter no máximo 5MB.");
+                    }
+
+                    const base64 = await convertBase64(file);
+                    fileData = {
+                        name: file.name,
+                        base64: base64
+                    };
+                }
+
+                // Esconde form e mostra loading APÓS processar arquivo
+                if (formWrapper) formWrapper.classList.add('hidden');
+                if (loadingFeedback) loadingFeedback.classList.remove('hidden');
+
+                const empresaData = {
+                    nomeEmpresa: document.getElementById('nome_empresa').value,
+                    cnpj: document.getElementById('cnpj').value,
+                    telefoneEmpresa: document.getElementById('telefone_empresa').value,
+                    nomeResponsavel: document.getElementById('nome_responsavel').value,
+                    email: document.getElementById('email').value,
+                    senha: senha,
+                    logo: fileData // Envia o objeto do arquivo (ou null)
+                };
+
                 const response = await fetch('/api/registerUser', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -246,6 +278,7 @@ function initializeAuthPages() {
     }
 }
 
+// *** FIM DA PARTE 1 ***
 // --- Funções de Sessão Protegida ---
 
 function initializeProtectedPage() {
@@ -273,11 +306,11 @@ function initializeProtectedPage() {
     }
 
     // Inicializa a lógica específica do Dashboard (Lista de pedidos, Saldo, etc)
-    // Essa função será definida na Parte 2
     if (document.getElementById('pedidos-list-body')) {
         inicializarPainelDePedidos();
     }
 }
+
 // ============================================================
 // SCRIPT.JS - PARTE 2: LÓGICA DO DASHBOARD (PAINEL)
 // ============================================================
@@ -397,7 +430,7 @@ function aplicarFiltros() {
     renderizarPedidos();
 }
 
-// 4. Renderiza o HTML da Lista (CORREÇÃO CRÍTICA AQUI PARA EXIBIR BOTÕES)
+// 4. Renderiza o HTML da Lista
 function renderizarPedidos() {
     const pedidosListBody = document.getElementById("pedidos-list-body");
     if(!pedidosListBody) return;
@@ -421,7 +454,6 @@ function renderizarPedidos() {
             // Define Status e Botões
             if (stageId.includes("NEW")) {
                 statusInfo = { texto: 'Aguardando Pagamento', classe: 'status-pagamento' };
-                // RECRIA O MENU DROPDOWN DE PAGAMENTO
                 acaoHtml = `
                     <div class="dropdown-pagamento">
                         <button type="button" class="btn-pagar" data-deal-id="${id}">
@@ -488,7 +520,7 @@ function ativarDropdownsDePagamento() {
             });
             // Alterna o atual
             if(dropdown) dropdown.classList.toggle('active');
-            event.stopPropagation(); // Impede que o clique feche imediatamente
+            event.stopPropagation(); 
             return;
         }
 
@@ -576,7 +608,7 @@ function setupModalCreditos() {
     // Abrir Modal
     btnOpen.addEventListener("click", (e) => {
         e.preventDefault();
-        modal.classList.add("active"); // Usa a classe CSS que definimos no HTML
+        modal.classList.add("active"); 
     });
 
     // Fechar Modal (Botão X)
