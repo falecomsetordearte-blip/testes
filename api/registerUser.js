@@ -10,7 +10,6 @@ const ASAAS_API_KEY = process.env.ASAAS_API_KEY;
 const DATABASE_URL = process.env.DATABASE_URL;
 
 // *** CONFIGURAÇÃO DO DRIVE BITRIX ***
-// ID da pasta "Logos de Clientes" que você criou
 const BITRIX_LOGOS_FOLDER_ID = 251803; 
 
 module.exports = async (req, res) => {
@@ -34,10 +33,9 @@ module.exports = async (req, res) => {
         return res.status(405).json({ message: 'Método não permitido' });
     }
 
-    // 1. Extrair dados (incluindo o logo)
+    // 1. Extrair dados
     const { nomeEmpresa, cnpj, telefoneEmpresa, nomeResponsavel, email, senha, logo } = req.body;
 
-    // Validação
     if (!nomeEmpresa || !email || !senha || !cnpj || !nomeResponsavel) {
         return res.status(400).json({ message: 'Todos os campos obrigatórios devem ser preenchidos.' });
     }
@@ -45,13 +43,13 @@ module.exports = async (req, res) => {
     let companyId = null;
     let contactId = null;
     let asaasCustomerId = null;
-    let bitrixLogoId = null; // Aqui guardaremos o ID do arquivo
+    let bitrixLogoId = null;
 
     try {
         // =================================================================
-        // 1. Verificar duplicidade de email no Bitrix
+        // 1. Verificar e-mail no Bitrix
         // =================================================================
-        console.log("[DEBUG] 1. Verificando e-mail...");
+        console.log("[DEBUG] 1. Verificando disponibilidade do e-mail...");
         const searchUserResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { 'EMAIL': email },
             select: ['ID']
@@ -62,45 +60,61 @@ module.exports = async (req, res) => {
         }
 
         // =================================================================
-        // 2. UPLOAD DO LOGO PARA O BITRIX (Se houver)
+        // 2. UPLOAD DO LOGO (COM DEPURAÇÃO DETALHADA)
         // =================================================================
         if (logo && logo.base64) {
-            console.log("[DEBUG] 2. Processando upload de logo para pasta:", BITRIX_LOGOS_FOLDER_ID);
+            console.log(`[DEBUG] 2. Iniciando upload para pasta ID: ${BITRIX_LOGOS_FOLDER_ID}`);
+            
             try {
-                // Remove o cabeçalho "data:image/png;base64," para enviar só os bytes
+                // Limpeza do Base64 e do Nome do arquivo
                 const base64Content = logo.base64.split(';base64,').pop();
-                // Limpa nome do arquivo para evitar caracteres estranhos
-                const safeName = `${cnpj.replace(/\D/g,'')}_${logo.name.replace(/[^a-zA-Z0-9._-]/g, '')}`;
+                const cleanName = logo.name.replace(/[^a-zA-Z0-9._-]/g, '');
+                const finalFileName = `${cnpj.replace(/\D/g,'')}_${cleanName}`;
+
+                console.log(`[DEBUG] Enviando arquivo: ${finalFileName}`);
 
                 const uploadResponse = await axios.post(`${BITRIX24_API_URL}disk.folder.uploadfile.json`, {
                     id: BITRIX_LOGOS_FOLDER_ID,
                     data: {
-                        NAME: safeName,
+                        NAME: finalFileName,
                         CONTENT: base64Content
                     },
                     generateUniqueName: true
                 });
 
+                // *** LOG DA RESPOSTA BRUTA DO BITRIX ***
+                console.log("[DEBUG] >>> RESPOSTA DO BITRIX (UPLOAD):", JSON.stringify(uploadResponse.data));
+
                 if (uploadResponse.data.result && uploadResponse.data.result.ID) {
                     bitrixLogoId = uploadResponse.data.result.ID;
-                    console.log(`[DEBUG] Logo enviado com sucesso! ID Bitrix: ${bitrixLogoId}`);
+                    console.log(`[DEBUG] SUCESSO! ID do Arquivo gerado: ${bitrixLogoId}`);
                 } else {
-                    console.warn("[WARN] Bitrix não retornou ID do arquivo no upload.");
+                    console.warn("[WARN] Upload feito, mas o Bitrix não retornou o campo 'ID' dentro de 'result'.");
                 }
+
             } catch (uploadError) {
-                console.error("[ERRO] Falha no upload do logo:", uploadError.message);
-                // Não interrompemos o cadastro, apenas seguimos sem logo
+                console.error("[ERRO CRÍTICO NO UPLOAD]");
+                if (uploadError.response) {
+                    // O servidor respondeu com um status de erro (4xx, 5xx)
+                    console.error("Status:", uploadError.response.status);
+                    console.error("Detalhes do Erro:", JSON.stringify(uploadError.response.data));
+                } else {
+                    console.error("Erro de conexão:", uploadError.message);
+                }
+                // Não damos throw, permitimos o cadastro seguir sem logo
             }
+        } else {
+            console.log("[DEBUG] 2. Nenhum logo enviado pelo usuário. Pulando upload.");
         }
 
         // =================================================================
-        // 3. Preparar Dados de Acesso
+        // 3. Segurança e Token
         // =================================================================
         const sessionToken = uuidv4();
         const hashedPassword = await bcrypt.hash(senha, 10);
 
         // =================================================================
-        // 4. Criar Empresa no Bitrix
+        // 4. Criar Empresa
         // =================================================================
         console.log("[DEBUG] 4. Criando Empresa...");
         const createCompanyResponse = await axios.post(`${BITRIX24_API_URL}crm.company.add.json`, {
@@ -114,7 +128,7 @@ module.exports = async (req, res) => {
         if (!companyId) throw new Error('Falha ao criar empresa no CRM.');
 
         // =================================================================
-        // 5. Criar Contato no Bitrix
+        // 5. Criar Contato
         // =================================================================
         console.log("[DEBUG] 5. Criando Contato...");
         const nameParts = nomeResponsavel.split(' ');
@@ -127,15 +141,15 @@ module.exports = async (req, res) => {
                 LAST_NAME: lastName,
                 EMAIL: [{ VALUE: email, VALUE_TYPE: 'WORK' }],
                 COMPANY_ID: companyId,
-                'UF_CRM_1751824202': hashedPassword, // Campo Senha
-                'UF_CRM_1751824225': sessionToken    // Campo Token
+                'UF_CRM_1751824202': hashedPassword,
+                'UF_CRM_1751824225': sessionToken
             }
         });
         contactId = createContactResponse.data.result;
         if (!contactId) throw new Error('Falha ao criar contato no CRM.');
 
         // =================================================================
-        // 6. Criar Cliente no Asaas
+        // 6. Criar Asaas
         // =================================================================
         console.log("[DEBUG] 6. Criando Cliente Asaas...");
         const createAsaasResponse = await axios.post('https://www.asaas.com/api/v3/customers', 
@@ -151,7 +165,7 @@ module.exports = async (req, res) => {
         asaasCustomerId = createAsaasResponse.data.id;
 
         // =================================================================
-        // 7. Vincular Asaas ao Bitrix
+        // 7. Atualizar Bitrix com Asaas ID
         // =================================================================
         await axios.post(`${BITRIX24_API_URL}crm.contact.update.json`, {
             id: contactId,
@@ -159,7 +173,7 @@ module.exports = async (req, res) => {
         });
 
         // =================================================================
-        // 8. SALVAR NO BANCO DE DADOS NEON (POSTGRES)
+        // 8. Salvar no Neon
         // =================================================================
         console.log("[DEBUG] 8. Salvando no Neon...");
         const client = new Client({
@@ -172,42 +186,28 @@ module.exports = async (req, res) => {
 
             const sql = `
                 INSERT INTO empresas (
-                    cnpj, 
-                    nome_fantasia, 
-                    whatsapp, 
-                    email, 
-                    responsavel, 
-                    bitrix_id, 
-                    asaas_id, 
-                    logo_id, 
-                    created_at
+                    cnpj, nome_fantasia, whatsapp, email, responsavel, 
+                    bitrix_id, asaas_id, logo_id, created_at
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
                 RETURNING id;
             `;
 
             const values = [
-                cnpj,
-                nomeEmpresa,
-                telefoneEmpresa,
-                email,
-                nomeResponsavel,
-                contactId,
-                asaasCustomerId,
-                bitrixLogoId // <--- AQUI VAI O ID DO LOGO (ou null se falhou/não enviou)
+                cnpj, nomeEmpresa, telefoneEmpresa, email, nomeResponsavel,
+                contactId, asaasCustomerId, bitrixLogoId
             ];
 
             const dbRes = await client.query(sql, values);
-            console.log(`[DEBUG] SUCESSO FINAL! Salvo no Neon (ID: ${dbRes.rows[0].id}). LogoID: ${bitrixLogoId}`);
+            console.log(`[DEBUG] SUCESSO FINAL! Salvo no Neon (ID Tabela: ${dbRes.rows[0].id}). LogoID Salvo: ${bitrixLogoId}`);
 
         } catch (dbError) {
             console.error("ERRO AO SALVAR NO NEON:", dbError.message);
-            // Não damos throw aqui para não cancelar o sucesso do usuário no front
         } finally {
             await client.end();
         }
 
         // =================================================================
-        // 9. Retorno Final
+        // 9. Retorno
         // =================================================================
         return res.status(200).json({
             success: true,
