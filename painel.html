@@ -4,20 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meus Pedidos - Setor de Arte</title>
-    <!-- Ícone e CSS padronizados (Iguais ao Dashboard) -->
+    <!-- Ícone e CSS padronizados -->
     <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
     <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
-        /* 
-           CSS ESPECÍFICO DESTA PÁGINA (PAINEL.HTML)
-           Isso estiliza apenas o conteúdo interno (Tabelas, Cards, Modais).
-           A Sidebar e o Header usam o estilo do style.css global.
-        */
+        /* --- CSS ESPECÍFICO DESTA PÁGINA --- */
 
-        /* --- CARD DE SALDO (Estilo Próprio) --- */
+        /* CARD DE SALDO */
         .saldo-section {
             background: #fff;
             border-radius: 12px;
@@ -36,7 +32,6 @@
 
         .acoes-box { display: flex; gap: 15px; }
 
-        /* Botões de Ação do Topo */
         .btn-top-action {
             padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 0.9rem;
             cursor: pointer; display: flex; align-items: center; gap: 8px; text-decoration: none; transition: 0.2s; border: none;
@@ -47,66 +42,89 @@
         .btn-new { background-color: #4f46e5; color: white; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3); }
         .btn-new:hover { background-color: #4338ca; transform: translateY(-2px); }
 
-        /* --- LISTA DE PEDIDOS --- */
-        .pedidos-header-bar {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;
-        }
-        .pedidos-header-bar h2 { font-size: 1.5rem; font-weight: 600; color: #1e293b; margin: 0; }
-
-        #search-input {
-            padding: 10px 15px; border: 1px solid #cbd5e1; border-radius: 8px; width: 300px; outline: none; font-family: 'Poppins', sans-serif;
-        }
-
-        /* --- ABAS --- */
+        /* --- ABAS E CONTAINER (CORREÇÃO DO DROPDOWN AQUI) --- */
         .tabs-component {
-            background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; overflow: hidden;
+            background: #fff; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03); 
+            border: 1px solid #e2e8f0; 
+            
+            /* AQUI ESTÁ A MÁGICA: Visible permite que o dropdown saia da caixa */
+            overflow: visible !important; 
+            position: relative;
+            z-index: 1;
         }
-        .tab-buttons { display: flex; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+
+        .tab-buttons { 
+            display: flex; 
+            border-bottom: 1px solid #e2e8f0; 
+            background: #f8fafc;
+            /* Arredondar topo manualmente já que tiramos o overflow hidden */
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+
         .tab-btn {
             padding: 15px 25px; background: none; border: none; cursor: pointer; font-weight: 500; color: #64748b;
             border-bottom: 3px solid transparent; font-family: 'Poppins', sans-serif; transition: 0.2s;
         }
         .tab-btn:hover { color: #4f46e5; }
-        .tab-btn.active { color: #4f46e5; border-bottom-color: #4f46e5; background: #fff; font-weight: 600; }
+        .tab-btn.active { color: #4f46e5; border-bottom-color: #4f46e5; background: #fff; font-weight: 600; border-top-left-radius: 12px; border-top-right-radius: 12px;}
 
-        .tab-content { padding: 0; }
+        .tab-content { padding: 0; overflow: visible !important; }
         .tab-pane { display: none; }
         .tab-pane.active { display: block; }
 
-        /* --- TABELA (GRID) --- */
-        /* Define o Grid do Cabeçalho */
+        /* --- TABELA --- */
+        .pedidos-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        .pedidos-header-bar h2 { font-size: 1.5rem; font-weight: 600; color: #1e293b; margin: 0; }
+        #search-input { padding: 10px 15px; border: 1px solid #cbd5e1; border-radius: 8px; width: 300px; outline: none; font-family: 'Poppins', sans-serif; }
+
         .pedidos-list-header {
             display: grid;
-            grid-template-columns: 80px 3fr 1.5fr 1fr 120px; /* ID | Título | Status | Valor | Ações */
+            grid-template-columns: 80px 3fr 1.5fr 1fr 120px;
             gap: 15px; padding: 15px 25px; background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;
             font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;
         }
 
-        /* Define o Grid das Linhas (Injetadas pelo JS) */
-        /* Importante: Usamos #pedidos-list-body para garantir que o CSS pegue no elemento gerado */
         #pedidos-list-body .pedido-item {
             display: grid;
-            grid-template-columns: 80px 3fr 1.5fr 1fr 120px; /* Mesmo grid do header */
+            grid-template-columns: 80px 3fr 1.5fr 1fr 120px;
             gap: 15px; padding: 20px 25px; border-bottom: 1px solid #e2e8f0;
             align-items: center; background: #fff; transition: background 0.2s; font-size: 0.95rem;
+            
+            /* Importante para o dropdown ficar por cima das outras linhas */
+            position: relative;
+            z-index: 1; 
         }
-        #pedidos-list-body .pedido-item:hover { background-color: #f1f5f9; }
+        #pedidos-list-body .pedido-item:hover { 
+            background-color: #f1f5f9; 
+            z-index: 20; /* Eleva a linha que está com mouse para garantir sobreposição */
+        }
 
         /* Colunas */
         .col-id { font-weight: 600; color: #4f46e5; font-family: monospace; }
         .col-titulo { font-weight: 500; color: #1e293b; }
         .col-valor { font-weight: 600; color: #1e293b; }
-        .col-acoes { text-align: right; position: relative; overflow: visible !important; }
+        
+        /* Coluna Ações: Crucial para o dropdown não ser cortado */
+        .col-acoes { 
+            text-align: right; 
+            position: relative; 
+            overflow: visible !important; 
+        }
 
-        /* Badges de Status */
         .status-badge { padding: 5px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; display: inline-block; text-transform: uppercase; }
         .status-pagamento { background: #fff7ed; color: #c2410c; }
         .status-andamento { background: #eff6ff; color: #1d4ed8; }
         .status-aprovado { background: #ecfdf5; color: #047857; }
         .status-cancelado { background: #fef2f2; color: #b91c1c; }
 
-        /* --- DROPDOWN DE PAGAMENTO (Compatível com script.js) --- */
-        .dropdown-pagamento { position: relative; display: inline-block; }
+        /* --- DROPDOWN CORRIGIDO --- */
+        .dropdown-pagamento { 
+            position: relative; 
+            display: inline-block; 
+        }
         
         .btn-pagar {
             background-color: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 6px;
@@ -116,10 +134,25 @@
         .btn-pagar:hover { background-color: #059669; box-shadow: 0 2px 5px rgba(16, 185, 129, 0.3); }
 
         .dropdown-content {
-            display: none; position: absolute; right: 0; top: 115%; background: white; min-width: 170px;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; border-radius: 8px; z-index: 1000; overflow: hidden;
+            display: none; 
+            position: absolute; 
+            right: 0; 
+            top: 115%; /* Um pouco abaixo do botão */
+            background: white; 
+            min-width: 170px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); /* Sombra mais forte para destacar sobreposição */
+            border: 1px solid #e2e8f0; 
+            border-radius: 8px; 
+            
+            /* Z-index altíssimo para flutuar sobre TUDO */
+            z-index: 9999 !important; 
+            overflow: hidden;
         }
-        .dropdown-pagamento.active .dropdown-content { display: block; animation: fadeIn 0.2s ease; }
+        
+        .dropdown-pagamento.active .dropdown-content { 
+            display: block; 
+            animation: fadeIn 0.2s ease; 
+        }
 
         .dropdown-content button {
             width: 100%; text-align: left; padding: 12px 15px; background: none; border: none;
@@ -127,38 +160,24 @@
         }
         .dropdown-content button:hover { background: #f8fafc; color: #4f46e5; padding-left: 18px; }
 
-        /* Botão Acompanhar/Ver */
-        .btn-ver-pedido {
-            color: #4f46e5; font-weight: 600; font-size: 0.85rem; padding: 6px 12px; border-radius: 6px;
-            text-decoration: none; transition: 0.2s;
-        }
+        .btn-ver-pedido { color: #4f46e5; font-weight: 600; font-size: 0.85rem; padding: 6px 12px; border-radius: 6px; text-decoration: none; transition: 0.2s; }
         .btn-ver-pedido:hover { background: #e0e7ff; }
 
-        /* --- MODAL DE CRÉDITOS --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);
-            z-index: 9999; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px);
-        }
+        /* --- MODAL --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
         .modal-overlay.active { display: flex; }
         .modal-content { background: #fff; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; position: relative; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .modal-header h3 { margin: 0; font-size: 1.2rem; font-weight: 600; color: #1e293b; }
         .close-modal { background: none; border: none; font-size: 1.8rem; cursor: pointer; color: #94a3b8; line-height: 1; }
-        
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; color: #334155; }
         .form-group input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; outline: none; }
-        .form-group input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
-        
         .btn-modal-submit { width: 100%; background: #4f46e5; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem; margin-top: 10px; }
-        .btn-modal-submit:hover { background: #4338ca; }
-
         .loading-pedidos { padding: 40px; text-align: center; color: #64748b; }
         .spinner { width: 30px; height: 30px; border: 3px solid #e2e8f0; border-top-color: #4f46e5; border-radius: 50%; margin: 0 auto 15px; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Responsivo */
         @media (max-width: 768px) {
             .pedidos-list-header { display: none; }
             #pedidos-list-body .pedido-item { grid-template-columns: 1fr; gap: 10px; }
@@ -169,26 +188,15 @@
 </head>
 <body>
 
-    <!-- ESTRUTURA PRINCIPAL DO LAYOUT -->
-    <!-- Esta div mantém o grid. Os componentes Sidebar e Header serão injetados nos IDs abaixo -->
     <div class="app-layout-grid">
-        
-        <!-- O layout.js vai inserir a Sidebar aqui -->
         <div id="sidebar-placeholder"></div>
-
         <div class="app-content-wrapper">
-            
-            <!-- O layout.js vai inserir o Header aqui -->
             <div id="header-placeholder"></div>
 
-            <!-- CONTEÚDO PRINCIPAL (O que muda nesta página) -->
             <main class="app-content">
                 <div class="container">
-
-                    <!-- Placeholder para Banner (opcional) -->
                     <div id="trial-banner-placeholder"></div>
     
-                    <!-- Seção de Saldo -->
                     <section class="saldo-section">
                         <div class="saldo-box">
                             <span class="saldo-label">Saldo Disponível</span>
@@ -204,7 +212,6 @@
                         </div>
                     </section>
     
-                    <!-- Seção da Lista de Pedidos -->
                     <section class="pedidos-section">
                         <div class="pedidos-header-bar">
                             <h2>Meus Pedidos</h2>
@@ -213,7 +220,6 @@
                             </div>
                         </div>
     
-                        <!-- Componente de Abas -->
                         <div class="tabs-component">
                             <div class="tab-buttons">
                                 <button class="tab-btn active" data-tab="todos">Todos</button>
@@ -224,8 +230,6 @@
     
                             <div class="tab-content">
                                  <div class="tab-pane active">
-    
-                                    <!-- Header da Tabela -->
                                     <div class="pedidos-list-header">
                                         <div class="col-id">ID</div>
                                         <div class="col-titulo">Título do Projeto</div>
@@ -233,15 +237,12 @@
                                         <div class="col-valor">Valor</div>
                                         <div class="col-acoes">Ações</div>
                                     </div>
-    
-                                    <!-- Corpo da Tabela (O script.js preenche isso) -->
                                     <div id="pedidos-list-body" class="pedidos-list-body">
                                         <div class="loading-pedidos">
                                             <div class="spinner"></div>
                                             <span>Carregando seus pedidos...</span>
                                         </div>
                                     </div>
-                                    
                                     <div id="pagination-container" class="pagination-container hidden"></div>
                                  </div>
                             </div>
@@ -250,13 +251,10 @@
                 </div>
             </main>
 
-            <!-- O layout.js vai inserir o Footer aqui -->
             <div id="footer-placeholder"></div>
-
         </div>
     </div>
     
-    <!-- MODAL DE ADICIONAR CRÉDITOS -->
     <div class="modal-overlay" id="modal-adquirir-creditos">
         <div class="modal-content">
             <div class="modal-header">
@@ -275,13 +273,8 @@
         </div>
     </div>
 
-    <!-- SCRIPTS ESSENCIAIS -->
-    <!-- 1. Carrega o Layout (Sidebar/Header) -->
     <script src="/layout.js"></script>
-    <!-- 2. Biblioteca de Máscaras -->
     <script src="https://unpkg.com/imask"></script>
-    <!-- 3. Lógica da Página (Carrega pedidos e saldo) -->
     <script src="script.js"></script>
-
 </body>
 </html>
