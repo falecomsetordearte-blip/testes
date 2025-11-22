@@ -436,10 +436,7 @@ form { text-align: left; }
 /* Duplicata da regra acima, mantendo a consistência */
 .pedido-item { display: grid; gap: 20px; align-items: center; margin-bottom: 15px; padding: 20px; background-color: var(--branco); border: 1px solid var(--borda); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
-/* NOVO: Esconde a coluna de ações e o botão de adicionar crédito */
-.col-acoes, .btn-add-credito {
-    display: none;
-}
+
 
 .col-id { font-weight: 700; color: var(--azul-principal); }
 a.btn-ver-pedido { font-size: 0.9rem; font-weight: 600; color: var(--azul-principal); text-decoration: none; cursor: pointer; }
