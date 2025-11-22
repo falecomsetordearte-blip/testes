@@ -30,7 +30,8 @@
         body {
             height: 100vh;
             width: 100vw;
-            overflow: hidden;
+            /* No desktop, evitamos scroll na janela principal, usamos dentro do container */
+            overflow: hidden; 
             background-color: var(--white);
         }
 
@@ -54,6 +55,7 @@
             padding: 40px;
             text-align: center;
             position: relative;
+            z-index: 1;
         }
 
         .sidebar-content img {
@@ -83,15 +85,19 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            overflow-y: auto;
+            overflow-y: auto; /* Permite rolagem vertical interna */
             padding: 40px 60px;
-            justify-content: center;
+            /* CORREÇÃO: Removemos justify-content: center para evitar corte no topo */
+            align-items: center; 
+            position: relative;
         }
 
         .form-wrapper {
             max-width: 700px;
             width: 100%;
-            margin: 0 auto;
+            /* CORREÇÃO: Margem automática vertical centraliza se sobrar espaço, 
+               mas respeita o topo se faltar espaço */
+            margin: auto 0; 
         }
 
         .form-header-mobile {
@@ -125,7 +131,7 @@
         .cadastro-form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px 20px; /* Gap vertical menor, horizontal normal */
+            gap: 15px 20px;
         }
 
         .full-width {
@@ -276,31 +282,44 @@
 
         /* Responsividade Mobile */
         @media (max-width: 900px) {
+            /* No mobile, deixamos a página crescer naturalmente */
+            body { 
+                overflow: auto; 
+                height: auto;
+                min-height: 100vh;
+            }
+
             .split-layout {
                 flex-direction: column;
-                overflow-y: auto;
+                height: auto;
+                overflow: visible;
             }
             
-            body { overflow: auto; }
-
             .sidebar {
                 flex: none;
-                padding: 40px 20px;
+                padding: 40px 20px 60px 20px; /* Extra padding bottom para o overlap */
                 min-height: auto;
             }
             
             .sidebar-content img { width: 80px; margin-bottom: 15px; }
             .sidebar-content h1 { font-size: 1.6rem; }
-            .sidebar-content p { font-size: 0.95rem; display: none; } /* Esconde texto longo no mobile para focar no form */
+            .sidebar-content p { display: none; }
             
             .form-container {
                 flex: none;
-                padding: 30px 20px;
+                padding: 40px 20px;
                 background: white;
-                border-top-left-radius: 20px; /* Efeito visual card */
-                border-top-right-radius: 20px;
-                margin-top: -20px; /* Sobe por cima do sidebar */
+                border-top-left-radius: 25px;
+                border-top-right-radius: 25px;
+                margin-top: -30px; /* Efeito de sobreposição */
                 min-height: 60vh;
+                /* Removemos qualquer justify ou align fixo que force o centro */
+                display: block; 
+                z-index: 2;
+            }
+            
+            .form-wrapper {
+                margin: 0 auto; /* Remove o margin: auto 0 do desktop */
             }
             
             .form-header-mobile { display: block; }
@@ -334,6 +353,7 @@
                 </div>
 
                 <form id="cadastro-form" class="cadastro-form-grid">
+                    <!-- A mensagem de erro agora aparecerá aqui e empurrará o conteúdo para baixo -->
                     <div id="form-error-feedback" class="form-feedback error"></div>
                     
                     <!-- Dados da Empresa -->
@@ -394,7 +414,7 @@
                         </label>
                     </div>
 
-                    <!-- Botão Atualizado -->
+                    <!-- Botão -->
                     <button type="submit" class="btn-submit">Criar Conta e Acessar</button>
                 </form>
                    
