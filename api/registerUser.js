@@ -14,7 +14,7 @@ const BITRIX_LOGOS_FOLDER_ID = 251803;
 // --- FUNÇÃO AUXILIAR: Upload Robusto em 2 Etapas ---
 async function uploadToBitrixDisk(folderId, filename, base64Content) {
     try {
-        // 1. Obter URL de Upload do Bitrix
+        // 1. Obter URL de Upload
         const getUrlResponse = await axios.get(`${BITRIX24_API_URL}disk.folder.uploadfile.json`, {
             params: { id: folderId }
         });
@@ -24,25 +24,23 @@ async function uploadToBitrixDisk(folderId, filename, base64Content) {
         }
         const uploadUrl = getUrlResponse.data.result.uploadUrl;
 
-        // 2. Converter Base64 para Buffer (Binário)
+        // 2. Preparar Buffer
         const fileBuffer = Buffer.from(base64Content, 'base64');
 
-        // 3. Construir o corpo "multipart/form-data" manualmente
-        // Isso evita precisar instalar a biblioteca 'form-data' no package.json
+        // 3. Construir Multipart (Manual)
         const boundary = '----WebKitFormBoundary' + Math.random().toString(16).substr(2);
         const header = `--${boundary}\r\n` +
                        `Content-Disposition: form-data; name="file"; filename="${filename}"\r\n` +
                        `Content-Type: application/octet-stream\r\n\r\n`;
         const footer = `\r\n--${boundary}--\r\n`;
 
-        // Juntar as partes (Cabeçalho + Arquivo + Rodapé)
         const payload = Buffer.concat([
             Buffer.from(header, 'utf-8'),
             fileBuffer,
             Buffer.from(footer, 'utf-8')
         ]);
 
-        // 4. Enviar para a URL que o Bitrix mandou
+        // 4. Enviar arquivo
         const uploadResponse = await axios.post(uploadUrl, payload, {
             headers: {
                 'Content-Type': `multipart/form-data; boundary=${boundary}`,
@@ -50,7 +48,7 @@ async function uploadToBitrixDisk(folderId, filename, base64Content) {
             }
         });
 
-        // 5. Retornar o ID
+        // 5. Retornar ID
         if (uploadResponse.data.result && uploadResponse.data.result.ID) {
             return uploadResponse.data.result.ID;
         }
@@ -100,31 +98,31 @@ module.exports = async (req, res) => {
             return res.status(409).json({ message: "Este e-mail já está cadastrado." });
         }
 
-        // =================================================================
-        // 2. UPLOAD DO LOGO (MÉTODO CORRIGIDO EM 2 ETAPAS)
-        // =================================================================
+        // 2. Upload Logo
         if (logo && logo.base64) {
             console.log(`[DEBUG] 2. Iniciando upload robusto para pasta: ${BITRIX_LOGOS_FOLDER_ID}`);
-            
-            // Limpa o prefixo data:image...
             const base64Clean = logo.base64.split(';base64,').pop();
-            // Garante nome de arquivo seguro (sem acentos/espaços)
             const cleanName = logo.name.replace(/[^a-zA-Z0-9._-]/g, '');
             const finalName = `${cnpj.replace(/\D/g,'')}_${cleanName}`;
 
-            // Chama nossa função auxiliar
             bitrixLogoId = await uploadToBitrixDisk(BITRIX_LOGOS_FOLDER_ID, finalName, base64Clean);
             
             if (bitrixLogoId) {
                 console.log(`[DEBUG] SUCESSO! Logo salvo com ID: ${bitrixLogoId}`);
             } else {
-                console.warn("[WARN] O upload falhou ou não retornou ID. O cadastro seguirá sem logo.");
+                console.warn("[WARN] O upload falhou ou não retornou ID.");
             }
         }
 
-        // 3. Segurança
+        // 3. Segurança e Separar Nomes
         const sessionToken = uuidv4();
         const hashedPassword = await bcrypt.hash(senha, 10);
+        
+        // *** AQUI ESTÁ A LÓGICA QUE CAUSAVA O "UNDEFINED" ***
+        // Ao fazer o .shift(), removemos o primeiro nome do array 'nameParts'
+        const nameParts = nomeResponsavel.split(' ');
+        const firstName = nameParts.shift(); // firstName agora tem o nome "Ade"
+        const lastName = nameParts.join(' ') || ''; 
 
         // 4. Criar Empresa
         console.log("[DEBUG] 4. Criando Empresa...");
@@ -140,11 +138,10 @@ module.exports = async (req, res) => {
 
         // 5. Criar Contato
         console.log("[DEBUG] 5. Criando Contato...");
-        const nameParts = nomeResponsavel.split(' ');
         const createContactResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.add.json`, {
             fields: {
-                NAME: nameParts.shift(),
-                LAST_NAME: nameParts.join(' ') || '',
+                NAME: firstName,
+                LAST_NAME: lastName,
                 EMAIL: [{ VALUE: email, VALUE_TYPE: 'WORK' }],
                 COMPANY_ID: companyId,
                 'UF_CRM_1751824202': hashedPassword,
@@ -169,7 +166,7 @@ module.exports = async (req, res) => {
             id: contactId, fields: { 'UF_CRM_1748911653': asaasCustomerId }
         });
 
-        // 8. Salvar no Neon (Com o Logo ID correto agora)
+        // 8. Salvar no Neon
         console.log("[DEBUG] 8. Salvando no Neon...");
         const client = new Client({
             connectionString: DATABASE_URL,
@@ -196,11 +193,12 @@ module.exports = async (req, res) => {
             await client.end();
         }
 
+        // 9. Retorno Final (CORRIGIDO)
         return res.status(200).json({
             success: true,
             message: "Cadastro realizado com sucesso!",
             token: sessionToken,
-            userName: nameParts[0],
+            userName: firstName, // <--- CORREÇÃO: Usamos a variável que já extraímos, não o array vazio.
             contactId: contactId
         });
 
