@@ -43,6 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initializeAuthPages();
 
     // 2. Verifica se estamos no painel (Dashboard) para iniciar a proteção e lógica
+    // A verificação busca elementos únicos do painel ou o layout principal
     if (document.getElementById('pedidos-list-body') || document.querySelector(".app-layout-grid")) {
         initializeProtectedPage();
     }
@@ -98,7 +99,7 @@ function initializeAuthPages() {
         }
     }
 
-    // --- CADASTRO (ATUALIZADO COM UPLOAD) ---
+    // --- CADASTRO ---
     const cadastroForm = document.getElementById('cadastro-form');
     if (cadastroForm) {
         cadastroForm.addEventListener('submit', async (event) => {
@@ -120,11 +121,11 @@ function initializeAuthPages() {
             if (senha.length < 6) return showFeedback(feedbackId, 'Sua senha precisa ter no mínimo 6 caracteres.', true);
             if (senha !== confirmarSenha) return showFeedback(feedbackId, 'As senhas não coincidem.', true);
 
-            // UI Loading Inicial
+            // UI Loading
             submitButton.disabled = true;
             submitButton.textContent = "Processando...";
 
-            // --- LÓGICA DE ARQUIVO ---
+            // --- LÓGICA DE ARQUIVO (LOGO) ---
             const fileInput = document.getElementById('logo_arquivo');
             let fileData = null;
 
@@ -142,20 +143,13 @@ function initializeAuthPages() {
                 // Se o usuário selecionou um arquivo, converte ele agora
                 if (fileInput && fileInput.files.length > 0) {
                     const file = fileInput.files[0];
-                    
-                    // Validação de tamanho (Max 5MB)
                     if (file.size > 5 * 1024 * 1024) {
                         throw new Error("O logo deve ter no máximo 5MB.");
                     }
-
                     const base64 = await convertBase64(file);
-                    fileData = {
-                        name: file.name,
-                        base64: base64
-                    };
+                    fileData = { name: file.name, base64: base64 };
                 }
 
-                // Esconde form e mostra loading APÓS processar arquivo
                 if (formWrapper) formWrapper.classList.add('hidden');
                 if (loadingFeedback) loadingFeedback.classList.remove('hidden');
 
@@ -166,7 +160,7 @@ function initializeAuthPages() {
                     nomeResponsavel: document.getElementById('nome_responsavel').value,
                     email: document.getElementById('email').value,
                     senha: senha,
-                    logo: fileData // Envia o objeto do arquivo (ou null)
+                    logo: fileData // Envia o logo (ou null)
                 };
 
                 const response = await fetch('/api/registerUser', {
@@ -256,7 +250,7 @@ function initializeAuthPages() {
     }
 
     // --- VERIFICAÇÃO DE EMAIL ---
-    const feedbackText = document.getElementById('feedback-text'); // Elemento específico da página de verificação
+    const feedbackText = document.getElementById('feedback-text');
     if (feedbackText) {
         const token = new URLSearchParams(window.location.search).get('token');
         (async () => {
@@ -277,8 +271,6 @@ function initializeAuthPages() {
         })();
     }
 }
-
-// *** FIM DA PARTE 1 ***
 // --- Funções de Sessão Protegida ---
 
 function initializeProtectedPage() {
@@ -305,14 +297,124 @@ function initializeProtectedPage() {
         });
     }
 
+    // Carrega Logo da Empresa na Sidebar
+    carregarLogoUsuario(sessionToken);
+
+    // Inicia o sistema de notificações (Sininho)
+    setupNotifications();
+
     // Inicializa a lógica específica do Dashboard (Lista de pedidos, Saldo, etc)
+    // Essa função será definida na Parte 3
     if (document.getElementById('pedidos-list-body')) {
         inicializarPainelDePedidos();
     }
 }
 
+// --- FUNÇÃO: CARREGAR LOGO DA EMPRESA ---
+async function carregarLogoUsuario(token) {
+    // Tenta pegar do cache primeiro para não piscar
+    const cachedLogo = localStorage.getItem('userLogo');
+    const sidebarLogo = document.querySelector('.sidebar-logo');
+    
+    if (cachedLogo && sidebarLogo) {
+        sidebarLogo.src = cachedLogo;
+    }
+
+    try {
+        const response = await fetch('/api/getUserData', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: token })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.logo_url) {
+                if (sidebarLogo) sidebarLogo.src = data.logo_url;
+                localStorage.setItem('userLogo', data.logo_url);
+            }
+        }
+    } catch (error) {
+        console.error("Erro ao carregar logo:", error);
+    }
+}
+
+// --- FUNÇÃO: SISTEMA DE NOTIFICAÇÕES ---
+function setupNotifications() {
+    const btnBell = document.getElementById('btn-notificacoes');
+    const dropdown = document.getElementById('notif-dropdown');
+    const badge = document.getElementById('notif-badge');
+    const list = document.getElementById('notif-list');
+
+    if (!btnBell || !dropdown) return;
+
+    // 1. Carregar Notificações da API
+    async function loadNotifs() {
+        try {
+            const res = await fetch('/api/getGlobalNotifications');
+            if (!res.ok) return; 
+            
+            const notifications = await res.json();
+
+            if (!notifications || notifications.length === 0) {
+                list.innerHTML = '<div style="padding:15px; text-align:center; font-size:0.85rem; color:#94a3b8;">Nenhuma notificação no momento.</div>';
+                return;
+            }
+
+            // Verifica se tem alguma nova comparando com o localStorage
+            const lastSeenId = localStorage.getItem('lastSeenNotifId') || 0;
+            const newestId = notifications[0].id;
+
+            if (newestId > lastSeenId) {
+                badge.classList.add('active');
+            } else {
+                badge.classList.remove('active');
+            }
+
+            // Renderiza a lista
+            list.innerHTML = notifications.map(n => `
+                <div class="notif-item ${n.tipo || 'info'}">
+                    <h4>${n.titulo}</h4>
+                    <p>${n.mensagem}</p>
+                    <span class="notif-date">${new Date(n.criado_em).toLocaleDateString('pt-BR')}</span>
+                </div>
+            `).join('');
+
+            // Salva o ID mais novo no botão para marcar como lido ao abrir
+            btnBell.dataset.newestId = newestId;
+
+        } catch (err) {
+            console.error("Erro notificações:", err);
+            list.innerHTML = '<div style="padding:15px; text-align:center; color:#ef4444;">Erro ao carregar avisos.</div>';
+        }
+    }
+
+    // 2. Abrir/Fechar Dropdown
+    btnBell.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('active');
+
+        // Ao abrir, marca como lido (tira a bolinha vermelha)
+        if (dropdown.classList.contains('active')) {
+            badge.classList.remove('active');
+            if (btnBell.dataset.newestId) {
+                localStorage.setItem('lastSeenNotifId', btnBell.dataset.newestId);
+            }
+        }
+    });
+
+    // Fechar ao clicar fora
+    window.addEventListener('click', (e) => {
+        if (!e.target.closest('.notification-wrapper')) {
+            dropdown.classList.remove('active');
+        }
+    });
+
+    // Carrega ao iniciar
+    loadNotifs();
+}
 // ============================================================
-// SCRIPT.JS - PARTE 2: LÓGICA DO DASHBOARD (PAINEL)
+// SCRIPT.JS - PARTE 3: LÓGICA DO DASHBOARD (PAINEL)
 // ============================================================
 
 // Variáveis Globais do Painel
@@ -324,7 +426,7 @@ let currentStatusFilter = 'todos';
 
 // 1. Função Principal de Inicialização do Painel
 function inicializarPainelDePedidos() {
-    // Configura o Modal de Créditos
+    // Configura o Modal de Créditos (Parte 4)
     setupModalCreditos();
 
     // Configura as Abas de Filtro (Todos, Pagamento, Andamento...)
@@ -501,7 +603,6 @@ function renderizarPedidos() {
         pedidosListBody.innerHTML = `<div class="loading-pedidos" style="padding: 30px;">Nenhum pedido encontrado com este filtro.</div>`;
     }
 }
-
 // 5. Lógica de Eventos dos Botões de Pagamento (Dropdown, Saldo, PIX)
 function ativarDropdownsDePagamento() {
     const pedidosListBody = document.getElementById('pedidos-list-body');
