@@ -1,8 +1,12 @@
-// /script.js - PARTE 1 DE 4
+// ============================================================
+// SCRIPT.JS - PARTE 1: AUTENTICAÇÃO E INICIALIZAÇÃO
+// ============================================================
 
-// Funções Auxiliares de Erro e Sessão
+// --- Funções Auxiliares de Erro e Feedback ---
+
 async function handleAuthError(response) {
     if (response.status === 401 || response.status === 403) {
+        console.warn("Sessão expirada ou inválida.");
         localStorage.clear();
         window.location.href = "login.html";
         return true;
@@ -10,25 +14,16 @@ async function handleAuthError(response) {
     return false;
 }
 
-function detectarErroSessaoSubstituida(error) {
-    const mensagemErro = error.message || error.toString();
-    const padroesSessaoInvalida = [
-        'Unexpected token',
-        'is not valid JSON',
-        'Você entrou',
-        'message\': Você',
-        'SyntaxError'
-    ];
-    return padroesSessaoInvalida.some(padrao => mensagemErro.includes(padrao));
-}
-
 function showFeedback(containerId, message, isError = false) {
     const container = document.getElementById(containerId);
     if (!container) return;
+    
     container.textContent = message;
     container.className = `form-feedback ${isError ? 'error' : 'success'}`;
-    container.style.display = 'block'; // Garante visibilidade
+    container.style.display = 'block'; 
     container.classList.remove('hidden');
+    
+    // Rola até a mensagem se for sucesso, para o usuário ver
     if (!isError) container.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -37,32 +32,39 @@ function hideFeedback(containerId) {
     if (container) {
         container.classList.add('hidden');
         container.style.display = 'none';
+        container.textContent = '';
     }
 }
 
-// Inicialização Principal
+// --- Inicialização Principal ao Carregar a Página ---
+
 document.addEventListener("DOMContentLoaded", () => {
-    // Tenta inicializar páginas de Auth (Login/Cadastro)
+    // 1. Tenta inicializar páginas de Auth (Login/Cadastro/Recuperação)
     initializeAuthPages();
 
-    // Verifica se estamos no painel (Dashboard)
+    // 2. Verifica se estamos no painel (Dashboard) para iniciar a proteção e lógica
+    // A verificação busca elementos únicos do painel
     if (document.getElementById('pedidos-list-body') || document.querySelector(".app-layout-grid")) {
         initializeProtectedPage();
     }
 });
 
+// --- Lógica de Páginas de Autenticação (Públicas) ---
+
 function initializeAuthPages() {
-    // ============================================================
-    // LÓGICA DE LOGIN
-    // ============================================================
+    
+    // --- LOGIN ---
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
-        console.log("Formulário de Login detectado.");
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const submitButton = loginForm.querySelector('button[type="submit"]');
+            const feedbackId = 'form-error-feedback';
+            
             submitButton.disabled = true;
             submitButton.textContent = 'Entrando...';
+            hideFeedback(feedbackId);
+
             try {
                 const response = await fetch('/api/loginUser', {
                     method: 'POST',
@@ -73,19 +75,21 @@ function initializeAuthPages() {
                     })
                 });
                 const data = await response.json();
-                if (!response.ok) throw new Error(data.message || 'Erro desconhecido.');
                 
+                if (!response.ok) throw new Error(data.message || 'Erro ao fazer login.');
+                
+                // Sucesso: Salva sessão
                 localStorage.setItem('sessionToken', data.token);
                 localStorage.setItem('userName', data.userName);
-                window.location.href = 'dashboard.html';
+                window.location.href = 'painel.html'; // Redireciona para o painel
             } catch (error) {
-                showFeedback('form-error-feedback', error.message, true);
+                showFeedback(feedbackId, error.message, true);
                 submitButton.disabled = false;
                 submitButton.textContent = 'Entrar';
             }
         });
 
-        // Mensagens via URL (Verificação/Reset)
+        // Mensagens via URL (ex: após verificar email)
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('verified') === 'true') {
             showFeedback('form-error-feedback', 'E-mail verificado com sucesso! Você já pode fazer o login.', false);
@@ -94,37 +98,32 @@ function initializeAuthPages() {
              showFeedback('form-error-feedback', 'Senha redefinida com sucesso! Faça login com a nova senha.', false);
         }
     }
-    // /script.js - PARTE 2 DE 4
 
-    // ============================================================
-    // LÓGICA DE CADASTRO (ATUALIZADO PARA FLUXO GRATUITO)
-    // ============================================================
+    // --- CADASTRO ---
     const cadastroForm = document.getElementById('cadastro-form');
     if (cadastroForm) {
-        console.log("Formulário de Cadastro detectado.");
         cadastroForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            console.log("Iniciando processo de cadastro...");
-
+            
             const formWrapper = document.getElementById('form-wrapper');
             const loadingFeedback = document.getElementById('loading-feedback');
             const submitButton = cadastroForm.querySelector('button[type="submit"]');
+            const feedbackId = 'form-error-feedback';
             
             const senha = document.getElementById('senha').value;
             const confirmarSenha = document.getElementById('confirmar-senha').value;
             const aceiteTermos = document.getElementById('termos-aceite').checked;
 
-            hideFeedback('form-error-feedback');
+            hideFeedback(feedbackId);
 
-            // Validações
-            if (!aceiteTermos) return showFeedback('form-error-feedback', 'Você precisa aceitar os Termos para continuar.', true);
-            if (senha.length < 6) return showFeedback('form-error-feedback', 'Sua senha precisa ter no mínimo 6 caracteres.', true);
-            if (senha !== confirmarSenha) return showFeedback('form-error-feedback', 'As senhas não coincidem.', true);
+            // Validações básicas
+            if (!aceiteTermos) return showFeedback(feedbackId, 'Você precisa aceitar os Termos para continuar.', true);
+            if (senha.length < 6) return showFeedback(feedbackId, 'Sua senha precisa ter no mínimo 6 caracteres.', true);
+            if (senha !== confirmarSenha) return showFeedback(feedbackId, 'As senhas não coincidem.', true);
 
-            // Feedback Visual de Carregamento
+            // UI Loading
             submitButton.disabled = true;
             submitButton.textContent = "Processando...";
-            
             if (formWrapper) formWrapper.classList.add('hidden');
             if (loadingFeedback) loadingFeedback.classList.remove('hidden');
 
@@ -145,39 +144,35 @@ function initializeAuthPages() {
                 });
                 
                 const data = await response.json();
-                if (!response.ok) throw new Error(data.message || 'Ocorreu um erro desconhecido.');
+                if (!response.ok) throw new Error(data.message || 'Erro no cadastro.');
 
-                console.log("Cadastro realizado com sucesso. Entrando no sistema...");
-
-                // SUCESSO: Salva sessão e entra direto (Sem Assinatura)
+                // Sucesso: Auto-login
                 localStorage.setItem('sessionToken', data.token);
                 localStorage.setItem('userName', data.userName);
-                
-                window.location.href = 'dashboard.html';
+                window.location.href = 'painel.html';
 
             } catch (error) {
-                console.error("Erro no cadastro:", error);
                 if (loadingFeedback) loadingFeedback.classList.add('hidden');
                 if (formWrapper) formWrapper.classList.remove('hidden');
                 
-                showFeedback('form-error-feedback', error.message, true);
+                showFeedback(feedbackId, error.message, true);
                 submitButton.disabled = false;
                 submitButton.textContent = "Criar Conta e Acessar";
             }
         });
     }
 
-    // ============================================================
-    // ESQUECI MINHA SENHA
-    // ============================================================
+    // --- ESQUECI SENHA ---
     const esqueciSenhaForm = document.getElementById('esqueci-senha-form');
     if (esqueciSenhaForm) {
-        const formWrapper = document.getElementById('form-wrapper');
         esqueciSenhaForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const btn = event.target.querySelector('button');
+            const wrapper = document.getElementById('form-wrapper');
+            
             btn.disabled = true;
             btn.textContent = 'Enviando...';
+            
             try {
                 const response = await fetch('/api/forgotPassword', {
                     method: 'POST',
@@ -185,17 +180,16 @@ function initializeAuthPages() {
                     body: JSON.stringify({ email: document.getElementById('email').value })
                 });
                 const data = await response.json();
-                if (!response.ok) { throw new Error(data.message); }
-                formWrapper.innerHTML = `<div class="auth-header"><h1>Link Enviado!</h1><p>${data.message || 'Se o e-mail existir, enviamos um link.'}</p></div>`;
+                if (!response.ok) throw new Error(data.message);
+                
+                wrapper.innerHTML = `<div class="auth-header"><h1>Link Enviado!</h1><p>${data.message}</p></div>`;
             } catch (error) {
-                formWrapper.innerHTML = `<div class="auth-header"><h1>Erro</h1><p>${error.message}</p> <a href="esqueci-senha.html">Tentar novamente</a></div>`;
+                wrapper.innerHTML = `<div class="auth-header"><h1>Erro</h1><p>${error.message}</p> <a href="esqueci-senha.html">Tentar novamente</a></div>`;
             }
         });
     }
 
-    // ============================================================
-    // REDEFINIR SENHA
-    // ============================================================
+    // --- REDEFINIR SENHA ---
     const redefinirSenhaForm = document.getElementById('redefinir-senha-form');
     if (redefinirSenhaForm) {
         redefinirSenhaForm.addEventListener('submit', async (event) => {
@@ -219,7 +213,7 @@ function initializeAuthPages() {
                     body: JSON.stringify({ token: token, novaSenha: novaSenha })
                 });
                 const data = await response.json();
-                if (!response.ok) { throw new Error(data.message); }
+                if (!response.ok) throw new Error(data.message);
                 window.location.href = `login.html?reset=success`;
             } catch (error) {
                 showFeedback('form-error-feedback', error.message, true);
@@ -229,11 +223,8 @@ function initializeAuthPages() {
         });
     }
 
-    // ============================================================
-    // VERIFICAÇÃO DE E-MAIL
-    // ============================================================
-    const feedbackText = document.getElementById('feedback-text');
-    // Só executa se o elemento existir (estiver na página verificacao.html)
+    // --- VERIFICAÇÃO DE EMAIL ---
+    const feedbackText = document.getElementById('feedback-text'); // Elemento específico da página de verificação
     if (feedbackText) {
         const token = new URLSearchParams(window.location.search).get('token');
         (async () => {
@@ -246,323 +237,64 @@ function initializeAuthPages() {
                     body: JSON.stringify({ token: token })
                 });
                 const data = await response.json();
-                if (!response.ok) { throw new Error(data.message); }
+                if (!response.ok) throw new Error(data.message);
                 window.location.href = 'login.html?verified=true';
             } catch (error) {
-                feedbackText.textContent = `Erro: ${error.message || 'Link inválido ou expirado.'}`;
+                feedbackText.textContent = `Erro: ${error.message || 'Link inválido.'}`;
             }
         })();
     }
-} // Fim da função initializeAuthPages
-// /script.js - PARTE 3 DE 4
+}
 
-// ============================================================
-// FUNÇÕES DE PÁGINAS PROTEGIDAS (DASHBOARD / SISTEMA INTERNO)
-// ============================================================
+// --- Funções de Sessão Protegida ---
 
 function initializeProtectedPage() {
     const sessionToken = localStorage.getItem("sessionToken");
     const userName = localStorage.getItem("userName");
 
-    // Verificação de Segurança: Se não tem token, manda pro login
-    if (!sessionToken || !userName) {
-        console.log("Sessão não encontrada. Redirecionando para login.");
-        localStorage.clear();
+    // Se não tem token, chuta para o login
+    if (!sessionToken) {
         window.location.href = "login.html";
         return;
     }
 
-    // Exibe o nome do usuário no topo
+    // Exibe nome do usuário (se existir o elemento no header)
     const greetingEl = document.getElementById('user-greeting');
-    if(greetingEl) greetingEl.textContent = `Olá, ${userName}!`;
+    if(greetingEl && userName) greetingEl.textContent = `Olá, ${userName}!`;
 
-    // Configura o botão de Logout
+    // Configura botão de Logout (se existir)
     const logoutButton = document.getElementById('logout-button');
-    if(logoutButton) logoutButton.addEventListener('click', () => {
-        localStorage.clear();
-        window.location.href = 'login.html';
-    });
+    if(logoutButton) {
+        logoutButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.clear();
+            window.location.href = 'login.html';
+        });
+    }
 
-    // Se houver uma lista de pedidos na tela, inicializa a lógica do painel
+    // Inicializa a lógica específica do Dashboard (Lista de pedidos, Saldo, etc)
+    // Essa função será definida na Parte 2
     if (document.getElementById('pedidos-list-body')) {
         inicializarPainelDePedidos();
     }
 }
+// ============================================================
+// SCRIPT.JS - PARTE 2: LÓGICA DO DASHBOARD (PAINEL)
+// ============================================================
 
-// Variáveis Globais do Dashboard
+// Variáveis Globais do Painel
 let todosPedidos = [];
+let pedidosFiltrados = [];
 let paginaAtual = 1;
 const itensPorPagina = 20;
-let pedidosFiltrados = [];
 let currentStatusFilter = 'todos';
 
-async function atualizarDadosPainel() {
-    const sessionToken = localStorage.getItem("sessionToken");
-    const pedidosListBody = document.getElementById("pedidos-list-body");
-    const saldoValorEl = document.getElementById("saldo-valor");
-
-    // Mostra loading na lista
-    if(pedidosListBody) pedidosListBody.innerHTML = `<div class="loading-pedidos"><div class="spinner"></div><span>Carregando seus pedidos...</span></div>`;
-
-    try {
-        const response = await fetch('/api/getPanelData', {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token: sessionToken })
-        });
-        const data = await response.json();
-
-        // Se der erro de autenticação, o handleAuthError já redireciona
-        if (!response.ok) {
-            if (await handleAuthError(response)) return;
-            throw new Error(data.message || "Erro ao buscar dados.");
-        }
-
-        // Atualiza Saldo
-        if(saldoValorEl) saldoValorEl.textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.saldo || 0);
-
-        // Atualiza Lista
-        todosPedidos = data.pedidos || [];
-        paginaAtual = 1;
-        aplicarFiltros(); // Chama a renderização
-
-    } catch (error) {
-        console.error(`Falha ao carregar dados: ${error.message}`);
-        if(pedidosListBody) pedidosListBody.innerHTML = `<div class="loading-pedidos" style="color: #ef4444;">Erro: ${error.message}</div>`;
-    }
-}
-
-function renderizarPedidos() {
-    const pedidosListBody = document.getElementById("pedidos-list-body");
-    if(!pedidosListBody) return;
-
-    pedidosListBody.innerHTML = "";
-
-    if (pedidosFiltrados && pedidosFiltrados.length > 0) {
-        const indiceInicio = (paginaAtual - 1) * itensPorPagina;
-        const indiceFim = indiceInicio + itensPorPagina;
-        const pedidosPagina = pedidosFiltrados.slice(indiceInicio, indiceFim);
-        let html = "";
-
-        pedidosPagina.forEach(pedido => {
-            let statusInfo = { texto: "Desconhecido", classe: "" };
-            let notificacaoHtml = pedido.notificacao ? '<span class="notificacao-badge">●</span>' : '';
-            let acaoHtml = `<a href="pedido.html?id=${pedido.ID}" class="btn-ver-pedido">Ver Detalhes ${notificacaoHtml}</a>`;
-
-            const stageId = pedido.STAGE_ID || "";
-
-            // Lógica de Status e Botões de Ação
-            if (stageId.includes("NEW")) {
-                statusInfo = { texto: 'Aguardando Pagamento', classe: 'status-pagamento' };
-                // Botões de pagamento (Saldo, PIX, etc)
-                acaoHtml = `<div class="dropdown-pagamento"><button class="btn-pagar" data-deal-id="${pedido.ID}">Pagar</button><div class="dropdown-content"><button class="btn-pagar-saldo" data-deal-id="${pedido.ID}">Usar Saldo</button><button class="btn-gerar-cobranca" data-deal-id="${pedido.ID}">PIX</button></div></div>`;
-            } else if (stageId.includes("LOSE")) {
-                statusInfo = { texto: 'Cancelado', classe: 'status-cancelado' };
-            } else if (stageId === "C17:UC_2OEE24") {
-                statusInfo = { texto: 'Em Análise', classe: 'status-analise' };
-            } else if ((stageId.includes("WON") && stageId !== "C17:WON") || stageId === "C17:1") {
-                statusInfo = { texto: "Aprovado", classe: "status-aprovado" };
-            } else if (stageId === "C17:WON" || stageId.includes("C19")) {
-                statusInfo = { texto: "Verificado", classe: "status-verificado" };
-            } else {
-                statusInfo = { texto: 'Em Andamento', classe: 'status-andamento' };
-            }
-
-            const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(pedido.OPPORTUNITY) || 0);
-
-            html += `
-                <div class="pedido-item">
-                    <div class="col-id"><strong>#${pedido.ID}</strong></div>
-                    <div class="col-titulo">${pedido.TITLE}</div>
-                    <div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div>
-                    <div class="col-valor">${valorFormatado}</div>
-                    <div class="col-acoes">${acaoHtml}</div>
-                </div>
-            `;
-        });
-        pedidosListBody.innerHTML = html;
-    } else {
-        pedidosListBody.innerHTML = `<div class="loading-pedidos" style="padding: 30px;">Nenhum pedido encontrado.</div>`;
-    }
-}
-// /script.js - PARTE 4 DE 4 (FINAL)
-
-function aplicarFiltros() {
-    const searchInput = document.getElementById("search-input");
-    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
-
-    let pedidosTemporarios = todosPedidos;
-
-    // Filtro por Status (Abas)
-    if (currentStatusFilter !== 'todos') {
-        pedidosTemporarios = pedidosTemporarios.filter(pedido => {
-            const stageId = pedido.STAGE_ID || "";
-            if (currentStatusFilter === 'pagamento') return stageId.includes("NEW");
-            if (currentStatusFilter === 'andamento') return !stageId.includes("NEW") && !stageId.includes("LOSE") && !stageId.includes("WON");
-            if (currentStatusFilter === 'cancelado') return stageId.includes("LOSE");
-            return true;
-        });
-    }
-
-    // Filtro por Texto (Busca)
-    if (searchTerm) {
-        pedidosTemporarios = pedidosTemporarios.filter(p =>
-            (p.TITLE || "").toLowerCase().includes(searchTerm) ||
-            (p.ID || "").toString().includes(searchTerm)
-        );
-    }
-
-    pedidosFiltrados = pedidosTemporarios;
-    paginaAtual = 1;
-    renderizarPedidos();
-}
-
-function ativarDropdownsDePagamento() {
-    const pedidosListBody = document.getElementById('pedidos-list-body');
-    if (!pedidosListBody) return;
-
-    pedidosListBody.addEventListener('click', async function(event) {
-        const target = event.target;
-        const dropdown = target.closest('.dropdown-pagamento');
-
-        // Botão Principal "Pagar" - Abre/Fecha menu
-        if (target.classList.contains('btn-pagar')) {
-            document.querySelectorAll('.dropdown-pagamento.active').forEach(d => d !== dropdown && d.classList.remove('active'));
-            if(dropdown) dropdown.classList.toggle('active');
-            return;
-        }
-
-        // Opção: Pagar com Saldo
-        if (target.classList.contains('btn-pagar-saldo')) {
-            const dealId = target.dataset.dealId;
-            if (!confirm('Tem certeza que deseja usar seu saldo para pagar este pedido?')) return;
-            
-            target.disabled = true; 
-            target.textContent = '...';
-            
-            try {
-                const response = await fetch('/api/payWithBalance', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), dealId: dealId })
-                });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message);
-                
-                alert('Pedido pago com sucesso!');
-                await atualizarDadosPainel(); // Recarrega a lista
-            } catch (error) {
-                alert(`Erro: ${error.message}`);
-                target.disabled = false; 
-                target.textContent = 'Usar Saldo';
-            }
-        }
-
-        // Opção: Gerar PIX
-        if (target.classList.contains('btn-gerar-cobranca')) {
-            const dealId = target.dataset.dealId;
-            target.disabled = true; 
-            target.textContent = '...';
-            
-            try {
-                const response = await fetch('/api/generatePixForDeal', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), dealId: dealId })
-                });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message);
-                
-                window.open(data.url, '_blank');
-                if(dropdown) dropdown.classList.remove('active');
-            } catch (error) {
-                alert(`Erro: ${error.message}`);
-            } finally {
-                target.disabled = false; 
-                target.textContent = 'PIX';
-            }
-        }
-    });
-
-    // Fecha dropdowns ao clicar fora
-    window.addEventListener('click', function(event) {
-        if (!event.target.closest('.dropdown-pagamento')) {
-            document.querySelectorAll('.dropdown-pagamento.active').forEach(dropdown => {
-                dropdown.classList.remove('active');
-            });
-        }
-    });
-}
-
-function injectStyles() {
-    if (document.getElementById('dynamic-styles')) return;
-    const styles = document.createElement('style');
-    styles.id = 'dynamic-styles';
-    // CSS para os dropdowns e spinners gerados via JS
-    styles.textContent = `
-        .dropdown-pagamento { position: relative; display: inline-block; }
-        .dropdown-pagamento .dropdown-content { display: none; position: absolute; background: #fff; min-width: 140px; box-shadow: 0 5px 15px rgba(0,0,0,0.15); z-index: 99; border-radius: 6px; border: 1px solid #e2e8f0; top: 100%; right: 0; margin-top: 5px; overflow: hidden; }
-        .dropdown-pagamento.active .dropdown-content { display: block; }
-        .dropdown-pagamento button { display: block; width: 100%; padding: 10px 15px; text-align: left; border: none; background: none; cursor: pointer; font-size: 13px; color: #334155; border-bottom: 1px solid #f1f5f9; transition: background 0.2s; }
-        .dropdown-pagamento button:last-child { border-bottom: none; }
-        .dropdown-pagamento button:hover { background: #f8fafc; color: #2563eb; }
-        .loading-pedidos { padding: 40px; text-align: center; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .spinner { width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top: 3px solid #2563eb; border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    `;
-    document.head.appendChild(styles);
-}
-
+// 1. Função Principal de Inicialização do Painel
 function inicializarPainelDePedidos() {
-    injectStyles();
+    // Configura o Modal de Créditos
+    setupModalCreditos();
 
-    // Lógica do Modal de Créditos (Se existir na página)
-    const modalCreditos = document.getElementById("modal-adquirir-creditos");
-    const btnOpenModalCreditos = document.querySelector(".btn-add-credito");
-    
-    if (modalCreditos && btnOpenModalCreditos) {
-        const btnCloseModalCreditos = modalCreditos.querySelector(".close-modal");
-        const formCreditos = document.getElementById("adquirir-creditos-form");
-        
-        btnOpenModalCreditos.addEventListener("click", () => modalCreditos.classList.add("active"));
-        if(btnCloseModalCreditos) btnCloseModalCreditos.addEventListener("click", () => modalCreditos.classList.remove("active"));
-        
-        if(formCreditos) {
-            formCreditos.addEventListener('submit', async (event) => {
-                event.preventDefault();
-                const submitButton = formCreditos.querySelector("button[type='submit']");
-                const valorInput = document.getElementById("creditos-valor");
-                hideFeedback("creditos-form-error");
-                
-                const valor = valorInput.value;
-                if (!valor || parseFloat(valor) < 5) return showFeedback("creditos-form-error", "Mínimo R$ 5,00.", true);
-                
-                submitButton.disabled = true; 
-                submitButton.textContent = "Gerando...";
-                
-                try {
-                    const response = await fetch('/api/addCredit', {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ token: localStorage.getItem("sessionToken"), valor: valor })
-                    });
-                    const data = await response.json();
-                    if (!response.ok) throw new Error(data.message || "Erro desconhecido.");
-                    
-                    window.open(data.url, '_blank');
-                    modalCreditos.classList.remove("active");
-                    formCreditos.reset();
-                } catch (error) {
-                    showFeedback("creditos-form-error", error.message, true);
-                } finally {
-                    submitButton.disabled = false; 
-                    submitButton.textContent = "Gerar Cobrança";
-                }
-            });
-        }
-    }
-
-    // Lógica das Abas de Filtro
+    // Configura as Abas de Filtro (Todos, Pagamento, Andamento...)
     const tabButtonsContainer = document.querySelector('.tab-buttons');
     if (tabButtonsContainer) {
         tabButtonsContainer.addEventListener('click', (event) => {
@@ -577,11 +309,328 @@ function inicializarPainelDePedidos() {
         });
     }
 
-    // Lógica da Barra de Busca
+    // Configura a Barra de Busca
     const searchInput = document.getElementById("search-input");
     if (searchInput) searchInput.addEventListener("input", aplicarFiltros);
     
-    // Inicia tudo
+    // Configura os cliques nos botões da lista (Pagar, Ver Detalhes)
     ativarDropdownsDePagamento();
+    
+    // Carrega os dados iniciais
     atualizarDadosPainel();
+}
+
+// 2. Busca dados na API (Saldo e Lista de Pedidos)
+async function atualizarDadosPainel() {
+    const sessionToken = localStorage.getItem("sessionToken");
+    const pedidosListBody = document.getElementById("pedidos-list-body");
+    const saldoValorEl = document.getElementById("saldo-valor");
+
+    // Mostra loading
+    if(pedidosListBody) pedidosListBody.innerHTML = `<div class="loading-pedidos"><div class="spinner"></div><span>Atualizando informações...</span></div>`;
+
+    try {
+        const response = await fetch('/api/getPanelData', {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: sessionToken })
+        });
+        
+        // Se der 401/403, a função handleAuthError da Parte 1 resolve
+        if (!response.ok) {
+            if (await handleAuthError(response)) return;
+            const data = await response.json();
+            throw new Error(data.message || "Erro ao buscar dados.");
+        }
+
+        const data = await response.json();
+
+        // Atualiza Saldo na tela
+        if(saldoValorEl) {
+            saldoValorEl.textContent = new Intl.NumberFormat("pt-BR", { 
+                style: "currency", currency: "BRL" 
+            }).format(data.saldo || 0);
+        }
+
+        // Salva e renderiza a lista
+        todosPedidos = data.pedidos || [];
+        aplicarFiltros(); 
+
+    } catch (error) {
+        console.error("Erro no painel:", error);
+        if(pedidosListBody) pedidosListBody.innerHTML = `<div class="loading-pedidos" style="color: #ef4444;">Erro: ${error.message}</div>`;
+    }
+}
+
+// 3. Aplica Filtros (Status e Busca)
+function aplicarFiltros() {
+    const searchInput = document.getElementById("search-input");
+    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
+
+    let listaTemp = todosPedidos;
+
+    // Filtro por Status
+    if (currentStatusFilter !== 'todos') {
+        listaTemp = listaTemp.filter(pedido => {
+            const stageId = (pedido.STAGE_ID || "").toUpperCase();
+            
+            if (currentStatusFilter === 'pagamento') return stageId.includes("NEW");
+            if (currentStatusFilter === 'cancelado') return stageId.includes("LOSE");
+            if (currentStatusFilter === 'andamento') {
+                // Tudo que não é novo, nem perdido, nem ganho (aprovado/verificado)
+                return !stageId.includes("NEW") && !stageId.includes("LOSE") && !stageId.includes("WON");
+            }
+            return true;
+        });
+    }
+
+    // Filtro por Texto
+    if (searchTerm) {
+        listaTemp = listaTemp.filter(p =>
+            (p.TITLE || "").toLowerCase().includes(searchTerm) ||
+            (p.ID || "").toString().includes(searchTerm)
+        );
+    }
+
+    pedidosFiltrados = listaTemp;
+    paginaAtual = 1; // Reseta para primeira página
+    renderizarPedidos();
+}
+
+// 4. Renderiza o HTML da Lista (CORREÇÃO CRÍTICA AQUI PARA EXIBIR BOTÕES)
+function renderizarPedidos() {
+    const pedidosListBody = document.getElementById("pedidos-list-body");
+    if(!pedidosListBody) return;
+
+    pedidosListBody.innerHTML = "";
+
+    if (pedidosFiltrados && pedidosFiltrados.length > 0) {
+        const indiceInicio = (paginaAtual - 1) * itensPorPagina;
+        const indiceFim = indiceInicio + itensPorPagina;
+        const pedidosPagina = pedidosFiltrados.slice(indiceInicio, indiceFim);
+        
+        let html = "";
+
+        pedidosPagina.forEach(pedido => {
+            let statusInfo = { texto: "Desconhecido", classe: "" };
+            let acaoHtml = ""; // HTML dos botões
+
+            const stageId = (pedido.STAGE_ID || "").toUpperCase();
+            const id = pedido.ID;
+
+            // Define Status e Botões
+            if (stageId.includes("NEW")) {
+                statusInfo = { texto: 'Aguardando Pagamento', classe: 'status-pagamento' };
+                // RECRIA O MENU DROPDOWN DE PAGAMENTO
+                acaoHtml = `
+                    <div class="dropdown-pagamento">
+                        <button type="button" class="btn-pagar" data-deal-id="${id}">
+                            Pagar <i class="fas fa-caret-down"></i>
+                        </button>
+                        <div class="dropdown-content">
+                            <button type="button" class="btn-pagar-saldo" data-deal-id="${id}">💰 Usar Saldo</button>
+                            <button type="button" class="btn-gerar-cobranca" data-deal-id="${id}">💠 Gerar PIX</button>
+                        </div>
+                    </div>
+                `;
+            } 
+            else if (stageId.includes("LOSE")) {
+                statusInfo = { texto: 'Cancelado', classe: 'status-cancelado' };
+                acaoHtml = `<a href="pedido.html?id=${id}" class="btn-ver-pedido">Ver Motivo</a>`;
+            } 
+            else if (stageId === "C17:UC_2OEE24") {
+                statusInfo = { texto: 'Em Análise', classe: 'status-analise' };
+                acaoHtml = `<a href="pedido.html?id=${id}" class="btn-ver-pedido">Ver Detalhes</a>`;
+            } 
+            else if (stageId.includes("WON") || stageId === "C17:WON") {
+                statusInfo = { texto: "Concluído", classe: "status-aprovado" };
+                acaoHtml = `<a href="pedido.html?id=${id}" class="btn-ver-pedido">Ver Arquivos</a>`;
+            } 
+            else {
+                statusInfo = { texto: 'Em Andamento', classe: 'status-andamento' };
+                acaoHtml = `<a href="pedido.html?id=${id}" class="btn-ver-pedido">Acompanhar</a>`;
+            }
+
+            const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(pedido.OPPORTUNITY) || 0);
+
+            html += `
+                <div class="pedido-item">
+                    <div class="col-id"><strong>#${id}</strong></div>
+                    <div class="col-titulo">${pedido.TITLE}</div>
+                    <div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div>
+                    <div class="col-valor">${valorFormatado}</div>
+                    <div class="col-acoes" style="overflow: visible;">${acaoHtml}</div>
+                </div>
+            `;
+        });
+
+        pedidosListBody.innerHTML = html;
+    } else {
+        pedidosListBody.innerHTML = `<div class="loading-pedidos" style="padding: 30px;">Nenhum pedido encontrado com este filtro.</div>`;
+    }
+}
+
+// 5. Lógica de Eventos dos Botões de Pagamento (Dropdown, Saldo, PIX)
+function ativarDropdownsDePagamento() {
+    const pedidosListBody = document.getElementById('pedidos-list-body');
+    if (!pedidosListBody) return;
+
+    pedidosListBody.addEventListener('click', async function(event) {
+        const target = event.target;
+        
+        // CLIQUE NO BOTÃO "PAGAR" (Abre/Fecha Menu)
+        const btnPagar = target.closest('.btn-pagar');
+        if (btnPagar) {
+            const dropdown = btnPagar.closest('.dropdown-pagamento');
+            // Fecha todos os outros
+            document.querySelectorAll('.dropdown-pagamento.active').forEach(d => {
+                if(d !== dropdown) d.classList.remove('active');
+            });
+            // Alterna o atual
+            if(dropdown) dropdown.classList.toggle('active');
+            event.stopPropagation(); // Impede que o clique feche imediatamente
+            return;
+        }
+
+        // CLIQUE EM "USAR SALDO"
+        if (target.classList.contains('btn-pagar-saldo')) {
+            const dealId = target.dataset.dealId;
+            if (!confirm('Deseja usar seu saldo de créditos para pagar este pedido imediatamente?')) return;
+            
+            const originalText = target.textContent;
+            target.disabled = true; 
+            target.textContent = 'Processando...';
+            
+            try {
+                const response = await fetch('/api/payWithBalance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), dealId: dealId })
+                });
+                const data = await response.json();
+                
+                if (!response.ok) throw new Error(data.message || "Erro no pagamento.");
+                
+                alert('Sucesso! Pagamento realizado.');
+                atualizarDadosPainel(); // Recarrega lista e saldo
+            } catch (error) {
+                alert(`Erro: ${error.message}`);
+                target.disabled = false; 
+                target.textContent = originalText;
+            }
+        }
+
+        // CLIQUE EM "GERAR PIX"
+        if (target.classList.contains('btn-gerar-cobranca')) {
+            const dealId = target.dataset.dealId;
+            const originalText = target.textContent;
+            target.disabled = true; 
+            target.textContent = 'Gerando...';
+            
+            try {
+                const response = await fetch('/api/generatePixForDeal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), dealId: dealId })
+                });
+                const data = await response.json();
+                
+                if (!response.ok) throw new Error(data.message || "Erro ao gerar PIX.");
+                
+                // Abre o link do Asaas em nova aba
+                window.open(data.url, '_blank');
+                
+                // Fecha o dropdown
+                const dropdown = target.closest('.dropdown-pagamento');
+                if(dropdown) dropdown.classList.remove('active');
+
+            } catch (error) {
+                alert(`Erro: ${error.message}`);
+            } finally {
+                target.disabled = false; 
+                target.textContent = originalText;
+            }
+        }
+    });
+
+    // Fecha dropdowns se clicar fora
+    window.addEventListener('click', function(event) {
+        if (!event.target.closest('.dropdown-pagamento')) {
+            document.querySelectorAll('.dropdown-pagamento.active').forEach(dropdown => {
+                dropdown.classList.remove('active');
+            });
+        }
+    });
+}
+
+// 6. Lógica do Modal de Adicionar Créditos
+function setupModalCreditos() {
+    const modal = document.getElementById("modal-adquirir-creditos");
+    const btnOpen = document.querySelector(".btn-add-credito");
+    const form = document.getElementById("adquirir-creditos-form");
+    
+    if (!modal || !btnOpen) return;
+
+    const btnClose = modal.querySelector(".close-modal");
+
+    // Abrir Modal
+    btnOpen.addEventListener("click", (e) => {
+        e.preventDefault();
+        modal.classList.add("active"); // Usa a classe CSS que definimos no HTML
+    });
+
+    // Fechar Modal (Botão X)
+    if(btnClose) btnClose.addEventListener("click", () => modal.classList.remove("active"));
+
+    // Fechar Modal (Clicar fora)
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) modal.classList.remove("active");
+    });
+
+    // Envio do Formulário de Créditos
+    if (form) {
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const submitButton = form.querySelector("button[type='submit']");
+            const feedbackId = "creditos-form-error";
+            const valorInput = document.getElementById("creditos-valor");
+            
+            hideFeedback(feedbackId);
+            
+            const valor = valorInput.value;
+            if (!valor || parseFloat(valor) < 5) {
+                return showFeedback(feedbackId, "O valor mínimo é R$ 5,00.", true);
+            }
+            
+            submitButton.disabled = true; 
+            submitButton.textContent = "Gerando cobrança...";
+            
+            try {
+                const response = await fetch('/api/addCredit', {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        token: localStorage.getItem("sessionToken"), 
+                        valor: valor 
+                    })
+                });
+                const data = await response.json();
+                
+                if (!response.ok) throw new Error(data.message || "Erro ao gerar cobrança.");
+                
+                // Abre link de pagamento
+                window.open(data.url, '_blank');
+                
+                // Fecha e limpa
+                modal.classList.remove("active");
+                form.reset();
+                
+            } catch (error) {
+                showFeedback(feedbackId, error.message, true);
+            } finally {
+                submitButton.disabled = false; 
+                submitButton.textContent = "Gerar Cobrança";
+            }
+        });
+    }
 }
