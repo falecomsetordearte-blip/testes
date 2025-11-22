@@ -2,23 +2,412 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel do Designer - Setor de Arte</title>
     <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
-    <!-- O caminho para o style.css pode precisar de ajuste dependendo da sua estrutura de pastas -->
-    <link rel="stylesheet" href="../style.css"> 
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        /* --- VARIÁVEIS & RESET --- */
+        :root {
+            --primary-color: #4f46e5; /* Índigo moderno */
+            --primary-hover: #4338ca;
+            --secondary-color: #64748b;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border-radius: 16px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        a { text-decoration: none; color: inherit; }
+        ul { list-style: none; }
+
+        /* --- LAYOUT --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            width: 100%;
+        }
+
+        /* --- HEADER --- */
+        .app-header {
+            background-color: var(--card-bg);
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            height: 80px;
+            display: flex;
+            align-items: center;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .app-logo {
+            height: 50px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        #designer-greeting {
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 0.95rem;
+        }
+
+        #logout-button {
+            background-color: #fee2e2;
+            color: var(--danger);
+            border: none;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+
+        #logout-button:hover {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        /* --- MAIN CONTENT --- */
+        .main-painel {
+            padding: 40px 0;
+            flex: 1;
+        }
+
+        /* --- DASHBOARD CARDS --- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .dash-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+            border: 1px solid rgba(255,255,255,0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .dash-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-icon {
+            font-size: 1.2rem;
+            padding: 10px;
+            border-radius: 12px;
+        }
+
+        /* Estilos específicos para ícones */
+        .fa-wallet { color: var(--primary-color); background: #e0e7ff; }
+        .fa-hourglass-half { color: var(--warning); background: #fef3c7; }
+        .fa-tasks { color: var(--success); background: #d1fae5; }
+
+        .card-body {
+            margin-bottom: 20px;
+        }
+
+        .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: block;
+        }
+
+        .card-footer {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            padding-top: 15px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .card-button {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: var(--transition);
+            width: 100%;
+            text-align: center;
+        }
+
+        .card-button:hover {
+            background-color: var(--primary-hover);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        /* --- TABS --- */
+        .tabs-component {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0 20px;
+            background: #fff;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 20px 25px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--secondary-color);
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary-color);
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--primary-color);
+            border-radius: 3px 3px 0 0;
+        }
+
+        .tab-content {
+            padding: 20px;
+            min-height: 300px;
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- LISTAS/TABELAS --- */
+        .pedidos-list-header {
+            display: grid;
+            background-color: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pedidos-list-body {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        /* Estilo para os itens da lista que serão gerados pelo JS */
+        .list-item { 
+            /* Adicione esta classe no seu JS ao criar a div da row, se possível. 
+               Se não, o CSS abaixo tenta pegar divs diretas, mas é melhor usar classes. */
+            display: grid;
+            /* O grid-template-columns vem do inline style do HTML ou JS */
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            align-items: center;
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+        
+        /* Fallback para linhas geradas dinamicamente sem classe */
+        .pedidos-list-body > div:not(.loading-pedidos) {
+             display: grid;
+             /* grid-template-columns deve ser mantido via style inline ou JS para consistência */
+             padding: 15px;
+             border-bottom: 1px solid #f1f5f9;
+             align-items: center;
+        }
+        
+        .pedidos-list-body > div:not(.loading-pedidos):hover {
+            background-color: #f8fafc;
+        }
+
+        /* Colunas Específicas */
+        .col-titulo { font-weight: 600; color: var(--text-main); }
+        .col-id { color: var(--secondary-color); font-family: monospace; }
+        .col-valor { font-weight: 700; color: var(--success); }
+        
+        /* Badges de Status (você precisará aplicar classes no JS) */
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+            text-align: center;
+            width: fit-content;
+        }
+        
+        .status-pendente { background-color: #fff7ed; color: #c2410c; }
+        .status-concluido { background-color: #ecfdf5; color: #047857; }
+        .status-cancelado { background-color: #fef2f2; color: #b91c1c; }
+
+        /* Loading */
+        .loading-pedidos {
+            display: flex;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Botões de Ação dentro da lista */
+        .btn-action {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .pedidos-list-header { display: none; } /* Esconde cabeçalho em mobile */
+            
+            .pedidos-list-body > div:not(.loading-pedidos) {
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+                align-items: flex-start;
+                padding: 20px;
+                box-shadow: var(--shadow-sm);
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                margin-bottom: 15px;
+            }
+
+            .col-id::before { content: "ID: "; font-weight: 600; }
+            .col-status::before { content: "Status: "; font-weight: 600; }
+            .col-valor::before { content: "Valor: "; font-weight: 600; }
+        }
+    </style>
 </head>
 <body>
     <div class="app-layout">
         <header class="app-header">
             <div class="container header-content">
-                 <img src="" alt="Logo Setor de Arte" class="app-logo">
+                 <!-- Ajustei a imagem para usar uma classe melhor controlada -->
+                 <img src="https://app.setordearte.com.br/images/logo-fundo-claro-100x100.png" alt="Logo Setor de Arte" class="app-logo">
                 <div class="user-menu">
-                    <a href="perfil.html" id="designer-greeting-link" style="text-decoration: none;">
-                        <span id="designer-greeting"></span>
+                    <a href="perfil.html" id="designer-greeting-link" class="user-link">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 35px; height: 35px; background: #e0e7ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary-color);">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <span id="designer-greeting">Olá, Designer</span>
+                        </div>
                     </a>
-                    <button id="logout-button">Sair</button>
+                    <button id="logout-button"><i class="fas fa-sign-out-alt"></i> Sair</button>
                 </div>
             </div>
         </header>
@@ -26,61 +415,74 @@
         <main class="main-painel">
             <div class="container">
 
-                <!-- Cards de Resumo (Intocados, conforme solicitado) -->
+                <!-- Título da Seção (Opcional, mas bom para UX) -->
+                <div style="margin-bottom: 20px;">
+                    <h2 style="font-weight: 600; color: var(--text-main);">Visão Geral</h2>
+                    <p style="color: var(--secondary-color); font-size: 0.9rem;">Acompanhe seus ganhos e tarefas pendentes.</p>
+                </div>
+
                 <div class="dashboard-grid">
                     <div class="dash-card">
                         <div class="card-header">
                             <span class="card-title">Saldo Disponível</span>
                             <i class="fas fa-wallet card-icon"></i>
                         </div>
-                        <div class="card-body"><span id="designer-saldo-disponivel" class="card-value">Carregando...</span></div>
-                        <div class="card-footer"><button id="btn-solicitar-saque" class="card-button">Solicitar Saque</button></div>
+                        <div class="card-body"><span id="designer-saldo-disponivel" class="card-value">R$ 0,00</span></div>
+                        <div class="card-footer"><a href="solicitar-saque.html" class="card-button">Solicitar Saque</a></div>
                     </div>
                     <div class="dash-card">
                         <div class="card-header">
                             <span class="card-title">Aguardando Depósito</span>
                             <i class="fas fa-hourglass-half card-icon"></i>
                         </div>
-                        <div class="card-body"><span id="designer-saldo-pendente" class="card-value">Carregando...</span></div>
-                        <div class="card-footer"><span>Saques solicitados</span></div>
+                        <div class="card-body"><span id="designer-saldo-pendente" class="card-value">R$ 0,00</span></div>
+                        <div class="card-footer"><span>Total em saques solicitados</span></div>
                     </div>
                     <div class="dash-card">
                         <div class="card-header">
                             <span class="card-title">Pedidos Ativos</span>
                             <i class="fas fa-tasks card-icon"></i>
                         </div>
-                        <div class="card-body"><span id="designer-pedidos-ativos" class="card-value">...</span></div>
+                        <div class="card-body"><span id="designer-pedidos-ativos" class="card-value">0</span></div>
                         <div class="card-footer"><span>Trabalhos em andamento</span></div>
                     </div>
                 </div>
 
-                <!-- Sistema de Abas com o padrão global -->
                 <div class="tabs-component">
                     <div class="tab-buttons">
                         <button class="tab-btn active" data-tab="atendimentos">Meus Atendimentos</button>
                         <button class="tab-btn" data-tab="saques">Histórico de Saques</button>
                     </div>
                     <div class="tab-content">
-                        <!-- Conteúdo da Aba 1: Atendimentos -->
                         <div id="atendimentos" class="tab-pane active">
-                            <div class="pedidos-list-header" style="grid-template-columns: 1fr 4fr 2fr 1.5fr 1.5fr;">
-                                <div class="col-id">ID</div>
-                                <div class="col-titulo">Título</div>
+                            <!-- Note: Mantive o estilo inline do grid para garantir alinhamento com seu JS, mas o CSS controla o resto -->
+                            <div class="pedidos-list-header" style="grid-template-columns: 0.5fr 3fr 1.5fr 1fr 1fr;">
+                                <div class="col-id">#ID</div>
+                                <div class="col-titulo">Título do Pedido</div>
                                 <div class="col-status">Status</div>
                                 <div class="col-valor">Comissão</div>
-                                <div class="col-acoes">Ações</div>
+                                <div class="col-acoes" style="text-align: right;">Ações</div>
                             </div>
                             <div id="atendimentos-list" class="pedidos-list-body">
                                 <div class="loading-pedidos"><div class="spinner"></div></div>
+                                <!-- Exemplo de como seu JS deve renderizar (para visualizar o design): -->
+                                <!-- 
+                                <div style="display: grid; grid-template-columns: 0.5fr 3fr 1.5fr 1fr 1fr; padding: 15px; border-bottom: 1px solid #f1f5f9; align-items: center;">
+                                    <div class="col-id">1024</div>
+                                    <div class="col-titulo">Arte para Social Media</div>
+                                    <div><span class="status-badge status-pendente">Em Andamento</span></div>
+                                    <div class="col-valor">R$ 45,00</div>
+                                    <div style="text-align: right;"><button class="btn-action"><i class="fas fa-eye"></i></button></div>
+                                </div>
+                                -->
                             </div>
                         </div>
-                        <!-- Conteúdo da Aba 2: Saques -->
                         <div id="saques" class="tab-pane">
-                             <div class="pedidos-list-header" style="grid-template-columns: 1fr 4fr 2fr 1.5fr;">
-                                <div class="col-id">ID</div>
-                                <div class="col-titulo">Título</div>
+                             <div class="pedidos-list-header" style="grid-template-columns: 0.5fr 3fr 1.5fr 1fr;">
+                                <div class="col-id">#ID</div>
+                                <div class="col-titulo">Data / Descrição</div>
                                 <div class="col-status">Status</div>
-                                <div class="col-valor">Valor</div>
+                                <div class="col-valor">Valor Solicitado</div>
                             </div>
                             <div id="saques-list" class="pedidos-list-body">
                                  <div class="loading-pedidos"><div class="spinner"></div></div>
@@ -93,5 +495,23 @@
         </main>
     </div>
     <script src="designer-script.js"></script>
+    
+    <!-- Script simples apenas para trocar abas (caso não esteja no designer-script.js) -->
+    <script>
+        document.querySelectorAll('.tab-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons and panes
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+                
+                // Add active class to clicked button
+                button.classList.add('active');
+                
+                // Show corresponding tab pane
+                const tabId = button.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+    </script>
 </body>
 </html>

@@ -47,7 +47,7 @@ module.exports = async (req, res) => {
         }
 
         const companyId = user.COMPANY_ID;
-        const opportunityValue = parseFloat(formData.valorDesigner) * 0.9;
+        const opportunityValue = parseFloat(formData.valorDesigner) * 0.8;
 
         const dealFields = {
             'TITLE': formData.titulo,

@@ -1,0 +1,38 @@
+<!-- /testes/prospecto-cv.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Prospecto CV</title>
+    <!-- Opcional: Adicione um link para seu arquivo CSS se quiser estilizar -->
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        form div { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input { padding: 8px; width: 300px; }
+        button { padding: 10px 15px; cursor: pointer; }
+        #mensagem { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Cadastro de Prospecto CV</h1>
+    
+    <form id="form-prospecto">
+        <div>
+            <label for="nome">Nome:</label>
+            <input id="nome" type="text" required>
+        </div>
+        <div>
+            <label for="whatsapp">WhatsApp:</label>
+            <input id="whatsapp" type="text" placeholder="Pode começar com 0" required>
+        </div>
+        <button type="submit">Enviar Prospecto</button>
+    </form>
+
+    <p id="mensagem"></p>
+
+    <script src="prospecto-cv-script.js"></script>
+</body>
+</html>

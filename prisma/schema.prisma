@@ -1,3 +1,5 @@
+// /prisma/schema.prisma - VERSÃO COMPLETA E ATUALIZADA
+
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"] // Habilita o suporte para Vercel Postgres
@@ -18,8 +20,8 @@ model DesignerFinanceiro {
   saldo_pendente      Decimal   @default(0.00) @db.Decimal(10, 2)
   ultimo_saque_em     DateTime?
   criado_em           DateTime  @default(now())
-  atualizado_em    DateTime  @updatedAt
-  chave_pix          String?
+  atualizado_em       DateTime  @updatedAt
+  chave_pix           String?
   pontuacao           Int       @default(0)
 
   @@map("designers_financeiro")
@@ -33,6 +35,8 @@ model Empresa {
   whatsapp      String?  @db.VarChar(20)
   criado_em     DateTime @default(now()) @db.Timestamptz(6)
   atualizado_em DateTime @updatedAt @db.Timestamptz(6)
+  saldo_devedor Decimal  @default(0.00) @db.Decimal(10, 2)
+  aprovados     Decimal  @default(0.00) @db.Decimal(10, 2) // <-- NOVO CAMPO ADICIONADO AQUI
 
   @@map("empresas")
 }

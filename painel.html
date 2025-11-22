@@ -3,193 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pedidos de Arte - Setor de Arte</title>
-    <!-- Ícone e CSS padronizados -->
+    <title>Meus Pedidos - Setor de Arte</title>
     <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
     <link rel="stylesheet" href="/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        /* --- CSS ESPECÍFICO DESTA PÁGINA --- */
+
+        /* 1. AJUSTE DO CONTAINER FLUIDO (A MUDANÇA PRINCIPAL ESTÁ AQUI) */
+        .app-content {
+            padding: 20px; /* Reduzi de 30px para aproveitar mais espaço */
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .container {
+            max-width: 100%; /* Remove o limite de 1200px */
+            margin: 0;       /* Remove a centralização automática */
+            width: 100%;     /* Força usar tudo */
+        }
+
+        /* --- CARD DE SALDO --- */
+        .saldo-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 25px 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px; /* Diminui espaço entre cards */
+            border: 1px solid #e2e8f0;
+        }
+
+        .saldo-box { display: flex; flex-direction: column; }
+        .saldo-label { font-size: 0.9rem; color: #64748b; font-weight: 500; margin-bottom: 5px; }
+        .saldo-valor { font-size: 2.2rem; font-weight: 700; color: #4f46e5; line-height: 1; }
+
+        .acoes-box { display: flex; gap: 15px; }
+
+        .btn-top-action {
+            padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 0.9rem;
+            cursor: pointer; display: flex; align-items: center; gap: 8px; text-decoration: none; transition: 0.2s; border: none;
+        }
+        .btn-add { background-color: #e0e7ff; color: #4f46e5; }
+        .btn-add:hover { background-color: #c7d2fe; }
+        
+        .btn-new { background-color: #4f46e5; color: white; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3); }
+        .btn-new:hover { background-color: #4338ca; transform: translateY(-2px); }
+
+        /* --- ABAS E CONTAINER --- */
+        .tabs-component {
+            background: #fff; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03); 
+            border: 1px solid #e2e8f0; 
+            overflow: visible !important; 
+            position: relative;
+            z-index: 1;
+        }
+
+        .tab-buttons { 
+            display: flex; 
+            border-bottom: 1px solid #e2e8f0; 
+            background: #f8fafc;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+
+        .tab-btn {
+            padding: 15px 25px; background: none; border: none; cursor: pointer; font-weight: 500; color: #64748b;
+            border-bottom: 3px solid transparent; font-family: 'Poppins', sans-serif; transition: 0.2s;
+        }
+        .tab-btn:hover { color: #4f46e5; }
+        .tab-btn.active { color: #4f46e5; border-bottom-color: #4f46e5; background: #fff; font-weight: 600; border-top-left-radius: 12px; border-top-right-radius: 12px;}
+
+        .tab-content { padding: 0; overflow: visible !important; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        /* --- TABELA (GRID FLUIDO) --- */
+        .pedidos-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; padding: 20px 20px 0 20px; }
+        .pedidos-header-bar h2 { font-size: 1.5rem; font-weight: 600; color: #1e293b; margin: 0; }
+        #search-input { padding: 10px 15px; border: 1px solid #cbd5e1; border-radius: 8px; width: 300px; outline: none; font-family: 'Poppins', sans-serif; }
+
+        /* Ajuste das colunas para aproveitar a largura total */
+        .pedidos-list-header {
+            display: grid;
+            /* A coluna de Título (2ª) agora é 1fr, o que significa que ela vai ocupar TODO o espaço que sobrar */
+            grid-template-columns: 80px 1fr 180px 150px 140px; 
+            gap: 20px; padding: 15px 25px; background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;
+            font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;
+        }
+
+        #pedidos-list-body .pedido-item {
+            display: grid;
+            /* Mesmo grid do header */
+            grid-template-columns: 80px 1fr 180px 150px 140px;
+            gap: 20px; padding: 20px 25px; border-bottom: 1px solid #e2e8f0;
+            align-items: center; background: #fff; transition: background 0.2s; font-size: 0.95rem;
+            position: relative;
+            z-index: 1; 
+        }
+        #pedidos-list-body .pedido-item:hover { background-color: #f1f5f9; z-index: 20; }
+
+        .col-id { font-weight: 600; color: #4f46e5; font-family: monospace; }
+        .col-titulo { font-weight: 500; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .col-valor { font-weight: 600; color: #1e293b; }
+        
+        .col-acoes { 
+            text-align: right; position: relative; overflow: visible !important; 
+        }
+
+        .status-badge { padding: 5px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; display: inline-block; text-transform: uppercase; }
+        .status-pagamento { background: #fff7ed; color: #c2410c; }
+        .status-andamento { background: #eff6ff; color: #1d4ed8; }
+        .status-aprovado { background: #ecfdf5; color: #047857; }
+        .status-cancelado { background: #fef2f2; color: #b91c1c; }
+
+        /* --- DROPDOWN --- */
+        .dropdown-pagamento { position: relative; display: inline-block; }
+        
+        .btn-pagar {
+            background-color: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 6px;
+            font-weight: 600; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+            transition: 0.2s;
+        }
+        .btn-pagar:hover { background-color: #059669; box-shadow: 0 2px 5px rgba(16, 185, 129, 0.3); }
+
+        .dropdown-content {
+            display: none; position: absolute; right: 0; top: 115%;
+            background: white; min-width: 170px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 1px solid #e2e8f0; 
+            border-radius: 8px; z-index: 9999 !important; overflow: hidden;
+        }
+        
+        .dropdown-pagamento.active .dropdown-content { display: block; animation: fadeIn 0.2s ease; }
+
+        .dropdown-content button {
+            width: 100%; text-align: left; padding: 12px 15px; background: none; border: none;
+            border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; cursor: pointer; color: #334155; transition: 0.2s;
+        }
+        .dropdown-content button:hover { background: #f8fafc; color: #4f46e5; padding-left: 18px; }
+
+        .btn-ver-pedido { color: #4f46e5; font-weight: 600; font-size: 0.85rem; padding: 6px 12px; border-radius: 6px; text-decoration: none; transition: 0.2s; }
+        .btn-ver-pedido:hover { background: #e0e7ff; }
+
+        /* --- MODAL --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: #fff; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; position: relative; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .close-modal { background: none; border: none; font-size: 1.8rem; cursor: pointer; color: #94a3b8; line-height: 1; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; color: #334155; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; outline: none; }
+        .btn-modal-submit { width: 100%; background: #4f46e5; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem; margin-top: 10px; }
+        .loading-pedidos { padding: 40px; text-align: center; color: #64748b; }
+        .spinner { width: 30px; height: 30px; border: 3px solid #e2e8f0; border-top-color: #4f46e5; border-radius: 50%; margin: 0 auto 15px; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 900px) {
+            /* Mantém comportamento mobile */
+            .pedidos-list-header { display: none; }
+            #pedidos-list-body .pedido-item { grid-template-columns: 1fr; gap: 10px; }
+            .col-acoes { text-align: left; margin-top: 10px; }
+            .saldo-section { flex-direction: column; align-items: flex-start; gap: 20px; }
+        }
+    </style>
 </head>
 <body>
 
-    <!-- NOVA ESTRUTURA DE LAYOUT COM GRID -->
     <div class="app-layout-grid">
-
-        <!-- Sidebar será injetada aqui -->
         <div id="sidebar-placeholder"></div>
-
-        <!-- Wrapper para o conteúdo que rola -->
         <div class="app-content-wrapper">
-
-            <!-- Header será injetado aqui -->
             <div id="header-placeholder"></div>
 
-            <!-- Conteúdo específico desta página -->
             <main class="app-content">
+                <!-- Classe container agora ocupa 100% -->
                 <div class="container">
-                
                     <div id="trial-banner-placeholder"></div>
     
                     <section class="saldo-section">
                         <div class="saldo-box">
-                            <span class="saldo-label">Meu Saldo de Créditos</span>
-                            <span id="saldo-valor" class="saldo-valor">R$ 0,00</span>
+                            <span class="saldo-label">Saldo Disponível</span>
+                            <span id="saldo-valor" class="saldo-valor">R$ ...</span>
                         </div>
                         <div class="acoes-box">
-                            <button class="btn-acao btn-add-credito">Adicionar Créditos</button>
-                            <button class="btn-acao btn-novo-pedido"><strong>+</strong> Novo Pedido</button>
+                            <button class="btn-top-action btn-add btn-add-credito">
+                                <i class="fas fa-plus"></i> Adicionar Créditos
+                            </button>
+                            <a href="criar-pedido-grafica.html" class="btn-top-action btn-new">
+                                <i class="fas fa-magic"></i> Novo Pedido
+                            </a>
                         </div>
                     </section>
     
                     <section class="pedidos-section">
-                        <div class="pedidos-header-bar">
-                            <h2>Meus Pedidos</h2>
-                            <div class="filtros-pedidos">
-                                <input type="text" placeholder="Buscar por título ou ID..." id="search-input">
-                            </div>
-                        </div>
-    
-                        <!-- Início do Componente de Abas -->
+                        <!-- Tabela ocupa toda a largura do componente -->
                         <div class="tabs-component">
-                            
-                            <!-- Botões das Abas -->
+                            <!-- Movi o Header para dentro do tabs-component para ficar alinhado visualmente com o fundo branco -->
+                            <div class="pedidos-header-bar">
+                                <h2>Meus Pedidos</h2>
+                                <div class="filtros-pedidos">
+                                    <input type="text" placeholder="Buscar por título ou ID..." id="search-input">
+                                </div>
+                            </div>
+
                             <div class="tab-buttons">
-                                <button class="tab-btn active" data-tab="todos">Todos os Status</button>
+                                <button class="tab-btn active" data-tab="todos">Todos</button>
                                 <button class="tab-btn" data-tab="pagamento">Aguardando Pagamento</button>
                                 <button class="tab-btn" data-tab="andamento">Em Andamento</button>
                                 <button class="tab-btn" data-tab="cancelado">Cancelado</button>
                             </div>
     
-                            <!-- Conteúdo das Abas -->
                             <div class="tab-content">
                                  <div class="tab-pane active">
-    
                                     <div class="pedidos-list-header">
                                         <div class="col-id">ID</div>
-                                        <div class="col-titulo">Título</div>
+                                        <div class="col-titulo">Título do Projeto</div>
                                         <div class="col-status">Status</div>
                                         <div class="col-valor">Valor</div>
                                         <div class="col-acoes">Ações</div>
                                     </div>
-    
                                     <div id="pedidos-list-body" class="pedidos-list-body">
                                         <div class="loading-pedidos">
                                             <div class="spinner"></div>
                                             <span>Carregando seus pedidos...</span>
                                         </div>
                                     </div>
-                                    
-                                    <div id="pagination-container" class="pagination-container hidden">
-                                        <div class="pagination-info">
-                                            <span id="pagination-info-text"></span>
-                                        </div>
-                                        <div class="pagination-controls">
-                                            <button id="btn-first-page" class="pagination-btn" title="Primeira página">«</button>
-                                            <button id="btn-prev-page" class="pagination-btn" title="Página anterior">‹</button>
-                                            <span id="pagination-pages" class="pagination-pages"></span>
-                                            <button id="btn-next-page" class="pagination-btn" title="Próxima página">›</button>
-                                            <button id="btn-last-page" class="pagination-btn" title="Última página">»</button>
-                                        </div>
-                                    </div>
+                                    <div id="pagination-container" class="pagination-container hidden"></div>
                                  </div>
                             </div>
                         </div>
-                        <!-- Fim do Componente de Abas -->
                     </section>
                 </div>
             </main>
 
-            <!-- Footer será injetado aqui -->
             <div id="footer-placeholder"></div>
-
-        </div>
-    </div>
-
-    <!-- MODAIS FICAM AQUI, FORA DO GRID PRINCIPAL -->
-    <div class="modal-overlay" id="modal-novo-pedido">
-        <div class="modal-content modal-lg">
-            <div class="modal-header">
-                <h3>Criar um Novo Pedido de Arte</h3>
-                <button class="close-modal" title="Fechar">×</button>
-            </div>
-            <form id="novo-pedido-form">
-                <div class="modal-body">
-                    <div id="pedido-form-error" class="form-feedback error hidden"></div>
-                    
-                    <div class="video-explicativo-wrapper">
-                        <a href="#" id="video-explicativo-toggle" class="video-toggle-link">Assistir Vídeo Explicativo</a>
-                        <div id="video-explicativo-container" class="video-container hidden">
-                            <iframe width="100%" height="315" src="https://www.youtube.com/embed/lae4DJIYXoA" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                        </div>
-                    </div>
-
-                    <div class="form-row form-row-four">
-                        <div class="form-group">
-                            <label for="pedido-titulo">Título do Pedido</label>
-                            <input type="text" id="pedido-titulo" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="cliente-final-nome">Nome do Cliente Final</label>
-                            <input type="text" id="cliente-final-nome" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="cliente-final-wpp">WhatsApp do Cliente Final</label>
-                            <input type="tel" id="cliente-final-wpp" required placeholder="(00) 00000-0000">
-                        </div>
-                        <div class="form-group">
-                            <label for="pedido-valor">Valor para o Designer (R$)</label>
-                            <input type="number" id="pedido-valor" min="35" step="5" required>
-                        </div>
-                    </div>
-
-                    <div class="form-row form-row-three">
-                        <div class="form-group">
-                            <label for="pedido-impressora">Impressora</label>
-                            <select id="pedido-impressora" required>
-                                <option value="">Carregando...</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="pedido-material">Material</label>
-                            <select id="pedido-material" required>
-                                <option value="">Carregando...</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="pedido-tipo-entrega">Tipo de Entrega</label>
-                            <select id="pedido-tipo-entrega" required>
-                                <option value="">Carregando...</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h4 class="materiais-header">Materiais do Pedido</h4>
-                        <div id="materiais-container">
-                            <div class="material-item">
-                                <label class="item-label">Item 1</label>
-                                <div class="form-group">
-                                    <label for="material-descricao-1">Descreva o Material</label>
-                                    <input type="text" id="material-descricao-1" class="material-descricao" placeholder="Ex. Banner 60x100 3 unidades" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="material-detalhes-1">Como o cliente deseja a arte?</label>
-                                    <textarea id="material-detalhes-1" class="material-detalhes" rows="3" required></textarea>
-                                </div>
-                            </div>
-                        </div>
-                        <button type="button" id="btn-add-material" class="btn btn-light btn-add-material">+ Adicionar Material</button>
-                    </div>
-                    
-                    <div class="form-group" style="margin-top: 25px;">
-                        <label for="pedido-formato">Formato Desejado</label>
-                        <input type="text" id="pedido-formato" placeholder="Ex: PDF, CDR, AI" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary btn-lg w-100">Criar Pedido</button>
-                </div>
-            </form>
         </div>
     </div>
     
@@ -197,28 +251,22 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Adicionar Créditos</h3>
-                <button class="close-modal" title="Fechar">×</button>
+                <button class="close-modal">×</button>
             </div>
-            
             <form id="adquirir-creditos-form">
-                <div class="modal-body">
-                    <div id="creditos-form-error" class="form-feedback error hidden"></div>
-                    <div class="form-group">
-                        <label for="creditos-valor">Valor (R$)</label>
-                        <input type="number" id="creditos-valor" min="5" step="5" required>
-                    </div>
+                <div id="creditos-form-error" class="form-feedback error hidden" style="display:none; color: #ef4444; margin-bottom: 15px; font-size: 0.9rem;"></div>
+                <div class="form-group">
+                    <label for="creditos-valor">Valor da Recarga (R$)</label>
+                    <input type="number" id="creditos-valor" min="5" step="5" placeholder="Ex: 50.00" required>
+                    <small style="color: #94a3b8; font-size: 0.8rem;">Mínimo R$ 5,00</small>
                 </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary w-100">Gerar Cobrança</button>
-                </div>
+                <button type="submit" class="btn-modal-submit">Gerar Cobrança</button>
             </form>
         </div>
     </div>
 
-    <!-- SCRIPTS -->
     <script src="/layout.js"></script>
     <script src="https://unpkg.com/imask"></script>
-    <script src="/script.js"></script>
-
+    <script src="script.js"></script>
 </body>
 </html>

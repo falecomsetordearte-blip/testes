@@ -2,24 +2,346 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Perfil - Painel do Designer</title>
-    <link rel="stylesheet" href="../style.css">
-    <link rel="stylesheet" href="perfil.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        /* --- VARIÁVEIS & RESET (Consistente com o Painel) --- */
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary-color: #64748b;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #94a3b8;
+            --border-color: #e2e8f0;
+            --input-focus: #c7d2fe;
+            --gold: #f59e0b;
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --radius: 16px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        a { text-decoration: none; color: inherit; }
+
+        /* --- HEADER --- */
+        .app-header {
+            background-color: var(--card-bg);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            height: 80px;
+            display: flex;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-logo {
+            height: 50px;
+            width: auto;
+            display: block;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        #designer-greeting {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+        }
+
+        #logout-button {
+            background-color: #fee2e2;
+            color: #ef4444;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 0.9rem;
+        }
+
+        #logout-button:hover {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        /* --- MAIN --- */
+        .main-painel {
+            padding: 40px 20px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .profile-container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        /* --- LOADING --- */
+        .loading-pedidos {
+            text-align: center;
+            padding: 50px;
+            color: var(--secondary-color);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px auto;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .hidden { display: none; }
+
+        /* --- PROFILE CARD --- */
+        .profile-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+            padding: 40px;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .profile-card h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 5px;
+        }
+
+        .profile-card > p {
+            color: var(--secondary-color);
+            font-size: 0.95rem;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--bg-color);
+            padding-bottom: 20px;
+        }
+
+        /* --- TOP SECTION (FOTO + DADOS BÁSICOS) --- */
+        .profile-header {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+            align-items: flex-start;
+        }
+
+        .profile-photo-uploader {
+            flex-shrink: 0;
+            text-align: center;
+        }
+
+        #profile-pic-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #e0e7ff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .profile-header-info {
+            flex-grow: 1;
+            width: 100%;
+        }
+
+        /* --- PONTUAÇÃO --- */
+        #pontuacao-display {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #fffbeb;
+            color: var(--gold);
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            border: 1px solid #fde68a;
+        }
+        
+        #pontuacao-display::before {
+            content: '\f005'; /* Star icon fontawesome */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+        }
+
+        /* --- FORMULÁRIO --- */
+        .profile-form h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 30px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .form-grid-2-cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--secondary-color);
+            margin-bottom: 8px;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="email"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            transition: all 0.3s ease;
+            background: #fff;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px var(--input-focus);
+        }
+        
+        /* Campo Chave PIX mais destacado */
+        #chave_pix {
+            background-color: #f8fafc;
+            border-color: #cbd5e1;
+            font-family: monospace;
+            letter-spacing: 0.5px;
+        }
+
+        /* --- FEEDBACK --- */
+        .form-feedback {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        
+        .form-feedback.success { background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+        .form-feedback.error { background-color: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+        /* --- BUTTON --- */
+        .btn-submit {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            float: right;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+        
+        /* Clear float */
+        .profile-form::after { content: ""; display: table; clear: both; }
+
+        /* --- RESPONSIVIDADE --- */
+        @media (max-width: 768px) {
+            .profile-header {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .form-grid-2-cols {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+            
+            .profile-card {
+                padding: 25px;
+            }
+            
+            .btn-submit {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .user-menu #designer-greeting { display: none; } /* Simplifica menu mobile */
+        }
+    </style>
 </head>
 <body>
     <div class="app-layout">
         <header class="app-header">
             <div class="container header-content">
-                <a href="painel.html"><img src="" alt="Logo Setor de Arte" class="app-logo"></a>
+                <a href="painel.html" title="Voltar ao Painel">
+                    <img src="https://app.setordearte.com.br/images/logo-fundo-claro-100x100.png" alt="Logo Setor de Arte" class="app-logo">
+                </a>
                 <div class="user-menu">
-                    <span id="designer-greeting">Carregando...</span>
-                    <button id="logout-button">Sair</button>
+                    <!-- Link de voltar estilizado como ícone para mobile ou texto -->
+                    <a href="painel.html" style="color: var(--secondary-color); margin-right: 10px; font-size: 0.9rem;">
+                        <i class="fas fa-home"></i> <span style="margin-left:5px">Painel</span>
+                    </a>
+                    <span id="designer-greeting">Olá, Designer</span>
+                    <button id="logout-button"><i class="fas fa-sign-out-alt"></i> Sair</button>
                 </div>
             </div>
         </header>
         <main class="main-painel">
             <div class="profile-container">
+                
                 <div id="loading-profile" class="loading-pedidos">
                     <div class="spinner"></div>
                     <span>Carregando seu perfil...</span>
@@ -28,41 +350,56 @@
                 <div id="profile-content" class="hidden">
                     <div class="profile-card">
                         <h1>Meu Perfil</h1>
-                        <p>Mantenha seus dados sempre atualizados.</p>
+                        <p>Gerencie suas informações pessoais e dados bancários.</p>
 
                         <form id="profile-form" class="profile-form">
                             <div id="form-feedback" class="form-feedback hidden"></div>
                             
                             <div class="profile-header">
                                 <div class="profile-photo-uploader">
-                                    <!-- Apenas a imagem é exibida, sem o botão e o input de upload -->
+                                    <!-- Apenas a imagem de visualização -->
                                     <img id="profile-pic-preview" src="https://via.placeholder.com/120" alt="Foto de Perfil">
                                 </div>
                                 <div class="profile-header-info">
                                     <div class="form-grid-2-cols">
-                                        <div class="form-group"><label for="nome">Nome</label><input type="text" id="nome" required></div>
-                                        <div class="form-group"><label for="sobrenome">Sobrenome</label><input type="text" id="sobrenome"></div>
+                                        <div class="form-group">
+                                            <label for="nome">Nome</label>
+                                            <input type="text" id="nome" required placeholder="Seu nome">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sobrenome">Sobrenome</label>
+                                            <input type="text" id="sobrenome" placeholder="Seu sobrenome">
+                                        </div>
                                     </div>
                                     <div class="form-group">
                                         <label>Sua Pontuação</label>
-                                        <div id="pontuacao-display">...</div>
+                                        <div id="pontuacao-display">0 pts</div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <h3>Dados de Pagamento</h3>
+                            <h3><i class="fas fa-money-check-dollar"></i> Dados de Pagamento</h3>
                             <div class="form-group">
                                 <label for="chave_pix">Sua Chave PIX</label>
                                 <input type="text" id="chave_pix" placeholder="CPF, e-mail, telefone ou chave aleatória">
+                                <small style="color: var(--secondary-color); font-size: 0.75rem; margin-top: 5px; display: block;">Utilizada para transferências de comissões.</small>
                             </div>
                             
-                            <h3>Alterar Senha</h3>
+                            <h3><i class="fas fa-lock"></i> Segurança</h3>
                             <div class="form-grid-2-cols">
-                                <div class="form-group"><label for="nova_senha">Nova Senha (deixe em branco para não alterar)</label><input type="password" id="nova_senha"></div>
-                                <div class="form-group"><label for="confirmar_senha">Confirmar Nova Senha</label><input type="password" id="confirmar_senha"></div>
+                                <div class="form-group">
+                                    <label for="nova_senha">Nova Senha</label>
+                                    <input type="password" id="nova_senha" placeholder="Deixe em branco para manter a atual">
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirmar_senha">Confirmar Nova Senha</label>
+                                    <input type="password" id="confirmar_senha" placeholder="Repita a nova senha">
+                                </div>
                             </div>
 
-                            <button type="submit" class="btn-submit">Salvar Alterações</button>
+                            <button type="submit" class="btn-submit">
+                                <i class="fas fa-save"></i> Salvar Alterações
+                            </button>
                         </form>
                     </div>
                 </div>

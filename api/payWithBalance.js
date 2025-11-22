@@ -35,14 +35,19 @@ module.exports = async (req, res) => {
         ]);
 
         const saldoAtual = parseFloat(companyData.data.result[COMPANY_SALDO_FIELD] || 0);
-        const valorPedido = parseFloat(dealData.data.result.OPPORTUNITY || 0) / 0.9;
+        
+        // --- CORREÇÃO APLICADA AQUI ---
+        // Antes estava / 0.9. Agora multiplica por 1.25 para refletir o aumento de 25%.
+        const valorPedido = parseFloat(dealData.data.result.OPPORTUNITY || 0) * 1.25;
 
         // ETAPA 3: Validar se o saldo é suficiente
         if (saldoAtual < valorPedido) {
-            return res.status(402).json({ message: `Saldo insuficiente. Você tem R$ ${saldoAtual.toFixed(2)} e o pedido custa R$ ${valorPedido.toFixed(2)}.` });
+            return res.status(402).json({ 
+                message: `Saldo insuficiente. Você tem R$ ${saldoAtual.toFixed(2)} e o pedido custa R$ ${valorPedido.toFixed(2)}.` 
+            });
         }
 
-        // ETdAPA 4: Calcular novo saldo e atualizar a empresa e o negócio
+        // ETAPA 4: Calcular novo saldo e atualizar a empresa e o negócio
         const novoSaldo = saldoAtual - valorPedido;
 
         await Promise.all([
@@ -53,8 +58,7 @@ module.exports = async (req, res) => {
             axios.post(`${BITRIX24_API_URL}crm.deal.update.json`, {
                 id: dealId,
                 fields: { 
-                    // Alteração aplicada aqui para a etapa correta de pagamento confirmado
-                    'STAGE_ID': 'C17:UC_2OEE24' 
+                    'STAGE_ID': 'C17:UC_2OEE24' // Move para etapa paga/confirmada
                 }
             })
         ]);

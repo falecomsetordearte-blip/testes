@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Dados - Setor de Arte</title>
+    <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
+    
+    <!-- Estilo Global -->
+    <link rel="stylesheet" href="/style.css">
+    
+    <!-- Fontes e Ícones -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        /* Estilos específicos desta página */
+        .profile-card {
+            background: var(--branco);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            border: 1px solid var(--borda);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .full-width { grid-column: 1 / -1; }
+
+        /* Área da Logo */
+        .logo-preview-container {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px dashed #dee2e6;
+            margin-bottom: 25px;
+        }
+        
+        .current-logo-wrapper {
+            position: relative;
+            width: 100px; 
+            height: 100px;
+            background: white;
+            border-radius: 50%;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .current-logo {
+            width: 100%; 
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .logo-upload-info h4 { margin: 0 0 5px 0; font-size: 1.1rem; color: var(--texto-escuro); }
+        .logo-upload-info p { margin: 0 0 10px 0; font-size: 0.9rem; color: var(--cinza-texto); }
+
+        /* Input file customizado */
+        input[type="file"] {
+            font-size: 0.9rem;
+            color: var(--cinza-texto);
+        }
+
+        @media (max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .logo-preview-container { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-layout-grid">
+        <!-- Placeholder da Sidebar (será preenchido pelo layout.js) -->
+        <div id="sidebar-placeholder"></div>
+
+        <div class="app-content-wrapper">
+            <!-- Placeholder do Header (será preenchido pelo layout.js) -->
+            <div id="header-placeholder"></div>
+
+            <!-- Conteúdo Principal -->
+            <main class="app-content">
+                <div class="container">
+                    
+                    <!-- Cabeçalho da Página -->
+                    <div class="pedidos-header-bar">
+                        <h2><i class="fas fa-user-cog"></i> Meus Dados</h2>
+                        <a href="/dashboard.html" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </a>
+                    </div>
+
+                    <!-- Formulário -->
+                    <div class="profile-card">
+                        <div id="form-feedback" class="form-feedback hidden"></div>
+
+                        <form id="profile-form">
+                            
+                            <!-- Seção de Upload de Logo -->
+                            <div class="logo-preview-container">
+                                <div class="current-logo-wrapper">
+                                    <!-- Mostra um ícone se não tiver logo, ou a imagem se tiver -->
+                                    <img src="/images/logo-fundo-claro-100x100.png" alt="Logo Atual" id="current-logo-img" class="current-logo">
+                                </div>
+                                <div class="logo-upload-info">
+                                    <h4>Logo da Empresa</h4>
+                                    <p>Esta imagem aparecerá nos Grupos de WhatsApp que o Sistema criar.</p>
+                                    <input type="file" id="new-logo-file" accept="image/*">
+                                </div>
+                            </div>
+
+                            <div class="form-grid">
+                                <!-- Dados da Empresa -->
+                                <div class="form-group full-width">
+                                    <label for="nome_fantasia">Nome da Empresa</label>
+                                    <input type="text" id="nome_fantasia" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="cnpj">CNPJ</label>
+                                    <input type="text" id="cnpj" disabled style="background-color: #e9ecef; cursor: not-allowed;">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="whatsapp">WhatsApp / Telefone</label>
+                                    <input type="text" id="whatsapp" required>
+                                </div>
+
+                                <!-- Dados Pessoais -->
+                                <div class="form-group full-width">
+                                    <label for="responsavel">Nome do Responsável</label>
+                                    <input type="text" id="responsavel" required>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label for="email">E-mail de Login</label>
+                                    <input type="email" id="email" required>
+                                </div>
+
+                                <!-- Alterar Senha -->
+                                <div class="form-group">
+                                    <label for="new_password">Nova Senha (Opcional)</label>
+                                    <input type="password" id="new_password" placeholder="Deixe vazio para manter">
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirm_password">Confirmar Nova Senha</label>
+                                    <input type="password" id="confirm_password" placeholder="Repita a nova senha">
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 30px;">
+                                <button type="submit" class="btn btn-primary btn-lg w-100" id="btn-submit">Salvar Alterações</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Placeholder do Footer (será preenchido pelo layout.js) -->
+            <div id="footer-placeholder"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/layout.js"></script> <!-- Carrega Sidebar/Header -->
+    <script src="https://unpkg.com/imask"></script> <!-- Máscaras de input -->
+    <script src="meus-dados-script.js"></script> <!-- Lógica da página -->
+</body>
+</html>

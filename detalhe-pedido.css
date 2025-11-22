@@ -1,5 +1,12 @@
 /* /detalhe-pedido.css */
 
+/* --- ALTERAÇÃO PARA ESCONDER O TÍTULO --- */
+.pedido-detalhe-header {
+    display: none;
+}
+/* --- FIM DA ALTERAÇÃO --- */
+
+
 /* --- LAYOUT DA PÁGINA DE DETALHES --- */
 .detalhe-layout {
     display: grid;
