@@ -1,200 +1,195 @@
 <!-- components/header.html -->
 <style>
-    /* --- ESTILOS DA BARRA DE BUSCA --- */
+    /* --- ESTILOS DA BARRA DE BUSCA (MANTIDO IGUAL) --- */
     .search-container {
         flex-grow: 1;
-        max-width: 450px; /* Um pouco mais largo */
+        max-width: 450px;
         margin: 0 20px;
         position: relative;
     }
-
     .search-box {
         display: flex;
         align-items: center;
-        background: #f5f5f5; /* Fundo cinza bem claro */
-        border-radius: 6px;  /* Bordas levemente arredondadas (Flat) */
+        background: #f5f5f5;
+        border-radius: 6px;
         padding: 0 10px;
         border: 1px solid #ddd;
         transition: border-color 0.2s, background 0.2s;
     }
-
-    .search-box:focus-within {
-        background: #fff;
-        border-color: #bbb;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-
+    .search-box:focus-within { background: #fff; border-color: #bbb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     .search-box input {
-        border: none;
-        background: transparent;
-        outline: none;
-        flex-grow: 1;
-        padding: 10px 5px;
-        font-size: 14px;
-        color: #333;
+        border: none; background: transparent; outline: none; flex-grow: 1;
+        padding: 10px 5px; font-size: 14px; color: #333;
     }
-
     .search-btn {
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        padding: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0.7;
-        transition: opacity 0.2s;
+        background: transparent; border: none; cursor: pointer; padding: 8px;
+        display: flex; align-items: center; justify-content: center; opacity: 0.7; transition: opacity 0.2s;
     }
+    .search-btn:hover { opacity: 1; }
+    .search-btn svg { width: 20px; height: 20px; fill: #4a4a4a; }
 
-    .search-btn:hover {
-        opacity: 1;
-    }
-
-    /* Ícone SVG Cinza Escuro */
-    .search-btn svg {
-        width: 20px;
-        height: 20px;
-        fill: #4a4a4a; 
-    }
-
-    /* --- MODAL DE RESULTADOS --- */
+    /* --- MODAL DE RESULTADOS (MANTIDO IGUAL) --- */
     #search-results-modal {
-        display: none;
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.4); /* Fundo escuro mais suave */
-        z-index: 9999;
-        justify-content: center;
-        align-items: flex-start; /* Alinha mais ao topo */
-        padding-top: 80px;
-        backdrop-filter: blur(2px); /* Desfoque leve no fundo */
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.4); z-index: 9999; justify-content: center; align-items: flex-start;
+        padding-top: 80px; backdrop-filter: blur(2px);
     }
-
     .modal-content {
-        background: white;
-        border-radius: 8px;
-        width: 90%;
-        max-width: 600px;
-        max-height: 70vh;
-        overflow-y: auto;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-        position: relative;
+        background: white; border-radius: 8px; width: 90%; max-width: 600px;
+        max-height: 70vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.15); position: relative;
     }
-    
-    .modal-header {
-        padding: 15px 20px;
-        border-bottom: 1px solid #eee;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
+    .modal-header { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
     .modal-header h3 { margin: 0; font-size: 16px; color: #333; }
-
-    .close-modal {
-        cursor: pointer;
-        font-size: 24px;
-        color: #999;
-        line-height: 20px;
-    }
-    .close-modal:hover { color: #333; }
-
-    /* Lista de Resultados */
-    .result-item {
-        padding: 15px 20px;
-        border-bottom: 1px solid #f0f0f0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        cursor: pointer;
-        transition: background 0.1s;
-    }
-
-    .result-item:hover {
-        background-color: #f8f9fa;
-    }
-
-    .result-item:last-child { border-bottom: none; }
-
+    .close-modal { cursor: pointer; font-size: 24px; color: #999; line-height: 20px; }
+    .result-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.1s; }
+    .result-item:hover { background-color: #f8f9fa; }
     .result-info h4 { margin: 0 0 4px 0; color: #222; font-size: 15px; }
     .result-info p { margin: 0; font-size: 12px; color: #777; }
-    
-    /* Badge da Fase (Destaque) */
-    .stage-badge {
-        background-color: #eef2f5;
-        color: #4a5568;
-        padding: 6px 12px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border: 1px solid #dce1e6;
+    .stage-badge { background-color: #eef2f5; color: #4a5568; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; border: 1px solid #dce1e6; }
+
+    /* --- ESTILOS DO SININHO DE NOTIFICAÇÃO (NOVO) --- */
+    .notification-wrapper {
+        position: relative;
+        margin-right: 15px; /* Espaço antes do "Olá" */
+        display: flex;
+        align-items: center;
     }
+
+    .notification-bell {
+        background: none;
+        border: none;
+        cursor: pointer;
+        position: relative;
+        padding: 8px;
+        color: #64748b;
+        font-size: 1.2rem;
+        transition: color 0.2s;
+    }
+    .notification-bell:hover { color: var(--azul-principal); }
+
+    /* Bolinha Vermelha */
+    .notification-badge {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 10px;
+        height: 10px;
+        background-color: #ef4444;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        display: none; /* JS mostra se tiver novidade */
+    }
+    .notification-badge.active { display: block; }
+
+    /* Dropdown Flutuante */
+    .notification-dropdown {
+        position: absolute;
+        top: 120%;
+        right: -50px; /* Alinha melhor com o sino */
+        width: 320px;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        z-index: 2000;
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .notification-dropdown.active { display: flex; }
+
+    .notif-header {
+        padding: 12px 15px;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #334155;
+    }
+
+    .notif-list { max-height: 300px; overflow-y: auto; }
+
+    .notif-item { padding: 15px; border-bottom: 1px solid #f1f5f9; cursor: default; }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item h4 { margin: 0 0 5px; font-size: 0.95rem; color: #1e293b; font-weight: 600; }
+    .notif-item p { margin: 0 0 8px; font-size: 0.85rem; color: #64748b; line-height: 1.4; }
+    .notif-date { font-size: 0.75rem; color: #94a3b8; }
+
+    /* Cores por Tipo */
+    .notif-item.alerta { border-left: 4px solid #f59e0b; background: #fffbeb; }
+    .notif-item.erro { border-left: 4px solid #ef4444; background: #fef2f2; }
+    .notif-item.info { border-left: 4px solid #3b82f6; }
 </style>
 
 <header class="app-header">
     <div class="header-content">
-        <!-- Espaçador ou Logo -->
         <div class="logo-area"></div> 
         
         <!-- BARRA DE BUSCA -->
         <div class="search-container">
             <div class="search-box">
-                <!-- O evento onkeyup garante que o Enter funcione -->
                 <input type="text" id="header-search-input" 
                        placeholder="Buscar pedido..." 
                        onkeyup="if(event.key === 'Enter') executarBuscaHeader()">
-                
                 <button class="search-btn" onclick="executarBuscaHeader()">
-                    <!-- Ícone SVG Flat (Lupa) -->
-                    <svg viewBox="0 0 24 24">
-                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                    </svg>
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
                 </button>
             </div>
         </div>
 
-        <!-- Menu do Usuário -->
+        <!-- MENU DO USUÁRIO -->
         <div class="user-menu">
+            
+            <!-- SININHO DE NOTIFICAÇÕES -->
+            <div class="notification-wrapper">
+                <button class="notification-bell" id="btn-notificacoes" title="Notificações">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notif-badge"></span>
+                </button>
+                <div class="notification-dropdown" id="notif-dropdown">
+                    <div class="notif-header">Avisos e Novidades</div>
+                    <div class="notif-list" id="notif-list">
+                        <div style="padding:20px; text-align:center; color:#999;">Carregando...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SAUDAÇÃO E LOGOUT -->
             <span id="user-greeting">Olá!</span>
             <button id="logout-button">Sair</button>
         </div>
     </div>
 </header>
 
-<!-- MODAL FLUTUANTE -->
+<!-- MODAL DE BUSCA -->
 <div id="search-results-modal">
     <div class="modal-content">
         <div class="modal-header">
             <h3>Resultados da Busca</h3>
             <span class="close-modal" onclick="fecharModalBusca()">&times;</span>
         </div>
-        <div id="results-list">
-            <!-- Resultados serão injetados aqui -->
-        </div>
+        <div id="results-list"></div>
     </div>
 </div>
 
+<!-- SCRIPTS DE FUNCIONALIDADE (BUSCA + NOTIFICAÇÕES) -->
 <script>
+    // === LÓGICA DE BUSCA ===
     function fecharModalBusca() {
         document.getElementById('search-results-modal').style.display = 'none';
     }
 
     async function executarBuscaHeader() {
         const input = document.getElementById('header-search-input');
-        const query = input.value.trim(); // Remove espaços extras
-        
-        if (!query) return; // Não busca se estiver vazio
+        const query = input.value.trim();
+        if (!query) return;
 
         const modal = document.getElementById('search-results-modal');
         const list = document.getElementById('results-list');
-        
-        // Tenta pegar o token do localStorage (ajuste a chave conforme seu login)
         const sessionToken = localStorage.getItem('sessionToken') || localStorage.getItem('token'); 
 
         modal.style.display = 'flex';
-        list.innerHTML = '<p style="text-align:center; padding: 20px; color:#666;">Buscando no sistema...</p>';
+        list.innerHTML = '<p style="text-align:center; padding: 20px; color:#666;">Buscando...</p>';
 
         try {
             const response = await fetch('/api/searchDeal', {
@@ -202,51 +197,110 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionToken, query })
             });
-
             const data = await response.json();
 
+            list.innerHTML = '';
             if (data.results && data.results.length > 0) {
-                list.innerHTML = ''; // Limpa o carregando
                 data.results.forEach(deal => {
-                    // Formata data
                     const dataCriacao = deal.data ? new Date(deal.data).toLocaleDateString('pt-BR') : 'Data n/a';
-
                     const item = document.createElement('div');
                     item.className = 'result-item';
                     item.onclick = () => {
-                        // LÓGICA AO CLICAR NO RESULTADO
-                        // Altere aqui para redirecionar para onde você deseja
-                        // Exemplo: window.location.href = `/detalhes-pedido.html?id=${deal.id}`;
-                        alert(`Redirecionando para pedido: #${deal.id}`); 
-                        fecharModalBusca();
+                        // Redireciona para a página de detalhes (ajuste conforme sua rota real)
+                        window.location.href = `/pedido.html?id=${deal.id}`; 
                     };
-
                     item.innerHTML = `
                         <div class="result-info">
                             <h4>#${deal.id} - ${deal.titulo}</h4>
                             <p>Criado em: ${dataCriacao}</p>
                         </div>
-                        <div class="stage-badge">
-                            ${deal.fase}
-                        </div>
+                        <div class="stage-badge">${deal.fase}</div>
                     `;
                     list.appendChild(item);
                 });
             } else {
                 list.innerHTML = '<p style="text-align:center; padding: 30px; color:#888;">Nenhum pedido encontrado.</p>';
             }
-
         } catch (error) {
             console.error(error);
-            list.innerHTML = '<p style="text-align:center; padding: 20px; color:#d9534f;">Erro ao realizar a busca.</p>';
+            list.innerHTML = '<p style="text-align:center; padding: 20px; color:#d9534f;">Erro na busca.</p>';
         }
     }
     
-    // Fecha o modal se clicar fora dele (fundo escuro)
     window.onclick = function(event) {
         const modal = document.getElementById('search-results-modal');
-        if (event.target === modal) {
-            fecharModalBusca();
-        }
+        if (event.target === modal) fecharModalBusca();
     }
+
+    // === LÓGICA DE NOTIFICAÇÕES (INTEGRADA AQUI PARA GARANTIR QUE RODE) ===
+    document.addEventListener("DOMContentLoaded", () => {
+        const btnBell = document.getElementById('btn-notificacoes');
+        const dropdown = document.getElementById('notif-dropdown');
+        const badge = document.getElementById('notif-badge');
+        const list = document.getElementById('notif-list');
+
+        if (!btnBell) return;
+
+        async function loadNotifs() {
+            try {
+                // Chama a API que criamos
+                const res = await fetch('/api/getGlobalNotifications');
+                if (!res.ok) return; // Silencia erro se API não existir ainda
+                
+                const notifications = await res.json();
+
+                if (!notifications || notifications.length === 0) {
+                    list.innerHTML = '<div style="padding:15px; text-align:center; font-size:0.85rem; color:#94a3b8;">Nenhuma notificação.</div>';
+                    return;
+                }
+
+                // Verifica se há novas notificações
+                const lastSeenId = localStorage.getItem('lastSeenNotifId') || 0;
+                const newestId = notifications[0].id;
+
+                if (newestId > lastSeenId) {
+                    badge.classList.add('active');
+                } else {
+                    badge.classList.remove('active');
+                }
+
+                list.innerHTML = notifications.map(n => `
+                    <div class="notif-item ${n.tipo || 'info'}">
+                        <h4>${n.titulo}</h4>
+                        <p>${n.mensagem}</p>
+                        <span class="notif-date">${new Date(n.criado_em).toLocaleDateString('pt-BR')}</span>
+                    </div>
+                `).join('');
+
+                btnBell.dataset.newestId = newestId;
+
+            } catch (err) {
+                console.error("Notificações:", err);
+                list.innerHTML = '<div style="padding:15px; text-align:center; color:#ef4444;">Erro ao carregar.</div>';
+            }
+        }
+
+        // Evento de Click no Sino
+        btnBell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('active');
+
+            if (dropdown.classList.contains('active')) {
+                badge.classList.remove('active');
+                if (btnBell.dataset.newestId) {
+                    localStorage.setItem('lastSeenNotifId', btnBell.dataset.newestId);
+                }
+            }
+        });
+
+        // Fecha ao clicar fora
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('.notification-wrapper')) {
+                dropdown.classList.remove('active');
+            }
+        });
+
+        // Carrega assim que possível
+        loadNotifs();
+    });
 </script>
