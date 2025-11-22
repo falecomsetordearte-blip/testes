@@ -725,3 +725,87 @@ a.btn-ver-pedido:hover { text-decoration: underline; color: #2c89c8; }
     background-color: #f8f9fa;
     border-top: 1px solid var(--borda);
 }
+/* ================= NOTIFICAÇÕES GLOBAIS ================= */
+.notification-wrapper {
+    position: relative;
+    margin-right: 20px; /* Espaço entre o sino e o nome do usuário */
+}
+
+.notification-bell {
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    color: #64748b;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+}
+
+.notification-bell:hover { color: var(--azul-principal); }
+
+/* Bolinha vermelha */
+.notification-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    background-color: #ef4444;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    display: none; /* Escondido por padrão */
+}
+.notification-badge.active { display: block; }
+
+/* Dropdown */
+.notification-dropdown {
+    position: absolute;
+    top: 140%;
+    right: -10px;
+    width: 320px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    z-index: 2000;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+}
+.notification-dropdown.active { display: flex; }
+
+.notif-header {
+    padding: 12px 15px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #334155;
+}
+
+.notif-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.notif-item {
+    padding: 15px;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: default;
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-item h4 { margin: 0 0 5px; font-size: 0.95rem; color: #1e293b; }
+.notif-item p { margin: 0 0 8px; font-size: 0.85rem; color: #64748b; line-height: 1.4; }
+.notif-date { font-size: 0.75rem; color: #94a3b8; }
+
+/* Tipos */
+.notif-item.alerta { border-left: 4px solid #f59e0b; background: #fffbeb; }
+.notif-item.erro { border-left: 4px solid #ef4444; background: #fef2f2; }
+.notif-item.info { border-left: 4px solid #3b82f6; }
+
+/* Responsivo */
+@media (max-width: 480px) {
+    .notification-dropdown {
+        position: fixed; top: 70px; left: 10px; right: 10px; width: auto;
+    }
+}

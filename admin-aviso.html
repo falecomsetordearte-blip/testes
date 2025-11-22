@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Lançar Aviso</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; background: #f1f5f9; }
+        form { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input, textarea, select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;}
+        button { width: 100%; padding: 10px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #1d4ed8; }
+    </style>
+</head>
+<body>
+    <form id="admin-form">
+        <h2>📢 Enviar Notificação Geral</h2>
+        
+        <label>Título</label>
+        <input type="text" id="titulo" required placeholder="Ex: Manutenção no Sábado">
+        
+        <label>Mensagem</label>
+        <textarea id="mensagem" rows="4" required placeholder="Detalhes do aviso..."></textarea>
+        
+        <label>Tipo</label>
+        <select id="tipo">
+            <option value="info">Informação (Azul)</option>
+            <option value="alerta">Alerta (Amarelo)</option>
+            <option value="erro">Urgente/Erro (Vermelho)</option>
+        </select>
+
+        <label>Senha Admin</label>
+        <input type="password" id="senha" required>
+
+        <button type="submit">ENVIAR PARA TODOS</button>
+    </form>
+
+    <script>
+        document.getElementById('admin-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.textContent = "Enviando...";
+            
+            const data = {
+                titulo: document.getElementById('titulo').value,
+                mensagem: document.getElementById('mensagem').value,
+                tipo: document.getElementById('tipo').value,
+                senha_admin: document.getElementById('senha').value
+            };
+
+            const res = await fetch('/api/createGlobalNotification', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                alert("Notificação enviada com sucesso!");
+                e.target.reset();
+            } else {
+                alert("Erro ou senha incorreta.");
+            }
+            btn.textContent = "ENVIAR PARA TODOS";
+        });
+    </script>
+</body>
+</html>
