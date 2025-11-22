@@ -2,16 +2,16 @@
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
-const nodemailer = require('nodemailer');
-const { Client } = require('pg'); // <--- IMPORTANTE: Importar cliente do Postgres
+const { Client } = require('pg');
 
 // Variáveis de Ambiente
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY;
-// const EMAIL_HOST = process.env.EMAIL_HOST;
-// const EMAIL_USER = process.env.EMAIL_USER;
-// const EMAIL_PASS = process.env.EMAIL_PASS;
-const DATABASE_URL = process.env.DATABASE_URL; // <--- Sua string de conexão Neon
+const DATABASE_URL = process.env.DATABASE_URL;
+
+// *** CONFIGURAÇÃO DO DRIVE BITRIX ***
+// ID da pasta "Logos de Clientes" que você criou
+const BITRIX_LOGOS_FOLDER_ID = 251803; 
 
 module.exports = async (req, res) => {
     console.log("[DEBUG] API /api/registerUser iniciada.");
@@ -34,8 +34,10 @@ module.exports = async (req, res) => {
         return res.status(405).json({ message: 'Método não permitido' });
     }
 
-    const { nomeEmpresa, cnpj, telefoneEmpresa, nomeResponsavel, email, senha } = req.body;
+    // 1. Extrair dados (incluindo o logo)
+    const { nomeEmpresa, cnpj, telefoneEmpresa, nomeResponsavel, email, senha, logo } = req.body;
 
+    // Validação
     if (!nomeEmpresa || !email || !senha || !cnpj || !nomeResponsavel) {
         return res.status(400).json({ message: 'Todos os campos obrigatórios devem ser preenchidos.' });
     }
@@ -43,10 +45,13 @@ module.exports = async (req, res) => {
     let companyId = null;
     let contactId = null;
     let asaasCustomerId = null;
+    let bitrixLogoId = null; // Aqui guardaremos o ID do arquivo
 
     try {
-        // 1. Verificar e-mail no Bitrix
-        console.log("[DEBUG] 1. Verificando disponibilidade do e-mail...");
+        // =================================================================
+        // 1. Verificar duplicidade de email no Bitrix
+        // =================================================================
+        console.log("[DEBUG] 1. Verificando e-mail...");
         const searchUserResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { 'EMAIL': email },
             select: ['ID']
@@ -56,24 +61,62 @@ module.exports = async (req, res) => {
             return res.status(409).json({ message: "Este e-mail já está cadastrado em nossa base." });
         }
 
-        // 2. Hash Senha e Token
+        // =================================================================
+        // 2. UPLOAD DO LOGO PARA O BITRIX (Se houver)
+        // =================================================================
+        if (logo && logo.base64) {
+            console.log("[DEBUG] 2. Processando upload de logo para pasta:", BITRIX_LOGOS_FOLDER_ID);
+            try {
+                // Remove o cabeçalho "data:image/png;base64," para enviar só os bytes
+                const base64Content = logo.base64.split(';base64,').pop();
+                // Limpa nome do arquivo para evitar caracteres estranhos
+                const safeName = `${cnpj.replace(/\D/g,'')}_${logo.name.replace(/[^a-zA-Z0-9._-]/g, '')}`;
+
+                const uploadResponse = await axios.post(`${BITRIX24_API_URL}disk.folder.uploadfile.json`, {
+                    id: BITRIX_LOGOS_FOLDER_ID,
+                    data: {
+                        NAME: safeName,
+                        CONTENT: base64Content
+                    },
+                    generateUniqueName: true
+                });
+
+                if (uploadResponse.data.result && uploadResponse.data.result.ID) {
+                    bitrixLogoId = uploadResponse.data.result.ID;
+                    console.log(`[DEBUG] Logo enviado com sucesso! ID Bitrix: ${bitrixLogoId}`);
+                } else {
+                    console.warn("[WARN] Bitrix não retornou ID do arquivo no upload.");
+                }
+            } catch (uploadError) {
+                console.error("[ERRO] Falha no upload do logo:", uploadError.message);
+                // Não interrompemos o cadastro, apenas seguimos sem logo
+            }
+        }
+
+        // =================================================================
+        // 3. Preparar Dados de Acesso
+        // =================================================================
         const sessionToken = uuidv4();
         const hashedPassword = await bcrypt.hash(senha, 10);
-        
-        // 3. Criar Empresa no Bitrix
-        console.log("[DEBUG] 3. Criando Empresa no Bitrix24...");
+
+        // =================================================================
+        // 4. Criar Empresa no Bitrix
+        // =================================================================
+        console.log("[DEBUG] 4. Criando Empresa...");
         const createCompanyResponse = await axios.post(`${BITRIX24_API_URL}crm.company.add.json`, {
             fields: {
                 TITLE: nomeEmpresa,
                 PHONE: [{ VALUE: telefoneEmpresa, VALUE_TYPE: 'WORK' }],
-                'UF_CRM_CNPJ': cnpj 
+                'UF_CRM_CNPJ': cnpj
             }
         });
         companyId = createCompanyResponse.data.result;
-        if (!companyId) throw new Error('Falha ao criar a empresa no CRM.');
+        if (!companyId) throw new Error('Falha ao criar empresa no CRM.');
 
-        // 4. Criar Contato no Bitrix
-        console.log("[DEBUG] 4. Criando Contato no Bitrix24...");
+        // =================================================================
+        // 5. Criar Contato no Bitrix
+        // =================================================================
+        console.log("[DEBUG] 5. Criando Contato...");
         const nameParts = nomeResponsavel.split(' ');
         const firstName = nameParts.shift();
         const lastName = nameParts.join(' ') || '';
@@ -84,17 +127,18 @@ module.exports = async (req, res) => {
                 LAST_NAME: lastName,
                 EMAIL: [{ VALUE: email, VALUE_TYPE: 'WORK' }],
                 COMPANY_ID: companyId,
-                'UF_CRM_1751824202': hashedPassword,
-                'UF_CRM_1751824225': sessionToken
+                'UF_CRM_1751824202': hashedPassword, // Campo Senha
+                'UF_CRM_1751824225': sessionToken    // Campo Token
             }
         });
         contactId = createContactResponse.data.result;
-        if (!contactId) throw new Error('Falha ao criar o contato no CRM.');
+        if (!contactId) throw new Error('Falha ao criar contato no CRM.');
 
-        // 5. Criar Cliente no ASAAS
-        console.log("[DEBUG] 5. Criando Cliente na API do Asaas...");
-        const createAsaasCustomerResponse = await axios.post(
-            'https://www.asaas.com/api/v3/customers',
+        // =================================================================
+        // 6. Criar Cliente no Asaas
+        // =================================================================
+        console.log("[DEBUG] 6. Criando Cliente Asaas...");
+        const createAsaasResponse = await axios.post('https://www.asaas.com/api/v3/customers', 
             {
                 name: nomeEmpresa,
                 cpfCnpj: cnpj,
@@ -104,30 +148,28 @@ module.exports = async (req, res) => {
             },
             { headers: { 'access_token': ASAAS_API_KEY, 'Content-Type': 'application/json' } }
         );
-        asaasCustomerId = createAsaasCustomerResponse.data.id;
+        asaasCustomerId = createAsaasResponse.data.id;
 
-        // 6. Atualizar Bitrix com ID Asaas
+        // =================================================================
+        // 7. Vincular Asaas ao Bitrix
+        // =================================================================
         await axios.post(`${BITRIX24_API_URL}crm.contact.update.json`, {
             id: contactId,
             fields: { 'UF_CRM_1748911653': asaasCustomerId }
         });
 
-        // =================================================================================
-        // 9. NOVO: SALVAR NO BANCO DE DADOS NEON
-        // =================================================================================
-        console.log("[DEBUG] 9. Salvando registro no Banco de Dados Neon...");
-        
+        // =================================================================
+        // 8. SALVAR NO BANCO DE DADOS NEON (POSTGRES)
+        // =================================================================
+        console.log("[DEBUG] 8. Salvando no Neon...");
         const client = new Client({
             connectionString: DATABASE_URL,
-            ssl: { rejectUnauthorized: false } // Necessário para conexão segura com Neon
+            ssl: { rejectUnauthorized: false }
         });
 
         try {
             await client.connect();
 
-            // AVISO: Verifique se os nomes das colunas abaixo batem com sua tabela no Neon.
-            // Estou assumindo uma tabela 'empresas'. O 'logo_id' enviamos NULL por enquanto.
-            
             const sql = `
                 INSERT INTO empresas (
                     cnpj, 
@@ -137,7 +179,7 @@ module.exports = async (req, res) => {
                     responsavel, 
                     bitrix_id, 
                     asaas_id, 
-                    logo_id,
+                    logo_id, 
                     created_at
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
                 RETURNING id;
@@ -145,52 +187,40 @@ module.exports = async (req, res) => {
 
             const values = [
                 cnpj,
-                nomeEmpresa,        // nome_fantasia
-                telefoneEmpresa,    // whatsapp
+                nomeEmpresa,
+                telefoneEmpresa,
                 email,
                 nomeResponsavel,
-                contactId,          // bitrix_id (salvando ID do contato ou companyId dependendo da sua lógica)
+                contactId,
                 asaasCustomerId,
-                null                // logo_id (deixamos null pois vem do cadastro.html)
+                bitrixLogoId // <--- AQUI VAI O ID DO LOGO (ou null se falhou/não enviou)
             ];
 
-            await client.query(sql, values);
-            console.log("[DEBUG] Registro salvo no Neon com sucesso.");
+            const dbRes = await client.query(sql, values);
+            console.log(`[DEBUG] SUCESSO FINAL! Salvo no Neon (ID: ${dbRes.rows[0].id}). LogoID: ${bitrixLogoId}`);
 
         } catch (dbError) {
-            // Não vamos quebrar o cadastro se der erro no banco SQL, mas vamos logar o erro.
-            console.error("ERRO AO SALVAR NO NEON:", dbError);
-            // Se for crítico, você pode dar throw(dbError) aqui para acionar o rollback geral.
+            console.error("ERRO AO SALVAR NO NEON:", dbError.message);
+            // Não damos throw aqui para não cancelar o sucesso do usuário no front
         } finally {
             await client.end();
         }
-        // =================================================================================
 
-        // Retorno de Sucesso
+        // =================================================================
+        // 9. Retorno Final
+        // =================================================================
         return res.status(200).json({
             success: true,
             message: "Cadastro realizado com sucesso!",
             token: sessionToken,
             userName: firstName,
-            contactId: contactId,
-            companyId: companyId,
-            asaasCustomerId: asaasCustomerId
+            contactId: contactId
         });
 
     } catch (error) {
-        console.error('Erro CRÍTICO no processo de cadastro:', error.response ? error.response.data : error.message);
-
-        // Rollback (simplificado)
-        if (companyId && !contactId) {
-            await axios.post(`${BITRIX24_API_URL}crm.company.delete.json`, { id: companyId }).catch(e => console.error('Rollback fail', e));
-        }
-        if (contactId) {
-             await axios.post(`${BITRIX24_API_URL}crm.contact.delete.json`, { id: contactId }).catch(e => console.error('Rollback fail', e));
-             if(companyId) await axios.post(`${BITRIX24_API_URL}crm.company.delete.json`, { id: companyId }).catch(e => console.error('Rollback fail', e));
-        }
-
-        return res.status(500).json({ 
-            message: 'Ocorreu um erro ao processar seu cadastro. Por favor, tente novamente.' 
-        });
+        console.error('Erro CRÍTICO:', error.message);
+        // Rollback Básico
+        if (companyId && !contactId) axios.post(`${BITRIX24_API_URL}crm.company.delete.json`, { id: companyId }).catch(e=>{});
+        return res.status(500).json({ message: 'Erro ao processar cadastro. Tente novamente.' });
     }
 };
