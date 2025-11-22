@@ -1,4 +1,4 @@
-// /api/getPanelData.js - VERSÃO COM FILTRO DE STAGES ADICIONADO
+// /api/getPanelData.js - AUMENTO AJUSTADO PARA 25%
 
 const axios = require('axios');
 
@@ -73,8 +73,8 @@ module.exports = async (req, res) => {
                 ID: pedido.ID,
                 TITLE: pedido.TITLE,
                 STAGE_ID: pedido.STAGE_ID,
-                // ALTERAÇÃO APLICADA AQUI: mudado de / 0.9 para / 0.85 para refletir +15%
-                OPPORTUNITY: parseFloat(pedido.OPPORTUNITY || 0) / 0.85,
+                // AQUI ESTÁ O AJUSTE PARA 25%: Multiplica por 1.25
+                OPPORTUNITY: parseFloat(pedido.OPPORTUNITY || 0) * 1.25,
                 COMMENTS: pedido.COMMENTS,
                 notificacao: temNotificacao
             };
