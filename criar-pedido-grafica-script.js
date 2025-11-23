@@ -1,168 +1,208 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // --- Seletores dos Elementos ---
-    const servicoSelectionContainer = document.getElementById('servico-selection-container');
-    const servicoCards = document.querySelectorAll('.servico-card');
-    const servicoHiddenInput = document.getElementById('pedido-servico-hidden');
-    const formContentWrapper = document.getElementById('form-content-wrapper');
-    
-    const pedidoArteContainer = document.getElementById('pedido-arte-container'); 
-    const arquivoClienteFields = document.getElementById('arquivo-cliente-fields');
-    const setorArteFields = document.getElementById('setor-arte-fields');
-    
-    const wppClienteInput = document.getElementById('cliente-final-wpp');
-    const wppSupervisaoInput = document.getElementById('pedido-supervisao');
-    const valorDesignerInput = document.getElementById('valor-designer');
-    const valorDesignerAlerta = document.getElementById('valor-designer-alerta');
-    const pedidoFormatoSelect = document.getElementById('pedido-formato');
-    const cdrVersaoContainer = document.getElementById('cdr-versao-container');
+const prisma = require('../lib/prisma');
+const axios = require('axios');
 
-    // --- SELEÇÃO DE SERVIÇO ---
-    servicoCards.forEach(card => {
-        card.addEventListener('click', () => {
-            if (servicoSelectionContainer.classList.contains('selection-made')) { return; }
-            servicoCards.forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-            servicoHiddenInput.value = card.dataset.value;
-            servicoSelectionContainer.classList.add('selection-made');
-            formContentWrapper.classList.add('visible');
+const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
+
+// --- MAPEAMENTO DE CAMPOS BITRIX ---
+const FIELD_BRIEFING_COMPLETO = 'UF_CRM_1738249371';
+const FIELD_NOME_CLIENTE = 'UF_CRM_1741273407628';
+const FIELD_WHATSAPP_CLIENTE = 'UF_CRM_1749481565243';
+const FIELD_WHATSAPP_GRAFICA = 'UF_CRM_1760171265'; 
+const FIELD_LOGO_ID = 'UF_CRM_1760171060'; 
+const FIELD_SERVICO = 'UF_CRM_1761123161542';
+const FIELD_ARTE_ORIGEM = 'UF_CRM_1761269158';
+const FIELD_TIPO_ENTREGA = 'UF_CRM_1658492661';
+
+// Campos de Link (URL direta)
+const FIELD_ARQUIVO_IMPRESSAO = 'UF_CRM_1748277308731'; 
+const FIELD_ARQUIVO_DESIGNER = 'UF_CRM_1740770117580'; 
+
+module.exports = async (req, res) => {
+    console.log("\n========================================================");
+    console.log("[DEBUG] INICIANDO /api/createDealForGrafica");
+    console.log("========================================================");
+
+    // Headers CORS
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido' });
+
+    try {
+        const { sessionToken, arte, supervisaoWpp, valorDesigner, tipoEntrega, linkArquivo, ...formData } = req.body;
+
+        // Validação Básica
+        if (!sessionToken) return res.status(403).json({ message: 'Sessão inválida.' });
+        if (!arte || !tipoEntrega) return res.status(400).json({ message: 'Campos obrigatórios faltando.' });
+
+        // ------------------------------------------------------------------
+        // 1. AUTENTICAÇÃO E BUSCA DA EMPRESA NO NEON (CORRIGIDO)
+        // ------------------------------------------------------------------
+        console.log("[DEBUG] Passo 1: Autenticando usuário...");
+        const searchUserResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
+            filter: { '%UF_CRM_1751824225': sessionToken },
+            select: ['ID', 'NAME', 'COMPANY_ID']
         });
-    });
 
-    // --- Lógica Condicional para "Arte" ---
-    pedidoArteContainer.addEventListener('change', (e) => {
-        const selection = e.target.value;
+        const user = searchUserResponse.data.result ? searchUserResponse.data.result[0] : null;
         
-        // Esconde tudo
-        arquivoClienteFields.classList.add('hidden');
-        setorArteFields.classList.add('hidden');
-        
-        // Limpa required
-        document.querySelectorAll('#arquivo-cliente-fields input, #setor-arte-fields input, #setor-arte-fields select').forEach(input => input.required = false);
-        
-        if (selection === 'Arquivo do Cliente') {
-            arquivoClienteFields.classList.remove('hidden');
-            document.getElementById('link-arquivo').required = true; // Volta a exigir Link
-            
-        } else if (selection === 'Setor de Arte') {
-            setorArteFields.classList.remove('hidden');
-            document.getElementById('pedido-supervisao').required = true;
-            document.getElementById('valor-designer').required = true;
-            document.getElementById('pedido-formato').required = true;
+        if (!user) return res.status(403).json({ message: 'Usuário não encontrado.' });
+        if (!user.COMPANY_ID) return res.status(403).json({ message: 'Usuário Bitrix sem empresa vinculada.' });
+
+        console.log(`[DEBUG] Usuário Bitrix OK. Company ID: ${user.COMPANY_ID}`);
+
+        // --- CORREÇÃO AQUI ---
+        // Agora buscamos na coluna 'bitrix_company_id' usando 'user.COMPANY_ID'
+        const empresasLogadas = await prisma.$queryRaw`
+            SELECT id 
+            FROM empresas 
+            WHERE bitrix_company_id = ${parseInt(user.COMPANY_ID)} 
+            LIMIT 1
+        `;
+
+        const empresaLogadaId = empresasLogadas.length > 0 ? empresasLogadas[0].id : null;
+
+        if (empresaLogadaId) {
+            console.log(`[DEBUG] Empresa Localizada no Neon ID: ${empresaLogadaId}`);
+        } else {
+            console.warn(`[ERRO CRÍTICO] Empresa ID Bitrix ${user.COMPANY_ID} não encontrada na tabela 'empresas' coluna 'bitrix_company_id'.`);
+            // Se quiser bloquear o pedido caso não ache a empresa, descomente a linha abaixo:
+            // return res.status(404).json({ message: 'Sua empresa não está cadastrada corretamente no banco de dados local.' });
         }
-    });
 
-    // --- Máscaras e Helpers ---
-    if (typeof IMask !== 'undefined') {
-        if (wppClienteInput) IMask(wppClienteInput, { mask: '(00) 00000-0000' });
-        if (wppSupervisaoInput) IMask(wppSupervisaoInput, { mask: '(00) 00000-0000' });
-    }
-    valorDesignerInput.addEventListener('input', (e) => {
-        const valor = parseFloat(e.target.value);
-        if (valor > 0 && valor < 50) { valorDesignerAlerta.classList.remove('hidden'); } 
-        else { valorDesignerAlerta.classList.add('hidden'); }
-    });
-    pedidoFormatoSelect.addEventListener('change', (e) => {
-        const cdrVersaoInput = document.getElementById('cdr-versao');
-        if (e.target.value === 'CDR') { cdrVersaoContainer.classList.remove('hidden'); cdrVersaoInput.required = true; } 
-        else { cdrVersaoContainer.classList.add('hidden'); cdrVersaoInput.required = false; }
-    });
+        // ------------------------------------------------------------------
+        // 2. PREPARAÇÃO DO DEAL BITRIX
+        // ------------------------------------------------------------------
+        let briefingFinal = formData.briefingFormatado || '';
+        
+        // Variáveis para o banco de dados (histórico)
+        let dbLinkImpressao = null;
+        let dbLinkDesigner = null;
 
-    // --- Materiais ---
-    const btnAddMaterial = document.getElementById('btn-add-material');
-    const materiaisContainer = document.getElementById('materiais-container');
-    if (btnAddMaterial && materiaisContainer) {
-        btnAddMaterial.addEventListener('click', () => {
-            const itemCount = materiaisContainer.querySelectorAll('.material-item').length;
-            const newItemNumber = itemCount + 1;
-            const newItemDiv = document.createElement('div');
-            newItemDiv.classList.add('material-item');
-            newItemDiv.innerHTML = `<label class="item-label">Item ${newItemNumber}</label><div class="form-group"><label for="material-descricao-${newItemNumber}">Descreva o Material</label><input type="text" id="material-descricao-${newItemNumber}" class="material-descricao" placeholder="Ex. Banner 60x100 3 unidades" required></div><div class="form-group"><label for="material-detalhes-${newItemNumber}">Como o cliente deseja a arte?</label><textarea id="material-detalhes-${newItemNumber}" class="material-detalhes" rows="3" required></textarea></div>`;
-            materiaisContainer.appendChild(newItemDiv);
-        });
-    }
+        const dealFields = {
+            'TITLE': formData.titulo,
+            'CURRENCY_ID': 'BRL',
+            'COMPANY_ID': user.COMPANY_ID,
+            'CATEGORY_ID': 17,
+            'STAGE_ID': 'C17:NEW',
+            [FIELD_NOME_CLIENTE]: formData.nomeCliente,
+            [FIELD_WHATSAPP_CLIENTE]: formData.wppCliente,
+            [FIELD_ARTE_ORIGEM]: arte,
+            [FIELD_TIPO_ENTREGA]: tipoEntrega
+        };
 
-    // --- SUBMISSÃO (SEM UPLOAD, APENAS DADOS TEXTUAIS) ---
-    const form = document.getElementById('novo-pedido-form');
-    const feedbackDiv = document.getElementById('pedido-form-feedback');
-    
-    if (form && feedbackDiv) {
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
+        // ------------------------------------------------------------------
+        // 3. REGRAS DE NEGÓCIO
+        // ------------------------------------------------------------------
+        
+        // === SETOR DE ARTE (FREELANCER) ===
+        if (arte === 'Setor de Arte') {
+            const wppLimpo = supervisaoWpp ? supervisaoWpp.replace(/\D/g, '') : '';
             
-            const submitButton = form.querySelector("button[type='submit']");
-            const originalBtnText = submitButton.textContent;
-            submitButton.disabled = true;
-            submitButton.textContent = "Criando Pedido...";
-            feedbackDiv.classList.add('hidden');
+            // Busca Supervisor no Neon para debitar saldo (lógica mantida pelo WhatsApp)
+            const todasEmpresas = await prisma.$queryRaw`SELECT * FROM empresas`;
+            const supervisor = todasEmpresas.find(e => e.whatsapp && e.whatsapp.replace(/\D/g, '') === wppLimpo);
 
-            const arteSelecionadaNode = document.querySelector('input[name="pedido-arte"]:checked');
-            const tipoEntregaNode = document.querySelector('input[name="tipo-entrega"]:checked');
+            if (!supervisor) return res.status(404).json({ message: `Supervisor não encontrado (WPP: ${supervisaoWpp}).` });
 
-            if (!servicoHiddenInput.value) {
-                feedbackDiv.textContent = "Por favor, selecione um tipo de serviço para começar.";
-                feedbackDiv.className = 'form-feedback error';
-                feedbackDiv.classList.remove('hidden');
-                submitButton.disabled = false;
-                submitButton.textContent = originalBtnText;
-                return;
-            }
-
-            let briefingFormatado = '';
-            document.querySelectorAll('#materiais-container .material-item').forEach((item, index) => {
-                const descricao = item.querySelector('.material-descricao').value;
-                const detalhes = item.querySelector('.material-detalhes').value;
-                briefingFormatado += `--- Item ${index + 1} ---\nMaterial: ${descricao}\nDetalhes da Arte: ${detalhes}\n\n`;
-            });
-
-            // Preparar Dados
-            const pedidoData = {
-                sessionToken: localStorage.getItem("sessionToken"),
-                titulo: document.getElementById("pedido-id").value,
-                servico: servicoHiddenInput.value,
-                arte: arteSelecionadaNode ? arteSelecionadaNode.value : '',
-                nomeCliente: document.getElementById("cliente-final-nome").value,
-                wppCliente: document.getElementById("cliente-final-wpp").value,
-                briefingFormatado: briefingFormatado.trim(),
-                tipoEntrega: tipoEntregaNode ? tipoEntregaNode.value : ''
-            };
-
-            // Coletar campos específicos
-            if (pedidoData.arte === 'Arquivo do Cliente') {
-                // Pega URL direto
-                pedidoData.linkArquivo = document.getElementById("link-arquivo").value;
-            } 
-            else if (pedidoData.arte === 'Setor de Arte') {
-                pedidoData.supervisaoWpp = document.getElementById("pedido-supervisao").value;
-                pedidoData.valorDesigner = document.getElementById("valor-designer").value;
-                pedidoData.formato = document.getElementById("pedido-formato").value;
-                if (pedidoData.formato === 'CDR') {
-                    pedidoData.cdrVersao = document.getElementById("cdr-versao").value;
-                }
-            }
-
+            // Atualiza Saldo do Supervisor
+            const valorFloat = parseFloat(valorDesigner);
             try {
-                const response = await fetch('/api/createDealForGrafica', {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(pedidoData)
+                await prisma.empresa.update({
+                    where: { id: supervisor.id },
+                    data: { saldo_devedor: { increment: valorFloat } },
                 });
-                
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message || "Erro ao criar pedido.");
-                
-                feedbackDiv.textContent = `Pedido #${data.dealId} criado com sucesso! Redirecionando...`;
-                feedbackDiv.className = 'form-feedback success';
-                setTimeout(() => { window.location.href = '/painel.html'; }, 2000);
+            } catch (e) { console.warn("[DB] Erro update saldo:", e.message); }
 
-            } catch (error) {
-                console.error(error);
-                feedbackDiv.textContent = error.message;
-                feedbackDiv.className = 'form-feedback error';
-                submitButton.disabled = false;
-                submitButton.textContent = originalBtnText;
-            } finally {
-                feedbackDiv.classList.remove('hidden');
+            dealFields.OPPORTUNITY = (valorFloat * 0.8).toFixed(2);
+            dealFields[FIELD_WHATSAPP_GRAFICA] = supervisaoWpp;
+            dealFields[FIELD_LOGO_ID] = supervisor.logo_id || supervisor.logo;
+            dealFields[FIELD_SERVICO] = formData.servico;
+
+            let formatoTexto = formData.formato;
+            if (formatoTexto === 'CDR' && formData.cdrVersao) formatoTexto += ` (v${formData.cdrVersao})`;
+            briefingFinal += `\n\n--- Formato ---\n${formatoTexto}`;
+            
+        // === ARQUIVO DO CLIENTE ===
+        } else if (arte === 'Arquivo do Cliente') {
+            if (linkArquivo) {
+                dealFields[FIELD_ARQUIVO_IMPRESSAO] = linkArquivo;
+                dbLinkImpressao = linkArquivo; 
             }
-        });
+            dealFields.OPPORTUNITY = 0;
+
+        // === DESIGNER PRÓPRIO ===
+        } else {
+            dealFields.OPPORTUNITY = 0;
+        }
+
+        dealFields[FIELD_BRIEFING_COMPLETO] = briefingFinal;
+
+        // ------------------------------------------------------------------
+        // 4. CRIAÇÃO NO BITRIX
+        // ------------------------------------------------------------------
+        console.log("[DEBUG] Criando Deal no Bitrix...");
+        const createDealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.add.json`, { fields: dealFields });
+        
+        if (createDealResponse.data.error) throw new Error(createDealResponse.data.error_description);
+        const newDealId = createDealResponse.data.result;
+
+        // ------------------------------------------------------------------
+        // 5. SALVAMENTO NO BANCO DE DADOS (TABELA PEDIDOS)
+        // ------------------------------------------------------------------
+        if (empresaLogadaId && newDealId) {
+            console.log("[DEBUG] Salvando histórico na tabela 'pedidos'...");
+            try {
+                await prisma.$executeRaw`
+                    INSERT INTO pedidos (
+                        empresa_id,
+                        bitrix_deal_id,
+                        titulo,
+                        nome_cliente,
+                        whatsapp_cliente,
+                        servico,
+                        tipo_arte,
+                        tipo_entrega,
+                        whatsapp_supervisao,
+                        valor_designer,
+                        formato,
+                        cdr_versao,
+                        link_arquivo_impressao,
+                        link_arquivo_designer,
+                        briefing_completo
+                    ) VALUES (
+                        ${empresaLogadaId},
+                        ${newDealId},
+                        ${formData.titulo},
+                        ${formData.nomeCliente},
+                        ${formData.wppCliente},
+                        ${formData.servico},
+                        ${arte},
+                        ${tipoEntrega},
+                        ${supervisaoWpp || null},
+                        ${valorDesigner ? parseFloat(valorDesigner) : null},
+                        ${formData.formato || null},
+                        ${formData.cdrVersao || null},
+                        ${dbLinkImpressao},
+                        ${dbLinkDesigner},
+                        ${briefingFinal}
+                    )
+                `;
+                console.log("[SUCESSO] Pedido salvo no Neon.");
+            } catch (dbError) {
+                console.error("[ERRO DB] Falha ao salvar na tabela pedidos:", dbError.message);
+            }
+        } else {
+            console.warn("[AVISO] Pedido criado no Bitrix, mas NÃO SALVO no Neon (Empresa local não encontrada).");
+        }
+
+        return res.status(200).json({ success: true, dealId: newDealId });
+
+    } catch (error) {
+        console.error("[EXCEPTION]", error.message);
+        return res.status(500).json({ message: error.message || 'Erro interno.' });
     }
-});
+};

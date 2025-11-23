@@ -1,4 +1,4 @@
-// crm-script.js - COMPLETO
+// crm-script.js - VERSÃO FINAL
 
 let searchTimeout = null;
 
@@ -51,6 +51,7 @@ function configurarFormularioVisual() {
             arqFields.classList.add('hidden');
             setorFields.classList.add('hidden');
 
+            // Limpa required
             document.getElementById('link-arquivo').required = false;
             document.getElementById('pedido-supervisao').required = false;
             document.getElementById('valor-designer').required = false;
@@ -129,7 +130,7 @@ function criarCardHTML(card) {
     const div = document.createElement('div');
     div.className = 'kanban-card';
     div.dataset.id = card.id;
-    div.dataset.json = JSON.stringify(card); // Guarda dados
+    div.dataset.json = JSON.stringify(card); 
     div.onclick = () => abrirPanelEdicao(card);
 
     const valor = parseFloat(card.valor_orcamento||0).toLocaleString('pt-BR', {minimumFractionDigits:2});
@@ -212,9 +213,13 @@ window.abrirPanelEdicao = function(card) {
     const sCard = document.querySelector(`.servico-card[data-value="${card.servico_tipo}"]`);
     if(sCard) sCard.click();
 
-    // Parse JSON Extras
+    // Parse JSON Extras (Isso recupera o briefing_json salvo)
     let extras = {};
-    try { extras = (typeof card.briefing_json === 'string') ? JSON.parse(card.briefing_json) : card.briefing_json; } catch(e){}
+    try { 
+        if (card.briefing_json) {
+            extras = (typeof card.briefing_json === 'string') ? JSON.parse(card.briefing_json) : card.briefing_json;
+        }
+    } catch(e){}
 
     // Trigger Arte
     if(card.arte_origem) {
@@ -240,6 +245,7 @@ window.abrirPanelEdicao = function(card) {
 
     // Materiais
     if(extras.materiais && extras.materiais.length > 0) {
+        document.getElementById('materiais-container').innerHTML = ''; // Limpa antes de por os salvos
         extras.materiais.forEach(m => adicionarMaterialNoForm(m.descricao, m.detalhes));
     } else {
         adicionarMaterialNoForm();
@@ -250,6 +256,8 @@ window.abrirPanelEdicao = function(card) {
     if(typeof IMask !== 'undefined') {
         const w = document.getElementById('crm-wpp');
         if(w && w.value) IMask(w, {mask:'(00) 00000-0000'}).updateValue();
+        const s = document.getElementById('pedido-supervisao');
+        if(s && s.value) IMask(s, {mask:'(00) 00000-0000'}).updateValue();
     }
 
     overlay.classList.add('active');
@@ -307,12 +315,16 @@ function configurarBuscaCliente() {
 document.getElementById('form-crm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-salvar-rascunho');
+    const originalText = btn.innerText;
     btn.innerText = 'Salvando...'; btn.disabled = true;
 
     // Coleta Materiais
     const mats = [];
     document.querySelectorAll('.material-item').forEach(d => {
-        mats.push({ descricao: d.querySelector('.mat-desc').value, detalhes: d.querySelector('.mat-det').value });
+        const desc = d.querySelector('.mat-desc').value;
+        if(desc) {
+            mats.push({ descricao: desc, detalhes: d.querySelector('.mat-det').value });
+        }
     });
 
     const extras = {
@@ -333,26 +345,33 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
         servico_tipo: document.getElementById('pedido-servico-hidden').value,
         arte_origem: document.querySelector('input[name="pedido-arte"]:checked')?.value || '',
         valor_orcamento: document.getElementById('crm-valor').value,
-        briefing_json: JSON.stringify(extras) // Salva tudo aqui
+        briefing_json: JSON.stringify(extras) // ESSENCIAL: Envia o JSON completo
     };
 
     try {
         const res = await fetch('/api/crm/saveCard', {
             method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
         });
-        if(res.ok) { fecharPanel(); carregarKanban(); }
-        else alert('Erro ao salvar');
-    } catch(err) { alert('Erro conexão'); }
-    finally { btn.innerText = 'SALVAR NO CRM'; btn.disabled = false; }
+        
+        if(res.ok) { 
+            fecharPanel(); 
+            carregarKanban();
+        } else {
+            const err = await res.json();
+            alert('Erro ao salvar: ' + (err.message || 'Desconhecido'));
+        }
+    } catch(err) { alert('Erro de conexão ao salvar.'); }
+    finally { btn.innerText = originalText; btn.disabled = false; }
 });
 
 // --- PRODUZIR ---
 window.converterEmPedido = async function() {
     const id = document.getElementById('card-id-db').value;
-    if(!id) return alert('Salve antes de aprovar.');
-    if(!confirm('Deseja iniciar a produção? Isso removerá o card do CRM.')) return;
+    if(!id) return alert('Salve o card antes de enviar para produção.');
+    if(!confirm('Deseja iniciar a produção? Isso enviará para o Bitrix e removerá o card deste CRM.')) return;
 
     const btn = document.getElementById('btn-produzir-final');
+    const originalText = btn.innerText;
     btn.innerText = 'Enviando...'; btn.disabled = true;
 
     // Formata Texto Briefing
@@ -384,17 +403,17 @@ window.converterEmPedido = async function() {
         });
         const data = await res.json();
         
-        if(!data.success && !data.dealId) throw new Error(data.message);
+        if(!data.success && !data.dealId) throw new Error(data.message || 'Erro desconhecido');
 
-        // Deleta do CRM
+        // Se sucesso, deleta do Kanban
         await fetch('/api/crm/deleteCard', {
             method: 'POST', headers: {'Content-Type':'application/json'}, 
             body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: id })
         });
 
-        alert('Pedido enviado para produção!');
+        alert('Pedido enviado com sucesso!');
         fecharPanel();
         carregarKanban();
-    } catch(err) { alert('Erro: '+err.message); }
-    finally { btn.innerText = 'APROVAR AGORA'; btn.disabled = false; }
+    } catch(err) { alert('Erro ao criar pedido: '+err.message); }
+    finally { btn.innerText = originalText; btn.disabled = false; }
 }
