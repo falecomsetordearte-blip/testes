@@ -1,27 +1,96 @@
-// crm-script.js
+// crm-script.js - COMPLETO COM BUSCA INTELIGENTE
+
+// Variável para controle do Debounce (atraso na busca)
+let searchTimeout = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Inicializa máscaras de input
+    // 1. Inicializa máscaras
     if (typeof IMask !== 'undefined') {
         const phoneInput = document.getElementById('crm-wpp');
-        if (phoneInput) {
-            IMask(phoneInput, { mask: '(00) 00000-0000' });
-        }
+        if (phoneInput) IMask(phoneInput, { mask: '(00) 00000-0000' });
     }
 
-    // 2. Carrega o quadro Kanban
+    // 2. Carrega Kanban
     carregarKanban();
+
+    // 3. Configura a BUSCA INTELIGENTE
+    configurarBuscaCliente();
 });
 
-// --- FUNÇÕES PRINCIPAIS DE LEITURA E RENDERIZAÇÃO ---
+function configurarBuscaCliente() {
+    const nomeInput = document.getElementById('crm-nome');
+    const resultsList = document.getElementById('search-results-list');
+    const wppInput = document.getElementById('crm-wpp');
+
+    nomeInput.addEventListener('input', function() {
+        const query = this.value;
+
+        // Limpa busca anterior
+        clearTimeout(searchTimeout);
+        
+        if (query.length < 2) {
+            resultsList.style.display = 'none';
+            return;
+        }
+
+        // Aguarda 400ms após parar de digitar para buscar
+        searchTimeout = setTimeout(async () => {
+            try {
+                const response = await fetch('/api/crm/searchClients', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionToken: localStorage.getItem('sessionToken'),
+                        query: query
+                    })
+                });
+                
+                const clientes = await response.json();
+                
+                // Renderiza lista
+                resultsList.innerHTML = '';
+                if (clientes.length > 0) {
+                    clientes.forEach(cliente => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<span>${cliente.nome}</span> <small>${cliente.whatsapp}</small>`;
+                        
+                        // Ao clicar no cliente da lista
+                        li.onclick = () => {
+                            nomeInput.value = cliente.nome;
+                            // Remove máscara, seta valor, reaplica máscara
+                            const wppClean = cliente.whatsapp; 
+                            wppInput.value = wppClean;
+                            if (typeof IMask !== 'undefined') IMask(wppInput, { mask: '(00) 00000-0000' }).updateValue();
+                            
+                            resultsList.style.display = 'none';
+                        };
+                        resultsList.appendChild(li);
+                    });
+                    resultsList.style.display = 'block';
+                } else {
+                    // Opcional: Mostrar "Nenhum cliente encontrado, será cadastrado ao salvar"
+                    resultsList.style.display = 'none';
+                }
+            } catch (e) {
+                console.error("Erro na busca", e);
+            }
+        }, 400);
+    });
+
+    // Fechar lista se clicar fora
+    document.addEventListener('click', (e) => {
+        if (!nomeInput.contains(e.target) && !resultsList.contains(e.target)) {
+            resultsList.style.display = 'none';
+        }
+    });
+}
+
+// --- FUNÇÕES KANBAN (IGUAL ANTERIOR) ---
 
 async function carregarKanban() {
     try {
         const sessionToken = localStorage.getItem('sessionToken');
-        if (!sessionToken) {
-            window.location.href = '/login.html';
-            return;
-        }
+        if (!sessionToken) { window.location.href = '/login.html'; return; }
 
         const response = await fetch('/api/crm/listCards', {
             method: 'POST',
@@ -30,43 +99,29 @@ async function carregarKanban() {
         });
 
         if (!response.ok) throw new Error("Falha ao carregar oportunidades.");
-
         const cards = await response.json();
 
-        // Limpar colunas antes de renderizar
         document.querySelectorAll('.kanban-items').forEach(col => col.innerHTML = '');
-
-        // Renderizar cada card na coluna correta
         cards.forEach(card => criarCardHTML(card));
-
-        // Inicializar Drag and Drop (SortableJS)
         inicializarDragAndDrop();
 
     } catch (error) {
         console.error("Erro ao carregar Kanban:", error);
-        // Opcional: Mostrar feedback visual de erro na tela
     }
 }
 
 function criarCardHTML(card) {
     const colunaId = mapColunaToId(card.coluna);
     const container = document.getElementById(colunaId);
-
-    if (!container) return; // Se a coluna não existir no HTML, ignora
+    if (!container) return;
 
     const div = document.createElement('div');
     div.className = 'kanban-card';
     div.dataset.id = card.id;
-    // Guardamos o objeto completo no dataset para acesso rápido ao abrir o modal
     div.dataset.json = JSON.stringify(card);
     
-    // Evento de clique para editar
-    div.onclick = (e) => {
-        // Evita abrir o modal se o clique for apenas para arrastar (prevenção básica)
-        abrirModalEdicao(card);
-    };
+    div.onclick = (e) => { abrirModalEdicao(card); };
 
-    // Formatação de moeda
     const valorFormatado = parseFloat(card.valor_orcamento || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
     div.innerHTML = `
@@ -78,7 +133,6 @@ function criarCardHTML(card) {
         <div class="card-title">${card.nome_cliente}</div>
         <span class="card-price">R$ ${valorFormatado}</span>
     `;
-
     container.appendChild(div);
 }
 
@@ -89,40 +143,30 @@ function mapColunaToId(nomeColuna) {
         case 'Aguardando Orçamento': return 'col-orcamento-list';
         case 'Aguardando Pagamento': return 'col-pagamento-list';
         case 'Abrir Pedido': return 'col-abrir-list';
-        default: return 'col-novos-list'; // Fallback
+        default: return 'col-novos-list';
     }
 }
 
 function inicializarDragAndDrop() {
     const colunas = document.querySelectorAll('.kanban-items');
-    
     colunas.forEach(coluna => {
-        // Verifica se já existe instância para não duplicar listeners
         if(coluna.getAttribute('data-sortable-init') === 'true') return;
-
         new Sortable(coluna, {
-            group: 'crm-pipeline', // Permite arrastar entre colunas diferentes
+            group: 'crm-pipeline', 
             animation: 150,
-            ghostClass: 'sortable-ghost', // Classe aplicada ao placeholder enquanto arrasta
-            delay: 100, // Pequeno delay para diferenciar clique de arrasto em mobile
+            ghostClass: 'sortable-ghost', 
+            delay: 100, 
             onEnd: function (evt) {
-                const itemEl = evt.item;
-                const novaColunaDiv = evt.to.parentElement; // A div pai da lista (.kanban-column)
-                const novaColunaNome = novaColunaDiv.getAttribute('data-status');
-                const cardId = itemEl.getAttribute('data-id');
-
-                // Só atualiza se mudou de coluna
                 if (evt.from !== evt.to) {
-                    atualizarStatusCard(cardId, novaColunaNome);
+                    const novaColuna = evt.to.parentElement.getAttribute('data-status');
+                    const cardId = evt.item.getAttribute('data-id');
+                    atualizarStatusCard(cardId, novaColuna);
                 }
             }
         });
-        
         coluna.setAttribute('data-sortable-init', 'true');
     });
 }
-
-// --- FUNÇÕES DE INTERAÇÃO COM API (SALVAR, MOVER, PRODUZIR) ---
 
 async function atualizarStatusCard(cardId, novaColuna) {
     try {
@@ -135,14 +179,12 @@ async function atualizarStatusCard(cardId, novaColuna) {
                 novaColuna: novaColuna
             })
         });
-        console.log(`Card ${cardId} movido para ${novaColuna}`);
     } catch (error) {
         console.error("Erro ao mover card:", error);
-        alert("Erro ao salvar a nova posição do card. Recarregue a página.");
     }
 }
 
-// Listener do Formulário de Edição/Criação
+// --- SUBMIT DO FORMULÁRIO (SALVAR) ---
 document.getElementById('form-crm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -172,34 +214,32 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
 
         if (response.ok) {
             fecharModal();
-            carregarKanban(); // Recarrega para mostrar alterações
+            carregarKanban(); 
+            // Limpa a busca
+            document.getElementById('search-results-list').style.display = 'none';
         } else {
             alert("Erro ao salvar: " + (data.message || "Erro desconhecido"));
         }
     } catch (error) {
         console.error(error);
-        alert("Erro de conexão ao salvar.");
+        alert("Erro de conexão.");
     } finally {
         submitBtn.innerText = originalText;
         submitBtn.disabled = false;
     }
 });
 
-// FUNÇÃO PARA CONVERTER O CARD DO CRM EM PEDIDO REAL (PRODUÇÃO)
+// --- CONVERTER EM PEDIDO (PRODUZIR) ---
 window.converterEmPedido = async function() {
     const cardId = document.getElementById('card-id-db').value;
     if (!cardId) return alert("Erro: ID do card não encontrado.");
 
-    if (!confirm("Tem certeza? Isso irá gerar um Pedido de Produção oficial no sistema e removerá este card do CRM.")) {
-        return;
-    }
+    if (!confirm("Tem certeza? Isso irá gerar um Pedido Oficial e removerá este card do CRM.")) return;
 
     const btn = document.getElementById('btn-produzir-final');
     btn.textContent = "Processando...";
     btn.disabled = true;
 
-    // 1. Preparar os dados para a API de Produção (createDealForGrafica)
-    // Mapeamos os campos do CRM para o formato que a API de produção espera
     const producaoPayload = {
         sessionToken: localStorage.getItem('sessionToken'),
         titulo: document.getElementById('modal-titulo').innerText.replace('Editando ', '').trim(),
@@ -207,22 +247,19 @@ window.converterEmPedido = async function() {
         arte: document.getElementById('crm-arte-origem').value,
         nomeCliente: document.getElementById('crm-nome').value,
         wppCliente: document.getElementById('crm-wpp').value,
-        tipoEntrega: 'RETIRADA NO BALCÃO', // Padrão, já que o CRM simplificado não tem esse campo
-        briefingFormatado: `[PEDIDO VINDO DO CRM]\nServiço: ${document.getElementById('crm-servico').value}\nValor Orçado: R$ ${document.getElementById('crm-valor').value}\n\nObs: Verifique detalhes com o cliente.`
+        tipoEntrega: 'RETIRADA NO BALCÃO',
+        briefingFormatado: `[PEDIDO VINDO DO CRM]\nServiço: ${document.getElementById('crm-servico').value}\nValor Orçado: R$ ${document.getElementById('crm-valor').value}`
     };
     
-    // Se for setor de arte, precisamos passar campos obrigatórios fictícios ou zerados
-    // para a API não rejeitar, pois o CRM simplificado não captura tudo
     if (producaoPayload.arte === 'Setor de Arte') {
-        producaoPayload.supervisaoWpp = producaoPayload.wppCliente; // Usa o do cliente como fallback
-        producaoPayload.valorDesigner = "0"; // Será ajustado depois na produção
+        producaoPayload.supervisaoWpp = producaoPayload.wppCliente; 
+        producaoPayload.valorDesigner = "0"; 
         producaoPayload.formato = "PDF";
     } else if (producaoPayload.arte === 'Arquivo do Cliente') {
-        producaoPayload.linkArquivo = "https://pendente-envio.com"; // Placeholder para não quebrar validação
+        producaoPayload.linkArquivo = "https://crm-auto-generated.com"; 
     }
 
     try {
-        // Passo A: Criar o Deal no Bitrix
         const responseDeal = await fetch('/api/createDealForGrafica', {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -231,11 +268,8 @@ window.converterEmPedido = async function() {
         
         const dataDeal = await responseDeal.json();
         
-        if (!dataDeal.success && !dataDeal.dealId) {
-            throw new Error(dataDeal.message || "Erro ao criar pedido no Bitrix.");
-        }
+        if (!dataDeal.success && !dataDeal.dealId) throw new Error(dataDeal.message || "Erro no Bitrix.");
 
-        // Passo B: Se sucesso, deletar o Card do CRM (Neon)
         await fetch('/api/crm/deleteCard', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -245,12 +279,11 @@ window.converterEmPedido = async function() {
             })
         });
 
-        alert(`Sucesso! Pedido #${dataDeal.dealId} enviado para produção.`);
+        alert(`Pedido #${dataDeal.dealId} enviado para produção!`);
         fecharModal();
-        carregarKanban(); // Atualiza a tela removendo o card
+        carregarKanban();
 
     } catch (error) {
-        console.error("Erro na conversão:", error);
         alert("Ocorreu um erro: " + error.message);
     } finally {
         btn.textContent = "FINALIZAR E PRODUZIR";
@@ -258,8 +291,7 @@ window.converterEmPedido = async function() {
     }
 }
 
-// --- CONTROLE DO MODAL ---
-
+// --- MODAL HELPERS ---
 const modal = document.getElementById('modal-card');
 const form = document.getElementById('form-crm');
 
@@ -267,40 +299,27 @@ window.abrirModalNovoCard = function() {
     form.reset();
     document.getElementById('card-id-db').value = '';
     document.getElementById('modal-titulo').innerText = 'Nova Oportunidade';
-    document.getElementById('btn-produzir-final').style.display = 'none'; // Esconde botão de produzir em novos
+    document.getElementById('btn-produzir-final').style.display = 'none';
+    document.getElementById('search-results-list').style.display = 'none';
     modal.style.display = 'flex';
 }
 
 function abrirModalEdicao(card) {
     document.getElementById('modal-titulo').innerText = `Editando ${card.titulo_automatico || 'Oportunidade'}`;
-    
-    // Preenche os campos
     document.getElementById('card-id-db').value = card.id;
     document.getElementById('crm-nome').value = card.nome_cliente || '';
     document.getElementById('crm-wpp').value = card.wpp_cliente || '';
     document.getElementById('crm-servico').value = card.servico_tipo || 'Arte Impressão';
     document.getElementById('crm-arte-origem').value = card.arte_origem || 'Setor de Arte';
     document.getElementById('crm-valor').value = card.valor_orcamento || '';
-
-    // Mostra botão de produzir
     document.getElementById('btn-produzir-final').style.display = 'block';
+    document.getElementById('search-results-list').style.display = 'none';
     
     modal.style.display = 'flex';
-    
-    // Atualiza máscara no campo preenchido
     if (typeof IMask !== 'undefined') {
-        const phoneInput = document.getElementById('crm-wpp');
-        IMask(phoneInput, { mask: '(00) 00000-0000' }); 
+        IMask(document.getElementById('crm-wpp'), { mask: '(00) 00000-0000' });
     }
 }
 
-window.fecharModal = function() {
-    modal.style.display = 'none';
-}
-
-// Fecha modal ao clicar fora do conteúdo
-window.onclick = function(event) {
-    if (event.target == modal) {
-        fecharModal();
-    }
-}
+window.fecharModal = function() { modal.style.display = 'none'; }
+window.onclick = function(e) { if (e.target == modal) fecharModal(); }
