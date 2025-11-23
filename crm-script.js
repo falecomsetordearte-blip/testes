@@ -19,7 +19,7 @@ function configurarScrollLateral() {
     if (!board || !leftZone || !rightZone) return;
 
     let scrollInterval = null;
-    const speed = 10; // Velocidade da rolagem
+    const speed = 100; // Velocidade da rolagem
 
     // Função que inicia o loop de scroll
     const startScrolling = (direction) => {
