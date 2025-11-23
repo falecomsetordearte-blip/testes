@@ -7,7 +7,6 @@
     
     <!-- Ícone e CSS padronizados -->
     <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
-    <!-- Mantemos o style.css global, mas vamos sobrescrever comportamentos abaixo -->
     <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -17,8 +16,8 @@
         
         /* 1. Maximização da Largura */
         .app-content .container {
-            max-width: 100% !important; /* Sobrescreve limite do CSS global */
-            padding: 0 2rem; /* Espaçamento lateral para não colar na borda */
+            max-width: 100% !important; 
+            padding: 0 2rem; 
             box-sizing: border-box;
         }
 
@@ -90,7 +89,7 @@
             box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
         }
 
-        /* 3. Grid de Métricas (KPIs) - Agora só com 2 itens grandes */
+        /* 3. Grid de Métricas (KPIs) */
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -115,7 +114,6 @@
             transform: translateY(-5px);
         }
 
-        /* Detalhe decorativo na borda esquerda */
         .kpi-card::before {
             content: '';
             position: absolute;
@@ -128,9 +126,7 @@
         .kpi-green::before { background-color: #27ae60; }
         .kpi-blue::before { background-color: #3498db; }
 
-        .kpi-content {
-            z-index: 1;
-        }
+        .kpi-content { z-index: 1; }
 
         .kpi-label {
             display: block;
@@ -162,7 +158,7 @@
             background: white;
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            padding: 0; /* Padding interno removido para a tabela encostar nas bordas */
+            padding: 0;
             overflow: hidden;
             width: 100%;
         }
@@ -190,18 +186,27 @@
             font-weight: 500;
             font-size: 0.9rem;
         }
-
-        .view-all-link:hover {
-            text-decoration: underline;
-        }
-
-        /* Container da lista injetada pelo JS */
+        
+        /* Ajuste do container da lista */
         #recentes-pedidos-list {
-            padding: 1rem 2rem 2rem 2rem;
+            padding: 1rem;
             min-height: 200px;
         }
 
-        /* Spinner de carregamento */
+        /* Estilos para garantir que a tabela gerada pelo JS fique bonita */
+        /* Assumindo que o JS cria uma <table> ou divs com classes padrão */
+        #recentes-pedidos-list table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        #recentes-pedidos-list th, 
+        #recentes-pedidos-list td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
         .spinner {
             border: 4px solid rgba(0, 0, 0, 0.1);
             width: 36px;
@@ -217,7 +222,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Responsividade para telas menores */
         @media (max-width: 768px) {
             .dashboard-header {
                 flex-direction: column;
@@ -225,7 +229,6 @@
             }
             .acoes-box {
                 width: 100%;
-                justify-content: stretch;
             }
             .btn-modern {
                 flex: 1;
@@ -240,23 +243,18 @@
 <body>
 
     <div class="app-layout-grid">
-        <!-- Sidebar será injetada aqui -->
         <div id="sidebar-placeholder"></div>
 
-        <!-- Wrapper para o conteúdo que rola -->
         <div class="app-content-wrapper">
-            <!-- Header será injetado aqui -->
             <div id="header-placeholder"></div>
 
-            <!-- Conteúdo específico do Dashboard -->
             <main class="app-content">
                 <div class="container">
                     
-                    <!-- 1. Cabeçalho de Boas-Vindas Moderno -->
+                    <!-- Header -->
                     <section class="dashboard-header">
                         <div class="welcome-message">
-                            <!-- O ID é mantido para o JS funcionar -->
-                            <h1 id="welcome-user-name">Olá, Bem-vindo de volta!</h1>
+                            <h1 id="welcome-user-name">Olá...</h1>
                             <p>Visão geral do seu painel de criação.</p>
                         </div>
                         <div class="acoes-box">
@@ -269,40 +267,38 @@
                         </div>
                     </section>
 
-                    <!-- 2. Grid de Métricas Rápidas (Apenas Saldo e Em Andamento) -->
+                    <!-- Grid KPIs -->
                     <section class="dashboard-grid">
-                        
-                        <!-- Card Saldo -->
                         <div class="kpi-card kpi-green">
                             <div class="kpi-content">
                                 <span class="kpi-label">Saldo Disponível</span>
-                                <!-- O ID é mantido para o JS injetar o valor -->
                                 <span class="kpi-value" id="saldo-valor-dash">R$ --</span>
                             </div>
                             <i class="fa-solid fa-wallet kpi-icon"></i>
                         </div>
 
-                        <!-- Card Pedidos em Andamento -->
                         <div class="kpi-card kpi-blue">
                             <div class="kpi-content">
                                 <span class="kpi-label">Em Produção</span>
-                                <!-- O ID é mantido para o JS injetar o valor -->
                                 <span class="kpi-value" id="pedidos-andamento-dash">--</span>
                             </div>
                             <i class="fa-solid fa-layer-group kpi-icon"></i>
                         </div>
-
                     </section>
 
-                    <!-- 3. Seção de Atividade (Full Width, sem treinamentos) -->
+                    <!-- IMPORTANTE: Elementos ocultos para evitar erro no Javascript (Legacy Support) -->
+                    <div style="display: none !important;">
+                        <!-- O JS tenta preencher isso, se não achar, ele trava o carregamento da lista -->
+                        <span id="pedidos-concluidos-dash">0</span>
+                    </div>
+
+                    <!-- Lista Recente -->
                     <section class="dashboard-columns">
-                        <!-- Coluna Única: Pedidos Recentes -->
                         <div class="main-panel">
                             <div class="panel-header">
                                 <h2><i class="fa-solid fa-clock-rotate-left"></i> Atividade Recente</h2>
                                 <a href="painel.html" class="view-all-link">Ver histórico completo →</a>
                             </div>
-                            <!-- O ID é mantido para o JS injetar a lista/tabela -->
                             <div id="recentes-pedidos-list">
                                 <div class="loading-pedidos"><div class="spinner"></div></div>
                             </div>
@@ -312,12 +308,10 @@
                 </div>
             </main>
 
-            <!-- Footer será injetado aqui -->
             <div id="footer-placeholder"></div>
         </div>
     </div>
     
-    <!-- Scripts Essenciais -->
     <script src="/layout.js"></script>
     <script src="https://unpkg.com/imask"></script> 
     <script src="/script.js"></script> 
