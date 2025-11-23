@@ -15,94 +15,65 @@
         /* --- KANBAN GERAL --- */
         .app-content .container { max-width: 100% !important; padding-right: 20px; }
         
-        /* Wrapper para posicionar as setas de scroll relativo a ele */
-        .kanban-wrapper {
-            position: relative;
-            width: 100%;
-            height: calc(100vh - 200px); /* Altura fixa para o scroll funcionar */
-        }
-
+        /* Container do Kanban */
         .kanban-board { 
             display: flex; 
             overflow-x: auto; 
             gap: 1.5rem; 
             padding-bottom: 2rem; 
-            height: 100%; 
-            align-items: flex-start; 
-            scroll-behavior: smooth; /* Rolagem suave nativa */
+            height: calc(100vh - 200px); 
+            align-items: flex-start;
+            /* Cursor de "mão aberta" para indicar que pode arrastar o fundo */
+            cursor: grab; 
+            /* Remove seleção de texto acidental enquanto arrasta */
+            user-select: none; 
         }
         
+        /* Quando estiver arrastando o fundo (ativo via JS) */
+        .kanban-board.active { 
+            cursor: grabbing; 
+            cursor: -webkit-grabbing; 
+        }
+
+        /* Estilização da Barra de Rolagem */
         .kanban-board::-webkit-scrollbar { height: 10px; }
         .kanban-board::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 5px; }
         .kanban-board::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 5px; }
         
+        /* Colunas */
         .kanban-column { min-width: 320px; width: 320px; background: #f4f6f8; border-radius: 12px; display: flex; flex-direction: column; max-height: 100%; border: 1px solid #e2e8f0; }
         .column-header { padding: 1rem; border-radius: 12px 12px 0 0; font-weight: 700; color: #2c3e50; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 2; background: inherit; }
         
+        /* Cores das Colunas */
         .col-novos .column-header { border-top: 4px solid #3498db; background: #ebf5fb; }
         .col-visita .column-header { border-top: 4px solid #e67e22; background: #fdf2e9; }
         .col-orcamento .column-header { border-top: 4px solid #f1c40f; background: #fef9e7; }
         .col-pagamento .column-header { border-top: 4px solid #9b59b6; background: #f5eef8; }
         .col-abrir .column-header { border-top: 4px solid #27ae60; background: #eafaf1; }
 
+        /* Lista de Itens (Onde os cards ficam) */
         .kanban-items { padding: 1rem; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; min-height: 100px; }
-        .kanban-card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); cursor: grab; border: 1px solid transparent; transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+        
+        /* CARDS */
+        .kanban-card { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04); 
+            /* Cursor normal ou pointer para indicar que o card é clicável/arrastável individualmente */
+            cursor: pointer; 
+            border: 1px solid transparent; 
+            transition: transform 0.2s, box-shadow 0.2s; 
+            position: relative; 
+        }
         .kanban-card:hover { transform: translateY(-3px); box-shadow: 0 8px 16px rgba(0,0,0,0.08); border-color: #cbd5e0; }
+        
         .card-tags { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
         .card-tag { font-size: 0.7rem; padding: 3px 8px; border-radius: 6px; font-weight: 600; text-transform: uppercase; }
         .tag-arte { background: #e0f2f1; color: #00897b; }
         .card-title { font-weight: 600; color: #2d3748; margin-bottom: 6px; font-size: 1rem; }
         .card-price { font-weight: 700; color: #27ae60; font-size: 0.95rem; display: block; margin-top: 10px; }
         .card-id { position: absolute; top: 12px; right: 12px; font-size: 0.7rem; color: #a0aec0; font-weight: 500; }
-
-        /* --- SCROLL ON HOVER (NOVO RECURSO) --- */
-        .scroll-trigger {
-            position: absolute;
-            top: 0;
-            bottom: 15px; /* Deixa espaço para o scrollbar nativo */
-            width: 80px;
-            z-index: 50;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: auto; /* Garante que pegue o mouse */
-        }
-        
-        .scroll-trigger:hover { opacity: 1; }
-
-        .scroll-trigger.left {
-            left: 0;
-            background: linear-gradient(to right, rgba(0,0,0,0.1) 0%, transparent 100%);
-            border-top-left-radius: 12px;
-            border-bottom-left-radius: 12px;
-        }
-
-        .scroll-trigger.right {
-            right: 0;
-            background: linear-gradient(to left, rgba(0,0,0,0.1) 0%, transparent 100%);
-            border-top-right-radius: 12px;
-            border-bottom-right-radius: 12px;
-        }
-
-        .scroll-arrow {
-            width: 45px;
-            height: 45px;
-            background-color: rgba(255, 255, 255, 0.95);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-            color: #334155;
-            font-size: 1.2rem;
-            transform: scale(0.9);
-            transition: transform 0.2s, background-color 0.2s;
-        }
-        
-        .scroll-trigger:hover .scroll-arrow { transform: scale(1); background-color: #fff; }
 
         /* --- SIDE DRAWER --- */
         .slide-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); z-index: 9990; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
@@ -162,26 +133,13 @@
                         </button>
                     </div>
 
-                    <!-- WRAPPER DO KANBAN COM SCROLL -->
-                    <div class="kanban-wrapper">
-                        <!-- SETA ESQUERDA -->
-                        <div class="scroll-trigger left" id="scroll-trigger-left">
-                            <div class="scroll-arrow"><i class="fas fa-chevron-left"></i></div>
-                        </div>
-
-                        <!-- KANBAN BOARD -->
-                        <div class="kanban-board">
-                            <div class="kanban-column col-novos" data-status="Novos"><div class="column-header">Novos</div><div class="kanban-items" id="col-novos-list"></div></div>
-                            <div class="kanban-column col-visita" data-status="Visita Técnica"><div class="column-header">Visita Técnica</div><div class="kanban-items" id="col-visita-list"></div></div>
-                            <div class="kanban-column col-orcamento" data-status="Aguardando Orçamento"><div class="column-header">Aguard. Orçamento</div><div class="kanban-items" id="col-orcamento-list"></div></div>
-                            <div class="kanban-column col-pagamento" data-status="Aguardando Pagamento"><div class="column-header">Aguard. Pagamento</div><div class="kanban-items" id="col-pagamento-list"></div></div>
-                            <div class="kanban-column col-abrir" data-status="Abrir Pedido"><div class="column-header">Abrir Pedido</div><div class="kanban-items" id="col-abrir-list"></div></div>
-                        </div>
-
-                        <!-- SETA DIREITA -->
-                        <div class="scroll-trigger right" id="scroll-trigger-right">
-                            <div class="scroll-arrow"><i class="fas fa-chevron-right"></i></div>
-                        </div>
+                    <!-- KANBAN BOARD -->
+                    <div class="kanban-board">
+                        <div class="kanban-column col-novos" data-status="Novos"><div class="column-header">Novos</div><div class="kanban-items" id="col-novos-list"></div></div>
+                        <div class="kanban-column col-visita" data-status="Visita Técnica"><div class="column-header">Visita Técnica</div><div class="kanban-items" id="col-visita-list"></div></div>
+                        <div class="kanban-column col-orcamento" data-status="Aguardando Orçamento"><div class="column-header">Aguard. Orçamento</div><div class="kanban-items" id="col-orcamento-list"></div></div>
+                        <div class="kanban-column col-pagamento" data-status="Aguardando Pagamento"><div class="column-header">Aguard. Pagamento</div><div class="kanban-items" id="col-pagamento-list"></div></div>
+                        <div class="kanban-column col-abrir" data-status="Abrir Pedido"><div class="column-header">Abrir Pedido</div><div class="kanban-items" id="col-abrir-list"></div></div>
                     </div>
 
                 </div>

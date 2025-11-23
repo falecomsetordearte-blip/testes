@@ -1,4 +1,4 @@
-// crm-script.js - COMPLETO (COM SCROLL LATERAL)
+// crm-script.js - VERSÃO COMPLETA (Drag to Scroll)
 
 let searchTimeout = null;
 
@@ -7,52 +7,47 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarKanban();
     configurarBuscaCliente();
     configurarFormularioVisual();
-    configurarScrollLateral(); // <--- ATIVA O SCROLL
+    configurarDragScroll(); // <--- ATIVA O ARRASTAR PARA ROLAR
 });
 
-// --- NOVO RECURSO: SCROLL LATERAL (HOVER) ---
-function configurarScrollLateral() {
-    const board = document.querySelector('.kanban-board');
-    const leftZone = document.getElementById('scroll-trigger-left');
-    const rightZone = document.getElementById('scroll-trigger-right');
-    
-    if (!board || !leftZone || !rightZone) return;
+// --- NOVO RECURSO: DRAG TO SCROLL (Arrastar o fundo) ---
+function configurarDragScroll() {
+    const slider = document.querySelector('.kanban-board');
+    if (!slider) return;
 
-    let scrollInterval = null;
-    const speed = 100; // Velocidade da rolagem
+    let isDown = false;
+    let startX;
+    let scrollLeft;
 
-    // Função que inicia o loop de scroll
-    const startScrolling = (direction) => {
-        if (scrollInterval) return;
+    slider.addEventListener('mousedown', (e) => {
+        // SEGURANÇA: Se clicou num card, NÃO ativa o scroll (deixa o Sortable mover o card)
+        if (e.target.closest('.kanban-card')) return;
 
-        scrollInterval = requestAnimationFrame(function loop() {
-            if (direction === 'left') {
-                board.scrollLeft -= speed;
-            } else {
-                board.scrollLeft += speed;
-            }
-            scrollInterval = requestAnimationFrame(loop);
-        });
-    };
+        isDown = true;
+        slider.classList.add('active'); // Muda cursor para 'grabbing'
+        startX = e.pageX - slider.offsetLeft;
+        scrollLeft = slider.scrollLeft;
+    });
 
-    // Função que para o loop
-    const stopScrolling = () => {
-        if (scrollInterval) {
-            cancelAnimationFrame(scrollInterval);
-            scrollInterval = null;
-        }
-    };
+    slider.addEventListener('mouseleave', () => {
+        isDown = false;
+        slider.classList.remove('active');
+    });
 
-    // Eventos
-    leftZone.addEventListener('mouseenter', () => startScrolling('left'));
-    leftZone.addEventListener('mouseleave', stopScrolling);
-    rightZone.addEventListener('mouseenter', () => startScrolling('right'));
-    rightZone.addEventListener('mouseleave', stopScrolling);
-    
-    // Opcional: Clique para rolar rápido
-    leftZone.addEventListener('click', () => { board.scrollBy({ left: -300, behavior: 'smooth' }); });
-    rightZone.addEventListener('click', () => { board.scrollBy({ left: 300, behavior: 'smooth' }); });
+    slider.addEventListener('mouseup', () => {
+        isDown = false;
+        slider.classList.remove('active');
+    });
+
+    slider.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault(); // Evita selecionar texto
+        const x = e.pageX - slider.offsetLeft;
+        const walk = (x - startX) * 1.5; // Multiplicador de velocidade (ajuste se quiser mais rápido)
+        slider.scrollLeft = scrollLeft - walk;
+    });
 }
+
 
 // --- MÁSCARAS ---
 function configurarMascaras() {
