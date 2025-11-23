@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM - Pipeline de Vendas</title>
+    <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
+    <link rel="stylesheet" href="/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- SortableJS para o Drag and Drop -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
+    <style>
+        /* CSS Específico do Kanban */
+        .kanban-board {
+            display: flex;
+            overflow-x: auto;
+            gap: 1.5rem;
+            padding-bottom: 2rem;
+            height: calc(100vh - 180px); /* Ajuste conforme seu header */
+            align-items: flex-start;
+        }
+
+        .kanban-column {
+            min-width: 300px;
+            width: 300px;
+            background: #f4f6f8;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            max-height: 100%;
+        }
+
+        .column-header {
+            padding: 1rem;
+            background: #dfe6e9; /* Cor padrão */
+            border-radius: 12px 12px 0 0;
+            font-weight: 700;
+            color: #2c3e50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        /* Cores das Colunas */
+        .col-novos .column-header { border-top: 4px solid #3498db; background: #ebf5fb; }
+        .col-visita .column-header { border-top: 4px solid #e67e22; background: #fdf2e9; }
+        .col-orcamento .column-header { border-top: 4px solid #f1c40f; background: #fef9e7; }
+        .col-pagamento .column-header { border-top: 4px solid #9b59b6; background: #f5eef8; }
+        .col-abrir .column-header { border-top: 4px solid #27ae60; background: #eafaf1; }
+
+        .kanban-items {
+            padding: 1rem;
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 50px; /* Para permitir soltar em coluna vazia */
+        }
+
+        /* Card do Cliente */
+        .kanban-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            cursor: grab;
+            border-left: 3px solid transparent;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .kanban-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .kanban-card:active {
+            cursor: grabbing;
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .card-tag {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #eee;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .tag-arte { background: #e8f8f5; color: #2ecc71; }
+        .tag-video { background: #fdedec; color: #e74c3c; }
+
+        .card-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+
+        .card-price {
+            font-weight: 700;
+            color: #27ae60;
+            font-size: 0.95rem;
+            display: block;
+            margin-top: 8px;
+        }
+        
+        .card-id {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.7rem;
+            color: #bdc3c7;
+        }
+
+        /* Modal Customizado (Overlay) */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none; /* JS vai mudar para flex */
+            justify-content: center;
+            align-items: flex-start;
+            z-index: 1000;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 900px;
+            position: relative;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+        
+        .btn-produzir {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            display: none; /* Só aparece na edição */
+        }
+        
+        .btn-produzir:hover {
+            opacity: 0.9;
+            transform: scale(1.01);
+        }
+
+        /* Reaproveitando estilos do seu formulário */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="app-layout-grid">
+        <div id="sidebar-placeholder"></div>
+
+        <div class="app-content-wrapper">
+            <div id="header-placeholder"></div>
+
+            <main class="app-content">
+                <div class="container" style="max-width: 100%;">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2><i class="fa-solid fa-trowel-bricks"></i> Pipeline de Vendas</h2>
+                        <button class="btn btn-primary" onclick="abrirModalNovoCard()">
+                            <i class="fa-solid fa-plus"></i> Novo Cliente/Orçamento
+                        </button>
+                    </div>
+
+                    <!-- KANBAN BOARD -->
+                    <div class="kanban-board">
+                        
+                        <!-- Coluna 1: Novos -->
+                        <div class="kanban-column col-novos" data-status="Novos">
+                            <div class="column-header">Novos <span class="count-badge">0</span></div>
+                            <div class="kanban-items" id="col-novos-list">
+                                <!-- Cards serão injetados aqui via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Coluna 2: Visita Técnica -->
+                        <div class="kanban-column col-visita" data-status="Visita Técnica">
+                            <div class="column-header">Visita Técnica <span class="count-badge">0</span></div>
+                            <div class="kanban-items" id="col-visita-list"></div>
+                        </div>
+
+                        <!-- Coluna 3: Aguardando Orçamento -->
+                        <div class="kanban-column col-orcamento" data-status="Aguardando Orçamento">
+                            <div class="column-header">Aguard. Orçamento <span class="count-badge">0</span></div>
+                            <div class="kanban-items" id="col-orcamento-list"></div>
+                        </div>
+
+                        <!-- Coluna 4: Aguardando Pagamento -->
+                        <div class="kanban-column col-pagamento" data-status="Aguardando Pagamento">
+                            <div class="column-header">Aguard. Pagamento <span class="count-badge">0</span></div>
+                            <div class="kanban-items" id="col-pagamento-list"></div>
+                        </div>
+
+                        <!-- Coluna 5: Abrir Pedido -->
+                        <div class="kanban-column col-abrir" data-status="Abrir Pedido">
+                            <div class="column-header">Abrir Pedido <span class="count-badge">0</span></div>
+                            <div class="kanban-items" id="col-abrir-list"></div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL DE FORMULÁRIO (Reutilizando a estrutura do Criar Pedido) -->
+    <div id="modal-card" class="modal-overlay">
+        <div class="modal-content">
+            <i class="fa-solid fa-xmark close-modal" onclick="fecharModal()"></i>
+            
+            <h2 id="modal-titulo">Novo Oportunidade</h2>
+            <p style="color: #777; margin-bottom: 20px;">Preencha os dados preliminares. O ID do pedido será gerado automaticamente ao salvar.</p>
+
+            <form id="form-crm">
+                <input type="hidden" id="card-id-db"> <!-- ID do banco Neon -->
+                <input type="hidden" id="card-coluna-atual" value="Novos">
+
+                <!-- Campos Básicos -->
+                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div class="form-group">
+                        <label>Nome do Cliente</label>
+                        <input type="text" id="crm-nome" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>WhatsApp</label>
+                        <input type="text" id="crm-wpp" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div class="form-group">
+                        <label>Serviço Principal</label>
+                        <select id="crm-servico" class="form-control" required>
+                            <option value="Arte Impressão">Arte Impressão</option>
+                            <option value="Arte Digital">Arte Digital</option>
+                            <option value="Edição de Vídeo">Edição de Vídeo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Origem da Arte</label>
+                        <select id="crm-arte-origem" class="form-control">
+                            <option value="Setor de Arte">Setor de Arte</option>
+                            <option value="Arquivo do Cliente">Arquivo do Cliente</option>
+                            <option value="Designer Próprio">Designer Próprio</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Campo de Valor (Orçamento) -->
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="font-weight: bold; color: #27ae60;">Valor do Orçamento (R$)</label>
+                    <input type="number" id="crm-valor" step="0.01" class="form-control" placeholder="0,00">
+                </div>
+
+                <!-- Botões de Ação -->
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-secondary" id="btn-salvar-rascunho">Salvar no CRM</button>
+                    <!-- Este botão só aparece se estiver editando -->
+                    <button type="button" class="btn-produzir" id="btn-produzir-final" onclick="converterEmPedido()">
+                        <i class="fa-solid fa-check-double"></i> FINALIZAR E PRODUZIR
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/layout.js"></script>
+    <script src="https://unpkg.com/imask"></script>
+    <script src="/crm-script.js"></script> <!-- Vamos criar este JS a seguir -->
+</body>
+</html>
