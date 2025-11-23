@@ -1,4 +1,4 @@
-// crm-script.js - VERSÃO FINAL
+// crm-script.js - COMPLETO (COM SCROLL LATERAL)
 
 let searchTimeout = null;
 
@@ -7,7 +7,52 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarKanban();
     configurarBuscaCliente();
     configurarFormularioVisual();
+    configurarScrollLateral(); // <--- ATIVA O SCROLL
 });
+
+// --- NOVO RECURSO: SCROLL LATERAL (HOVER) ---
+function configurarScrollLateral() {
+    const board = document.querySelector('.kanban-board');
+    const leftZone = document.getElementById('scroll-trigger-left');
+    const rightZone = document.getElementById('scroll-trigger-right');
+    
+    if (!board || !leftZone || !rightZone) return;
+
+    let scrollInterval = null;
+    const speed = 10; // Velocidade da rolagem
+
+    // Função que inicia o loop de scroll
+    const startScrolling = (direction) => {
+        if (scrollInterval) return;
+
+        scrollInterval = requestAnimationFrame(function loop() {
+            if (direction === 'left') {
+                board.scrollLeft -= speed;
+            } else {
+                board.scrollLeft += speed;
+            }
+            scrollInterval = requestAnimationFrame(loop);
+        });
+    };
+
+    // Função que para o loop
+    const stopScrolling = () => {
+        if (scrollInterval) {
+            cancelAnimationFrame(scrollInterval);
+            scrollInterval = null;
+        }
+    };
+
+    // Eventos
+    leftZone.addEventListener('mouseenter', () => startScrolling('left'));
+    leftZone.addEventListener('mouseleave', stopScrolling);
+    rightZone.addEventListener('mouseenter', () => startScrolling('right'));
+    rightZone.addEventListener('mouseleave', stopScrolling);
+    
+    // Opcional: Clique para rolar rápido
+    leftZone.addEventListener('click', () => { board.scrollBy({ left: -300, behavior: 'smooth' }); });
+    rightZone.addEventListener('click', () => { board.scrollBy({ left: 300, behavior: 'smooth' }); });
+}
 
 // --- MÁSCARAS ---
 function configurarMascaras() {
@@ -51,7 +96,6 @@ function configurarFormularioVisual() {
             arqFields.classList.add('hidden');
             setorFields.classList.add('hidden');
 
-            // Limpa required
             document.getElementById('link-arquivo').required = false;
             document.getElementById('pedido-supervisao').required = false;
             document.getElementById('valor-designer').required = false;
@@ -213,7 +257,7 @@ window.abrirPanelEdicao = function(card) {
     const sCard = document.querySelector(`.servico-card[data-value="${card.servico_tipo}"]`);
     if(sCard) sCard.click();
 
-    // Parse JSON Extras (Isso recupera o briefing_json salvo)
+    // Parse JSON Extras
     let extras = {};
     try { 
         if (card.briefing_json) {
@@ -245,7 +289,7 @@ window.abrirPanelEdicao = function(card) {
 
     // Materiais
     if(extras.materiais && extras.materiais.length > 0) {
-        document.getElementById('materiais-container').innerHTML = ''; // Limpa antes de por os salvos
+        document.getElementById('materiais-container').innerHTML = '';
         extras.materiais.forEach(m => adicionarMaterialNoForm(m.descricao, m.detalhes));
     } else {
         adicionarMaterialNoForm();
@@ -345,7 +389,7 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
         servico_tipo: document.getElementById('pedido-servico-hidden').value,
         arte_origem: document.querySelector('input[name="pedido-arte"]:checked')?.value || '',
         valor_orcamento: document.getElementById('crm-valor').value,
-        briefing_json: JSON.stringify(extras) // ESSENCIAL: Envia o JSON completo
+        briefing_json: JSON.stringify(extras)
     };
 
     try {
@@ -374,7 +418,6 @@ window.converterEmPedido = async function() {
     const originalText = btn.innerText;
     btn.innerText = 'Enviando...'; btn.disabled = true;
 
-    // Formata Texto Briefing
     let txt = "";
     document.querySelectorAll('.material-item').forEach((d, i) => {
         txt += `--- Item ${i+1} ---\nMaterial: ${d.querySelector('.mat-desc').value}\nDetalhes: ${d.querySelector('.mat-det').value}\n\n`;
@@ -389,7 +432,6 @@ window.converterEmPedido = async function() {
         wppCliente: document.getElementById('crm-wpp').value,
         tipoEntrega: document.querySelector('input[name="tipo-entrega"]:checked')?.value,
         briefingFormatado: txt,
-        // Extras
         linkArquivo: document.getElementById('link-arquivo').value,
         supervisaoWpp: document.getElementById('pedido-supervisao').value,
         valorDesigner: document.getElementById('valor-designer').value,
@@ -405,7 +447,6 @@ window.converterEmPedido = async function() {
         
         if(!data.success && !data.dealId) throw new Error(data.message || 'Erro desconhecido');
 
-        // Se sucesso, deleta do Kanban
         await fetch('/api/crm/deleteCard', {
             method: 'POST', headers: {'Content-Type':'application/json'}, 
             body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: id })
