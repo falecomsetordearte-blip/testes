@@ -1,4 +1,4 @@
-// /api/crm/listCards.js
+// /api/crm/listCards.js 
 const prisma = require('../../lib/prisma'); // Ajuste o caminho conforme sua estrutura
 const axios = require('axios');
 
