@@ -4,11 +4,238 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Setor de Arte</title>
+    
     <!-- Ícone e CSS padronizados -->
     <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
+    <!-- Mantemos o style.css global, mas vamos sobrescrever comportamentos abaixo -->
     <link rel="stylesheet" href="/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        /* --- CSS INLINE DE MODERNIZAÇÃO --- */
+        
+        /* 1. Maximização da Largura */
+        .app-content .container {
+            max-width: 100% !important; /* Sobrescreve limite do CSS global */
+            padding: 0 2rem; /* Espaçamento lateral para não colar na borda */
+            box-sizing: border-box;
+        }
+
+        /* 2. Header de Boas-vindas Moderno */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #fff;
+            padding: 1.5rem 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .welcome-message h1 {
+            font-size: 1.8rem;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .welcome-message p {
+            color: #7f8c8d;
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        /* Botões de Ação */
+        .acoes-box {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-modern {
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #e0e0e0;
+            color: #555;
+        }
+
+        .btn-outline:hover {
+            border-color: #bdc3c7;
+            background: #f9f9f9;
+            color: #333;
+        }
+
+        .btn-cta {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        /* 3. Grid de Métricas (KPIs) - Agora só com 2 itens grandes */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+        }
+
+        /* Detalhe decorativo na borda esquerda */
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+        }
+
+        .kpi-green::before { background-color: #27ae60; }
+        .kpi-blue::before { background-color: #3498db; }
+
+        .kpi-content {
+            z-index: 1;
+        }
+
+        .kpi-label {
+            display: block;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .kpi-value {
+            display: block;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .kpi-icon {
+            font-size: 3.5rem;
+            opacity: 0.15;
+        }
+        
+        .kpi-green .kpi-icon { color: #27ae60; }
+        .kpi-blue .kpi-icon { color: #3498db; }
+
+        /* 4. Painel de Atividade Recente (Full Width) */
+        .main-panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            padding: 0; /* Padding interno removido para a tabela encostar nas bordas */
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .panel-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .view-all-link {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .view-all-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Container da lista injetada pelo JS */
+        #recentes-pedidos-list {
+            padding: 1rem 2rem 2rem 2rem;
+            min-height: 200px;
+        }
+
+        /* Spinner de carregamento */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #3498db;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsividade para telas menores */
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .acoes-box {
+                width: 100%;
+                justify-content: stretch;
+            }
+            .btn-modern {
+                flex: 1;
+                justify-content: center;
+            }
+            .app-content .container {
+                padding: 0 1rem;
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -25,84 +252,59 @@
             <main class="app-content">
                 <div class="container">
                     
-                    <!-- 1. Cabeçalho de Boas-Vindas e Ações Rápidas -->
+                    <!-- 1. Cabeçalho de Boas-Vindas Moderno -->
                     <section class="dashboard-header">
                         <div class="welcome-message">
-                            <h1 id="welcome-user-name">Carregando...</h1>
-                            <p>Aqui está um resumo da sua atividade na plataforma.</p>
+                            <!-- O ID é mantido para o JS funcionar -->
+                            <h1 id="welcome-user-name">Olá, Bem-vindo de volta!</h1>
+                            <p>Visão geral do seu painel de criação.</p>
                         </div>
                         <div class="acoes-box">
-                            <a href="painel.html" class="btn btn-secondary"><i class="fa-solid fa-list-check"></i> Ver Todos Pedidos</a>
-                            <!-- MODIFICAÇÃO AQUI: O link agora aponta para a página correta -->
-                            <a href="/criar-pedido-grafica.html" class="btn btn-primary"><strong>+</strong> Novo Pedido</a>
+                            <a href="painel.html" class="btn-modern btn-outline">
+                                <i class="fa-solid fa-list-ul"></i> Meus Pedidos
+                            </a>
+                            <a href="/criar-pedido-grafica.html" class="btn-modern btn-cta">
+                                <i class="fa-solid fa-plus"></i> Novo Pedido
+                            </a>
                         </div>
                     </section>
 
-                    <!-- 2. Grid de Métricas Rápidas (KPIs) -->
+                    <!-- 2. Grid de Métricas Rápidas (Apenas Saldo e Em Andamento) -->
                     <section class="dashboard-grid">
-                        <div class="dash-card">
-                            <i class="fa-solid fa-wallet card-icon" style="color: #27ae60;"></i>
-                            <span class="dash-card-label">Saldo de Créditos</span>
-                            <span class="dash-card-value" id="saldo-valor-dash">R$ 0,00</span>
+                        
+                        <!-- Card Saldo -->
+                        <div class="kpi-card kpi-green">
+                            <div class="kpi-content">
+                                <span class="kpi-label">Saldo Disponível</span>
+                                <!-- O ID é mantido para o JS injetar o valor -->
+                                <span class="kpi-value" id="saldo-valor-dash">R$ --</span>
+                            </div>
+                            <i class="fa-solid fa-wallet kpi-icon"></i>
                         </div>
-                        <div class="dash-card">
-                            <i class="fa-solid fa-hourglass-half card-icon" style="color: #3498db;"></i>
-                            <span class="dash-card-label">Pedidos em Andamento</span>
-                            <span class="dash-card-value" id="pedidos-andamento-dash">0</span>
+
+                        <!-- Card Pedidos em Andamento -->
+                        <div class="kpi-card kpi-blue">
+                            <div class="kpi-content">
+                                <span class="kpi-label">Em Produção</span>
+                                <!-- O ID é mantido para o JS injetar o valor -->
+                                <span class="kpi-value" id="pedidos-andamento-dash">--</span>
+                            </div>
+                            <i class="fa-solid fa-layer-group kpi-icon"></i>
                         </div>
-                        <div class="dash-card">
-                             <i class="fa-solid fa-circle-check card-icon" style="color: #8e44ad;"></i>
-                            <span class="dash-card-label">Pedidos Concluídos (Total)</span>
-                            <span class="dash-card-value" id="pedidos-concluidos-dash">0</span>
-                        </div>
-                        <div class="dash-card">
-                            <i class="fa-solid fa-headset card-icon" style="color: #e67e22;"></i>
-                            <span class="dash-card-label">Suporte</span>
-                            <a href="ajuda.html" class="dash-card-link">Acessar Ajuda</a>
-                        </div>
+
                     </section>
 
-                    <!-- 3. Layout de duas colunas para Atividade e Treinamentos -->
+                    <!-- 3. Seção de Atividade (Full Width, sem treinamentos) -->
                     <section class="dashboard-columns">
-                        <!-- Coluna Principal: Pedidos Recentes -->
+                        <!-- Coluna Única: Pedidos Recentes -->
                         <div class="main-panel">
                             <div class="panel-header">
                                 <h2><i class="fa-solid fa-clock-rotate-left"></i> Atividade Recente</h2>
-                                <a href="painel.html" class="view-all-link">Ver todos →</a>
+                                <a href="painel.html" class="view-all-link">Ver histórico completo →</a>
                             </div>
+                            <!-- O ID é mantido para o JS injetar a lista/tabela -->
                             <div id="recentes-pedidos-list">
-                                <!-- Pedidos recentes serão inseridos aqui pelo JS -->
                                 <div class="loading-pedidos"><div class="spinner"></div></div>
-                            </div>
-                        </div>
-
-                        <!-- Coluna Lateral: Treinamentos -->
-                        <div class="side-panel">
-                            <div class="panel-header">
-                                <h2><i class="fa-solid fa-graduation-cap"></i> Treinamentos</h2>
-                            </div>
-                            <div class="training-list">
-                                <a href="#" class="training-item">
-                                    <i class="fa-solid fa-circle-play"></i>
-                                    <div class="training-info">
-                                        <h4>Como criar seu primeiro pedido</h4>
-                                        <p>Aprenda o passo a passo para enviar uma arte.</p>
-                                    </div>
-                                </a>
-                                <a href="#" class="training-item">
-                                    <i class="fa-solid fa-circle-play"></i>
-                                    <div class="training-info">
-                                        <h4>Entendendo os status dos pedidos</h4>
-                                        <p>Saiba o que cada etapa significa.</p>
-                                    </div>
-                                </a>
-                                <a href="#" class="training-item">
-                                    <i class="fa-solid fa-file-invoice-dollar"></i>
-                                    <div class="training-info">
-                                        <h4>Adicionando e utilizando créditos</h4>
-                                        <p>Veja como é fácil gerenciar seu saldo.</p>
-                                    </div>
-                                </a>
                             </div>
                         </div>
                     </section>
@@ -115,8 +317,7 @@
         </div>
     </div>
     
-    <!-- REMOVIDO: O modal 'modal-novo-pedido' foi completamente removido daqui. -->
-
+    <!-- Scripts Essenciais -->
     <script src="/layout.js"></script>
     <script src="https://unpkg.com/imask"></script> 
     <script src="/script.js"></script> 
