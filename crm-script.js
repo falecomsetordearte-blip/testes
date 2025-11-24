@@ -1,4 +1,4 @@
-// crm-script.js - VERSÃO COMPLETA (Drag to Scroll)
+// crm-script.js - VERSÃO COMPLETA (Drag to Scroll + ID Manual)
 
 let searchTimeout = null;
 
@@ -7,10 +7,10 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarKanban();
     configurarBuscaCliente();
     configurarFormularioVisual();
-    configurarDragScroll(); // <--- ATIVA O ARRASTAR PARA ROLAR
+    configurarDragScroll();
 });
 
-// --- NOVO RECURSO: DRAG TO SCROLL (Arrastar o fundo) ---
+// --- DRAG TO SCROLL (Arrastar o fundo) ---
 function configurarDragScroll() {
     const slider = document.querySelector('.kanban-board');
     if (!slider) return;
@@ -20,11 +20,9 @@ function configurarDragScroll() {
     let scrollLeft;
 
     slider.addEventListener('mousedown', (e) => {
-        // SEGURANÇA: Se clicou num card, NÃO ativa o scroll (deixa o Sortable mover o card)
         if (e.target.closest('.kanban-card')) return;
-
         isDown = true;
-        slider.classList.add('active'); // Muda cursor para 'grabbing'
+        slider.classList.add('active');
         startX = e.pageX - slider.offsetLeft;
         scrollLeft = slider.scrollLeft;
     });
@@ -41,13 +39,12 @@ function configurarDragScroll() {
 
     slider.addEventListener('mousemove', (e) => {
         if (!isDown) return;
-        e.preventDefault(); // Evita selecionar texto
+        e.preventDefault();
         const x = e.pageX - slider.offsetLeft;
-        const walk = (x - startX) * 1.5; // Multiplicador de velocidade (ajuste se quiser mais rápido)
+        const walk = (x - startX) * 1.5;
         slider.scrollLeft = scrollLeft - walk;
     });
 }
-
 
 // --- MÁSCARAS ---
 function configurarMascaras() {
@@ -60,9 +57,9 @@ function configurarMascaras() {
     }
 }
 
-// --- VISUAL DO FORMULÁRIO (CARDS, CONDICIONAIS, MATERIAIS) ---
+// --- VISUAL DO FORMULÁRIO ---
 function configurarFormularioVisual() {
-    // 1. Cards de Serviço
+    // Cards de Serviço
     const cards = document.querySelectorAll('.servico-card');
     const container = document.getElementById('servico-selection-container');
     const hiddenInput = document.getElementById('pedido-servico-hidden');
@@ -71,7 +68,6 @@ function configurarFormularioVisual() {
     cards.forEach(card => {
         card.addEventListener('click', () => {
             if(container.classList.contains('selection-made') && !card.classList.contains('active')) return;
-            
             cards.forEach(c => c.classList.remove('active'));
             card.classList.add('active');
             hiddenInput.value = card.dataset.value;
@@ -80,7 +76,7 @@ function configurarFormularioVisual() {
         });
     });
 
-    // 2. Condicionais Arte
+    // Condicionais Arte
     const radiosArte = document.querySelectorAll('input[name="pedido-arte"]');
     const arqFields = document.getElementById('arquivo-cliente-fields');
     const setorFields = document.getElementById('setor-arte-fields');
@@ -108,14 +104,14 @@ function configurarFormularioVisual() {
         });
     });
 
-    // 3. Formato CDR
+    // Formato CDR
     document.getElementById('pedido-formato').addEventListener('change', (e) => {
         const div = document.getElementById('cdr-versao-container');
         if(e.target.value === 'CDR') div.classList.remove('hidden');
         else div.classList.add('hidden');
     });
 
-    // 4. Botão Add Material
+    // Botão Add Material
     document.getElementById('btn-add-material').addEventListener('click', () => adicionarMaterialNoForm());
 }
 
@@ -169,7 +165,6 @@ function criarCardHTML(card) {
     const div = document.createElement('div');
     div.className = 'kanban-card';
     div.dataset.id = card.id;
-    div.dataset.json = JSON.stringify(card); 
     div.onclick = () => abrirPanelEdicao(card);
 
     const valor = parseFloat(card.valor_orcamento||0).toLocaleString('pt-BR', {minimumFractionDigits:2});
@@ -208,7 +203,7 @@ function atualizarStatus(id, novaColuna) {
     });
 }
 
-// --- PAINEL LATERAL (DRAWER) CONTROLS ---
+// --- PAINEL LATERAL (DRAWER) ---
 const overlay = document.getElementById('slide-overlay');
 const panel = document.getElementById('slide-panel');
 
@@ -229,6 +224,10 @@ window.abrirPanelNovo = function() {
     resetarForm();
     document.getElementById('panel-titulo').innerText = 'Nova Oportunidade';
     document.getElementById('display-id-automatico').innerText = '# NOVO';
+    
+    // Limpa o campo manual para permitir geração automática
+    document.getElementById('crm-titulo-manual').value = '';
+
     document.getElementById('btn-produzir-final').style.display = 'none';
     adicionarMaterialNoForm();
     
@@ -242,8 +241,11 @@ window.abrirPanelEdicao = function(card) {
     document.getElementById('display-id-automatico').innerText = card.titulo_automatico || '';
     document.getElementById('btn-produzir-final').style.display = 'block';
 
-    // Preencher Básicos
+    // IDs
     document.getElementById('card-id-db').value = card.id;
+    // Preenche campo manual com valor do banco (seja automático ou não)
+    document.getElementById('crm-titulo-manual').value = card.titulo_automatico || '';
+
     document.getElementById('crm-nome').value = card.nome_cliente;
     document.getElementById('crm-wpp').value = card.wpp_cliente;
     document.getElementById('crm-valor').value = card.valor_orcamento;
@@ -252,7 +254,7 @@ window.abrirPanelEdicao = function(card) {
     const sCard = document.querySelector(`.servico-card[data-value="${card.servico_tipo}"]`);
     if(sCard) sCard.click();
 
-    // Parse JSON Extras
+    // JSON Extras
     let extras = {};
     try { 
         if (card.briefing_json) {
@@ -290,7 +292,6 @@ window.abrirPanelEdicao = function(card) {
         adicionarMaterialNoForm();
     }
 
-    // Update Máscaras
     configurarMascaras();
     if(typeof IMask !== 'undefined') {
         const w = document.getElementById('crm-wpp');
@@ -357,7 +358,6 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
     const originalText = btn.innerText;
     btn.innerText = 'Salvando...'; btn.disabled = true;
 
-    // Coleta Materiais
     const mats = [];
     document.querySelectorAll('.material-item').forEach(d => {
         const desc = d.querySelector('.mat-desc').value;
@@ -379,6 +379,10 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
     const payload = {
         sessionToken: localStorage.getItem('sessionToken'),
         id: document.getElementById('card-id-db').value,
+        
+        // NOVO: Envia o título manual (se vazio, backend decide)
+        titulo_manual: document.getElementById('crm-titulo-manual').value,
+
         nome_cliente: document.getElementById('crm-nome').value,
         wpp_cliente: document.getElementById('crm-wpp').value,
         servico_tipo: document.getElementById('pedido-servico-hidden').value,
@@ -420,7 +424,8 @@ window.converterEmPedido = async function() {
 
     const payload = {
         sessionToken: localStorage.getItem('sessionToken'),
-        titulo: document.getElementById('display-id-automatico').innerText,
+        // Usa o valor do campo manual (que contém o ID automático ou o digitado)
+        titulo: document.getElementById('crm-titulo-manual').value || document.getElementById('display-id-automatico').innerText,
         servico: document.getElementById('pedido-servico-hidden').value,
         arte: document.querySelector('input[name="pedido-arte"]:checked')?.value,
         nomeCliente: document.getElementById('crm-nome').value,

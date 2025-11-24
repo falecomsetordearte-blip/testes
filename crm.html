@@ -23,44 +23,31 @@
             padding-bottom: 2rem; 
             height: calc(100vh - 200px); 
             align-items: flex-start;
-            /* Cursor de "mão aberta" para indicar que pode arrastar o fundo */
             cursor: grab; 
-            /* Remove seleção de texto acidental enquanto arrasta */
             user-select: none; 
         }
-        
-        /* Quando estiver arrastando o fundo (ativo via JS) */
-        .kanban-board.active { 
-            cursor: grabbing; 
-            cursor: -webkit-grabbing; 
-        }
+        .kanban-board.active { cursor: grabbing; cursor: -webkit-grabbing; }
 
-        /* Estilização da Barra de Rolagem */
         .kanban-board::-webkit-scrollbar { height: 10px; }
         .kanban-board::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 5px; }
         .kanban-board::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 5px; }
         
-        /* Colunas */
         .kanban-column { min-width: 320px; width: 320px; background: #f4f6f8; border-radius: 12px; display: flex; flex-direction: column; max-height: 100%; border: 1px solid #e2e8f0; }
         .column-header { padding: 1rem; border-radius: 12px 12px 0 0; font-weight: 700; color: #2c3e50; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 2; background: inherit; }
         
-        /* Cores das Colunas */
         .col-novos .column-header { border-top: 4px solid #3498db; background: #ebf5fb; }
         .col-visita .column-header { border-top: 4px solid #e67e22; background: #fdf2e9; }
         .col-orcamento .column-header { border-top: 4px solid #f1c40f; background: #fef9e7; }
         .col-pagamento .column-header { border-top: 4px solid #9b59b6; background: #f5eef8; }
         .col-abrir .column-header { border-top: 4px solid #27ae60; background: #eafaf1; }
 
-        /* Lista de Itens (Onde os cards ficam) */
         .kanban-items { padding: 1rem; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; min-height: 100px; }
         
-        /* CARDS */
         .kanban-card { 
             background: white; 
             padding: 15px; 
             border-radius: 8px; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.04); 
-            /* Cursor normal ou pointer para indicar que o card é clicável/arrastável individualmente */
             cursor: pointer; 
             border: 1px solid transparent; 
             transition: transform 0.2s, box-shadow 0.2s; 
@@ -75,7 +62,7 @@
         .card-price { font-weight: 700; color: #27ae60; font-size: 0.95rem; display: block; margin-top: 10px; }
         .card-id { position: absolute; top: 12px; right: 12px; font-size: 0.7rem; color: #a0aec0; font-weight: 500; }
 
-        /* --- SIDE DRAWER --- */
+        /* SIDE DRAWER */
         .slide-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); z-index: 9990; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
         .slide-overlay.active { opacity: 1; visibility: visible; }
         .slide-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 800px; background: #f8f9fa; box-shadow: -5px 0 25px rgba(0,0,0,0.15); z-index: 9999; transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; }
@@ -85,7 +72,7 @@
         .close-panel-btn { background: none; border: none; font-size: 1.5rem; color: #a0aec0; cursor: pointer; padding: 5px; transition: color 0.2s; }
         .close-panel-btn:hover { color: #e53e3e; }
 
-        /* --- FORMULÁRIO --- */
+        /* FORM STYLES */
         #servico-selection-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; transition: all 0.5s ease-in-out; }
         .servico-card { padding: 30px 20px; border-radius: 12px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: transform 0.3s ease, box-shadow 0.3s ease; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .servico-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
@@ -161,7 +148,6 @@
         <div class="panel-body">
             <form id="form-crm">
                 <input type="hidden" id="card-id-db">
-                <input type="hidden" id="card-titulo-auto">
                 <input type="hidden" id="pedido-servico-hidden" required>
 
                 <!-- SELEÇÃO DE SERVIÇO -->
@@ -173,8 +159,17 @@
 
                 <!-- CONTEÚDO DO FORM -->
                 <div id="form-content-wrapper">
+                    
+                    <!-- BLOCO DE IDENTIFICAÇÃO E CLIENTE -->
                     <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px;">
-                        <h4 style="color: #4a5568; margin-bottom: 15px; font-size: 1rem; border-left: 4px solid #3498db; padding-left: 10px;">Dados do Cliente</h4>
+                        <h4 style="color: #4a5568; margin-bottom: 15px; font-size: 1rem; border-left: 4px solid #3498db; padding-left: 10px;">Identificação & Cliente</h4>
+                        
+                        <!-- NOVO CAMPO: ID DO PEDIDO (OPCIONAL/MANUAL) -->
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="font-weight: 600; color: #4a5568; font-size: 0.9rem;">ID do Pedido / Título (Opcional)</label>
+                            <input type="text" id="crm-titulo-manual" class="form-control" placeholder="Ex: Pedido Loja X (Deixe em branco para gerar #OP automático)" style="width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; background-color: #fcfcfc;">
+                        </div>
+
                         <div class="form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
                             <div class="form-group autocomplete-wrapper">
                                 <label style="font-weight: 600; color: #4a5568; font-size: 0.9rem;">Nome do Cliente</label>
@@ -188,6 +183,7 @@
                         </div>
                     </div>
 
+                    <!-- BLOCO DETALHES DA ARTE -->
                     <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px;">
                         <h4 style="color: #4a5568; margin-bottom: 15px; font-size: 1rem; border-left: 4px solid #e67e22; padding-left: 10px;">Detalhes da Arte</h4>
                         <div class="form-group" style="margin-bottom: 20px;">
@@ -240,6 +236,7 @@
                         </div>
                     </div>
 
+                    <!-- BLOCO MATERIAIS -->
                     <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                         <h4 style="color: #4a5568; margin-bottom: 15px; font-size: 1rem; border-left: 4px solid #27ae60; padding-left: 10px;">Materiais e Orçamento</h4>
                         <div id="materiais-container"></div>

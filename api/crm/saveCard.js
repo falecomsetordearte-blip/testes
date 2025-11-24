@@ -1,17 +1,14 @@
+// api/crm/saveCard.js
+
 const prisma = require('../../lib/prisma');
 const axios = require('axios');
-
-// [DEBUG] Log global
-console.log(">>> [SERVER] Arquivo api/crm/saveCard.js carregado na memória.");
 
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
 module.exports = async (req, res) => {
     const requestId = Date.now();
-    console.log(`\n>>> [REQ ${requestId}] Iniciando execução da função saveCard`);
-    console.log(`>>> [REQ ${requestId}] Método: ${req.method}`);
+    console.log(`\n>>> [SERVER] REQ ${requestId}: Iniciando saveCard`);
 
-    // Headers CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -20,11 +17,10 @@ module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
     try {
-        const { sessionToken, id, nome_cliente, wpp_cliente, servico_tipo, arte_origem, valor_orcamento, briefing_json } = req.body;
+        // Recebe 'titulo_manual' do frontend
+        const { sessionToken, id, nome_cliente, wpp_cliente, servico_tipo, arte_origem, valor_orcamento, briefing_json, titulo_manual } = req.body;
 
-        console.log(`>>> [REQ ${requestId}] Verificando sessão Bitrix...`);
-
-        // 1. Busca usuário Bitrix
+        // 1. Verificações de Segurança (Bitrix e Empresa)
         const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken }, select: ['ID', 'COMPANY_ID']
         });
@@ -34,55 +30,62 @@ module.exports = async (req, res) => {
         }
         
         const bitrixCompanyId = userCheck.data.result[0].COMPANY_ID;
-        console.log(`>>> [REQ ${requestId}] Bitrix Company ID: ${bitrixCompanyId}`);
+        if (!bitrixCompanyId) return res.status(403).json({ message: 'Usuário sem empresa vinculada' });
 
-        if (!bitrixCompanyId) {
-            return res.status(403).json({ message: 'Usuário Bitrix sem empresa vinculada' });
-        }
-
-        // 2. Busca Empresa no Neon
         const empresas = await prisma.$queryRaw`
             SELECT id FROM empresas WHERE bitrix_company_id = ${parseInt(bitrixCompanyId)} LIMIT 1
         `;
 
-        if (!empresas.length) {
-            return res.status(404).json({ message: `Empresa ID ${bitrixCompanyId} não encontrada.` });
-        }
-
+        if (!empresas.length) return res.status(404).json({ message: `Empresa não encontrada.` });
         const empresaId = empresas[0].id;
-        console.log(`>>> [REQ ${requestId}] Empresa Localizada: ID ${empresaId}`);
 
-        // 3. Cadastra Cliente (se não existir)
+        // 2. Cliente (Cadastra se novo)
         const clienteExistente = await prisma.$queryRaw`
             SELECT id FROM crm_clientes WHERE empresa_id = ${empresaId} AND whatsapp = ${wpp_cliente} LIMIT 1
         `;
-
         if (clienteExistente.length === 0) {
-            await prisma.$queryRaw`
-                INSERT INTO crm_clientes (empresa_id, nome, whatsapp, created_at)
-                VALUES (${empresaId}, ${nome_cliente}, ${wpp_cliente}, NOW())
-            `;
-            console.log(`>>> [REQ ${requestId}] Novo cliente cadastrado.`);
+            await prisma.$queryRaw`INSERT INTO crm_clientes (empresa_id, nome, whatsapp, created_at) VALUES (${empresaId}, ${nome_cliente}, ${wpp_cliente}, NOW())`;
         }
 
-        // 4. Salvar/Atualizar Card (CORREÇÃO ::jsonb AQUI EMBAIXO)
+        // 3. Salvar ou Atualizar Card
         if (id) {
-            console.log(`>>> [REQ ${requestId}] Atualizando card ID: ${id}`);
-            await prisma.$queryRaw`
-                UPDATE crm_oportunidades
-                SET nome_cliente = ${nome_cliente}, 
-                    wpp_cliente = ${wpp_cliente},
-                    servico_tipo = ${servico_tipo}, 
-                    arte_origem = ${arte_origem},
-                    valor_orcamento = ${parseFloat(valor_orcamento || 0)}, 
-                    briefing_json = ${briefing_json}::jsonb,  -- <--- CORREÇÃO AQUI
-                    updated_at = NOW()
-                WHERE id = ${parseInt(id)} AND empresa_id = ${empresaId}
-            `;
+            // --- ATUALIZAÇÃO ---
+            console.log(`>>> [SERVER] Atualizando ID ${id}`);
+            
+            // Se o usuário digitou um título manual, atualizamos o campo titulo_automatico com ele.
+            // Se deixou vazio, não mexemos no título (mantemos o que estava).
+            if (titulo_manual && titulo_manual.trim() !== '') {
+                await prisma.$queryRaw`
+                    UPDATE crm_oportunidades
+                    SET nome_cliente = ${nome_cliente}, 
+                        wpp_cliente = ${wpp_cliente},
+                        servico_tipo = ${servico_tipo}, 
+                        arte_origem = ${arte_origem},
+                        valor_orcamento = ${parseFloat(valor_orcamento || 0)}, 
+                        briefing_json = ${briefing_json}::jsonb,
+                        titulo_automatico = ${titulo_manual}, 
+                        updated_at = NOW()
+                    WHERE id = ${parseInt(id)} AND empresa_id = ${empresaId}
+                `;
+            } else {
+                await prisma.$queryRaw`
+                    UPDATE crm_oportunidades
+                    SET nome_cliente = ${nome_cliente}, 
+                        wpp_cliente = ${wpp_cliente},
+                        servico_tipo = ${servico_tipo}, 
+                        arte_origem = ${arte_origem},
+                        valor_orcamento = ${parseFloat(valor_orcamento || 0)}, 
+                        briefing_json = ${briefing_json}::jsonb,
+                        updated_at = NOW()
+                    WHERE id = ${parseInt(id)} AND empresa_id = ${empresaId}
+                `;
+            }
             return res.status(200).json({ success: true, message: 'Atualizado com sucesso' });
 
         } else {
-            console.log(`>>> [REQ ${requestId}] Criando novo card...`);
+            // --- CRIAÇÃO ---
+            console.log(`>>> [SERVER] Criando novo card`);
+            
             const novoCard = await prisma.$queryRaw`
                 INSERT INTO crm_oportunidades (
                     empresa_id, nome_cliente, wpp_cliente, servico_tipo, 
@@ -91,22 +94,30 @@ module.exports = async (req, res) => {
                 ) VALUES (
                     ${empresaId}, ${nome_cliente}, ${wpp_cliente}, ${servico_tipo},
                     ${arte_origem}, ${parseFloat(valor_orcamento || 0)}, 
-                    ${briefing_json}::jsonb, -- <--- CORREÇÃO AQUI
+                    ${briefing_json}::jsonb,
                     'Novos', 0, NOW()
                 )
                 RETURNING id
             `;
             
             const newId = novoCard[0].id;
-            const tituloAuto = `#OP-${1000 + newId}`;
-            await prisma.$queryRaw`UPDATE crm_oportunidades SET titulo_automatico = ${tituloAuto} WHERE id = ${newId}`;
+
+            // Se o usuário digitou título manual, usa ele.
+            // Se não, gera o automático.
+            let tituloFinal;
+            if (titulo_manual && titulo_manual.trim() !== '') {
+                tituloFinal = titulo_manual;
+            } else {
+                tituloFinal = `#OP-${1000 + newId}`;
+            }
+
+            await prisma.$queryRaw`UPDATE crm_oportunidades SET titulo_automatico = ${tituloFinal} WHERE id = ${newId}`;
             
-            console.log(`>>> [REQ ${requestId}] SUCESSO! Card criado ID: ${newId}`);
             return res.status(200).json({ success: true, id: newId });
         }
 
     } catch (error) {
-        console.error(`>>> [REQ ${requestId}] ERRO FATAL:`, error);
+        console.error(`>>> [SERVER] ERRO:`, error);
         return res.status(500).json({ message: error.message });
     }
 };
