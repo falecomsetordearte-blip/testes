@@ -3,8 +3,12 @@
 const prisma = require('../lib/prisma');
 const axios = require('axios');
 
-// Removida a importação do helper de upload, pois não será mais usado.
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
+
+// --- CONFIGURAÇÃO DE ETAPAS (STAGES) ---
+// Ajuste os IDs abaixo conforme o seu Bitrix (inspecione o HTML do Kanban para ter certeza)
+const STAGE_ARTE = 'C17:NEW';          // Etapa para Setor de Arte (Freelancer)
+const STAGE_PRODUCAO = 'C17:PREPARATION'; // Etapa para Arquivo Pronto/Próprio (Pula Arte)
 
 // --- MAPEAMENTO DE CAMPOS BITRIX ---
 const FIELD_BRIEFING_COMPLETO = 'UF_CRM_1738249371';
@@ -16,26 +20,25 @@ const FIELD_SERVICO = 'UF_CRM_1761123161542';
 const FIELD_ARTE_ORIGEM = 'UF_CRM_1761269158';
 const FIELD_TIPO_ENTREGA = 'UF_CRM_1658492661';
 
-// Campos de Link (Agora recebem URL direta, não mais upload)
+// Campos de Link (URL direta)
 const FIELD_ARQUIVO_IMPRESSAO = 'UF_CRM_1748277308731'; 
 const FIELD_ARQUIVO_DESIGNER = 'UF_CRM_1740770117580'; 
 
 module.exports = async (req, res) => {
     console.log("\n========================================================");
-    console.log("[DEBUG] INICIANDO /api/createDealForGrafica (SEM UPLOAD)");
+    console.log("[DEBUG] INICIANDO /api/createDealForGrafica");
     console.log("========================================================");
 
     // Headers CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido' });
 
     try {
-        // Extraímos linkArquivo (caso o front envie URL) e ignoramos arquivos Base64 se vierem
         const { sessionToken, arte, supervisaoWpp, valorDesigner, tipoEntrega, linkArquivo, ...formData } = req.body;
 
         // Validação Básica
@@ -54,24 +57,27 @@ module.exports = async (req, res) => {
         const user = searchUserResponse.data.result ? searchUserResponse.data.result[0] : null;
         
         if (!user) return res.status(403).json({ message: 'Usuário não encontrado.' });
-        if (!user.COMPANY_ID) return res.status(403).json({ message: 'Usuário sem empresa vinculada.' });
+        if (!user.COMPANY_ID) return res.status(403).json({ message: 'Usuário Bitrix sem empresa vinculada.' });
 
-        // Busca ID da empresa no Neon para salvar o histórico
-        const empresasLogadas = await prisma.$queryRaw`SELECT id FROM empresas WHERE bitrix_id = ${user.ID} LIMIT 1`;
+        // Busca ID da empresa no Neon
+        const empresasLogadas = await prisma.$queryRaw`
+            SELECT id FROM empresas WHERE bitrix_company_id = ${parseInt(user.COMPANY_ID)} LIMIT 1
+        `;
         const empresaLogadaId = empresasLogadas.length > 0 ? empresasLogadas[0].id : null;
 
         if (empresaLogadaId) {
             console.log(`[DEBUG] Empresa Localizada no Neon ID: ${empresaLogadaId}`);
         } else {
-            console.warn(`[AVISO] Usuário Bitrix ${user.ID} não tem correspondência no Neon.`);
+            console.warn(`[ERRO CRÍTICO] Empresa ID Bitrix ${user.COMPANY_ID} não encontrada na tabela 'empresas'.`);
         }
 
         // ------------------------------------------------------------------
-        // 2. PREPARAÇÃO DO DEAL BITRIX
+        // 2. LÓGICA DE DEFINIÇÃO DE ETAPA E VALORES
         // ------------------------------------------------------------------
         let briefingFinal = formData.briefingFormatado || '';
+        let stageIdSelecionado = STAGE_PRODUCAO; // Padrão é ir para produção (Arquivo Cliente / Próprio)
+        let valorOportunidade = 0;
         
-        // Variáveis para o banco de dados
         let dbLinkImpressao = null;
         let dbLinkDesigner = null;
 
@@ -80,28 +86,26 @@ module.exports = async (req, res) => {
             'CURRENCY_ID': 'BRL',
             'COMPANY_ID': user.COMPANY_ID,
             'CATEGORY_ID': 17,
-            'STAGE_ID': 'C17:NEW',
             [FIELD_NOME_CLIENTE]: formData.nomeCliente,
             [FIELD_WHATSAPP_CLIENTE]: formData.wppCliente,
             [FIELD_ARTE_ORIGEM]: arte,
             [FIELD_TIPO_ENTREGA]: tipoEntrega
         };
 
-        // ------------------------------------------------------------------
-        // 3. REGRAS DE NEGÓCIO
-        // ------------------------------------------------------------------
-        
-        // === SETOR DE ARTE ===
+        // --- REGRAS ESPECÍFICAS POR TIPO DE ARTE ---
+
+        // A) SETOR DE ARTE (FREELANCER)
         if (arte === 'Setor de Arte') {
+            stageIdSelecionado = STAGE_ARTE; // Vai para etapa "Novo/Freelancer"
+            
             const wppLimpo = supervisaoWpp ? supervisaoWpp.replace(/\D/g, '') : '';
             
-            // Busca Supervisor no Neon
+            // Busca Supervisor e Debita Saldo
             const todasEmpresas = await prisma.$queryRaw`SELECT * FROM empresas`;
             const supervisor = todasEmpresas.find(e => e.whatsapp && e.whatsapp.replace(/\D/g, '') === wppLimpo);
 
             if (!supervisor) return res.status(404).json({ message: `Supervisor não encontrado (WPP: ${supervisaoWpp}).` });
 
-            // Atualiza Saldo do Supervisor
             const valorFloat = parseFloat(valorDesigner);
             try {
                 await prisma.empresa.update({
@@ -110,7 +114,8 @@ module.exports = async (req, res) => {
                 });
             } catch (e) { console.warn("[DB] Erro update saldo:", e.message); }
 
-            dealFields.OPPORTUNITY = (valorFloat * 0.8).toFixed(2);
+            valorOportunidade = (valorFloat * 0.8).toFixed(2);
+            
             dealFields[FIELD_WHATSAPP_GRAFICA] = supervisaoWpp;
             dealFields[FIELD_LOGO_ID] = supervisor.logo_id || supervisor.logo;
             dealFields[FIELD_SERVICO] = formData.servico;
@@ -118,39 +123,39 @@ module.exports = async (req, res) => {
             let formatoTexto = formData.formato;
             if (formatoTexto === 'CDR' && formData.cdrVersao) formatoTexto += ` (v${formData.cdrVersao})`;
             briefingFinal += `\n\n--- Formato ---\n${formatoTexto}`;
-            
-            // Sem upload de arquivo para designer, apenas briefing
 
-        // === ARQUIVO DO CLIENTE ===
+        // B) ARQUIVO DO CLIENTE
         } else if (arte === 'Arquivo do Cliente') {
-            // Aqui esperamos que o frontend envie o Link (URL) se houver
-            if (!linkArquivo) {
-                // Se for obrigatório ter link, descomente a linha abaixo
-                // return res.status(400).json({ message: 'O link do arquivo é obrigatório.' });
-            } else {
+            stageIdSelecionado = STAGE_PRODUCAO; // Vai direto para produção/conferência
+            
+            if (linkArquivo) {
                 dealFields[FIELD_ARQUIVO_IMPRESSAO] = linkArquivo;
-                dbLinkImpressao = linkArquivo; // Salva no banco
+                dbLinkImpressao = linkArquivo; 
             }
-            dealFields.OPPORTUNITY = 0;
+            valorOportunidade = 0;
 
-        // === DESIGNER PRÓPRIO ===
+        // C) DESIGNER PRÓPRIO
         } else {
-            dealFields.OPPORTUNITY = 0;
+            stageIdSelecionado = STAGE_PRODUCAO; // Vai direto para produção
+            valorOportunidade = 0;
         }
 
+        // Aplica os valores calculados
+        dealFields['STAGE_ID'] = stageIdSelecionado;
+        dealFields['OPPORTUNITY'] = valorOportunidade;
         dealFields[FIELD_BRIEFING_COMPLETO] = briefingFinal;
 
         // ------------------------------------------------------------------
-        // 4. CRIAÇÃO NO BITRIX
+        // 3. CRIAÇÃO NO BITRIX
         // ------------------------------------------------------------------
-        console.log("[DEBUG] Criando Deal no Bitrix...");
+        console.log(`[DEBUG] Criando Deal no Bitrix (Estágio: ${stageIdSelecionado})...`);
         const createDealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.add.json`, { fields: dealFields });
         
         if (createDealResponse.data.error) throw new Error(createDealResponse.data.error_description);
         const newDealId = createDealResponse.data.result;
 
         // ------------------------------------------------------------------
-        // 5. SALVAMENTO NO BANCO DE DADOS (TABELA PEDIDOS)
+        // 4. SALVAMENTO NO BANCO DE DADOS LOCAL
         // ------------------------------------------------------------------
         if (empresaLogadaId && newDealId) {
             console.log("[DEBUG] Salvando histórico na tabela 'pedidos'...");
