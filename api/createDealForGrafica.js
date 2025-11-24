@@ -6,9 +6,8 @@ const axios = require('axios');
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
 // --- CONFIGURAÇÃO DE ETAPAS (STAGES) ---
-// Ajuste os IDs abaixo conforme o seu Bitrix (inspecione o HTML do Kanban para ter certeza)
-const STAGE_ARTE = 'C17:NEW';          // Etapa para Setor de Arte (Freelancer)
-const STAGE_PRODUCAO = 'C17:PREPARATION'; // Etapa para Arquivo Pronto/Próprio (Pula Arte)
+const STAGE_FREELANCER = 'C17:NEW';         // Para "Setor de Arte"
+const STAGE_CONFERENCIA = 'C17:UC_ZHMX6W';  // Para "Arquivo do Cliente" e "Designer Próprio"
 
 // --- MAPEAMENTO DE CAMPOS BITRIX ---
 const FIELD_BRIEFING_COMPLETO = 'UF_CRM_1738249371';
@@ -59,7 +58,6 @@ module.exports = async (req, res) => {
         if (!user) return res.status(403).json({ message: 'Usuário não encontrado.' });
         if (!user.COMPANY_ID) return res.status(403).json({ message: 'Usuário Bitrix sem empresa vinculada.' });
 
-        // Busca ID da empresa no Neon
         const empresasLogadas = await prisma.$queryRaw`
             SELECT id FROM empresas WHERE bitrix_company_id = ${parseInt(user.COMPANY_ID)} LIMIT 1
         `;
@@ -75,7 +73,7 @@ module.exports = async (req, res) => {
         // 2. LÓGICA DE DEFINIÇÃO DE ETAPA E VALORES
         // ------------------------------------------------------------------
         let briefingFinal = formData.briefingFormatado || '';
-        let stageIdSelecionado = STAGE_PRODUCAO; // Padrão é ir para produção (Arquivo Cliente / Próprio)
+        let stageIdSelecionado = STAGE_CONFERENCIA; // Padrão
         let valorOportunidade = 0;
         
         let dbLinkImpressao = null;
@@ -96,7 +94,7 @@ module.exports = async (req, res) => {
 
         // A) SETOR DE ARTE (FREELANCER)
         if (arte === 'Setor de Arte') {
-            stageIdSelecionado = STAGE_ARTE; // Vai para etapa "Novo/Freelancer"
+            stageIdSelecionado = STAGE_FREELANCER; // Vai para 'New'
             
             const wppLimpo = supervisaoWpp ? supervisaoWpp.replace(/\D/g, '') : '';
             
@@ -126,7 +124,7 @@ module.exports = async (req, res) => {
 
         // B) ARQUIVO DO CLIENTE
         } else if (arte === 'Arquivo do Cliente') {
-            stageIdSelecionado = STAGE_PRODUCAO; // Vai direto para produção/conferência
+            stageIdSelecionado = STAGE_CONFERENCIA; // C17:UC_ZHMX6W
             
             if (linkArquivo) {
                 dealFields[FIELD_ARQUIVO_IMPRESSAO] = linkArquivo;
@@ -136,7 +134,7 @@ module.exports = async (req, res) => {
 
         // C) DESIGNER PRÓPRIO
         } else {
-            stageIdSelecionado = STAGE_PRODUCAO; // Vai direto para produção
+            stageIdSelecionado = STAGE_CONFERENCIA; // C17:UC_ZHMX6W
             valorOportunidade = 0;
         }
 
