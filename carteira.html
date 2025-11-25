@@ -4,26 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minha Carteira - Setor de Arte</title>
+    
     <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
     <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
+
     <style>
-        .wallet-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .wallet-card {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            position: relative;
-            overflow: hidden;
-        }
+        /* Estilos Específicos da Carteira (Mantidos aqui para não quebrar o CSS global) */
+        .wallet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .wallet-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); position: relative; overflow: hidden; border: 1px solid transparent; transition: transform 0.2s; }
+        .wallet-card:hover { transform: translateY(-3px); box-shadow: 0 8px 16px rgba(0,0,0,0.08); }
         .wallet-card h3 { color: #64748b; font-size: 0.9rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
         .wallet-value { font-size: 2rem; font-weight: 700; color: #1e293b; }
         .wallet-icon { position: absolute; right: 20px; top: 20px; font-size: 2.5rem; opacity: 0.1; }
@@ -31,40 +22,25 @@
         .card-pagar { border-bottom: 4px solid #e74c3c; }
         .card-andamento { border-bottom: 4px solid #3498db; }
 
-        /* Estilo da Linha de Crédito */
-        .credit-status {
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        .status-prepaid { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-        .status-postpaid { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .credit-status { padding: 20px; border-radius: 8px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .status-prepaid { background: #ebf5fb; color: #2980b9; border: 1px solid #3498db; } /* Ajustado para parecer com o CRM */
+        .status-postpaid { background: #eafaf1; color: #27ae60; border: 1px solid #2ecc71; }
 
-        .btn-credito {
-            background: #2c3e50; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s;
-        }
+        .btn-credito { background: #2c3e50; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn-credito:hover { background: #34495e; }
         .btn-credito:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        /* Tabela Histórico */
-        .history-container { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .history-container { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
         .history-list { list-style: none; padding: 0; margin-top: 15px; }
-        .history-item { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 15px 0; border-bottom: 1px solid #f1f5f9; 
-        }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #f1f5f9; }
         .history-item:last-child { border-bottom: none; }
         .h-date { font-size: 0.8rem; color: #94a3b8; display: block; }
-        .h-title { font-weight: 600; color: #334155; }
+        .h-title { font-weight: 600; color: #2d3748; }
         .h-value { font-weight: 700; color: #27ae60; }
     </style>
 </head>
 <body>
+
     <div class="app-layout-grid">
         <div id="sidebar-placeholder"></div>
         <div class="app-content-wrapper">
@@ -72,7 +48,12 @@
             <main class="app-content">
                 <div class="container">
                     
-                    <h2 style="margin-bottom: 25px;">Minha Carteira</h2>
+                    <!-- Cabeçalho similar ao CRM -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h2 style="margin:0; color: #2d3748;"><i class="fa-solid fa-wallet" style="color: #3498db; margin-right: 8px;"></i> Minha Carteira</h2>
+                        </div>
+                    </div>
 
                     <!-- STATUS DO CRÉDITO -->
                     <div id="credit-status-box" class="credit-status status-prepaid">
@@ -87,7 +68,7 @@
 
                     <!-- CARDS DE VALORES -->
                     <div class="wallet-grid">
-                        <!-- Em Andamento (Saldo Devedor) -->
+                        <!-- Em Andamento -->
                         <div class="wallet-card card-andamento">
                             <h3>Em Andamento</h3>
                             <div class="wallet-value" id="val-andamento">R$ 0,00</div>
@@ -95,19 +76,19 @@
                             <i class="fas fa-cog wallet-icon"></i>
                         </div>
 
-                        <!-- À Pagar (Aprovados) -->
+                        <!-- À Pagar -->
                         <div class="wallet-card card-pagar">
-                            <h3>À Pagar</h3>
+                            <h3>À Pagar / Aprovados</h3>
                             <div class="wallet-value" id="val-pagar" style="color: #e74c3c;">R$ 0,00</div>
-                            <div style="font-size: 0.85rem; color: #64748b; margin-top: 5px;">Pedidos finalizados/aprovados</div>
+                            <div style="font-size: 0.85rem; color: #64748b; margin-top: 5px;">Pedidos finalizados</div>
                             <i class="fas fa-file-invoice-dollar wallet-icon"></i>
                         </div>
                     </div>
 
                     <!-- HISTÓRICO RECENTE -->
                     <div class="history-container">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <h3 style="margin:0;">Aprovados (Últimos 7 dias)</h3>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                            <h4 style="margin:0; color: #4a5568;">Histórico (Últimos 7 dias)</h4>
                             <small style="color:#94a3b8">Atualizado automaticamente</small>
                         </div>
                         
@@ -121,96 +102,10 @@
         </div>
     </div>
 
+    <!-- Scripts carregados igual ao CRM -->
     <script src="/layout.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            // CORREÇÃO: Tenta pegar o token com os dois nomes possíveis
-            const token = localStorage.getItem('sessionToken') || localStorage.getItem('user_session_token');
-            
-            if(!token) {
-                console.warn("Token não encontrado. Redirecionando para login.");
-                return window.location.href = '/login.html';
-            }
-
-            const btnCredito = document.getElementById('btn-solicitar-credito');
-            const boxCredito = document.getElementById('credit-status-box');
-
-            // --- 1. Carregar Dados ---
-            try {
-                const res = await fetch('/api/carteira/dados', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ sessionToken: token })
-                });
-
-                if(!res.ok) {
-                    // Se o servidor recusar o token, aí sim redireciona
-                    if(res.status === 403) {
-                         alert('Sessão expirada. Faça login novamente.');
-                         return window.location.href = '/login.html';
-                    }
-                    throw new Error('Falha ao buscar dados');
-                }
-                
-                const data = await res.json();
-
-                // Formatar Moeda
-                const fmt = (v) => parseFloat(v||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-
-                // Preencher Cards
-                document.getElementById('val-andamento').innerText = fmt(data.em_andamento);
-                document.getElementById('val-pagar').innerText = fmt(data.a_pagar);
-
-                // Lógica de Crédito
-                if (data.credito_aprovado) {
-                    boxCredito.classList.remove('status-prepaid');
-                    boxCredito.classList.add('status-postpaid');
-                    document.getElementById('lbl-tipo-conta').innerText = 'Pós-paga (Crédito Aprovado)';
-                    document.getElementById('msg-credito').innerText = 'Você possui linha de crédito ativa. Faturamento mensal.';
-                    btnCredito.style.display = 'none'; // Já tem crédito
-                } else {
-                    if (data.solicitacao_pendente) {
-                        btnCredito.innerText = 'Solicitação em Análise';
-                        btnCredito.disabled = true;
-                    }
-                }
-
-                // Preencher Lista
-                const lista = document.getElementById('lista-historico');
-                lista.innerHTML = '';
-                
-                if (data.historico_recente && data.historico_recente.length === 0) {
-                    lista.innerHTML = '<li style="text-align:center; padding:20px; color:#94a3b8;">Nenhum pedido aprovado recentemente.</li>';
-                } else if (data.historico_recente) {
-                    data.historico_recente.forEach(item => {
-                        const li = document.createElement('li');
-                        li.className = 'history-item';
-                        
-                        const dataFmt = new Date(item.data).toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
-                        
-                        li.innerHTML = `
-                            <div>
-                                <span class="h-title">${item.titulo || 'Pedido sem título'}</span>
-                                <span class="h-date">${dataFmt}</span>
-                            </div>
-                            <div class="h-value">+ ${fmt(item.valor)}</div>
-                        `;
-                        lista.appendChild(li);
-                    });
-                }
-
-            } catch (err) {
-                console.error(err);
-                // Não redireciona aqui para não travar o usuário em loop se for erro de rede
-                document.getElementById('lista-historico').innerHTML = '<li style="color:red; text-align:center;">Erro de conexão. Tente recarregar.</li>';
-            }
-
-            // --- 2. Botão Solicitar Crédito ---
-            btnCredito.addEventListener('click', async () => {
-                if(!confirm('Deseja solicitar análise de crédito para pagamento faturado?')) return;
-                alert('Solicitação recebida! Em breve nosso financeiro entrará em contato.');
-            });
-        });
-    </script>
+    
+    <!-- Novo script separado -->
+    <script src="/carteira-script.js"></script> 
 </body>
 </html>
