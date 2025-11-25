@@ -124,8 +124,13 @@
     <script src="/layout.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            const token = localStorage.getItem('user_session_token'); 
-            if(!token) return window.location.href = '/login.html';
+            // CORREÇÃO: Tenta pegar o token com os dois nomes possíveis
+            const token = localStorage.getItem('sessionToken') || localStorage.getItem('user_session_token');
+            
+            if(!token) {
+                console.warn("Token não encontrado. Redirecionando para login.");
+                return window.location.href = '/login.html';
+            }
 
             const btnCredito = document.getElementById('btn-solicitar-credito');
             const boxCredito = document.getElementById('credit-status-box');
@@ -138,7 +143,15 @@
                     body: JSON.stringify({ sessionToken: token })
                 });
 
-                if(!res.ok) throw new Error('Falha ao buscar dados');
+                if(!res.ok) {
+                    // Se o servidor recusar o token, aí sim redireciona
+                    if(res.status === 403) {
+                         alert('Sessão expirada. Faça login novamente.');
+                         return window.location.href = '/login.html';
+                    }
+                    throw new Error('Falha ao buscar dados');
+                }
+                
                 const data = await res.json();
 
                 // Formatar Moeda
@@ -166,9 +179,9 @@
                 const lista = document.getElementById('lista-historico');
                 lista.innerHTML = '';
                 
-                if (data.historico_recente.length === 0) {
+                if (data.historico_recente && data.historico_recente.length === 0) {
                     lista.innerHTML = '<li style="text-align:center; padding:20px; color:#94a3b8;">Nenhum pedido aprovado recentemente.</li>';
-                } else {
+                } else if (data.historico_recente) {
                     data.historico_recente.forEach(item => {
                         const li = document.createElement('li');
                         li.className = 'history-item';
@@ -188,15 +201,13 @@
 
             } catch (err) {
                 console.error(err);
-                alert('Erro ao carregar carteira. Verifique sua conexão.');
+                // Não redireciona aqui para não travar o usuário em loop se for erro de rede
+                document.getElementById('lista-historico').innerHTML = '<li style="color:red; text-align:center;">Erro de conexão. Tente recarregar.</li>';
             }
 
-            // --- 2. Botão Solicitar Crédito (Apenas Frontend por enquanto) ---
+            // --- 2. Botão Solicitar Crédito ---
             btnCredito.addEventListener('click', async () => {
                 if(!confirm('Deseja solicitar análise de crédito para pagamento faturado?')) return;
-                
-                // Nota: Você precisará criar o endpoint /api/carteira/solicitarCredito se quiser que isso funcione no banco.
-                // Por enquanto, apenas avisamos o usuário.
                 alert('Solicitação recebida! Em breve nosso financeiro entrará em contato.');
             });
         });
