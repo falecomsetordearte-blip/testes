@@ -1,76 +1,77 @@
-// /api/getFinancialDeals.js - VERSÃO SEGURA E CORRIGIDA
+// /api/getFinancialDeals.js - COMPLETO
 
 const axios = require('axios');
-
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
-const ITEMS_PER_PAGE = 20; // Itens por página
 
 module.exports = async (req, res) => {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Método não permitido.' });
-    }
+    // Cabeçalhos básicos
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
 
     try {
         const { sessionToken, page = 0, statusFilter, nameFilter } = req.body;
 
-        // ETAPA 1: VALIDAR O TOKEN E ENCONTRAR A EMPRESA
-        if (!sessionToken) {
-            return res.status(401).json({ message: 'Acesso não autorizado. Token é obrigatório.' });
-        }
-
-        const userSearch = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
+        // 1. Validar Token de Sessão
+        if (!sessionToken) return res.status(401).json({ message: 'Acesso não autorizado' });
+        
+        const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken },
             select: ['ID', 'COMPANY_ID']
         });
+        const user = userCheck.data.result[0];
+        if (!user || !user.COMPANY_ID) return res.status(401).json({ message: 'Sessão inválida' });
 
-        const user = userSearch.data.result[0];
-        if (!user || !user.COMPANY_ID) {
-            return res.status(401).json({ message: 'Sessão inválida ou empresa não encontrada.' });
-        }
+        // 2. Configuração dos IDs (Sincronizado com o Frontend)
+        const STAGE_VERIFICAR = 'C17:UC_IKPW6X';
+        const STAGE_PAGO      = 'C17:UC_WFTT1A';
+        const STAGE_COBRAR    = 'C17:UC_G2024K'; // Atualizado
 
-        // ETAPA 2: Construir o objeto de filtro dinamicamente, AGORA COM O COMPANY_ID
-        const filterParams = {
-            'CATEGORY_ID': 11,
-            'COMPANY_ID': user.COMPANY_ID // <-- FILTRO DE SEGURANÇA ADICIONADO
+        // 3. Montar Filtro
+        let filter = {
+            'COMPANY_ID': user.COMPANY_ID
         };
-        
-        if (nameFilter && nameFilter.trim() !== '') {
-            filterParams['%TITLE'] = nameFilter.trim();
-        }
-        
-        if (statusFilter && statusFilter !== 'todos') {
-            filterParams['STAGE_ID'] = statusFilter;
+
+        if (statusFilter === 'todos') {
+            // Traz todos os 3 status pertinentes ao financeiro
+            filter['@STAGE_ID'] = [STAGE_VERIFICAR, STAGE_PAGO, STAGE_COBRAR];
+        } else if (statusFilter) {
+            // Filtro específico clicado na aba
+            filter['STAGE_ID'] = statusFilter;
         } else {
-            filterParams['STAGE_ID'] = [
-                'C11:UC_YYHPKI',
-                'C11:UC_4SNWR7',
-                'C11:UC_W0DCSV'
-            ];
+            // Fallback (padrão)
+            filter['STAGE_ID'] = STAGE_VERIFICAR;
         }
 
-        // ETAPA 3: Buscar os negócios no Bitrix24 usando o filtro seguro
+        // Filtro por nome
+        if (nameFilter) {
+            filter['%TITLE'] = nameFilter;
+        }
+
+        // 4. Executar Busca no Bitrix
         const response = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
-            filter: filterParams,
+            filter: filter,
+            select: ['ID', 'TITLE', 'STAGE_ID', 'OPPORTUNITY', 'CURRENCY_ID'],
             order: { 'ID': 'DESC' },
-            select: ['ID', 'TITLE', 'STAGE_ID', 'OPPORTUNITY', 'CONTACT_ID', 'COMPANY_ID'],
-            start: page * ITEMS_PER_PAGE
+            start: page * 50 // Paginação simples
         });
 
         const deals = response.data.result || [];
         const total = response.data.total || 0;
 
-        // ETAPA 4: Montar a resposta com os dados e informações de paginação
+        // 5. Retorno
         return res.status(200).json({
             deals: deals,
             pagination: {
                 currentPage: page,
-                totalPages: Math.ceil(total / ITEMS_PER_PAGE),
-                totalDeals: total
+                totalPages: Math.ceil(total / 50),
+                totalItems: total
             }
         });
 
     } catch (error) {
-        console.error('Erro ao buscar negócios financeiros:', error.response ? error.response.data : error.message);
-        return res.status(500).json({ message: 'Ocorreu um erro ao buscar os dados.' });
+        console.error('Erro getFinancialDeals:', error.response ? error.response.data : error.message);
+        return res.status(500).json({ message: 'Erro interno ao buscar pedidos.' });
     }
 };
