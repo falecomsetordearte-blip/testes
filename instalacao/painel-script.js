@@ -10,6 +10,8 @@
         }
         
         // --- CONFIGURAÇÕES ---
+        const LAYOUT_FIELD = 'UF_CRM_1764124589418'; // ID do campo do Link do Layout
+
         const NOME_CLIENTE_FIELD = 'UF_CRM_1741273407628';
         const CONTATO_CLIENTE_FIELD = 'UF_CRM_1749481565243';
         const LINK_ATENDIMENTO_FIELD = 'UF_CRM_1752712769666';
@@ -31,40 +33,133 @@
 
         let allDealsData = [];
 
-        // CSS Específico (Azul para diferenciar da Loja que é Roxo)
+        // --- CSS NOVO: LAYOUT DIVIDIDO E IMAGEM ---
         const style = document.createElement('style');
         style.textContent = `
             .kanban-card:hover { cursor: pointer; transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
             .card-deadline-tag { margin-top: 8px; display: inline-block; background-color: #e9ecef; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #495057; }
-            
             /* Identidade Visual: Azul para Instalação Externa */
             .kanban-card { border-left: 5px solid #3498db !important; background-color: #fff; }
             
-            /* Modal Styles - Igual ao da Loja */
-            .detalhe-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-            .card-detalhe { background-color: #fff; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #eee; }
-            
-            .modal-actions-container { display: flex; flex-direction: column; gap: 10px; }
-            .btn-acao-modal { display: block; text-decoration: none; text-align: center; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; font-size: 1rem; }
+            /* -- MODAL GRID (Split View) -- */
+            .detalhe-layout { 
+                display: grid; 
+                grid-template-columns: 60% 38%; /* Coluna da Imagem Maior */
+                gap: 2%; 
+                height: 100%;
+                min-height: 450px;
+            }
+
+            /* ÁREA DA IMAGEM (ESQUERDA) */
+            .detalhe-col-principal { 
+                background-color: #f8f9fa; 
+                border-radius: 12px; 
+                border: 2px dashed #dee2e6;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+                position: relative;
+                padding: 10px;
+            }
+            .layout-img { 
+                max-width: 100%; 
+                max-height: 100%; 
+                object-fit: contain; 
+                cursor: zoom-in;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+                border-radius: 4px;
+            }
+            .sem-imagem {
+                text-align: center; color: #aaa; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
+            }
+            .sem-imagem i { font-size: 4rem; margin-bottom: 15px; opacity: 0.5; }
+            .sem-imagem p { font-size: 1.1rem; margin: 0; }
+
+            /* ÁREA DE AÇÃO (DIREITA) */
+            .detalhe-col-lateral { 
+                display: flex; 
+                flex-direction: column; 
+                gap: 15px; 
+            }
+            .card-detalhe { 
+                background-color: #fff; 
+                border-radius: 8px; 
+                padding: 15px; 
+                border: 1px solid #eee; 
+                box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            }
+
+            /* BOTÕES */
+            .btn-acao-modal { 
+                display: block; width: 100%; text-decoration: none; text-align: center; 
+                padding: 12px; border-radius: 6px; font-weight: 600; margin-bottom: 8px; border:none; cursor: pointer; transition: background 0.2s;
+            }
             .btn-acao-modal.principal { background-color: #3498db; color: white; }
-            .btn-acao-modal.secundario { background-color: #f8f9fa; border: 1px solid #ddd; color: #333; }
+            .btn-acao-modal.secundario { background-color: #f1f1f1; border: 1px solid #ddd; color: #333; }
             
-            .btn-concluir { background-color: #27ae60; color: white; margin-top: 15px; font-size: 1.1rem; padding: 15px; width: 100%; }
-            .btn-concluir:hover { background-color: #219150; }
-            .btn-concluir:disabled { background-color: #ccc; cursor: not-allowed; }
+            /* BOTÃO CONCLUIR GIGANTE */
+            .btn-concluir { 
+                background-color: #27ae60; 
+                color: white; 
+                font-size: 1.1rem; 
+                padding: 18px; 
+                margin-bottom: 15px;
+                box-shadow: 0 4px 10px rgba(39, 174, 96, 0.25);
+                border: none;
+                cursor: pointer;
+                transition: transform 0.2s, background-color 0.2s;
+                border-radius: 8px;
+                font-weight: 700;
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+            }
+            .btn-concluir:hover { background-color: #219150; transform: translateY(-2px); }
+            .btn-concluir:active { transform: scale(0.98); }
+            .btn-concluir:disabled { background-color: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
 
             .info-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
             .tag-medidas { padding: 4px 10px; border-radius: 4px; color: white; font-weight: 600; font-size: 12px; }
-            .icon-destaque { font-size: 3rem; color: #3498db; margin-bottom: 15px; display: block; }
+
+            @media (max-width: 768px) {
+                .detalhe-layout { grid-template-columns: 1fr; gap: 20px; }
+                .detalhe-col-principal { min-height: 250px; }
+            }
         `;
         document.head.appendChild(style);
         
-        // --- FUNÇÕES API ---
+        // --- HELPER: CONVERTER LINK DRIVE EM IMAGEM ---
+        function processarLinkImagem(url) {
+            if (!url) return null;
+            
+            // 1. Google Drive (Padrão)
+            if (url.includes('drive.google.com')) {
+                // Tenta extrair ID de /file/d/ID ou id=ID
+                const idMatch = url.match(/\/d\/(.*?)\/|\/d\/(.*)$|id=(.*?)$/);
+                const fileId = idMatch ? (idMatch[1] || idMatch[2] || idMatch[3]) : null;
+                if (fileId) {
+                    // Tenta usar o visualizador direto de conteúdo do Google
+                    return `https://lh3.googleusercontent.com/d/${fileId}`;
+                }
+            }
+            
+            // 2. Google Photos ou outros links diretos
+            if (url.match(/\.(jpeg|jpg|gif|png|webp)$/i) || url.includes('googleusercontent')) {
+                return url;
+            }
+
+            // Retorna o original na esperança de funcionar
+            return url;
+        }
+
+        // --- API & LÓGICA ---
 
         async function carregarPedidos() {
             document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '<div class="loading-pedidos"><div class="spinner"></div></div>');
             try {
-                // Mantém a rota original de getDeals (assumindo que ela filtra a fase correta de Instalação Externa)
                 const response = await fetch('/api/instalacao/getDeals', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -81,20 +176,19 @@
         }
 
         async function concluirInstalacao(dealId) {
-            if(!confirm("Tem certeza que a instalação externa foi realizada?")) return;
+            if(!confirm("Tem certeza que a instalação externa foi concluída?")) return;
 
             const btn = document.getElementById('btn-concluir-action');
-            if(btn) { btn.disabled = true; btn.textContent = "Processando..."; }
+            if(btn) { 
+                btn.disabled = true; 
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...'; 
+            }
 
             try {
-                // NOVA ROTA (que criaremos a seguir)
                 const response = await fetch('/api/instalacao/concluir', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        sessionToken: sessionToken,
-                        dealId: dealId 
-                    })
+                    body: JSON.stringify({ sessionToken: sessionToken, dealId: dealId })
                 });
                 
                 const data = await response.json();
@@ -102,16 +196,20 @@
 
                 modal.classList.remove('active');
                 
-                // Remove visualmente
+                // Feedback visual instantâneo (Remove Card)
                 const card = document.querySelector(`.kanban-card[data-deal-id-card="${dealId}"]`);
                 if(card) {
+                    card.style.transition = 'opacity 0.5s';
                     card.style.opacity = '0';
                     setTimeout(() => card.remove(), 500);
                 }
 
             } catch (error) {
                 alert(`Erro: ${error.message}`);
-                if(btn) { btn.disabled = false; btn.textContent = "✅ Instalação Realizada"; }
+                if(btn) { 
+                    btn.disabled = false; 
+                    btn.innerHTML = '<i class="fas fa-check-circle"></i> Instalação Realizada'; 
+                }
             }
         }
 
@@ -137,7 +235,7 @@
                 if (coluna) coluna.innerHTML += cardHtml;
             });
             document.querySelectorAll('.column-cards').forEach(col => {
-                if (col.innerHTML === '') col.innerHTML = '<p class="info-text" style="text-align:center; color:#ccc;">Vazio</p>';
+                if (col.innerHTML === '') col.innerHTML = '<p class="info-text" style="text-align:center; color:#ccc; font-size:0.9rem; margin-top:10px;">Vazio</p>';
             });
         }
         
@@ -163,45 +261,69 @@
             
             modalTitle.textContent = `Instalação #${deal.TITLE || deal.ID}`;
             
+            // Dados Básicos
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || '---';
             const contatoCliente = deal[CONTATO_CLIENTE_FIELD] || '---';
             const medidaInfo = MEDIDAS_MAP[deal[MEDIDAS_FIELD]];
             let medidasHtml = medidaInfo ? `<span class="tag-medidas" style="background-color: ${medidaInfo.cor};">${medidaInfo.nome}</span>` : '---';
             
+            // Processamento da Imagem
+            const rawLink = deal[LAYOUT_FIELD]; // Pega o link do Bitrix
+            const imageSrc = processarLinkImagem(rawLink);
+            
+            let imageHtml = '';
+            if (imageSrc) {
+                imageHtml = `
+                    <a href="${rawLink}" target="_blank" title="Clique para abrir original">
+                        <img src="${imageSrc}" class="layout-img" alt="Layout de Instalação" 
+                        onerror="this.onerror=null; this.parentElement.parentElement.innerHTML='<div class=sem-imagem><i class=\\'fas fa-link\\'></i><p>Erro ao pré-visualizar</p><a href=\\'${rawLink}\\' target=\\'_blank\\' class=\\'btn-acao-modal secundario\\'>Abrir Link Externo</a></div>'">
+                    </a>`;
+            } else {
+                imageHtml = `
+                    <div class="sem-imagem">
+                        <i class="fas fa-image"></i>
+                        <p>Nenhum layout anexado</p>
+                    </div>`;
+            }
+
+            // Links Extras
             let linksHtml = '';
             if(deal[LINK_ARQUIVO_FINAL_FIELD]) linksHtml += `<a href="${deal[LINK_ARQUIVO_FINAL_FIELD]}" target="_blank" class="btn-acao-modal principal"><i class="fas fa-download"></i> Baixar Arquivo</a>`;
             if(deal[LINK_ATENDIMENTO_FIELD]) linksHtml += `<a href="${deal[LINK_ATENDIMENTO_FIELD]}" target="_blank" class="btn-acao-modal secundario"><i class="fab fa-whatsapp"></i> Ver Atendimento</a>`;
 
             modalBody.innerHTML = `
                 <div class="detalhe-layout">
-                    <!-- Ação -->
+                    <!-- ÁREA DA IMAGEM (ESQUERDA) -->
                     <div class="detalhe-col-principal">
-                       <div class="card-detalhe" style="text-align: center; padding: 40px 20px; height: 100%; box-sizing: border-box;">
-                            <i class="fas fa-wrench icon-destaque"></i>
-                            <h3>Finalizar Instalação</h3>
-                            <p style="color: #666; margin-bottom: 20px;">
-                                O serviço foi concluído no endereço do cliente?
-                            </p>
-                            <button id="btn-concluir-action" class="btn-acao-modal btn-concluir">
-                                ✅ Instalação Realizada
-                            </button>
-                       </div>
+                       ${imageHtml}
                     </div>
 
-                    <!-- Dados -->
+                    <!-- ÁREA DE AÇÃO (DIREITA) -->
                     <div class="detalhe-col-lateral">
-                        <div class="card-detalhe modal-actions-container">${linksHtml || '<p style="text-align:center; color:#999">Sem links</p>'}</div>
+                        
+                        <!-- BOTÃO DE CONCLUIR (DESTAQUE) -->
+                        <button id="btn-concluir-action" class="btn-concluir">
+                            <i class="fas fa-check-circle"></i> Instalação Realizada
+                        </button>
+
+                        <!-- DADOS DO CLIENTE -->
                         <div class="card-detalhe">
-                            <h4 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:10px;">Dados do Cliente</h4>
+                            <h4 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:10px; color:#555;">Dados do Cliente</h4>
                             <div class="info-item"><span>Nome:</span><strong>${nomeCliente}</strong></div>
                             <div class="info-item"><span>Contato:</span><span>${contatoCliente}</span></div>
                             <div class="info-item"><span>Medidas:</span>${medidasHtml}</div>
+                        </div>
+
+                        <!-- ARQUIVOS E LINKS -->
+                        <div class="card-detalhe">
+                             <h4 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:10px; color:#555;">Arquivos</h4>
+                            ${linksHtml || '<p style="color:#999; text-align:center; margin:0; font-size:0.9rem;">Sem outros arquivos.</p>'}
                         </div>
                     </div>
                 </div>`;
             
             modal.classList.add('active');
-
+            
             const btnConcluir = document.getElementById('btn-concluir-action');
             if(btnConcluir) btnConcluir.onclick = () => concluirInstalacao(deal.ID);
         }
