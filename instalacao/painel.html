@@ -1,9 +1,10 @@
+<!-- /instalacao/painel.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Instalação - Setor de Arte</title>
+    <title>Instalação Externa - Setor de Arte</title>
     <!-- Ícone e CSS padronizados -->
     <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
     <link rel="stylesheet" href="/style.css">
@@ -19,12 +20,12 @@
 
             <main class="main-kanban app-content" style="padding: 0;">
                 <div class="kanban-header">
-                    <h1>Painel de Instalação</h1>
-                    <!-- Filtros foram removidos para simplificar -->
+                    <!-- NOME ALTERADO AQUI -->
+                    <h1><i class="fas fa-wrench"></i> Instalação Externa</h1>
                 </div>
 
                 <div class="kanban-board">
-                    <!-- As colunas são as mesmas da impressão (Atrasado, Hoje, etc.) -->
+                    <!-- Colunas mantidas -->
                     <div class="kanban-column status-atrasado" data-column-id="ATRASADO">
                         <div class="column-header"><span class="column-title">ATRASADO</span></div>
                         <div class="column-cards" id="cards-ATRASADO"></div>
@@ -51,11 +52,11 @@
         </div>
     </div>
 
-    <!-- MODAL (estrutura idêntica) -->
+    <!-- MODAL -->
     <div class="modal-overlay" id="modal-detalhes-rapidos">
         <div class="modal-content modal-lg">
             <div class="modal-header">
-                <h3 id="modal-titulo">Detalhes do Pedido</h3>
+                <h3 id="modal-titulo">Detalhes da Instalação</h3>
                 <button class="close-modal" title="Fechar">×</button>
             </div>
             <div class="modal-body" id="modal-body-content">
@@ -66,7 +67,7 @@
 
     <!-- SCRIPTS -->
     <script src="/layout.js"></script>
-    <script src="/instalacao/painel-script.js"></script> <!-- APONTANDO PARA O SCRIPT CORRETO -->
+    <script src="/instalacao/painel-script.js"></script>
 
 </body>
 </html>
