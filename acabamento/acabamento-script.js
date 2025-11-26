@@ -1,4 +1,4 @@
-// /acabamento/acabamento-script.js - VERSÃO VISUAL CLEAN (CARDS FLUTUANTES)
+// /acabamento/acabamento-script.js - VERSÃO CARD INTEIRO CLICÁVEL
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
@@ -34,7 +34,7 @@
 
         let allDealsData = [];
 
-        // --- ESTILOS VISUAIS (ATUALIZADO PARA FUNDO TRANSPARENTE) ---
+        // --- ESTILOS VISUAIS ---
         const style = document.createElement('style');
         style.textContent = `
             :root {
@@ -48,7 +48,7 @@
                 --shadow-md: 0 5px 15px rgba(0,0,0,0.15);
             }
 
-            /* Filters Area */
+            /* Filters */
             .kanban-header { margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
             .filtros-pedidos { display: flex; gap: 10px; }
             .filtros-pedidos select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; background: #fff; font-family: 'Poppins', sans-serif; cursor: pointer; outline: none; transition: border 0.3s; }
@@ -59,35 +59,19 @@
             /* Kanban Board */
             .kanban-board { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 20px; align-items: flex-start; }
             
-            /* --- ALTERAÇÃO AQUI: Coluna transparente --- */
             .kanban-column { 
-                background: transparent; /* Remove o fundo cinza */
-                min-width: 280px; 
-                max-width: 320px; 
-                padding: 0; /* Remove padding interno da coluna */
-                margin-right: 10px;
-                display: flex; 
-                flex-direction: column; 
-                max-height: 80vh; 
-                border: none;
-                box-shadow: none;
+                background: transparent; 
+                min-width: 280px; max-width: 320px; 
+                padding: 0; margin-right: 10px;
+                display: flex; flex-direction: column; 
+                max-height: 80vh; border: none; box-shadow: none;
             }
 
-            /* Header da Coluna (Estilo tipo Tag) */
             .column-header { 
-                font-weight: 700; 
-                color: white; 
-                margin-bottom: 15px; 
-                text-transform: uppercase; 
-                font-size: 0.9rem; 
-                letter-spacing: 0.5px; 
-                padding: 10px 15px;
-                border-radius: 6px;
-                text-align: center;
-                box-shadow: var(--shadow-sm);
+                font-weight: 700; color: white; margin-bottom: 15px; 
+                text-transform: uppercase; font-size: 0.9rem; letter-spacing: 0.5px; 
+                padding: 10px 15px; border-radius: 6px; text-align: center; box-shadow: var(--shadow-sm);
             }
-            
-            /* Cores específicas para os cabeçalhos das colunas */
             .status-atrasado .column-header { background-color: var(--danger); }
             .status-hoje .column-header { background-color: #f1c40f; color: #333; }
             .status-esta-semana .column-header { background-color: #2980b9; }
@@ -96,7 +80,7 @@
 
             .column-cards { overflow-y: auto; flex-grow: 1; padding-right: 5px; scrollbar-width: thin; }
             
-            /* Cards Styling */
+            /* Cards Styling - CLICÁVEIS */
             .kanban-card { 
                 background: var(--bg-card); 
                 border-radius: 8px; 
@@ -105,12 +89,11 @@
                 box-shadow: var(--shadow-sm); 
                 transition: transform 0.2s, box-shadow 0.2s; 
                 border-left: 5px solid transparent; 
-                cursor: default; 
+                cursor: pointer; /* IMPORTANTE: Cursor de mão em todo o card */
                 position: relative; 
             }
             .kanban-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
             
-            /* Bordas laterais dos cards combinando com a coluna */
             .status-atrasado .kanban-card { border-left-color: var(--danger); }
             .status-hoje .kanban-card { border-left-color: #f1c40f; }
             .status-esta-semana .kanban-card { border-left-color: #2980b9; }
@@ -120,23 +103,12 @@
             .card-id { font-size: 0.75rem; color: var(--text-light); font-weight: 600; margin-bottom: 5px; }
             .card-client-name { font-size: 1rem; font-weight: 600; color: var(--text-dark); margin-bottom: 12px; line-height: 1.4; }
             
-            .btn-detalhes { 
-                width: 100%; 
-                background: #f4f6f9; 
-                border: 1px solid #e1e1e1; 
-                padding: 8px; 
-                border-radius: 4px; 
-                color: var(--text-dark); 
-                font-weight: 600; 
-                font-size: 0.85rem; 
-                cursor: pointer; 
-                transition: all 0.2s; 
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 5px;
+            /* Botão visual apenas (clique é no card) */
+            .btn-detalhes-visual { 
+                width: 100%; background: #f4f6f9; border: 1px solid #e1e1e1; padding: 8px; 
+                border-radius: 4px; color: var(--text-dark); font-weight: 600; font-size: 0.85rem; 
+                display: flex; align-items: center; justify-content: center; gap: 5px; pointer-events: none; /* Deixa o clique passar para o card */
             }
-            .btn-detalhes:hover { background: #e2e6ea; }
 
             /* Modal Styling */
             #modal-detalhes-rapidos.modal-overlay { background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); transition: opacity 0.3s; }
@@ -159,15 +131,14 @@
             
             .btn-acao-modal.principal { background-color: var(--success); color: white; box-shadow: 0 4px 6px rgba(46, 204, 113, 0.2); }
             .btn-acao-modal.principal:hover { background-color: #27ae60; transform: translateY(-1px); }
-            
             .btn-acao-modal.secundario { background-color: #fff; border: 1px solid #ddd; color: var(--text-dark); }
             .btn-acao-modal.secundario:hover { background-color: #f8f9fa; border-color: #ccc; }
 
-            /* Confirmação no Botão */
+            /* Confirmação */
             .btn-confirmacao-ativa { background-color: var(--danger) !important; animation: pulse 1s infinite; }
             @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
-            /* Toast Notification System */
+            /* Toast */
             .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
             .toast { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 12px; min-width: 300px; animation: slideInRight 0.3s ease-out forwards; border-left: 5px solid #ccc; }
             .toast.success { border-left-color: var(--success); }
@@ -176,17 +147,15 @@
             .toast.success .toast-icon { color: var(--success); }
             .toast.error .toast-icon { color: var(--danger); }
             .toast-message { font-size: 0.9rem; color: var(--text-dark); font-weight: 500; }
-            
             @keyframes slideInRight { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
             @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
 
-            .loading-pedidos { text-align: center; padding: 20px; color: white; } /* Cor loading ajustada pro fundo escuro */
+            .loading-pedidos { text-align: center; padding: 20px; color: white; } 
             .spinner { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid #fff; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
             @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         `;
         document.head.appendChild(style);
 
-        // --- SISTEMA DE TOAST ---
         const toastContainer = document.createElement('div');
         toastContainer.className = 'toast-container';
         document.body.appendChild(toastContainer);
@@ -203,7 +172,6 @@
             }, 4000);
         }
 
-        // --- LÓGICA DE DADOS ---
         async function carregarOpcoesDeFiltro() {
             try {
                 const response = await fetch('/api/getProductionFilters');
@@ -276,9 +244,9 @@
                 <div class="kanban-card" data-deal-id-card="${deal.ID}">
                     <div class="card-id">${displayId}</div>
                     <div class="card-client-name">${nomeCliente}</div>
-                    <button class="btn-detalhes" data-action="open-details-modal" data-deal-id="${deal.ID}">
+                    <div class="btn-detalhes-visual">
                         <i class="fa-solid fa-eye"></i> Detalhes
-                    </button>
+                    </div>
                 </div>
             `;
         }
@@ -393,9 +361,16 @@
         
         closeModalBtn.addEventListener('click', () => modal.classList.remove('active'));
         modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
+        
+        // --- CLICK EVENT ON THE WHOLE CARD ---
         board.addEventListener('click', (event) => {
-            const button = event.target.closest('button[data-action="open-details-modal"]');
-            if (button) openDetailsModal(button.dataset.dealId);
+            // Procura o card pai
+            const card = event.target.closest('.kanban-card');
+            if (card) {
+                // Recupera o ID do dataset
+                const dealId = card.dataset.dealIdCard;
+                if(dealId) openDetailsModal(dealId);
+            }
         });
         
         async function init() {

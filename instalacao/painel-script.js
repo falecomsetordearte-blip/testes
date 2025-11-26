@@ -1,17 +1,16 @@
-// /instalacao/painel-script.js - VERSÃO CLEAN (VISUAL ACABAMENTO)
+// /instalacao/painel-script.js - VERSÃO CLEAN (CARD INTEIRO CLICÁVEL)
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
 
-        // --- SEGURANÇA ---
         const sessionToken = localStorage.getItem('sessionToken');
         if (!sessionToken) {
             window.location.href = '../login.html'; 
             return;
         }
         
-        // --- CONSTANTES & CAMPOS ---
-        const LAYOUT_FIELD = 'UF_CRM_1764124589418'; // Link do Layout
+        // --- CONSTANTES ---
+        const LAYOUT_FIELD = 'UF_CRM_1764124589418'; // Link Layout
         const NOME_CLIENTE_FIELD = 'UF_CRM_1741273407628';
         const CONTATO_CLIENTE_FIELD = 'UF_CRM_1749481565243';
         const LINK_ATENDIMENTO_FIELD = 'UF_CRM_1752712769666';
@@ -25,7 +24,6 @@
             '1441': { nome: 'Conferida', cor: '#2ecc71' }
         };
 
-        // --- DOM ELEMENTS ---
         const board = document.querySelector('.kanban-board');
         const modal = document.getElementById('modal-detalhes-rapidos');
         const modalTitle = document.getElementById('modal-titulo');
@@ -34,11 +32,11 @@
 
         let allDealsData = [];
 
-        // --- ESTILOS VISUAIS (BASEADO NO ACABAMENTO - TEMA AZUL) ---
+        // --- CSS CLEAN ---
         const style = document.createElement('style');
         style.textContent = `
             :root {
-                --primary: #3498db; /* Azul Instalação Externa */
+                --primary: #3498db; 
                 --success: #2ecc71;
                 --danger: #e74c3c;
                 --text-dark: #2c3e50;
@@ -48,22 +46,9 @@
                 --shadow-md: 0 5px 15px rgba(0,0,0,0.15);
             }
 
-            /* Kanban Board */
             .kanban-board { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 20px; align-items: flex-start; }
-            .kanban-column { 
-                background: transparent; 
-                min-width: 280px; max-width: 320px; 
-                padding: 0; margin-right: 10px; 
-                display: flex; flex-direction: column; 
-                max-height: 80vh; border: none; box-shadow: none;
-            }
-
-            /* Header da Coluna */
-            .column-header { 
-                font-weight: 700; color: white; margin-bottom: 15px; 
-                text-transform: uppercase; font-size: 0.9rem; letter-spacing: 0.5px; 
-                padding: 10px 15px; border-radius: 6px; text-align: center; box-shadow: var(--shadow-sm);
-            }
+            .kanban-column { background: transparent; min-width: 280px; max-width: 320px; padding: 0; margin-right: 10px; display: flex; flex-direction: column; max-height: 80vh; border: none; }
+            .column-header { font-weight: 700; color: white; margin-bottom: 15px; text-transform: uppercase; font-size: 0.9rem; padding: 10px 15px; border-radius: 6px; text-align: center; box-shadow: var(--shadow-sm); }
             .status-atrasado .column-header { background-color: var(--danger); }
             .status-hoje .column-header { background-color: #f1c40f; color: #333; }
             .status-esta-semana .column-header { background-color: #2980b9; }
@@ -72,12 +57,11 @@
 
             .column-cards { overflow-y: auto; flex-grow: 1; padding-right: 5px; scrollbar-width: thin; }
             
-            /* Cards Styling */
+            /* Card Clicável */
             .kanban-card { 
                 background: var(--bg-card); border-radius: 8px; padding: 15px; margin-bottom: 12px; 
                 box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; 
-                border-left: 5px solid var(--primary); /* Azul Padrão */
-                cursor: default; position: relative; 
+                border-left: 5px solid var(--primary); cursor: pointer; position: relative; 
             }
             .kanban-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
             
@@ -85,14 +69,9 @@
             .card-client-name { font-size: 1rem; font-weight: 600; color: var(--text-dark); margin-bottom: 12px; line-height: 1.4; }
             .card-deadline-tag { display: inline-block; background-color: #f4f6f9; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; color: var(--text-light); margin-bottom: 10px; }
 
-            .btn-detalhes { 
-                width: 100%; background: #f4f6f9; border: 1px solid #e1e1e1; padding: 8px; 
-                border-radius: 4px; color: var(--text-dark); font-weight: 600; font-size: 0.85rem; 
-                cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px;
-            }
-            .btn-detalhes:hover { background: #e2e6ea; }
+            .btn-detalhes-visual { width: 100%; background: #f4f6f9; border: 1px solid #e1e1e1; padding: 8px; border-radius: 4px; color: var(--text-dark); font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 5px; pointer-events: none; }
 
-            /* Modal Styling */
+            /* Modal */
             #modal-detalhes-rapidos.modal-overlay { background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); transition: opacity 0.3s; }
             #modal-detalhes-rapidos .modal-content { border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: none; padding: 0; overflow: hidden; max-width: 900px; width: 95%; }
             .modal-header { background: #f8f9fa; padding: 15px 25px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
@@ -100,13 +79,8 @@
             .close-modal { font-size: 1.5rem; color: #aaa; background: none; border: none; cursor: pointer; }
             .modal-body { padding: 25px; background: #fff; }
             
-            /* Layout Dividido do Modal (Imagem Esq / Info Dir) */
             .detalhe-layout { display: grid; grid-template-columns: 60% 38%; gap: 2%; min-height: 400px; }
-            
-            .detalhe-col-principal { 
-                background-color: #f8f9fa; border-radius: 8px; border: 2px dashed #dee2e6;
-                display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; padding: 5px;
-            }
+            .detalhe-col-principal { background-color: #f8f9fa; border-radius: 8px; border: 2px dashed #dee2e6; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; padding: 5px; }
             .layout-img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: zoom-in; box-shadow: var(--shadow-sm); border-radius: 4px; }
             .sem-imagem { text-align: center; color: #aaa; display: flex; flex-direction: column; align-items: center; justify-content: center; }
             .sem-imagem i { font-size: 3rem; margin-bottom: 10px; opacity: 0.5; }
@@ -118,30 +92,16 @@
             .info-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 0.9rem; }
             .tag-medidas { padding: 2px 8px; border-radius: 4px; color: white; font-weight: 600; font-size: 0.8rem; }
             
-            .btn-acao-modal { 
-                display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; 
-                border-radius: 6px; font-weight: 600; text-align: center; cursor: pointer; border: none; 
-                font-size: 0.9rem; transition: all 0.2s; text-decoration: none; margin-bottom: 8px;
-            }
+            .btn-acao-modal { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; text-align: center; cursor: pointer; border: none; font-size: 0.9rem; transition: all 0.2s; text-decoration: none; margin-bottom: 8px; }
             .btn-acao-modal.principal { background-color: var(--primary); color: white; }
-            .btn-acao-modal.principal:hover { background-color: #2980b9; }
             .btn-acao-modal.secundario { background-color: #fff; border: 1px solid #ddd; color: var(--text-dark); }
-            .btn-acao-modal.secundario:hover { background-color: #f8f9fa; border-color: #bbb; }
+            .btn-acao-modal.secundario:hover { background-color: #f8f9fa; }
 
-            /* Botão Concluir (Destaque) */
-            .btn-concluir { 
-                background-color: var(--success); color: white; font-size: 1rem; padding: 15px; 
-                border: none; border-radius: 8px; font-weight: 700; width: 100%; cursor: pointer; 
-                transition: all 0.2s; box-shadow: 0 4px 6px rgba(46, 204, 113, 0.25);
-                display: flex; align-items: center; justify-content: center; gap: 8px;
-            }
+            .btn-concluir { background-color: var(--success); color: white; font-size: 1rem; padding: 15px; border: none; border-radius: 8px; font-weight: 700; width: 100%; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px rgba(46, 204, 113, 0.25); display: flex; align-items: center; justify-content: center; gap: 8px; }
             .btn-concluir:hover { background-color: #27ae60; transform: translateY(-2px); }
-
-            /* Confirmação Ativa (Piscando) */
             .btn-confirmacao-ativa { background-color: var(--danger) !important; animation: pulse 1s infinite; }
             @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
-            /* Toast Notification */
             .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
             .toast { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 12px; min-width: 300px; animation: slideInRight 0.3s ease-out forwards; border-left: 5px solid #ccc; }
             .toast.success { border-left-color: var(--success); }
@@ -164,7 +124,6 @@
         `;
         document.head.appendChild(style);
 
-        // --- SISTEMA DE TOAST (Substitui alerts) ---
         const toastContainer = document.createElement('div');
         toastContainer.className = 'toast-container';
         document.body.appendChild(toastContainer);
@@ -181,7 +140,6 @@
             }, 4000);
         }
 
-        // --- HELPER: IMAGENS GOOGLE DRIVE ---
         function processarLinkImagem(url) {
             if (!url) return null;
             if (url.includes('drive.google.com')) {
@@ -193,7 +151,6 @@
             return url;
         }
 
-        // --- LÓGICA DE DADOS ---
         async function carregarPedidos() {
             document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '<div class="loading-pedidos"><div class="spinner"></div></div>');
             try {
@@ -252,9 +209,9 @@
                     <div class="card-id">${displayId}</div>
                     <div class="card-client-name">${nomeCliente}</div>
                     ${prazoTagHtml}
-                    <button class="btn-detalhes" data-action="open-details-modal" data-deal-id="${deal.ID}">
+                    <div class="btn-detalhes-visual">
                         <i class="fa-solid fa-eye"></i> Visualizar
-                    </button>
+                    </div>
                 </div>`;
         }
         
@@ -264,13 +221,11 @@
             
             modalTitle.textContent = `Instalação Externa #${deal.TITLE || deal.ID}`;
             
-            // Dados
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || '---';
             const contatoCliente = deal[CONTATO_CLIENTE_FIELD] || '---';
             const medidaInfo = MEDIDAS_MAP[deal[MEDIDAS_FIELD]];
             let medidasHtml = medidaInfo ? `<span class="tag-medidas" style="background-color: ${medidaInfo.cor};">${medidaInfo.nome}</span>` : '<span style="color:#aaa">Não def.</span>';
             
-            // Imagem
             const rawLink = deal[LAYOUT_FIELD];
             const imageSrc = processarLinkImagem(rawLink);
             let imageHtml = '';
@@ -284,19 +239,15 @@
                 imageHtml = `<div class="sem-imagem"><i class="fas fa-image"></i><p>Sem layout anexado</p></div>`;
             }
 
-            // Links Extras
             let linksHtml = '';
             if(deal[LINK_ARQUIVO_FINAL_FIELD]) linksHtml += `<a href="${deal[LINK_ARQUIVO_FINAL_FIELD]}" target="_blank" class="btn-acao-modal principal"><i class="fas fa-download"></i> Baixar Arquivo</a>`;
             if(deal[LINK_ATENDIMENTO_FIELD]) linksHtml += `<a href="${deal[LINK_ATENDIMENTO_FIELD]}" target="_blank" class="btn-acao-modal secundario"><i class="fab fa-whatsapp"></i> Ver Atendimento</a>`;
 
             modalBody.innerHTML = `
                 <div class="detalhe-layout">
-                    <!-- Esquerda: Imagem -->
                     <div class="detalhe-col-principal">
                        ${imageHtml}
                     </div>
-
-                    <!-- Direita: Ação e Dados -->
                     <div class="detalhe-col-lateral">
                         <button id="btn-concluir-action" class="btn-concluir">
                             <i class="fas fa-check-circle"></i> Instalação Realizada
@@ -320,7 +271,6 @@
             attachConcluirListener(deal.ID);
         }
 
-        // Lógica de Confirmação (Anti-Alert)
         function attachConcluirListener(dealId) {
             const btn = document.getElementById('btn-concluir-action');
             if(!btn) return;
@@ -329,12 +279,9 @@
 
             btn.addEventListener('click', async () => {
                 if (!confirmationStage) {
-                    // Estágio 1: Pedir confirmação
                     confirmationStage = true;
                     btn.innerHTML = '<i class="fa-solid fa-question-circle"></i> Tem certeza? Clique p/ confirmar';
                     btn.classList.add('btn-confirmacao-ativa');
-                    
-                    // Reseta se não confirmar em 4s
                     setTimeout(() => {
                         if (btn && confirmationStage) {
                             confirmationStage = false;
@@ -345,7 +292,6 @@
                     return;
                 }
 
-                // Estágio 2: Executar
                 btn.disabled = true;
                 btn.innerHTML = '<div class="spinner" style="width:15px; height:15px; border-width:2px; display:inline-block; vertical-align:middle; margin:0; border-top-color:#fff;"></div> Processando...';
                 btn.classList.remove('btn-confirmacao-ativa');
@@ -363,7 +309,6 @@
                     modal.classList.remove('active');
                     showToast('Instalação concluída com sucesso!', 'success');
                     
-                    // Remove card visualmente
                     const card = document.querySelector(`.kanban-card[data-deal-id-card="${dealId}"]`);
                     if(card) {
                         card.style.transition = 'opacity 0.5s';
@@ -379,13 +324,17 @@
             });
         }
 
-        // --- EVENT LISTENERS GERAIS ---
+        // --- GLOBAL CLICK LISTENER ---
         closeModalBtn.addEventListener('click', () => modal.classList.remove('active'));
         modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
         
+        // CARD CLICÁVEL
         board.addEventListener('click', (event) => {
-            const button = event.target.closest('button[data-action="open-details-modal"]');
-            if (button) openDetailsModal(button.dataset.dealId);
+            const card = event.target.closest('.kanban-card');
+            if (card) {
+                const dealId = card.dataset.dealIdCard;
+                if(dealId) openDetailsModal(dealId);
+            }
         });
         
         carregarPedidos();
