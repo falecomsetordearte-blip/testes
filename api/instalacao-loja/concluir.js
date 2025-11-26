@@ -2,7 +2,7 @@
 const axios = require('axios');
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
-// ID da fase de destino CORRIGIDO (Finalizado/Entregue)
+// ID da fase de destino (Finalizado/Entregue)
 const TARGET_STAGE_ID = 'C17:UC_IKPW6X';
 
 module.exports = async (req, res) => {

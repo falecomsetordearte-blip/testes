@@ -3,7 +3,7 @@ const axios = require('axios');
 
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
-// Campos que retornaremos para o frontend preencher o card e o modal
+// Campos que retornaremos para o frontend
 const SELECT_FIELDS = [
     'ID', 
     'TITLE', 
@@ -13,7 +13,8 @@ const SELECT_FIELDS = [
     'UF_CRM_1752712769666', // Link Atendimento
     'UF_CRM_1727464924690', // Medidas
     'UF_CRM_1748277308731', // Link Arquivo Final
-    'UF_CRM_1757794109'     // Prazo Final
+    'UF_CRM_1757794109',    // Prazo Final
+    'UF_CRM_1764124589418'  // NOVO: Link do Layout (Imagem)
 ];
 
 module.exports = async (req, res) => {
@@ -29,9 +30,7 @@ module.exports = async (req, res) => {
             return res.status(401).json({ message: 'Token de autenticação obrigatório.' });
         }
 
-        // ------------------------------------------------------------------
         // 1. Validar Token e Identificar a Empresa do Usuário
-        // ------------------------------------------------------------------
         const userSearch = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken },
             select: ['ID', 'COMPANY_ID']
@@ -43,10 +42,8 @@ module.exports = async (req, res) => {
             return res.status(401).json({ message: 'Sessão inválida ou empresa não vinculada.' });
         }
 
-        // ------------------------------------------------------------------
         // 2. Configurar Filtros de Busca
-        // ------------------------------------------------------------------
-        // CATEGORY_ID: 17 (Pipeline de Instalação/Arte)
+        // CATEGORY_ID: 17 (Pipeline de Instalação)
         // STAGE_ID: 'C17:UC_EYLXD9' (Fase específica para Instalação na Loja)
         // COMPANY_ID: Filtra apenas pedidos da empresa logada
         const filterParams = {
@@ -55,9 +52,7 @@ module.exports = async (req, res) => {
             'STAGE_ID': 'C17:UC_EYLXD9'
         };
 
-        // ------------------------------------------------------------------
         // 3. Buscar no Bitrix
-        // ------------------------------------------------------------------
         const response = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
             filter: filterParams,
             order: { 'ID': 'DESC' }, // Mais recentes primeiro
