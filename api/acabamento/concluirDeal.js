@@ -1,10 +1,9 @@
 // /api/acabamento/concluirDeal.js
 
 const axios = require('axios');
-// A Vercel vai instalar isso sozinha se você adicionou no package.json
 const { Pool } = require('pg'); 
 
-// Conexão automática com o Banco Neon via Vercel
+// Conexão com o Banco de Dados (Neon)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
@@ -12,19 +11,19 @@ const pool = new Pool({
 
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
-// --- CONFIGURAÇÃO DE DESTINOS ---
-const STAGE_EXTERNA = 'C17:UC_ZPMNF9'; // Instalação Externa
-const STAGE_LOJA = 'C17:UC_EYLXD9';    // Instalação na Loja
-const STAGE_PADRAO = 'C17:UC_GT7MVB';  // Outros
+// --- CONFIGURAÇÃO DOS DESTINOS (FASES) ---
+const STAGE_EXTERNA = 'C17:UC_ZPMNF9';   // Instalação Externa
+const STAGE_LOJA = 'C17:UC_EYLXD9';      // Instalação na Loja
+const STAGE_FINALIZADO = 'C17:UC_IKPW6X'; // Qualquer outro (ex: Retirada)
 
 module.exports = async (req, res) => {
-    // Cabeçalhos para evitar erros de permissão no navegador
+    // Headers CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
 
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Método não permitido.' });
-    }
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido.' });
 
     try {
         const { sessionToken, dealId } = req.body;
@@ -33,50 +32,85 @@ module.exports = async (req, res) => {
             return res.status(400).json({ message: 'Dados incompletos.' });
         }
 
-        // 1. Validar usuário (Segurança)
+        // -----------------------------------------------------------
+        // 1. SEGURANÇA: Validar Usuário e Empresa
+        // -----------------------------------------------------------
         const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken },
             select: ['ID', 'COMPANY_ID']
         });
 
-        const user = userCheck.data.result[0];
+        const user = userCheck.data.result ? userCheck.data.result[0] : null;
         if (!user || !user.COMPANY_ID) {
             return res.status(401).json({ message: 'Sessão inválida.' });
         }
 
-        // 2. Buscar Tipo de Entrega no Banco de Dados
-        // Usamos a coluna 'bitrix_deal_id' conforme seu print
+        // -----------------------------------------------------------
+        // 2. SEGURANÇA: Verificar se o Pedido pertence à Empresa
+        // -----------------------------------------------------------
+        const dealCheck = await axios.post(`${BITRIX24_API_URL}crm.deal.get.json`, { id: dealId });
+        const deal = dealCheck.data.result;
+
+        if (!deal) return res.status(404).json({ message: 'Pedido não encontrado no Bitrix.' });
+        
+        // Comparação de ID da empresa (String vs Number)
+        if (deal.COMPANY_ID != user.COMPANY_ID) {
+            return res.status(403).json({ message: 'Acesso negado a este pedido.' });
+        }
+
+        // -----------------------------------------------------------
+        // 3. REGRA DE NEGÓCIO: Buscar Tipo de Entrega no Banco
+        // -----------------------------------------------------------
         const queryText = `SELECT tipo_entrega FROM pedidos WHERE bitrix_deal_id = $1 LIMIT 1`;
-        const { rows } = await pool.query(queryText, [dealId]);
+        
+        // Convertemos dealId para inteiro para garantir compatibilidade com o banco
+        const { rows } = await pool.query(queryText, [parseInt(dealId)]);
 
         let tipoEntrega = '';
         if (rows.length > 0 && rows[0].tipo_entrega) {
-            tipoEntrega = rows[0].tipo_entrega.toUpperCase().trim();
+            tipoEntrega = rows[0].tipo_entrega.trim().toUpperCase();
+        } else {
+            // Se não achar no banco, tentamos pegar do Bitrix (fallback) 
+            // Assumindo que o campo UF_CRM_1658492661 é o tipo de entrega no Bitrix
+            tipoEntrega = (deal['UF_CRM_1658492661'] || '').toString().toUpperCase();
         }
 
-        // 3. Definir Destino
-        let novoStageId = STAGE_PADRAO;
+        console.log(`[Acabamento] Deal ID: ${dealId} | Tipo: ${tipoEntrega}`);
+
+        // -----------------------------------------------------------
+        // 4. LÓGICA CONDICIONAL DE DESTINO
+        // -----------------------------------------------------------
+        let novoStageId = STAGE_FINALIZADO; // Padrão (C17:UC_IKPW6X) para "qualquer outro"
 
         if (tipoEntrega === 'INSTALAÇÃO EXTERNA') {
-            novoStageId = STAGE_EXTERNA;
+            novoStageId = STAGE_EXTERNA; // C17:UC_ZPMNF9
         } 
-        // Adicionei também RETIRADA NO BALCÃO para ir para Loja, caso queira
-        else if (tipoEntrega === 'INSTALAÇÃO NA LOJA' || tipoEntrega === 'RETIRADA NO BALCÃO') {
-            novoStageId = STAGE_LOJA;
+        else if (tipoEntrega === 'INSTALAÇÃO NA LOJA') {
+            novoStageId = STAGE_LOJA;    // C17:UC_EYLXD9
         }
+        // Se for 'RETIRADA', 'MOTOBOY' ou vazio, mantém o STAGE_FINALIZADO definido acima.
 
-        console.log(`Pedido ${dealId} (${tipoEntrega}) movido para ${novoStageId}`);
-
-        // 4. Atualizar Bitrix
-        await axios.post(`${BITRIX24_API_URL}crm.deal.update`, {
+        // -----------------------------------------------------------
+        // 5. ATUALIZAR BITRIX
+        // -----------------------------------------------------------
+        const updateResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.update.json`, {
             id: dealId,
             fields: { 'STAGE_ID': novoStageId }
         });
 
-        return res.status(200).json({ message: 'Concluído com sucesso!' });
+        if (updateResponse.data.result) {
+            return res.status(200).json({ 
+                success: true, 
+                message: 'Fase atualizada com sucesso!',
+                destino: novoStageId,
+                tipoDetectado: tipoEntrega
+            });
+        } else {
+            throw new Error('Bitrix não confirmou a atualização.');
+        }
 
     } catch (error) {
-        console.error('Erro:', error);
-        return res.status(500).json({ message: 'Erro ao processar.' });
+        console.error('Erro ao concluir acabamento:', error);
+        return res.status(500).json({ message: 'Erro interno ao processar.' });
     }
 };
