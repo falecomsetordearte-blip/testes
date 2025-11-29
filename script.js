@@ -1,8 +1,8 @@
-// ============================================================
-// SCRIPT.JS - PARTE 1: AUTENTICAÇÃO E INICIALIZAÇÃO
-// ============================================================
+// script.js - ATUALIZADO (Redirecionamento para Dashboard)
 
-// --- Funções Auxiliares de Erro e Feedback ---
+// ============================================================
+// PARTE 1: AUTENTICAÇÃO E INICIALIZAÇÃO
+// ============================================================
 
 async function handleAuthError(response) {
     if (response.status === 401 || response.status === 403) {
@@ -17,13 +17,10 @@ async function handleAuthError(response) {
 function showFeedback(containerId, message, isError = false) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
     container.textContent = message;
     container.className = `form-feedback ${isError ? 'error' : 'success'}`;
     container.style.display = 'block'; 
     container.classList.remove('hidden');
-    
-    // Rola até a mensagem se for sucesso, para o usuário ver
     if (!isError) container.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -36,23 +33,15 @@ function hideFeedback(containerId) {
     }
 }
 
-// --- Inicialização Principal ao Carregar a Página ---
-
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Tenta inicializar páginas de Auth (Login/Cadastro/Recuperação)
     initializeAuthPages();
-
-    // 2. Verifica se estamos no painel (Dashboard) para iniciar a proteção e lógica
-    // A verificação busca elementos únicos do painel ou o layout principal
+    // Inicia lógica protegida se houver grid de layout OU lista de pedidos antiga
     if (document.getElementById('pedidos-list-body') || document.querySelector(".app-layout-grid")) {
         initializeProtectedPage();
     }
 });
 
-// --- Lógica de Páginas de Autenticação (Públicas) ---
-
 function initializeAuthPages() {
-    
     // --- LOGIN ---
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
@@ -60,7 +49,6 @@ function initializeAuthPages() {
             event.preventDefault();
             const submitButton = loginForm.querySelector('button[type="submit"]');
             const feedbackId = 'form-error-feedback';
-            
             submitButton.disabled = true;
             submitButton.textContent = 'Entrando...';
             hideFeedback(feedbackId);
@@ -75,28 +63,22 @@ function initializeAuthPages() {
                     })
                 });
                 const data = await response.json();
-                
                 if (!response.ok) throw new Error(data.message || 'Erro ao fazer login.');
                 
-                // Sucesso: Salva sessão
                 localStorage.setItem('sessionToken', data.token);
                 localStorage.setItem('userName', data.userName);
-                window.location.href = 'painel.html'; // Redireciona para o painel
+                
+                // >>> ALTERAÇÃO AQUI: Redireciona para Dashboard (Visão Geral)
+                window.location.href = 'dashboard.html'; 
             } catch (error) {
                 showFeedback(feedbackId, error.message, true);
                 submitButton.disabled = false;
                 submitButton.textContent = 'Entrar';
             }
         });
-
-        // Mensagens via URL
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('verified') === 'true') {
-            showFeedback('form-error-feedback', 'E-mail verificado com sucesso! Você já pode fazer o login.', false);
-        }
-        if (urlParams.get('reset') === 'success') {
-             showFeedback('form-error-feedback', 'Senha redefinida com sucesso! Faça login com a nova senha.', false);
-        }
+        if (urlParams.get('verified') === 'true') showFeedback('form-error-feedback', 'E-mail verificado com sucesso! Você já pode fazer o login.', false);
+        if (urlParams.get('reset') === 'success') showFeedback('form-error-feedback', 'Senha redefinida com sucesso! Faça login com a nova senha.', false);
     }
 
     // --- CADASTRO ---
@@ -104,32 +86,24 @@ function initializeAuthPages() {
     if (cadastroForm) {
         cadastroForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            
             const formWrapper = document.getElementById('form-wrapper');
             const loadingFeedback = document.getElementById('loading-feedback');
             const submitButton = cadastroForm.querySelector('button[type="submit"]');
             const feedbackId = 'form-error-feedback';
-            
             const senha = document.getElementById('senha').value;
             const confirmarSenha = document.getElementById('confirmar-senha').value;
             const aceiteTermos = document.getElementById('termos-aceite').checked;
 
             hideFeedback(feedbackId);
-
-            // Validações básicas
             if (!aceiteTermos) return showFeedback(feedbackId, 'Você precisa aceitar os Termos para continuar.', true);
             if (senha.length < 6) return showFeedback(feedbackId, 'Sua senha precisa ter no mínimo 6 caracteres.', true);
             if (senha !== confirmarSenha) return showFeedback(feedbackId, 'As senhas não coincidem.', true);
 
-            // UI Loading
             submitButton.disabled = true;
             submitButton.textContent = "Processando...";
 
-            // --- LÓGICA DE ARQUIVO (LOGO) ---
             const fileInput = document.getElementById('logo_arquivo');
             let fileData = null;
-
-            // Função interna para converter imagem em texto (Base64)
             const convertBase64 = (file) => {
                 return new Promise((resolve, reject) => {
                     const fileReader = new FileReader();
@@ -140,12 +114,9 @@ function initializeAuthPages() {
             };
 
             try {
-                // Se o usuário selecionou um arquivo, converte ele agora
                 if (fileInput && fileInput.files.length > 0) {
                     const file = fileInput.files[0];
-                    if (file.size > 5 * 1024 * 1024) {
-                        throw new Error("O logo deve ter no máximo 5MB.");
-                    }
+                    if (file.size > 5 * 1024 * 1024) throw new Error("O logo deve ter no máximo 5MB.");
                     const base64 = await convertBase64(file);
                     fileData = { name: file.name, base64: base64 };
                 }
@@ -160,7 +131,7 @@ function initializeAuthPages() {
                     nomeResponsavel: document.getElementById('nome_responsavel').value,
                     email: document.getElementById('email').value,
                     senha: senha,
-                    logo: fileData // Envia o logo (ou null)
+                    logo: fileData
                 };
 
                 const response = await fetch('/api/registerUser', {
@@ -172,15 +143,15 @@ function initializeAuthPages() {
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.message || 'Erro no cadastro.');
 
-                // Sucesso: Auto-login
                 localStorage.setItem('sessionToken', data.token);
                 localStorage.setItem('userName', data.userName);
-                window.location.href = 'painel.html';
+                
+                // >>> ALTERAÇÃO AQUI: Redireciona para Dashboard
+                window.location.href = 'dashboard.html';
 
             } catch (error) {
                 if (loadingFeedback) loadingFeedback.classList.add('hidden');
                 if (formWrapper) formWrapper.classList.remove('hidden');
-                
                 showFeedback(feedbackId, error.message, true);
                 submitButton.disabled = false;
                 submitButton.textContent = "Criar Conta e Acessar";
@@ -188,26 +159,21 @@ function initializeAuthPages() {
         });
     }
 
-    // --- ESQUECI SENHA ---
+    // --- ESQUECI / REDEFINIR SENHA / VERIFICAR EMAIL (Mantidos iguais) ---
     const esqueciSenhaForm = document.getElementById('esqueci-senha-form');
     if (esqueciSenhaForm) {
         esqueciSenhaForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const btn = event.target.querySelector('button');
             const wrapper = document.getElementById('form-wrapper');
-            
-            btn.disabled = true;
-            btn.textContent = 'Enviando...';
-            
+            btn.disabled = true; btn.textContent = 'Enviando...';
             try {
                 const response = await fetch('/api/forgotPassword', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: document.getElementById('email').value })
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.message);
-                
                 wrapper.innerHTML = `<div class="auth-header"><h1>Link Enviado!</h1><p>${data.message}</p></div>`;
             } catch (error) {
                 wrapper.innerHTML = `<div class="auth-header"><h1>Erro</h1><p>${error.message}</p> <a href="esqueci-senha.html">Tentar novamente</a></div>`;
@@ -215,7 +181,6 @@ function initializeAuthPages() {
         });
     }
 
-    // --- REDEFINIR SENHA ---
     const redefinirSenhaForm = document.getElementById('redefinir-senha-form');
     if (redefinirSenhaForm) {
         redefinirSenhaForm.addEventListener('submit', async (event) => {
@@ -223,19 +188,14 @@ function initializeAuthPages() {
             const novaSenha = document.getElementById('nova-senha').value;
             const confirmarSenha = document.getElementById('confirmar-senha').value;
             const submitButton = redefinirSenhaForm.querySelector('button[type="submit"]');
-            
             hideFeedback('form-error-feedback');
             if (novaSenha.length < 6) return showFeedback('form-error-feedback', 'Mínimo 6 caracteres.', true);
             if (novaSenha !== confirmarSenha) return showFeedback('form-error-feedback', 'As senhas não coincidem.', true);
-            
-            submitButton.disabled = true;
-            submitButton.textContent = 'Salvando...';
+            submitButton.disabled = true; submitButton.textContent = 'Salvando...';
             const token = new URLSearchParams(window.location.search).get('token');
-            
             try {
                 const response = await fetch('/api/resetPassword', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: token, novaSenha: novaSenha })
                 });
                 const data = await response.json();
@@ -243,13 +203,11 @@ function initializeAuthPages() {
                 window.location.href = `login.html?reset=success`;
             } catch (error) {
                 showFeedback('form-error-feedback', error.message, true);
-                submitButton.disabled = false;
-                submitButton.textContent = 'Redefinir Senha';
+                submitButton.disabled = false; submitButton.textContent = 'Redefinir Senha';
             }
         });
     }
 
-    // --- VERIFICAÇÃO DE EMAIL ---
     const feedbackText = document.getElementById('feedback-text');
     if (feedbackText) {
         const token = new URLSearchParams(window.location.search).get('token');
@@ -258,8 +216,7 @@ function initializeAuthPages() {
             feedbackText.textContent = 'Verificando validação...';
             try {
                 const response = await fetch('/api/verifyEmail', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: token })
                 });
                 const data = await response.json();
@@ -271,23 +228,20 @@ function initializeAuthPages() {
         })();
     }
 }
-// --- Funções de Sessão Protegida ---
+
+// ============================================================
+// PARTE 2: FUNÇÕES PROTEGIDAS (Sidebar, Notificações)
+// ============================================================
 
 function initializeProtectedPage() {
     const sessionToken = localStorage.getItem("sessionToken");
     const userName = localStorage.getItem("userName");
 
-    // Se não tem token, chuta para o login
-    if (!sessionToken) {
-        window.location.href = "login.html";
-        return;
-    }
+    if (!sessionToken) { window.location.href = "login.html"; return; }
 
-    // Exibe nome do usuário (se existir o elemento no header)
     const greetingEl = document.getElementById('user-greeting');
     if(greetingEl && userName) greetingEl.textContent = `Olá, ${userName}!`;
 
-    // Configura botão de Logout (se existir)
     const logoutButton = document.getElementById('logout-button');
     if(logoutButton) {
         logoutButton.addEventListener('click', (e) => {
@@ -297,36 +251,26 @@ function initializeProtectedPage() {
         });
     }
 
-    // Carrega Logo da Empresa na Sidebar
     carregarLogoUsuario(sessionToken);
-
-    // Inicia o sistema de notificações (Sininho)
     setupNotifications();
 
-    // Inicializa a lógica específica do Dashboard (Lista de pedidos, Saldo, etc)
-    // Essa função será definida na Parte 3
+    // Lógica antiga do Painel (Tabela) só roda se o elemento existir
+    // Como removemos 'pedidos-list-body' do novo painel.html, isso será ignorado lá.
     if (document.getElementById('pedidos-list-body')) {
         inicializarPainelDePedidos();
     }
 }
 
-// --- FUNÇÃO: CARREGAR LOGO DA EMPRESA ---
 async function carregarLogoUsuario(token) {
-    // Tenta pegar do cache primeiro para não piscar
     const cachedLogo = localStorage.getItem('userLogo');
     const sidebarLogo = document.querySelector('.sidebar-logo');
-    
-    if (cachedLogo && sidebarLogo) {
-        sidebarLogo.src = cachedLogo;
-    }
+    if (cachedLogo && sidebarLogo) sidebarLogo.src = cachedLogo;
 
     try {
         const response = await fetch('/api/getUserData', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token: token })
         });
-
         if (response.ok) {
             const data = await response.json();
             if (data.logo_url) {
@@ -334,12 +278,9 @@ async function carregarLogoUsuario(token) {
                 localStorage.setItem('userLogo', data.logo_url);
             }
         }
-    } catch (error) {
-        console.error("Erro ao carregar logo:", error);
-    }
+    } catch (error) { console.error("Erro ao carregar logo:", error); }
 }
 
-// --- FUNÇÃO: SISTEMA DE NOTIFICAÇÕES ---
 function setupNotifications() {
     const btnBell = document.getElementById('btn-notificacoes');
     const dropdown = document.getElementById('notif-dropdown');
@@ -348,30 +289,20 @@ function setupNotifications() {
 
     if (!btnBell || !dropdown) return;
 
-    // 1. Carregar Notificações da API
     async function loadNotifs() {
         try {
             const res = await fetch('/api/getGlobalNotifications');
             if (!res.ok) return; 
-            
             const notifications = await res.json();
-
             if (!notifications || notifications.length === 0) {
                 list.innerHTML = '<div style="padding:15px; text-align:center; font-size:0.85rem; color:#94a3b8;">Nenhuma notificação no momento.</div>';
                 return;
             }
-
-            // Verifica se tem alguma nova comparando com o localStorage
             const lastSeenId = localStorage.getItem('lastSeenNotifId') || 0;
             const newestId = notifications[0].id;
+            if (newestId > lastSeenId) badge.classList.add('active');
+            else badge.classList.remove('active');
 
-            if (newestId > lastSeenId) {
-                badge.classList.add('active');
-            } else {
-                badge.classList.remove('active');
-            }
-
-            // Renderiza a lista
             list.innerHTML = notifications.map(n => `
                 <div class="notif-item ${n.tipo || 'info'}">
                     <h4>${n.titulo}</h4>
@@ -379,391 +310,193 @@ function setupNotifications() {
                     <span class="notif-date">${new Date(n.criado_em).toLocaleDateString('pt-BR')}</span>
                 </div>
             `).join('');
-
-            // Salva o ID mais novo no botão para marcar como lido ao abrir
             btnBell.dataset.newestId = newestId;
-
-        } catch (err) {
-            console.error("Erro notificações:", err);
-            list.innerHTML = '<div style="padding:15px; text-align:center; color:#ef4444;">Erro ao carregar avisos.</div>';
-        }
+        } catch (err) { console.error("Erro notificações:", err); }
     }
 
-    // 2. Abrir/Fechar Dropdown
     btnBell.addEventListener('click', (e) => {
         e.stopPropagation();
         dropdown.classList.toggle('active');
-
-        // Ao abrir, marca como lido (tira a bolinha vermelha)
         if (dropdown.classList.contains('active')) {
             badge.classList.remove('active');
-            if (btnBell.dataset.newestId) {
-                localStorage.setItem('lastSeenNotifId', btnBell.dataset.newestId);
-            }
+            if (btnBell.dataset.newestId) localStorage.setItem('lastSeenNotifId', btnBell.dataset.newestId);
         }
     });
 
-    // Fechar ao clicar fora
     window.addEventListener('click', (e) => {
-        if (!e.target.closest('.notification-wrapper')) {
-            dropdown.classList.remove('active');
-        }
+        if (!e.target.closest('.notification-wrapper')) dropdown.classList.remove('active');
     });
-
-    // Carrega ao iniciar
     loadNotifs();
 }
-// ============================================================
-// SCRIPT.JS - PARTE 3: LÓGICA DO DASHBOARD (PAINEL)
-// ============================================================
 
-// Variáveis Globais do Painel
+// ============================================================
+// PARTE 3: LÓGICA DO DASHBOARD (Mantida para compatibilidade)
+// ============================================================
+// Esta parte será ignorada no novo painel.html pois não encontrará os IDs
 let todosPedidos = [];
 let pedidosFiltrados = [];
 let paginaAtual = 1;
 const itensPorPagina = 20;
 let currentStatusFilter = 'todos';
 
-// 1. Função Principal de Inicialização do Painel
 function inicializarPainelDePedidos() {
-    // Configura o Modal de Créditos (Parte 4)
     setupModalCreditos();
-
-    // Configura as Abas de Filtro (Todos, Pagamento, Andamento...)
     const tabButtonsContainer = document.querySelector('.tab-buttons');
     if (tabButtonsContainer) {
         tabButtonsContainer.addEventListener('click', (event) => {
             const clickedButton = event.target.closest('.tab-btn');
             if (!clickedButton) return;
-            
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             clickedButton.classList.add('active');
-            
             currentStatusFilter = clickedButton.dataset.tab;
             aplicarFiltros();
         });
     }
-
-    // Configura a Barra de Busca
     const searchInput = document.getElementById("search-input");
     if (searchInput) searchInput.addEventListener("input", aplicarFiltros);
-    
-    // Configura os cliques nos botões da lista (Pagar, Ver Detalhes)
     ativarDropdownsDePagamento();
-    
-    // Carrega os dados iniciais
     atualizarDadosPainel();
 }
 
-// 2. Busca dados na API (Saldo e Lista de Pedidos)
 async function atualizarDadosPainel() {
     const sessionToken = localStorage.getItem("sessionToken");
     const pedidosListBody = document.getElementById("pedidos-list-body");
     const saldoValorEl = document.getElementById("saldo-valor");
-
-    // Mostra loading
     if(pedidosListBody) pedidosListBody.innerHTML = `<div class="loading-pedidos"><div class="spinner"></div><span>Atualizando informações...</span></div>`;
 
     try {
         const response = await fetch('/api/getPanelData', {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+            method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token: sessionToken })
         });
-        
-        // Se der 401/403, a função handleAuthError da Parte 1 resolve
         if (!response.ok) {
             if (await handleAuthError(response)) return;
-            const data = await response.json();
-            throw new Error(data.message || "Erro ao buscar dados.");
+            throw new Error("Erro ao buscar dados.");
         }
-
         const data = await response.json();
-
-        // Atualiza Saldo na tela
-        if(saldoValorEl) {
-            saldoValorEl.textContent = new Intl.NumberFormat("pt-BR", { 
-                style: "currency", currency: "BRL" 
-            }).format(data.saldo || 0);
-        }
-
-        // Salva e renderiza a lista
+        if(saldoValorEl) saldoValorEl.textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.saldo || 0);
         todosPedidos = data.pedidos || [];
         aplicarFiltros(); 
-
-    } catch (error) {
-        console.error("Erro no painel:", error);
-        if(pedidosListBody) pedidosListBody.innerHTML = `<div class="loading-pedidos" style="color: #ef4444;">Erro: ${error.message}</div>`;
-    }
+    } catch (error) { console.error("Erro no painel:", error); }
 }
 
-// 3. Aplica Filtros (Status e Busca)
 function aplicarFiltros() {
     const searchInput = document.getElementById("search-input");
     const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
-
     let listaTemp = todosPedidos;
-
-    // Filtro por Status
     if (currentStatusFilter !== 'todos') {
         listaTemp = listaTemp.filter(pedido => {
             const stageId = (pedido.STAGE_ID || "").toUpperCase();
-            
             if (currentStatusFilter === 'pagamento') return stageId.includes("NEW");
             if (currentStatusFilter === 'cancelado') return stageId.includes("LOSE");
-            if (currentStatusFilter === 'andamento') {
-                // Tudo que não é novo, nem perdido, nem ganho (aprovado/verificado)
-                return !stageId.includes("NEW") && !stageId.includes("LOSE") && !stageId.includes("WON");
-            }
+            if (currentStatusFilter === 'andamento') return !stageId.includes("NEW") && !stageId.includes("LOSE") && !stageId.includes("WON");
             return true;
         });
     }
-
-    // Filtro por Texto
     if (searchTerm) {
-        listaTemp = listaTemp.filter(p =>
-            (p.TITLE || "").toLowerCase().includes(searchTerm) ||
-            (p.ID || "").toString().includes(searchTerm)
-        );
+        listaTemp = listaTemp.filter(p => (p.TITLE || "").toLowerCase().includes(searchTerm) || (p.ID || "").toString().includes(searchTerm));
     }
-
     pedidosFiltrados = listaTemp;
-    paginaAtual = 1; // Reseta para primeira página
+    paginaAtual = 1;
     renderizarPedidos();
 }
 
-// 4. Renderiza o HTML da Lista
 function renderizarPedidos() {
     const pedidosListBody = document.getElementById("pedidos-list-body");
     if(!pedidosListBody) return;
-
     pedidosListBody.innerHTML = "";
-
     if (pedidosFiltrados && pedidosFiltrados.length > 0) {
         const indiceInicio = (paginaAtual - 1) * itensPorPagina;
         const indiceFim = indiceInicio + itensPorPagina;
         const pedidosPagina = pedidosFiltrados.slice(indiceInicio, indiceFim);
-        
         let html = "";
-
         pedidosPagina.forEach(pedido => {
             let statusInfo = { texto: "Desconhecido", classe: "" };
-            let acaoHtml = ""; // HTML dos botões
-
+            let acaoHtml = "";
             const stageId = (pedido.STAGE_ID || "").toUpperCase();
             const id = pedido.ID;
-
-            // Define Status e Botões
             if (stageId.includes("NEW")) {
                 statusInfo = { texto: 'Aguardando Pagamento', classe: 'status-pagamento' };
-                acaoHtml = `
-                    <div class="dropdown-pagamento">
-                        <button type="button" class="btn-pagar" data-deal-id="${id}">
-                            Pagar <i class="fas fa-caret-down"></i>
-                        </button>
-                        <div class="dropdown-content">
-                            <button type="button" class="btn-pagar-saldo" data-deal-id="${id}">💰 Usar Saldo</button>
-                            <button type="button" class="btn-gerar-cobranca" data-deal-id="${id}">💠 Gerar PIX</button>
-                        </div>
-                    </div>
-                `;
-            } 
-            else if (stageId.includes("LOSE")) {
+                acaoHtml = `<div class="dropdown-pagamento"><button type="button" class="btn-pagar" data-deal-id="${id}">Pagar <i class="fas fa-caret-down"></i></button><div class="dropdown-content"><button type="button" class="btn-pagar-saldo" data-deal-id="${id}">💰 Usar Saldo</button><button type="button" class="btn-gerar-cobranca" data-deal-id="${id}">💠 Gerar PIX</button></div></div>`;
+            } else if (stageId.includes("LOSE")) {
                 statusInfo = { texto: 'Cancelado', classe: 'status-cancelado' };
                 acaoHtml = `<a href="pedido.html?id=${id}" class="btn-ver-pedido">Ver Motivo</a>`;
-            } 
-            else if (stageId === "C17:UC_2OEE24") {
+            } else if (stageId === "C17:UC_2OEE24") {
                 statusInfo = { texto: 'Em Análise', classe: 'status-analise' };
                 acaoHtml = `<a href="pedido.html?id=${id}" class="btn-ver-pedido">Ver Detalhes</a>`;
-            } 
-            else if (stageId.includes("WON") || stageId === "C17:WON") {
+            } else if (stageId.includes("WON") || stageId === "C17:WON") {
                 statusInfo = { texto: "Concluído", classe: "status-aprovado" };
                 acaoHtml = `<a href="pedido.html?id=${id}" class="btn-ver-pedido">Ver Arquivos</a>`;
-            } 
-            else {
+            } else {
                 statusInfo = { texto: 'Em Andamento', classe: 'status-andamento' };
                 acaoHtml = `<a href="pedido.html?id=${id}" class="btn-ver-pedido">Acompanhar</a>`;
             }
-
             const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(pedido.OPPORTUNITY) || 0);
-
-            html += `
-                <div class="pedido-item">
-                    <div class="col-id"><strong>#${id}</strong></div>
-                    <div class="col-titulo">${pedido.TITLE}</div>
-                    <div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div>
-                    <div class="col-valor">${valorFormatado}</div>
-                    <div class="col-acoes" style="overflow: visible;">${acaoHtml}</div>
-                </div>
-            `;
+            html += `<div class="pedido-item"><div class="col-id"><strong>#${id}</strong></div><div class="col-titulo">${pedido.TITLE}</div><div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div><div class="col-valor">${valorFormatado}</div><div class="col-acoes" style="overflow: visible;">${acaoHtml}</div></div>`;
         });
-
         pedidosListBody.innerHTML = html;
     } else {
-        pedidosListBody.innerHTML = `<div class="loading-pedidos" style="padding: 30px;">Nenhum pedido encontrado com este filtro.</div>`;
+        pedidosListBody.innerHTML = `<div class="loading-pedidos" style="padding: 30px;">Nenhum pedido encontrado.</div>`;
     }
 }
-// 5. Lógica de Eventos dos Botões de Pagamento (Dropdown, Saldo, PIX)
+
 function ativarDropdownsDePagamento() {
     const pedidosListBody = document.getElementById('pedidos-list-body');
     if (!pedidosListBody) return;
-
     pedidosListBody.addEventListener('click', async function(event) {
         const target = event.target;
-        
-        // CLIQUE NO BOTÃO "PAGAR" (Abre/Fecha Menu)
         const btnPagar = target.closest('.btn-pagar');
         if (btnPagar) {
             const dropdown = btnPagar.closest('.dropdown-pagamento');
-            // Fecha todos os outros
-            document.querySelectorAll('.dropdown-pagamento.active').forEach(d => {
-                if(d !== dropdown) d.classList.remove('active');
-            });
-            // Alterna o atual
+            document.querySelectorAll('.dropdown-pagamento.active').forEach(d => { if(d !== dropdown) d.classList.remove('active'); });
             if(dropdown) dropdown.classList.toggle('active');
             event.stopPropagation(); 
             return;
         }
-
-        // CLIQUE EM "USAR SALDO"
         if (target.classList.contains('btn-pagar-saldo')) {
-            const dealId = target.dataset.dealId;
-            if (!confirm('Deseja usar seu saldo de créditos para pagar este pedido imediatamente?')) return;
-            
-            const originalText = target.textContent;
-            target.disabled = true; 
-            target.textContent = 'Processando...';
-            
+            if (!confirm('Pagar com saldo?')) return;
             try {
-                const response = await fetch('/api/payWithBalance', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), dealId: dealId })
-                });
-                const data = await response.json();
-                
-                if (!response.ok) throw new Error(data.message || "Erro no pagamento.");
-                
-                alert('Sucesso! Pagamento realizado.');
-                atualizarDadosPainel(); // Recarrega lista e saldo
-            } catch (error) {
-                alert(`Erro: ${error.message}`);
-                target.disabled = false; 
-                target.textContent = originalText;
-            }
+                await fetch('/api/payWithBalance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), dealId: target.dataset.dealId }) });
+                alert('Sucesso!'); atualizarDadosPainel();
+            } catch (error) { alert(`Erro: ${error.message}`); }
         }
-
-        // CLIQUE EM "GERAR PIX"
         if (target.classList.contains('btn-gerar-cobranca')) {
-            const dealId = target.dataset.dealId;
-            const originalText = target.textContent;
-            target.disabled = true; 
-            target.textContent = 'Gerando...';
-            
             try {
-                const response = await fetch('/api/generatePixForDeal', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), dealId: dealId })
-                });
-                const data = await response.json();
-                
-                if (!response.ok) throw new Error(data.message || "Erro ao gerar PIX.");
-                
-                // Abre o link do Asaas em nova aba
+                const res = await fetch('/api/generatePixForDeal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), dealId: target.dataset.dealId }) });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
                 window.open(data.url, '_blank');
-                
-                // Fecha o dropdown
-                const dropdown = target.closest('.dropdown-pagamento');
-                if(dropdown) dropdown.classList.remove('active');
-
-            } catch (error) {
-                alert(`Erro: ${error.message}`);
-            } finally {
-                target.disabled = false; 
-                target.textContent = originalText;
-            }
+            } catch (error) { alert(`Erro: ${error.message}`); }
         }
     });
-
-    // Fecha dropdowns se clicar fora
     window.addEventListener('click', function(event) {
-        if (!event.target.closest('.dropdown-pagamento')) {
-            document.querySelectorAll('.dropdown-pagamento.active').forEach(dropdown => {
-                dropdown.classList.remove('active');
-            });
-        }
+        if (!event.target.closest('.dropdown-pagamento')) document.querySelectorAll('.dropdown-pagamento.active').forEach(d => d.classList.remove('active'));
     });
 }
 
-// 6. Lógica do Modal de Adicionar Créditos
 function setupModalCreditos() {
     const modal = document.getElementById("modal-adquirir-creditos");
     const btnOpen = document.querySelector(".btn-add-credito");
     const form = document.getElementById("adquirir-creditos-form");
-    
     if (!modal || !btnOpen) return;
-
     const btnClose = modal.querySelector(".close-modal");
-
-    // Abrir Modal
-    btnOpen.addEventListener("click", (e) => {
-        e.preventDefault();
-        modal.classList.add("active"); 
-    });
-
-    // Fechar Modal (Botão X)
+    btnOpen.addEventListener("click", (e) => { e.preventDefault(); modal.classList.add("active"); });
     if(btnClose) btnClose.addEventListener("click", () => modal.classList.remove("active"));
-
-    // Fechar Modal (Clicar fora)
-    modal.addEventListener("click", (e) => {
-        if (e.target === modal) modal.classList.remove("active");
-    });
-
-    // Envio do Formulário de Créditos
+    modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("active"); });
     if (form) {
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const submitButton = form.querySelector("button[type='submit']");
-            const feedbackId = "creditos-form-error";
-            const valorInput = document.getElementById("creditos-valor");
-            
-            hideFeedback(feedbackId);
-            
-            const valor = valorInput.value;
-            if (!valor || parseFloat(valor) < 5) {
-                return showFeedback(feedbackId, "O valor mínimo é R$ 5,00.", true);
-            }
-            
-            submitButton.disabled = true; 
-            submitButton.textContent = "Gerando cobrança...";
-            
+            const btn = form.querySelector("button[type='submit']");
+            const valor = document.getElementById("creditos-valor").value;
+            if (!valor || parseFloat(valor) < 5) return showFeedback("creditos-form-error", "Mínimo R$ 5,00.", true);
+            btn.disabled = true; btn.textContent = "Gerando...";
             try {
-                const response = await fetch('/api/addCredit', {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ 
-                        token: localStorage.getItem("sessionToken"), 
-                        valor: valor 
-                    })
-                });
-                const data = await response.json();
-                
-                if (!response.ok) throw new Error(data.message || "Erro ao gerar cobrança.");
-                
-                // Abre link de pagamento
-                window.open(data.url, '_blank');
-                
-                // Fecha e limpa
-                modal.classList.remove("active");
-                form.reset();
-                
-            } catch (error) {
-                showFeedback(feedbackId, error.message, true);
-            } finally {
-                submitButton.disabled = false; 
-                submitButton.textContent = "Gerar Cobrança";
-            }
+                const res = await fetch('/api/addCredit', { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: localStorage.getItem("sessionToken"), valor: valor }) });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+                window.open(data.url, '_blank'); modal.classList.remove("active"); form.reset();
+            } catch (error) { showFeedback("creditos-form-error", error.message, true); } 
+            finally { btn.disabled = false; btn.textContent = "Gerar Cobrança"; }
         });
     }
 }
