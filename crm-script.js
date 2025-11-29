@@ -1,12 +1,35 @@
-// crm-script.js - VERSÃO COM SALDO INTELIGENTE
+// crm-script.js - CORRIGIDO E ROBUSTO
 
+// --- 1. FUNÇÕES GLOBAIS DE UI (Para onclick no HTML funcionar) ---
+window.abrirPanelNovo = function() {
+    resetarForm();
+    document.getElementById('panel-titulo').innerText = 'Nova Oportunidade';
+    document.getElementById('display-id-automatico').innerText = '# NOVO';
+    document.getElementById('crm-titulo-manual').value = '';
+    document.getElementById('btn-produzir-final').style.display = 'none';
+    adicionarMaterialNoForm();
+    
+    document.getElementById('slide-overlay').classList.add('active');
+    document.getElementById('slide-panel').classList.add('active');
+};
+
+window.fecharPanel = function() {
+    document.getElementById('slide-overlay').classList.remove('active');
+    document.getElementById('slide-panel').classList.remove('active');
+    setTimeout(() => { 
+        const list = document.getElementById('search-results-list');
+        if(list) list.style.display = 'none'; 
+    }, 300);
+};
+
+// --- VARIÁVEIS GLOBAIS ---
 let searchTimeout = null;
 
+// --- INICIALIZAÇÃO ---
 document.addEventListener('DOMContentLoaded', () => {
     const sessionToken = localStorage.getItem('sessionToken');
     if (!sessionToken) { window.location.href = '/login.html'; return; }
 
-    injectCleanStyles();
     createToastContainer();
     configurarMascaras();
     carregarKanban();
@@ -14,62 +37,16 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarFormularioVisual();
     configurarDragScroll();
     configurarBotaoProducao();
-    setupModalCreditos(); // Configura o modal de crédito
+    setupModalCreditos();
 });
 
-// --- FUNÇÃO PARA BUSCAR SALDO (NOVO) ---
-async function fetchSaldoCRM() {
-    const container = document.getElementById('saldo-container');
-    const display = document.getElementById('crm-saldo-display');
-    const token = localStorage.getItem('sessionToken');
-
-    if (!container || !display) return;
-
-    // Mostra loading
-    container.style.display = 'block';
-    display.innerText = '...';
-
-    try {
-        const res = await fetch('/api/crm/getBalance', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ sessionToken: token })
-        });
-        const data = await res.json();
-        
-        const valor = parseFloat(data.saldo || 0);
-        display.innerText = valor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-        
-        // Cor visual: Verde se tem saldo, Vermelho se zerado
-        if (valor > 0) display.style.color = '#2ecc71';
-        else display.style.color = '#e74c3c';
-
-    } catch (e) {
-        console.error(e);
-        display.innerText = 'Erro';
-    }
-}
-
-// ... (injectCleanStyles, createToastContainer, showToast IGUAIS AO ANTERIOR) ...
-// ... MANTENHA AS FUNÇÕES DE ESTILO E TOAST AQUI ... 
-// ... Pulei para economizar espaço, mas mantenha-as no arquivo final ...
-
-function injectCleanStyles() {
-    const style = document.createElement('style');
-    style.textContent = `
-        /* SEUS ESTILOS EXISTENTES AQUI... */
-        /* ... */
-        
-        /* Ajuste do Link no Toast */
-        .toast-message a { color: #e74c3c; font-weight: bold; text-decoration: underline; cursor: pointer; }
-    `;
-    document.head.appendChild(style);
-}
-
+// --- TOAST SYSTEM ---
 function createToastContainer() {
-    const div = document.createElement('div');
-    div.className = 'toast-container';
-    document.body.appendChild(div);
+    if (!document.querySelector('.toast-container')) {
+        const div = document.createElement('div');
+        div.className = 'toast-container';
+        document.body.appendChild(div);
+    }
 }
 
 function showToast(message, type = 'success', duration = 5000) {
@@ -77,6 +54,7 @@ function showToast(message, type = 'success', duration = 5000) {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     const icon = type === 'success' ? '<i class="fa-solid fa-check-circle"></i>' : '<i class="fa-solid fa-circle-exclamation"></i>';
+    // innerHTML permite links na mensagem
     toast.innerHTML = `<div class="toast-icon">${icon}</div><div class="toast-message">${message}</div>`;
     container.appendChild(toast);
     setTimeout(() => {
@@ -85,13 +63,122 @@ function showToast(message, type = 'success', duration = 5000) {
     }, duration);
 }
 
-// ... (configurarDragScroll, configurarMascaras IGUAIS) ...
-function configurarDragScroll() { /* ... */ }
-function configurarMascaras() { /* ... */ }
+// --- DRAG TO SCROLL (CORRIGIDO) ---
+function configurarDragScroll() {
+    const slider = document.querySelector('.kanban-board');
+    if (!slider) return;
 
-// --- CONFIGURAÇÃO DO FORMULÁRIO (ALTERADA) ---
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    slider.addEventListener('mousedown', (e) => {
+        // Se clicar num card ou botão, não arrasta
+        if (e.target.closest('.kanban-card') || e.target.closest('button')) return;
+        isDown = true;
+        slider.classList.add('active');
+        startX = e.pageX - slider.offsetLeft;
+        scrollLeft = slider.scrollLeft;
+    });
+
+    slider.addEventListener('mouseleave', () => { isDown = false; slider.classList.remove('active'); });
+    slider.addEventListener('mouseup', () => { isDown = false; slider.classList.remove('active'); });
+    
+    slider.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - slider.offsetLeft;
+        const walk = (x - startX) * 2; // Velocidade do scroll
+        slider.scrollLeft = scrollLeft - walk;
+    });
+}
+
+// --- MÁSCARAS ---
+function configurarMascaras() {
+    if (typeof IMask !== 'undefined') {
+        ['crm-wpp', 'pedido-supervisao'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) IMask(el, { mask: '(00) 00000-0000' });
+        });
+    }
+}
+
+// --- API KANBAN ---
+async function carregarKanban() {
+    try {
+        const res = await fetch('/api/crm/listCards', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') })
+        });
+        if(!res.ok) throw new Error("Erro ao carregar");
+        const cards = await res.json();
+
+        document.querySelectorAll('.kanban-items').forEach(c => c.innerHTML = '');
+        cards.forEach(card => criarCardHTML(card));
+        inicializarDragAndDrop();
+    } catch(err) { console.error(err); showToast('Falha ao carregar oportunidades', 'error'); }
+}
+
+function criarCardHTML(card) {
+    const map = { 'Novos': 'col-novos-list', 'Visita Técnica': 'col-visita-list', 'Aguardando Orçamento': 'col-orcamento-list', 'Aguardando Pagamento': 'col-pagamento-list', 'Abrir Pedido': 'col-abrir-list' };
+    const container = document.getElementById(map[card.coluna] || 'col-novos-list');
+    
+    const div = document.createElement('div');
+    div.className = 'kanban-card';
+    div.dataset.id = card.id;
+    div.onclick = () => abrirPanelEdicao(card);
+
+    const valor = parseFloat(card.valor_orcamento||0).toLocaleString('pt-BR', {minimumFractionDigits:2});
+    
+    div.innerHTML = `
+        <span class="card-id">${card.titulo_automatico || 'Novo'}</span>
+        <div class="card-tags">
+            <span class="card-tag tag-arte">${card.servico_tipo}</span>
+            ${card.arte_origem ? `<span class="card-tag" style="background:#f0f0f0; color:#555;">${card.arte_origem}</span>` : ''}
+        </div>
+        <div class="card-title">${card.nome_cliente}</div>
+        <span class="card-price">R$ ${valor}</span>
+    `;
+    container.appendChild(div);
+}
+
+function inicializarDragAndDrop() {
+    document.querySelectorAll('.kanban-items').forEach(col => {
+        if(col.getAttribute('init') === 'true') return;
+        new Sortable(col, {
+            group: 'crm', animation: 150, delay: 100, delayOnTouchOnly: true,
+            onEnd: function(evt) { if(evt.from !== evt.to) atualizarStatus(evt.item.dataset.id, evt.to.parentElement.dataset.status); }
+        });
+        col.setAttribute('init', 'true');
+    });
+}
+
+function atualizarStatus(id, novaColuna) {
+    fetch('/api/crm/moveCard', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: id, novaColuna })
+    });
+}
+
+// --- FORMULÁRIO E LÓGICA VISUAL ---
+function resetarForm() {
+    document.getElementById('form-crm').reset();
+    document.getElementById('card-id-db').value = '';
+    const sContainer = document.getElementById('servico-selection-container');
+    sContainer.classList.remove('selection-made');
+    sContainer.querySelectorAll('.servico-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('form-content-wrapper').classList.remove('visible');
+    document.getElementById('arquivo-cliente-fields').classList.add('hidden');
+    document.getElementById('setor-arte-fields').classList.add('hidden');
+    document.getElementById('materiais-container').innerHTML = '';
+    
+    // Reset do saldo
+    const saldoDiv = document.getElementById('saldo-container');
+    if(saldoDiv) saldoDiv.style.display = 'none';
+}
+
 function configurarFormularioVisual() {
-    // ... (cards de serviço iguais) ...
+    // Cards de Serviço
     const cards = document.querySelectorAll('.servico-card');
     const container = document.getElementById('servico-selection-container');
     const hiddenInput = document.getElementById('pedido-servico-hidden');
@@ -108,20 +195,20 @@ function configurarFormularioVisual() {
         });
     });
 
+    // Arte e Saldo
     const radiosArte = document.querySelectorAll('input[name="pedido-arte"]');
     const arqFields = document.getElementById('arquivo-cliente-fields');
     const setorFields = document.getElementById('setor-arte-fields');
-    const saldoContainer = document.getElementById('saldo-container'); // NOVO
+    const saldoContainer = document.getElementById('saldo-container');
 
     radiosArte.forEach(radio => {
         radio.addEventListener('change', (e) => {
             const val = e.target.value;
             arqFields.classList.add('hidden');
             setorFields.classList.add('hidden');
-            
-            // Esconde saldo por padrão
             if(saldoContainer) saldoContainer.style.display = 'none';
 
+            // Limpa required
             ['link-arquivo', 'pedido-supervisao', 'valor-designer', 'pedido-formato'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) el.required = false;
@@ -137,13 +224,13 @@ function configurarFormularioVisual() {
                     if(el) el.required = true;
                 });
                 
-                // >>> CHAMA O SALDO AQUI <<<
+                // Busca Saldo e exibe
                 fetchSaldoCRM(); 
             }
         });
     });
 
-    // Botão "+ Adicionar" (abre modal)
+    // Abrir modal de saldo pelo link
     const btnAddSaldo = document.getElementById('btn-add-saldo-crm');
     if(btnAddSaldo) {
         btnAddSaldo.addEventListener('click', (e) => {
@@ -153,37 +240,181 @@ function configurarFormularioVisual() {
         });
     }
 
-    // ... (resto igual) ...
+    // Corel
     document.getElementById('pedido-formato').addEventListener('change', (e) => {
         const div = document.getElementById('cdr-versao-container');
         e.target.value === 'CDR' ? div.classList.remove('hidden') : div.classList.add('hidden');
     });
+
+    // Add Material
     document.getElementById('btn-add-material').addEventListener('click', () => adicionarMaterialNoForm());
 }
 
-function adicionarMaterialNoForm(desc = '', det = '') { /* ... IGUAL ... */ }
-async function carregarKanban() { /* ... IGUAL ... */ }
-function criarCardHTML(card) { /* ... IGUAL ... */ }
-function inicializarDragAndDrop() { /* ... IGUAL ... */ }
-function atualizarStatus(id, novaColuna) { /* ... IGUAL ... */ }
+async function fetchSaldoCRM() {
+    const container = document.getElementById('saldo-container');
+    const display = document.getElementById('crm-saldo-display');
+    const token = localStorage.getItem('sessionToken');
 
-// ... (Funções de Panel/Busca/Salvar IGUAIS) ...
-const overlay = document.getElementById('slide-overlay');
-const panel = document.getElementById('slide-panel');
-function resetarForm() { /* ... IGUAL ... */ }
-window.abrirPanelNovo = function() { /* ... IGUAL ... */ }
-window.abrirPanelEdicao = function(card) { /* ... IGUAL ... */ }
-window.fecharPanel = function() { /* ... IGUAL ... */ }
-function configurarBuscaCliente() { /* ... IGUAL ... */ }
-document.getElementById('form-crm').addEventListener('submit', async (e) => { /* ... IGUAL ... */ });
+    if (!container || !display) return;
 
-// --- LÓGICA DO MODAL DE CRÉDITO (ADAPTADA) ---
+    container.style.display = 'block';
+    display.innerText = '...';
+
+    try {
+        const res = await fetch('/api/crm/getBalance', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ sessionToken: token })
+        });
+        const data = await res.json();
+        
+        const valor = parseFloat(data.saldo || 0);
+        display.innerText = valor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+        
+        if (valor > 0) display.style.color = '#2ecc71';
+        else display.style.color = '#e74c3c';
+
+    } catch (e) {
+        console.error(e);
+        display.innerText = 'Erro';
+    }
+}
+
+function adicionarMaterialNoForm(desc = '', det = '') {
+    const container = document.getElementById('materiais-container');
+    const count = container.children.length + 1;
+    const div = document.createElement('div');
+    div.className = 'material-item';
+    div.innerHTML = `
+        <label style="font-weight:bold; color:#3498db; font-size:0.85rem; display:block; margin-bottom:5px">Item ${count}</label>
+        <div style="margin-bottom:10px">
+            <input type="text" class="mat-desc form-control" value="${desc}" placeholder="Descrição (Ex: Banner 60x100)">
+        </div>
+        <div>
+            <textarea class="mat-det form-control" rows="2" placeholder="Detalhes de acabamento...">${det}</textarea>
+        </div>
+    `;
+    container.appendChild(div);
+}
+
+// --- FUNÇÃO PARA ABRIR EDIÇÃO (GLOBAL) ---
+window.abrirPanelEdicao = function(card) {
+    resetarForm();
+    document.getElementById('panel-titulo').innerText = 'Editar Oportunidade';
+    document.getElementById('display-id-automatico').innerText = card.titulo_automatico || '';
+    document.getElementById('btn-produzir-final').style.display = 'block';
+
+    document.getElementById('card-id-db').value = card.id;
+    document.getElementById('crm-titulo-manual').value = card.titulo_automatico || '';
+    document.getElementById('crm-nome').value = card.nome_cliente;
+    document.getElementById('crm-wpp').value = card.wpp_cliente;
+    document.getElementById('crm-valor').value = card.valor_orcamento;
+
+    const sCard = document.querySelector(`.servico-card[data-value="${card.servico_tipo}"]`);
+    if(sCard) sCard.click();
+
+    let extras = {};
+    try { if (card.briefing_json) extras = (typeof card.briefing_json === 'string') ? JSON.parse(card.briefing_json) : card.briefing_json; } catch(e){}
+
+    if(card.arte_origem) {
+        const r = document.querySelector(`input[name="pedido-arte"][value="${card.arte_origem}"]`);
+        if(r) { r.checked = true; r.dispatchEvent(new Event('change')); }
+    }
+
+    if(extras.link_arquivo) document.getElementById('link-arquivo').value = extras.link_arquivo;
+    if(extras.supervisao_wpp) document.getElementById('pedido-supervisao').value = extras.supervisao_wpp;
+    if(extras.valor_designer) document.getElementById('valor-designer').value = extras.valor_designer;
+    if(extras.formato) { document.getElementById('pedido-formato').value = extras.formato; document.getElementById('pedido-formato').dispatchEvent(new Event('change')); }
+    if(extras.cdr_versao) document.getElementById('cdr-versao').value = extras.cdr_versao;
+    if(extras.tipo_entrega) { const re = document.querySelector(`input[name="tipo-entrega"][value="${extras.tipo_entrega}"]`); if(re) re.checked = true; }
+
+    if(extras.materiais && extras.materiais.length > 0) extras.materiais.forEach(m => adicionarMaterialNoForm(m.descricao, m.detalhes));
+    else adicionarMaterialNoForm();
+
+    configurarMascaras();
+    if(typeof IMask !== 'undefined') {
+        const w = document.getElementById('crm-wpp'); if(w && w.value) IMask(w, {mask:'(00) 00000-0000'}).updateValue();
+        const s = document.getElementById('pedido-supervisao'); if(s && s.value) IMask(s, {mask:'(00) 00000-0000'}).updateValue();
+    }
+
+    document.getElementById('slide-overlay').classList.add('active');
+    document.getElementById('slide-panel').classList.add('active');
+};
+
+// --- BUSCA CLIENTE ---
+function configurarBuscaCliente() {
+    const input = document.getElementById('crm-nome');
+    const list = document.getElementById('search-results-list');
+    input.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        if(this.value.length < 2) { list.style.display = 'none'; return; }
+        searchTimeout = setTimeout(async () => {
+            try {
+                const res = await fetch('/api/crm/searchClients', {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), query: input.value })
+                });
+                const clientes = await res.json();
+                list.innerHTML = '';
+                if(clientes.length > 0) {
+                    clientes.forEach(c => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<span>${c.nome}</span> <small style="color:#aaa">${c.whatsapp}</small>`;
+                        li.onclick = () => { input.value = c.nome; const w = document.getElementById('crm-wpp'); w.value = c.whatsapp; if(typeof IMask!=='undefined') IMask(w,{mask:'(00) 00000-0000'}).updateValue(); list.style.display = 'none'; };
+                        list.appendChild(li);
+                    });
+                    list.style.display = 'block';
+                } else list.style.display = 'none';
+            } catch(e){}
+        }, 400);
+    });
+    document.addEventListener('click', (e) => { if(!input.contains(e.target) && !list.contains(e.target)) list.style.display='none'; });
+}
+
+// --- SALVAR RASCUNHO ---
+document.getElementById('form-crm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-salvar-rascunho');
+    const originalText = btn.innerText;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...'; btn.disabled = true;
+
+    const mats = [];
+    document.querySelectorAll('.material-item').forEach(d => { const desc = d.querySelector('.mat-desc').value; if(desc) mats.push({ descricao: desc, detalhes: d.querySelector('.mat-det').value }); });
+
+    const payload = {
+        sessionToken: localStorage.getItem('sessionToken'),
+        id: document.getElementById('card-id-db').value,
+        titulo_manual: document.getElementById('crm-titulo-manual').value,
+        nome_cliente: document.getElementById('crm-nome').value,
+        wpp_cliente: document.getElementById('crm-wpp').value,
+        servico_tipo: document.getElementById('pedido-servico-hidden').value,
+        arte_origem: document.querySelector('input[name="pedido-arte"]:checked')?.value || '',
+        valor_orcamento: document.getElementById('crm-valor').value,
+        briefing_json: JSON.stringify({
+            tipo_entrega: document.querySelector('input[name="tipo-entrega"]:checked')?.value || '',
+            materiais: mats,
+            link_arquivo: document.getElementById('link-arquivo').value,
+            supervisao_wpp: document.getElementById('pedido-supervisao').value,
+            valor_designer: document.getElementById('valor-designer').value,
+            formato: document.getElementById('pedido-formato').value,
+            cdr_versao: document.getElementById('cdr-versao').value
+        })
+    };
+
+    try {
+        const res = await fetch('/api/crm/saveCard', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        if(res.ok) { window.fecharPanel(); carregarKanban(); showToast('Rascunho salvo com sucesso!', 'success'); } 
+        else { const err = await res.json(); showToast('Erro ao salvar: ' + (err.message || 'Desconhecido'), 'error'); }
+    } catch(err) { showToast('Erro de conexão ao salvar.', 'error'); }
+    finally { btn.innerText = originalText; btn.disabled = false; }
+});
+
+// --- MODAL DE CRÉDITO ---
 function setupModalCreditos() {
     const modal = document.getElementById("modal-adquirir-creditos");
     const form = document.getElementById("adquirir-creditos-form");
     if (!modal) return;
 
-    // Fechar
     const btnClose = modal.querySelector(".close-modal");
     if(btnClose) btnClose.addEventListener("click", () => modal.classList.remove("active"));
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("active"); });
@@ -192,58 +423,34 @@ function setupModalCreditos() {
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
             const btn = form.querySelector("button[type='submit']");
-            const valorInput = document.getElementById("creditos-valor");
-            const feedbackId = "creditos-form-error";
-            const feedback = document.getElementById(feedbackId);
+            const valor = document.getElementById("creditos-valor").value;
+            const errorDiv = document.getElementById("creditos-form-error");
             
-            if(feedback) feedback.style.display = 'none';
-            
-            const valor = valorInput.value;
+            errorDiv.style.display = 'none';
             if (!valor || parseFloat(valor) < 5) {
-                if(feedback) { feedback.innerText = "Mínimo R$ 5,00."; feedback.style.display = 'block'; }
-                return;
+                errorDiv.innerText = "Mínimo R$ 5,00."; errorDiv.style.display = 'block'; return;
             }
-            
-            btn.disabled = true; 
-            btn.textContent = "Gerando...";
+            btn.disabled = true; btn.textContent = "Gerando...";
             
             try {
-                const res = await fetch('/api/addCredit', {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ 
-                        token: localStorage.getItem("sessionToken"), 
-                        valor: valor 
-                    })
-                });
+                const res = await fetch('/api/addCredit', { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: localStorage.getItem("sessionToken"), valor: valor }) });
                 const data = await res.json();
-                
-                if (!res.ok) throw new Error(data.message || "Erro ao gerar cobrança.");
-                
-                // Abre link de pagamento
+                if (!res.ok) throw new Error(data.message);
                 window.open(data.url, '_blank');
-                
-                // Fecha o modal e avisa
-                modal.classList.remove("active");
-                form.reset();
-                alert("Cobrança gerada! Após o pagamento, seu saldo será atualizado. (A página será recarregada).");
-                window.location.reload(); // Recarrega para atualizar o saldo
-                
+                modal.classList.remove("active"); form.reset();
+                alert("Cobrança gerada! Após pagar, a página será atualizada.");
+                window.location.reload();
             } catch (error) {
-                if(feedback) { feedback.innerText = error.message; feedback.style.display = 'block'; }
-            } finally {
-                btn.disabled = false; 
-                btn.textContent = "Pagar Agora";
-            }
+                errorDiv.innerText = error.message; errorDiv.style.display = 'block';
+            } finally { btn.disabled = false; btn.textContent = "Pagar Agora"; }
         });
     }
 }
 
-// --- CONFIGURAR BOTÃO PRODUÇÃO (COM TRATAMENTO DE ERRO HTML) ---
+// --- BOTÃO PRODUZIR (Com tratamento de erro de saldo) ---
 function configurarBotaoProducao() {
     const btn = document.getElementById('btn-produzir-final');
     if(!btn) return;
-
     let confirmationStage = false;
 
     btn.addEventListener('click', async () => {
@@ -254,13 +461,7 @@ function configurarBotaoProducao() {
             confirmationStage = true;
             btn.innerHTML = '<i class="fa-solid fa-question-circle"></i> Tem certeza? Clique p/ confirmar';
             btn.classList.add('btn-confirmacao-ativa');
-            setTimeout(() => {
-                if (confirmationStage) {
-                    confirmationStage = false;
-                    btn.innerHTML = '<i class="fa-solid fa-rocket"></i> APROVAR AGORA';
-                    btn.classList.remove('btn-confirmacao-ativa');
-                }
-            }, 4000);
+            setTimeout(() => { if (confirmationStage) { confirmationStage = false; btn.innerHTML = '<i class="fa-solid fa-rocket"></i> APROVAR AGORA'; btn.classList.remove('btn-confirmacao-ativa'); } }, 4000);
             return;
         }
 
@@ -269,9 +470,7 @@ function configurarBotaoProducao() {
         btn.classList.remove('btn-confirmacao-ativa');
 
         let txt = "";
-        document.querySelectorAll('.material-item').forEach((d, i) => {
-            txt += `--- Item ${i+1} ---\nMaterial: ${d.querySelector('.mat-desc').value}\nDetalhes: ${d.querySelector('.mat-det').value}\n\n`;
-        });
+        document.querySelectorAll('.material-item').forEach((d, i) => { txt += `--- Item ${i+1} ---\nMaterial: ${d.querySelector('.mat-desc').value}\nDetalhes: ${d.querySelector('.mat-det').value}\n\n`; });
 
         const payload = {
             sessionToken: localStorage.getItem('sessionToken'),
@@ -290,27 +489,18 @@ function configurarBotaoProducao() {
         };
 
         try {
-            const res = await fetch('/api/createDealForGrafica', {
-                method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
-            });
+            const res = await fetch('/api/createDealForGrafica', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
             const data = await res.json();
             
             if(!data.success && !data.dealId) throw new Error(data.message || 'Erro desconhecido');
 
-            await fetch('/api/crm/deleteCard', {
-                method: 'POST', headers: {'Content-Type':'application/json'}, 
-                body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: id })
-            });
-
+            await fetch('/api/crm/deleteCard', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: id }) });
+            
             showToast('Pedido enviado para Produção!', 'success');
-            fecharPanel();
+            window.fecharPanel();
             carregarKanban();
         } catch(err) { 
-            // Mostra o erro HTML retornado pela API no Toast (ex: link para carteira)
-            // Usamos innerHTML no showToast para que o link funcione
-            const msg = err.message || "Erro desconhecido";
-            showToast(msg, 'error', 10000); // 10s para ler
-            
+            showToast(err.message, 'error', 15000); // 15 segundos para ler o erro longo
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-rocket"></i> Tentar Novamente';
             confirmationStage = false;
