@@ -14,56 +14,74 @@ module.exports = async (req, res) => {
     try {
         const { sessionToken, query } = req.body;
         
-        // Validação simples
         if (!sessionToken) return res.status(403).json({ message: 'Não autorizado' });
+
+        // --- DEFINIÇÃO DOS FILTROS ---
+        
+        // 1. IDs de fases permitidas (Finalizado/Entregue Flow, Pago, Cobrar)
+        const fasesPermitidas = "'C17:UC_IKPW6X', 'C17:UC_WFTT1A', 'C17:UC_G2024K'";
+
+        // 2. Condição Base: Fase válida E Não Entregue (considerando NULL como não entregue)
+        const filtroBase = `
+            bitrix_stage_id IN (${fasesPermitidas}) 
+            AND (status_expedicao IS NULL OR status_expedicao != 'Entregue')
+        `;
 
         let sqlQuery;
         let params = [];
 
         if (query && query.trim().length > 0) {
             const termo = query.trim();
-            // Tenta converter para número (para busca por ID)
             const termoNumero = parseInt(termo); 
-            const termoTexto = `%${termo}%`; // Para busca ILIKE
+            const termoTexto = `%${termo}%`;
 
             if (!isNaN(termoNumero)) {
-                // Se for número, busca por ID exato OU texto
+                // Busca por ID + Filtros Base
                 sqlQuery = `
                     SELECT * FROM crm_oportunidades 
-                    WHERE id = $1 
-                    OR nome_cliente ILIKE $2 
-                    OR titulo_automatico ILIKE $2
-                    OR wpp_cliente ILIKE $2
+                    WHERE (${filtroBase})
+                    AND (
+                        id = $1 
+                        OR nome_cliente ILIKE $2 
+                        OR titulo_automatico ILIKE $2
+                        OR wpp_cliente ILIKE $2
+                    )
                     ORDER BY updated_at DESC LIMIT 50
                 `;
                 params = [termoNumero, termoTexto];
             } else {
-                // Se for texto apenas
+                // Busca por Texto + Filtros Base
                 sqlQuery = `
                     SELECT * FROM crm_oportunidades 
-                    WHERE nome_cliente ILIKE $1 
-                    OR titulo_automatico ILIKE $1
-                    OR wpp_cliente ILIKE $1
-                    OR servico_tipo ILIKE $1
+                    WHERE (${filtroBase})
+                    AND (
+                        nome_cliente ILIKE $1 
+                        OR titulo_automatico ILIKE $1
+                        OR wpp_cliente ILIKE $1
+                        OR servico_tipo ILIKE $1
+                    )
                     ORDER BY updated_at DESC LIMIT 50
                 `;
                 params = [termoTexto];
             }
         } else {
-            // Sem busca: Traz os últimos 50
+            // Sem busca: Apenas Filtros Base
             sqlQuery = `
                 SELECT * FROM crm_oportunidades 
+                WHERE ${filtroBase}
                 ORDER BY updated_at DESC LIMIT 50
             `;
         }
 
         const pedidos = await prisma.$queryRawUnsafe(sqlQuery, ...params);
         
-        // Tratamento de BigInt (caso o ID seja muito grande) e formatação
+        // Formatação para o frontend
         const pedidosFormatados = pedidos.map(p => ({
             ...p,
             id: Number(p.id),
-            valor_orcamento: parseFloat(p.valor_orcamento || 0)
+            valor_orcamento: parseFloat(p.valor_orcamento || 0),
+            // Garante que mostre 'Aguardando Retirada' se estiver NULL
+            status_expedicao: p.status_expedicao || 'Aguardando Retirada'
         }));
 
         return res.status(200).json(pedidosFormatados);
