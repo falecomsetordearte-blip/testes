@@ -14,9 +14,9 @@ module.exports = async (req, res) => {
         const { sessionToken, id } = req.body;
         if (!sessionToken || !id) return res.status(400).json({ message: 'Dados incompletos' });
 
-        // Executa UPDATE via SQL direto
+        // Atualiza na tabela PEDIDOS
         await prisma.$executeRaw`
-            UPDATE crm_oportunidades 
+            UPDATE pedidos 
             SET status_expedicao = 'Entregue', 
                 data_entrega = NOW() 
             WHERE id = ${parseInt(id)}
