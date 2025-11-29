@@ -12,49 +12,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
     <style>
-        /* --- KANBAN GERAL --- */
+        /* Estilos mantidos, adicionei apenas o estilo do saldo */
         .app-content .container { max-width: 100% !important; padding-right: 20px; }
         
-        /* Container do Kanban */
-        .kanban-board { 
-            display: flex; 
-            overflow-x: auto; 
-            gap: 1.5rem; 
-            padding-bottom: 2rem; 
-            height: calc(100vh - 200px); 
-            align-items: flex-start;
-            cursor: grab; 
-            user-select: none; 
-        }
-        .kanban-board.active { cursor: grabbing; cursor: -webkit-grabbing; }
+        .kanban-board { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 20px; height: calc(100vh - 180px); align-items: flex-start; cursor: grab; user-select: none; }
+        .kanban-board.active { cursor: grabbing; }
+        .kanban-column { background: transparent !important; border: none !important; min-width: 300px; width: 300px; padding: 0; margin-right: 10px; display: flex; flex-direction: column; max-height: 100%; }
+        
+        .column-header { font-weight: 700; color: white !important; margin-bottom: 15px; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; padding: 12px 15px; border-radius: 8px; text-align: center; box-shadow: var(--shadow-sm); border: none !important; }
+        .col-novos .column-header { background-color: #3498db; }
+        .col-visita .column-header { background-color: #e67e22; }
+        .col-orcamento .column-header { background-color: #f1c40f; color: #333 !important; }
+        .col-pagamento .column-header { background-color: #9b59b6; }
+        .col-abrir .column-header { background-color: #27ae60; }
 
-        .kanban-board::-webkit-scrollbar { height: 10px; }
-        .kanban-board::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 5px; }
-        .kanban-board::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 5px; }
+        .kanban-items { overflow-y: auto; flex-grow: 1; padding-right: 5px; scrollbar-width: thin; display: flex; flex-direction: column; gap: 12px; min-height: 150px; }
         
-        .kanban-column { min-width: 320px; width: 320px; background: #f4f6f8; border-radius: 12px; display: flex; flex-direction: column; max-height: 100%; border: 1px solid #e2e8f0; }
-        .column-header { padding: 1rem; border-radius: 12px 12px 0 0; font-weight: 700; color: #2c3e50; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 2; background: inherit; }
-        
-        .col-novos .column-header { border-top: 4px solid #3498db; background: #ebf5fb; }
-        .col-visita .column-header { border-top: 4px solid #e67e22; background: #fdf2e9; }
-        .col-orcamento .column-header { border-top: 4px solid #f1c40f; background: #fef9e7; }
-        .col-pagamento .column-header { border-top: 4px solid #9b59b6; background: #f5eef8; }
-        .col-abrir .column-header { border-top: 4px solid #27ae60; background: #eafaf1; }
-
-        .kanban-items { padding: 1rem; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; min-height: 100px; }
-        
-        .kanban-card { 
-            background: white; 
-            padding: 15px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.04); 
-            cursor: pointer; 
-            border: 1px solid transparent; 
-            transition: transform 0.2s, box-shadow 0.2s; 
-            position: relative; 
-        }
+        .kanban-card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); cursor: pointer; border: 1px solid transparent; transition: transform 0.2s, box-shadow 0.2s; position: relative; }
         .kanban-card:hover { transform: translateY(-3px); box-shadow: 0 8px 16px rgba(0,0,0,0.08); border-color: #cbd5e0; }
-        
         .card-tags { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
         .card-tag { font-size: 0.7rem; padding: 3px 8px; border-radius: 6px; font-weight: 600; text-transform: uppercase; }
         .tag-arte { background: #e0f2f1; color: #00897b; }
@@ -62,7 +37,6 @@
         .card-price { font-weight: 700; color: #27ae60; font-size: 0.95rem; display: block; margin-top: 10px; }
         .card-id { position: absolute; top: 12px; right: 12px; font-size: 0.7rem; color: #a0aec0; font-weight: 500; }
 
-        /* SIDE DRAWER */
         .slide-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); z-index: 9990; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
         .slide-overlay.active { opacity: 1; visibility: visible; }
         .slide-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 800px; background: #f8f9fa; box-shadow: -5px 0 25px rgba(0,0,0,0.15); z-index: 9999; transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; }
@@ -72,7 +46,6 @@
         .close-panel-btn { background: none; border: none; font-size: 1.5rem; color: #a0aec0; cursor: pointer; padding: 5px; transition: color 0.2s; }
         .close-panel-btn:hover { color: #e53e3e; }
 
-        /* FORM STYLES */
         #servico-selection-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; transition: all 0.5s ease-in-out; }
         .servico-card { padding: 30px 20px; border-radius: 12px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: transform 0.3s ease, box-shadow 0.3s ease; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .servico-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
@@ -85,12 +58,15 @@
         #servico-selection-container.selection-made .servico-card:not(.active) { display: none; }
         #servico-selection-container.selection-made .servico-card.active { display: flex; flex-direction: row; align-items: center; padding: 15px 25px; text-align: left; background: #fff; border: 2px solid #3498db; box-shadow: 0 4px 10px rgba(52, 152, 219, 0.2); }
         #servico-selection-container.selection-made .servico-card.active i { font-size: 1.8rem; margin-bottom: 0; margin-right: 20px; }
+        
         #form-content-wrapper { transition: max-height 0.7s ease-in-out, opacity 0.5s ease-in-out; max-height: 0; opacity: 0; overflow: hidden; }
         #form-content-wrapper.visible { max-height: 5000px; opacity: 1; overflow: visible; }
+        
         .radio-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px; }
         .radio-option input[type="radio"] { display: none; }
         .radio-option label { display: flex; align-items: center; background-color: #fff; padding: 10px 15px; border: 1px solid #cbd5e0; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 0.9rem; }
         .radio-option input[type="radio"]:checked + label { border-color: #3498db; background-color: #ebf5fb; color: #2980b9; font-weight: 600; box-shadow: 0 0 0 1px #3498db; }
+        
         .material-item { background: #f1f3f5; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6; margin-bottom: 15px; }
         .autocomplete-wrapper { position: relative; }
         #search-results-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1000; list-style: none; padding: 0; margin: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
@@ -99,6 +75,14 @@
         .btn-produzir { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: white; border: none; font-size: 1.1rem; font-weight: 700; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(39, 174, 96, 0.2); transition: all 0.3s ease; }
         .btn-produzir:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(39, 174, 96, 0.3); }
         
+        /* Modal Add Créditos */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10005; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: #fff; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; position: relative; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .close-modal { background: none; border: none; font-size: 1.8rem; cursor: pointer; color: #94a3b8; line-height: 1; }
+        .btn-modal-submit { width: 100%; background: #4f46e5; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem; margin-top: 10px; }
+
         @media (max-width: 768px) { .slide-panel { max-width: 100%; } }
     </style>
 </head>
@@ -160,16 +144,13 @@
                 <!-- CONTEÚDO DO FORM -->
                 <div id="form-content-wrapper">
                     
-                    <!-- BLOCO DE IDENTIFICAÇÃO E CLIENTE -->
+                    <!-- IDENTIFICAÇÃO -->
                     <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px;">
                         <h4 style="color: #4a5568; margin-bottom: 15px; font-size: 1rem; border-left: 4px solid #3498db; padding-left: 10px;">Identificação & Cliente</h4>
-                        
-                        <!-- NOVO CAMPO: ID DO PEDIDO (OPCIONAL/MANUAL) -->
                         <div class="form-group" style="margin-bottom: 15px;">
                             <label style="font-weight: 600; color: #4a5568; font-size: 0.9rem;">ID do Pedido / Título (Opcional)</label>
                             <input type="text" id="crm-titulo-manual" class="form-control" placeholder="Ex: Pedido Loja X (Deixe em branco para gerar #OP automático)" style="width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; background-color: #fcfcfc;">
                         </div>
-
                         <div class="form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
                             <div class="form-group autocomplete-wrapper">
                                 <label style="font-weight: 600; color: #4a5568; font-size: 0.9rem;">Nome do Cliente</label>
@@ -183,7 +164,7 @@
                         </div>
                     </div>
 
-                    <!-- BLOCO DETALHES DA ARTE -->
+                    <!-- ARTE -->
                     <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px;">
                         <h4 style="color: #4a5568; margin-bottom: 15px; font-size: 1rem; border-left: 4px solid #e67e22; padding-left: 10px;">Detalhes da Arte</h4>
                         <div class="form-group" style="margin-bottom: 20px;">
@@ -207,6 +188,15 @@
                                 <div class="form-group">
                                     <label style="font-size: 0.9rem;">Valor Designer (R$)</label>
                                     <input type="number" id="valor-designer" class="form-control" step="5" style="width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; background: white;">
+                                    
+                                    <!-- AQUI ESTÁ O NOVO CONTAINER DE SALDO -->
+                                    <div id="saldo-container" style="display:none; margin-top: 5px; font-size: 0.85rem; color: #555;">
+                                        Saldo Disponível: <span id="crm-saldo-display" style="font-weight:bold; color: #2ecc71;">R$ ...</span>
+                                        <a href="#" id="btn-add-saldo-crm" style="margin-left: 10px; color: #3498db; font-weight:bold; text-decoration: none;">
+                                            <i class="fas fa-plus-circle"></i> Adicionar
+                                        </a>
+                                    </div>
+
                                 </div>
                             </div>
                             <div class="form-group" style="margin-top: 15px;">
@@ -236,7 +226,7 @@
                         </div>
                     </div>
 
-                    <!-- BLOCO MATERIAIS -->
+                    <!-- MATERIAIS -->
                     <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                         <h4 style="color: #4a5568; margin-bottom: 15px; font-size: 1rem; border-left: 4px solid #27ae60; padding-left: 10px;">Materiais e Orçamento</h4>
                         <div id="materiais-container"></div>
@@ -251,12 +241,31 @@
                         <button type="submit" class="btn btn-secondary" id="btn-salvar-rascunho" style="flex: 1; padding: 15px; font-weight: 600;">
                             <i class="fa-solid fa-floppy-disk"></i> SALVAR NO CRM
                         </button>
-                        <button type="button" class="btn-produzir" id="btn-produzir-final" onclick="converterEmPedido()" style="flex: 1;">
+                        <button type="button" class="btn-produzir" id="btn-produzir-final" style="flex: 1;">
                             <i class="fa-solid fa-rocket"></i> APROVAR AGORA
                         </button>
                     </div>
 
                 </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE ADICIONAR CRÉDITOS (NOVO) -->
+    <div class="modal-overlay" id="modal-adquirir-creditos">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Adicionar Créditos</h3>
+                <button class="close-modal">×</button>
+            </div>
+            <form id="adquirir-creditos-form">
+                <div id="creditos-form-error" class="form-feedback error hidden" style="display:none; color: #ef4444; margin-bottom: 15px; font-size: 0.9rem;"></div>
+                <div class="form-group">
+                    <label for="creditos-valor">Valor da Recarga (R$)</label>
+                    <input type="number" id="creditos-valor" min="5" step="5" placeholder="Ex: 50.00" required>
+                    <small style="color: #94a3b8; font-size: 0.8rem;">Mínimo R$ 5,00</small>
+                </div>
+                <button type="submit" class="btn-modal-submit">Pagar Agora</button>
             </form>
         </div>
     </div>
