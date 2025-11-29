@@ -1,3 +1,4 @@
+// api/expedicao/listar.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const axios = require('axios');
@@ -39,29 +40,22 @@ module.exports = async (req, res) => {
         // -----------------------------------------------------------
         // 2. BUSCAR NO BITRIX (A Fonte da Verdade)
         // -----------------------------------------------------------
-        // Montamos o filtro para pegar apenas deals da empresa e das fases certas
         let bitrixFilter = {
-            'COMPANY_ID': user.COMPANY_ID, // SEGURANÇA MÁXIMA
+            'COMPANY_ID': user.COMPANY_ID,
             'STAGE_ID': FASES_ALVO
         };
 
-        // Se tiver busca por texto, tentamos filtrar no Bitrix
         if (query && query.trim().length > 0) {
-            // O Bitrix permite busca genérica usando "FIND" ou filtro específico por ID
             if (!isNaN(parseInt(query))) {
                 bitrixFilter['ID'] = parseInt(query);
             } else {
-                // Busca aproximada (Titulo ou Cliente) - Nota: Bitrix tem limitações em busca de texto
-                // Para simplificar, usamos %LIKE% no titulo se suportado ou deixamos o filtro aberto
-                // A melhor estratégia "Simples" é buscar os últimos 50 e filtrar o resto no JS se necessário
-                // ou usar o SEARCH_CONTENT se configurado. Vamos tentar filtrar pelo TITLE.
                 bitrixFilter['%TITLE'] = query.trim();
             }
         }
 
         const bitrixResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
             filter: bitrixFilter,
-            select: ['ID', 'TITLE', 'OPPORTUNITY', 'CURRENCY_ID', 'STAGE_ID'], // Trazemos dados básicos
+            select: ['ID', 'TITLE', 'OPPORTUNITY', 'CURRENCY_ID', 'STAGE_ID'],
             order: { 'ID': 'DESC' },
             start: 0
         });
@@ -73,43 +67,40 @@ module.exports = async (req, res) => {
         }
 
         // -----------------------------------------------------------
-        // 3. CRUZAR COM BANCO LOCAL (Para pegar o Status de Entrega)
+        // 3. CRUZAR COM BANCO LOCAL (CORRIGIDO)
         // -----------------------------------------------------------
-        
-        // Extraímos os IDs dos pedidos retornados pelo Bitrix
         const dealIds = dealsBitrix.map(d => parseInt(d.ID));
 
-        // Buscamos no banco local APENAS esses IDs para saber o status
-        // Também pegamos o nome do cliente salvo localmente para exibir bonito
+        // MUDANÇA AQUI: Trocamos 'SELECT id, wpp_cliente...' por 'SELECT *'
+        // Isso evita o erro se o nome da coluna for diferente.
         const dadosLocais = await prisma.$queryRawUnsafe(
-            `SELECT id, nome_cliente, wpp_cliente, servico_tipo, status_expedicao 
-             FROM pedidos 
-             WHERE id IN (${dealIds.join(',')})`
+            `SELECT * FROM pedidos WHERE id IN (${dealIds.join(',')})`
         );
 
         // -----------------------------------------------------------
-        // 4. MESCLAR DADOS (Bitrix + Local)
+        // 4. MESCLAR DADOS
         // -----------------------------------------------------------
         const resultadoFinal = dealsBitrix.map(deal => {
-            // Tenta achar os dados desse deal no banco local
-            const local = dadosLocais.find(l => l.id == deal.ID);
+            const local = dadosLocais.find(l => Number(l.id) === Number(deal.ID));
+
+            // Tenta encontrar o whatsapp em várias colunas possíveis
+            const wpp = local?.wpp_cliente || local?.whatsapp || local?.telefone || local?.celular || '';
+            
+            // Tenta encontrar o nome do cliente
+            const nome = local?.nome_cliente || local?.cliente || local?.nome || 'Cliente (Ver no Bitrix)';
 
             return {
                 id: parseInt(deal.ID),
-                // Prefere o dado local (que é formatado), senão usa o do Bitrix
                 titulo_automatico: local?.servico_tipo || deal.TITLE, 
-                nome_cliente: local?.nome_cliente || 'Cliente (Dados no Bitrix)',
-                wpp_cliente: local?.wpp_cliente || '',
+                nome_cliente: nome,
+                wpp_cliente: wpp,
                 valor_orcamento: parseFloat(deal.OPPORTUNITY || 0),
-                // AQUI ESTÁ A MÁGICA: Se não tiver no banco local, é 'Aguardando Retirada'
                 status_expedicao: local?.status_expedicao || 'Aguardando Retirada',
-                // Info extra pra debug se precisar
                 fase_atual_bitrix: deal.STAGE_ID 
             };
         });
 
-        // Opcional: Filtro final de texto no JS para garantir (caso o filtro do Bitrix falhe em campos customizados)
-        // Se já filtrou no Bitrix, isso é redundante, mas garante a busca por nome do cliente local
+        // Filtro final de texto (caso Bitrix não tenha filtrado nome do cliente local)
         let listaFiltrada = resultadoFinal;
         if (query && isNaN(parseInt(query))) {
             const q = query.toLowerCase();
