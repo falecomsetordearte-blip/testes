@@ -1,4 +1,4 @@
-// crm-script.js - WIZARD LOGIC
+// crm-script.js - WIZARD + LIXEIRA + SALDO
 
 let currentStep = 1;
 const totalSteps = 3;
@@ -13,62 +13,38 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarMascaras();
     carregarKanban();
     configurarBuscaCliente();
+    configurarFormularioVisual();
     configurarDragScroll();
     configurarBotaoProducao();
     setupModalCreditos();
-    
-    // Corel Toggle
-    document.getElementById('pedido-formato').addEventListener('change', (e) => {
-        const div = document.getElementById('cdr-versao-container');
-        e.target.value === 'CDR' ? div.classList.remove('hidden') : div.classList.add('hidden');
-    });
-    
-    // Botão Adicionar Item
-    document.getElementById('btn-add-material').addEventListener('click', () => adicionarMaterialNoForm());
-    
-    // Botão Add Saldo
-    const btnAddSaldo = document.getElementById('btn-add-saldo-crm');
-    if(btnAddSaldo) btnAddSaldo.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.getElementById("modal-adquirir-creditos").classList.add("active");
-    });
 });
 
-// --- LÓGICA DO WIZARD (PASSOS) ---
+// --- WIZARD ---
 window.mudarPasso = function(direction) {
-    // Validação antes de avançar
-    if (direction === 1) {
-        if (!validarPassoAtual()) return;
-    }
-
+    if (direction === 1 && !validarPassoAtual()) return;
     currentStep += direction;
     if (currentStep < 1) currentStep = 1;
     if (currentStep > totalSteps) currentStep = totalSteps;
-
     renderizarPasso();
 };
 
 function renderizarPasso() {
-    // 1. Esconde todos, mostra atual
     document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
     document.getElementById(`step-${currentStep}`).classList.add('active');
-
-    // 2. Atualiza Stepper (Bolinhas)
+    
     for (let i = 1; i <= totalSteps; i++) {
         const ind = document.getElementById(`indicator-${i}`);
         ind.classList.remove('active', 'completed');
         if (i < currentStep) ind.classList.add('completed');
         if (i === currentStep) ind.classList.add('active');
     }
-
-    // 3. Botões de Navegação
+    
     const btnPrev = document.getElementById('btn-prev');
     const btnNext = document.getElementById('btn-next');
     const finalBtns = document.getElementById('final-buttons');
 
-    if (currentStep === 1) btnPrev.style.display = 'none';
-    else btnPrev.style.display = 'block';
-
+    if (currentStep === 1) btnPrev.style.display = 'none'; else btnPrev.style.display = 'block';
+    
     if (currentStep === totalSteps) {
         btnNext.style.display = 'none';
         finalBtns.style.display = 'flex';
@@ -80,50 +56,30 @@ function renderizarPasso() {
 
 function validarPassoAtual() {
     if (currentStep === 1) {
-        const servico = document.getElementById('pedido-servico-hidden').value;
-        const nome = document.getElementById('crm-nome').value;
-        const wpp = document.getElementById('crm-wpp').value;
-        
-        if (!servico) { showToast("Selecione o tipo de serviço.", "error"); return false; }
-        if (!nome || nome.length < 3) { showToast("Preencha o nome do cliente.", "error"); return false; }
-        if (!wpp || wpp.length < 10) { showToast("Preencha o WhatsApp corretamente.", "error"); return false; }
+        if (!document.getElementById('pedido-servico-hidden').value) { showToast("Selecione o serviço.", "error"); return false; }
+        if (document.getElementById('crm-nome').value.length < 3) { showToast("Preencha o cliente.", "error"); return false; }
+        if (document.getElementById('crm-wpp').value.length < 10) { showToast("Preencha o WhatsApp.", "error"); return false; }
     }
-    
     if (currentStep === 2) {
         const arte = document.getElementById('pedido-arte-hidden').value;
-        if (!arte) { showToast("Selecione quem fará a arte.", "error"); return false; }
-        
-        // Validações específicas da Arte
-        if (arte === 'Arquivo do Cliente' && !document.getElementById('link-arquivo').value) {
-            showToast("Cole o link do arquivo.", "error"); return false;
-        }
+        if (!arte) { showToast("Selecione a arte.", "error"); return false; }
+        if (arte === 'Arquivo do Cliente' && !document.getElementById('link-arquivo').value) { showToast("Cole o link.", "error"); return false; }
         if (arte === 'Setor de Arte') {
-            if(!document.getElementById('pedido-supervisao').value) { showToast("Preencha a supervisão.", "error"); return false; }
-            if(!document.getElementById('valor-designer').value) { showToast("Informe o valor do designer.", "error"); return false; }
-            if(!document.getElementById('pedido-formato').value) { showToast("Selecione o formato.", "error"); return false; }
+            if(!document.getElementById('pedido-supervisao').value || !document.getElementById('valor-designer').value || !document.getElementById('pedido-formato').value) { showToast("Preencha os dados do designer.", "error"); return false; }
         }
-        
         const entrega = document.getElementById('pedido-entrega-hidden').value;
-        if (!entrega && arte !== 'Designer Próprio') { // Entrega não obrigatória pra designer próprio se não quiser
-             // Mas vamos deixar obrigatório pra padronizar
-             if(!entrega) { showToast("Selecione o método de entrega.", "error"); return false; }
-        }
+        if (!entrega && arte !== 'Designer Próprio') { showToast("Selecione a entrega.", "error"); return false; }
     }
-    
     return true;
 }
 
-// --- SELEÇÃO DE CARDS (VISUAL) ---
+// --- SELECT CARDS ---
 window.selectCard = function(group, value, element) {
-    // 1. Atualiza Input Oculto
     document.getElementById(`pedido-${group}-hidden`).value = value;
-    
-    // 2. Atualiza Visual
     const container = element.parentElement;
     container.querySelectorAll('.selection-card').forEach(c => c.classList.remove('selected'));
     element.classList.add('selected');
-
-    // 3. Lógica Específica (Mostrar campos)
+    
     if (group === 'arte') {
         const arqFields = document.getElementById('arquivo-cliente-fields');
         const setorFields = document.getElementById('setor-arte-fields');
@@ -144,102 +100,25 @@ window.selectCard = function(group, value, element) {
     }
 };
 
-// --- FUNÇÕES GLOBAIS DE DRAWER ---
-window.abrirPanelNovo = function() {
-    resetarForm();
-    document.getElementById('panel-titulo').innerText = 'Nova Oportunidade';
-    document.getElementById('display-id-automatico').innerText = '# NOVO';
-    document.getElementById('crm-titulo-manual').value = '';
-    document.getElementById('btn-produzir-final').style.display = 'none';
-    
-    // Reset Wizard
-    currentStep = 1;
-    renderizarPasso();
-    adicionarMaterialNoForm();
-    
-    document.getElementById('slide-overlay').classList.add('active');
-    document.getElementById('slide-panel').classList.add('active');
-};
-
-window.abrirPanelEdicao = function(card) {
-    resetarForm();
-    document.getElementById('panel-titulo').innerText = 'Editar Oportunidade';
-    document.getElementById('display-id-automatico').innerText = card.titulo_automatico || '';
-    document.getElementById('btn-produzir-final').style.display = 'block';
-    
-    // Preencher Campos Básicos
-    document.getElementById('card-id-db').value = card.id;
-    document.getElementById('crm-titulo-manual').value = card.titulo_automatico || '';
-    document.getElementById('crm-nome').value = card.nome_cliente;
-    document.getElementById('crm-wpp').value = card.wpp_cliente;
-    document.getElementById('crm-valor').value = card.valor_orcamento;
-
-    // Trigger Visual Selections (Simula clique)
-    const servicoVal = card.servico_tipo;
-    if(servicoVal) {
-        const el = document.querySelector(`#servico-grid .selection-card[onclick*="'${servicoVal}'"]`);
-        if(el) selectCard('servico', servicoVal, el);
+// --- FORMULÁRIO VISUAL ---
+function configurarFormularioVisual() {
+    // Botão Add Saldo (Link)
+    const btnAddSaldo = document.getElementById('btn-add-saldo-crm');
+    if(btnAddSaldo) {
+        btnAddSaldo.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById("modal-adquirir-creditos").classList.add("active");
+        });
     }
 
-    let extras = {};
-    try { if (card.briefing_json) extras = JSON.parse(card.briefing_json); } catch(e){}
-
-    const arteVal = card.arte_origem;
-    if(arteVal) {
-        const el = document.querySelector(`#arte-grid .selection-card[onclick*="'${arteVal}'"]`);
-        if(el) selectCard('arte', arteVal, el);
-    }
-
-    const entregaVal = extras.tipo_entrega;
-    if(entregaVal) {
-        const el = document.querySelector(`#entrega-grid .selection-card[onclick*="'${entregaVal}'"]`);
-        if(el) selectCard('entrega', entregaVal, el);
-    }
-
-    // Preencher Inputs
-    if(extras.link_arquivo) document.getElementById('link-arquivo').value = extras.link_arquivo;
-    if(extras.supervisao_wpp) document.getElementById('pedido-supervisao').value = extras.supervisao_wpp;
-    if(extras.valor_designer) document.getElementById('valor-designer').value = extras.valor_designer;
-    if(extras.formato) document.getElementById('pedido-formato').value = extras.formato;
-    if(extras.cdr_versao) document.getElementById('cdr-versao').value = extras.cdr_versao;
-
-    // Materiais
-    const matContainer = document.getElementById('materiais-container');
-    matContainer.innerHTML = '';
-    if(extras.materiais && extras.materiais.length > 0) {
-        extras.materiais.forEach(m => adicionarMaterialNoForm(m.descricao, m.detalhes));
-    } else {
-        adicionarMaterialNoForm();
-    }
-
-    configurarMascaras();
-    currentStep = 1;
-    renderizarPasso();
+    // Corel Toggle
+    document.getElementById('pedido-formato').addEventListener('change', (e) => {
+        const div = document.getElementById('cdr-versao-container');
+        e.target.value === 'CDR' ? div.classList.remove('hidden') : div.classList.add('hidden');
+    });
     
-    document.getElementById('slide-overlay').classList.add('active');
-    document.getElementById('slide-panel').classList.add('active');
-};
-
-window.fecharPanel = function() {
-    document.getElementById('slide-overlay').classList.remove('active');
-    document.getElementById('slide-panel').classList.remove('active');
-    setTimeout(() => { 
-        const list = document.getElementById('search-results-list');
-        if(list) list.style.display = 'none'; 
-    }, 300);
-};
-
-function resetarForm() {
-    document.getElementById('form-crm').reset();
-    document.getElementById('card-id-db').value = '';
-    // Limpa seleções visuais
-    document.querySelectorAll('.selection-card').forEach(c => c.classList.remove('selected'));
-    // Limpa hiddens
-    ['pedido-servico-hidden', 'pedido-arte-hidden', 'pedido-entrega-hidden'].forEach(id => document.getElementById(id).value = '');
-    // Reseta visibilidade
-    document.getElementById('arquivo-cliente-fields').classList.add('hidden');
-    document.getElementById('setor-arte-fields').classList.add('hidden');
-    document.getElementById('saldo-container').style.display = 'none';
+    // Botão Add Material
+    document.getElementById('btn-add-material').addEventListener('click', () => adicionarMaterialNoForm());
 }
 
 // --- LIXEIRA DE MATERIAIS ---
@@ -268,26 +147,107 @@ function adicionarMaterialNoForm(desc = '', det = '') {
     container.appendChild(div);
 }
 
+// --- BUSCA DE SALDO ---
+async function fetchSaldoCRM() {
+    const display = document.getElementById('crm-saldo-display');
+    if(!display) return;
+    display.innerText = "...";
+    try {
+        const res = await fetch('/api/crm/getBalance', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') })
+        });
+        const data = await res.json();
+        const v = parseFloat(data.saldo || 0);
+        display.innerText = v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+        display.style.color = v > 0 ? '#2ecc71' : '#e74c3c';
+    } catch(e) { display.innerText = "Erro"; }
+}
+
+// --- DRAWER GLOBAL ---
+window.abrirPanelNovo = function() {
+    resetarForm();
+    document.getElementById('panel-titulo').innerText = 'Nova Oportunidade';
+    document.getElementById('display-id-automatico').innerText = '# NOVO';
+    document.getElementById('crm-titulo-manual').value = '';
+    currentStep = 1;
+    renderizarPasso();
+    adicionarMaterialNoForm();
+    document.getElementById('slide-overlay').classList.add('active');
+    document.getElementById('slide-panel').classList.add('active');
+};
+
+window.abrirPanelEdicao = function(card) {
+    resetarForm();
+    document.getElementById('panel-titulo').innerText = 'Editar Oportunidade';
+    document.getElementById('display-id-automatico').innerText = card.titulo_automatico || '';
+    document.getElementById('card-id-db').value = card.id;
+    document.getElementById('crm-titulo-manual').value = card.titulo_automatico || '';
+    document.getElementById('crm-nome').value = card.nome_cliente;
+    document.getElementById('crm-wpp').value = card.wpp_cliente;
+    document.getElementById('crm-valor').value = card.valor_orcamento;
+
+    const servicoVal = card.servico_tipo;
+    if(servicoVal) { const el = document.querySelector(`#servico-grid .selection-card[onclick*="'${servicoVal}'"]`); if(el) selectCard('servico', servicoVal, el); }
+
+    let extras = {};
+    try { if (card.briefing_json) extras = JSON.parse(card.briefing_json); } catch(e){}
+
+    const arteVal = card.arte_origem;
+    if(arteVal) { const el = document.querySelector(`#arte-grid .selection-card[onclick*="'${arteVal}'"]`); if(el) selectCard('arte', arteVal, el); }
+
+    const entregaVal = extras.tipo_entrega;
+    if(entregaVal) { const el = document.querySelector(`#entrega-grid .selection-card[onclick*="'${entregaVal}'"]`); if(el) selectCard('entrega', entregaVal, el); }
+
+    if(extras.link_arquivo) document.getElementById('link-arquivo').value = extras.link_arquivo;
+    if(extras.supervisao_wpp) document.getElementById('pedido-supervisao').value = extras.supervisao_wpp;
+    if(extras.valor_designer) document.getElementById('valor-designer').value = extras.valor_designer;
+    if(extras.formato) document.getElementById('pedido-formato').value = extras.formato;
+    if(extras.cdr_versao) document.getElementById('cdr-versao').value = extras.cdr_versao;
+
+    const matContainer = document.getElementById('materiais-container');
+    matContainer.innerHTML = '';
+    if(extras.materiais && extras.materiais.length > 0) {
+        extras.materiais.forEach(m => adicionarMaterialNoForm(m.descricao, m.detalhes));
+    } else {
+        adicionarMaterialNoForm();
+    }
+
+    configurarMascaras();
+    currentStep = 1;
+    renderizarPasso();
+    document.getElementById('slide-overlay').classList.add('active');
+    document.getElementById('slide-panel').classList.add('active');
+};
+
+window.fecharPanel = function() {
+    document.getElementById('slide-overlay').classList.remove('active');
+    document.getElementById('slide-panel').classList.remove('active');
+    setTimeout(() => { const list = document.getElementById('search-results-list'); if(list) list.style.display = 'none'; }, 300);
+};
+
+function resetarForm() {
+    document.getElementById('form-crm').reset();
+    document.getElementById('card-id-db').value = '';
+    document.querySelectorAll('.selection-card').forEach(c => c.classList.remove('selected'));
+    ['pedido-servico-hidden', 'pedido-arte-hidden', 'pedido-entrega-hidden'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('arquivo-cliente-fields').classList.add('hidden');
+    document.getElementById('setor-arte-fields').classList.add('hidden');
+    document.getElementById('saldo-container').style.display = 'none';
+}
+
 // --- BUSCA CLIENTE ---
 function configurarBuscaCliente() {
     const input = document.getElementById('crm-nome');
     const list = document.getElementById('search-results-list');
     const loading = document.getElementById('loading-cliente');
-    
     input.addEventListener('input', function() {
         clearTimeout(searchTimeout);
-        if(this.value.length < 2) { 
-            list.style.display = 'none'; 
-            loading.classList.remove('active');
-            return; 
-        }
+        if(this.value.length < 2) { list.style.display = 'none'; loading.classList.remove('active'); return; }
         loading.classList.add('active'); 
         searchTimeout = setTimeout(async () => {
             try {
-                const res = await fetch('/api/crm/searchClients', {
-                    method: 'POST', headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), query: input.value })
-                });
+                const res = await fetch('/api/crm/searchClients', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), query: input.value }) });
                 const clientes = await res.json();
                 list.innerHTML = '';
                 if(clientes.length > 0) {
@@ -311,57 +271,82 @@ function configurarBuscaCliente() {
     document.addEventListener('click', (e) => { if(!input.contains(e.target) && !list.contains(e.target)) list.style.display='none'; });
 }
 
-// --- SALDO ---
-async function fetchSaldoCRM() {
-    const display = document.getElementById('crm-saldo-display');
-    if(!display) return;
-    display.innerText = "...";
-    try {
-        const res = await fetch('/api/crm/getBalance', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') })
-        });
-        const data = await res.json();
-        const v = parseFloat(data.saldo || 0);
-        display.innerText = v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-        display.style.color = v > 0 ? '#2ecc71' : '#e74c3c';
-    } catch(e) { display.innerText = "Erro"; }
-}
-
-// --- FUNÇÕES PADRÃO (Toast, DragScroll, etc) ---
-function injectCleanStyles() {
-    const style = document.createElement('style');
-    style.textContent = `.toast-message a { color: #e74c3c; font-weight: bold; text-decoration: underline; cursor: pointer; }`;
-    document.head.appendChild(style);
-}
+// --- PADRÕES ---
+function injectCleanStyles() { const style = document.createElement('style'); style.textContent = `.toast-message a { color: #e74c3c; font-weight: bold; text-decoration: underline; cursor: pointer; }`; document.head.appendChild(style); }
 function createToastContainer() { if (!document.querySelector('.toast-container')) { const div = document.createElement('div'); div.className = 'toast-container'; document.body.appendChild(div); } }
-function showToast(message, type = 'success', duration = 5000) {
-    const container = document.querySelector('.toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    const icon = type === 'success' ? '<i class="fa-solid fa-check-circle"></i>' : '<i class="fa-solid fa-circle-exclamation"></i>';
-    toast.innerHTML = `<div class="toast-icon">${icon}</div><div class="toast-message">${message}</div>`;
-    container.appendChild(toast);
-    setTimeout(() => { toast.style.animation = 'fadeOut 0.5s forwards'; setTimeout(() => toast.remove(), 500); }, duration);
-}
-function configurarDragScroll() { /* Mesma do anterior */ 
-    const slider = document.querySelector('.kanban-board');
-    if (!slider) return;
-    let isDown = false; let startX; let scrollLeft;
-    slider.addEventListener('mousedown', (e) => { if (e.target.closest('.kanban-card') || e.target.closest('button')) return; isDown = true; slider.classList.add('active'); startX = e.pageX - slider.offsetLeft; scrollLeft = slider.scrollLeft; });
-    slider.addEventListener('mouseleave', () => { isDown = false; slider.classList.remove('active'); });
-    slider.addEventListener('mouseup', () => { isDown = false; slider.classList.remove('active'); });
-    slider.addEventListener('mousemove', (e) => { if (!isDown) return; e.preventDefault(); const x = e.pageX - slider.offsetLeft; const walk = (x - startX) * 2; slider.scrollLeft = scrollLeft - walk; });
-}
+function showToast(message, type = 'success', duration = 5000) { const container = document.querySelector('.toast-container'); const toast = document.createElement('div'); toast.className = `toast ${type}`; const icon = type === 'success' ? '<i class="fa-solid fa-check-circle"></i>' : '<i class="fa-solid fa-circle-exclamation"></i>'; toast.innerHTML = `<div class="toast-icon">${icon}</div><div class="toast-message">${message}</div>`; container.appendChild(toast); setTimeout(() => { toast.style.animation = 'fadeOut 0.5s forwards'; setTimeout(() => toast.remove(), 500); }, duration); }
+function configurarDragScroll() { const slider = document.querySelector('.kanban-board'); if (!slider) return; let isDown = false; let startX; let scrollLeft; slider.addEventListener('mousedown', (e) => { if (e.target.closest('.kanban-card') || e.target.closest('button')) return; isDown = true; slider.classList.add('active'); startX = e.pageX - slider.offsetLeft; scrollLeft = slider.scrollLeft; }); slider.addEventListener('mouseleave', () => { isDown = false; slider.classList.remove('active'); }); slider.addEventListener('mouseup', () => { isDown = false; slider.classList.remove('active'); }); slider.addEventListener('mousemove', (e) => { if (!isDown) return; e.preventDefault(); const x = e.pageX - slider.offsetLeft; const walk = (x - startX) * 2; slider.scrollLeft = scrollLeft - walk; }); }
 function configurarMascaras() { if (typeof IMask !== 'undefined') { ['crm-wpp', 'pedido-supervisao'].forEach(id => { const el = document.getElementById(id); if (el) IMask(el, { mask: '(00) 00000-0000' }); }); } }
-function configurarBotaoProducao() { /* Mesma do anterior */ 
+
+async function carregarKanban() {
+    try {
+        const res = await fetch('/api/crm/listCards', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') }) });
+        if(!res.ok) throw new Error("Erro");
+        const cards = await res.json();
+        document.querySelectorAll('.kanban-items').forEach(c => c.innerHTML = '');
+        cards.forEach(card => criarCardHTML(card));
+        inicializarDragAndDrop();
+    } catch(err) { console.error(err); }
+}
+function criarCardHTML(card) {
+    const map = { 'Novos': 'col-novos-list', 'Visita Técnica': 'col-visita-list', 'Aguardando Orçamento': 'col-orcamento-list', 'Aguardando Pagamento': 'col-pagamento-list', 'Abrir Pedido': 'col-abrir-list' };
+    const container = document.getElementById(map[card.coluna] || 'col-novos-list');
+    const div = document.createElement('div');
+    div.className = 'kanban-card'; div.dataset.id = card.id; div.onclick = () => abrirPanelEdicao(card);
+    const valor = parseFloat(card.valor_orcamento||0).toLocaleString('pt-BR', {minimumFractionDigits:2});
+    div.innerHTML = `<span class="card-id">${card.titulo_automatico || 'Novo'}</span><div class="card-tags"><span class="card-tag tag-arte">${card.servico_tipo}</span></div><div class="card-title">${card.nome_cliente}</div><span class="card-price">R$ ${valor}</span>`;
+    container.appendChild(div);
+}
+function inicializarDragAndDrop() { document.querySelectorAll('.kanban-items').forEach(col => { if(col.getAttribute('init') === 'true') return; new Sortable(col, { group: 'crm', animation: 150, delay: 100, delayOnTouchOnly: true, onEnd: function(evt) { if(evt.from !== evt.to) atualizarStatus(evt.item.dataset.id, evt.to.parentElement.dataset.status); } }); col.setAttribute('init', 'true'); }); }
+function atualizarStatus(id, novaColuna) { fetch('/api/crm/moveCard', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: id, novaColuna }) }); }
+
+// --- SALVAR RASCUNHO ---
+document.getElementById('form-crm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-salvar-rascunho');
+    const originalText = btn.innerText;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...'; btn.disabled = true;
+    
+    const mats = [];
+    document.querySelectorAll('.material-item').forEach(d => { const desc = d.querySelector('.mat-desc').value; if(desc) mats.push({ descricao: desc, detalhes: d.querySelector('.mat-det').value }); });
+    
+    const payload = {
+        sessionToken: localStorage.getItem('sessionToken'),
+        id: document.getElementById('card-id-db').value,
+        titulo_manual: document.getElementById('crm-titulo-manual').value,
+        nome_cliente: document.getElementById('crm-nome').value,
+        wpp_cliente: document.getElementById('crm-wpp').value,
+        servico_tipo: document.getElementById('pedido-servico-hidden').value,
+        arte_origem: document.getElementById('pedido-arte-hidden').value,
+        valor_orcamento: document.getElementById('crm-valor').value,
+        briefing_json: JSON.stringify({
+            tipo_entrega: document.getElementById('pedido-entrega-hidden').value,
+            materiais: mats,
+            link_arquivo: document.getElementById('link-arquivo').value,
+            supervisao_wpp: document.getElementById('pedido-supervisao').value,
+            valor_designer: document.getElementById('valor-designer').value,
+            formato: document.getElementById('pedido-formato').value,
+            cdr_versao: document.getElementById('cdr-versao').value
+        })
+    };
+    
+    try {
+        const res = await fetch('/api/crm/saveCard', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        if(res.ok) { fecharPanel(); carregarKanban(); showToast('Rascunho salvo no CRM!', 'success'); } 
+        else { const err = await res.json(); showToast('Erro ao salvar: ' + (err.message || 'Desconhecido'), 'error'); }
+    } catch(err) { showToast('Erro de conexão.', 'error'); }
+    finally { btn.innerText = originalText; btn.disabled = false; }
+});
+
+// --- PRODUÇÃO ---
+function configurarBotaoProducao() {
     const btn = document.getElementById('btn-produzir-final');
     if(!btn) return;
     let confirmationStage = false;
     btn.addEventListener('click', async () => {
         const id = document.getElementById('card-id-db').value;
         if(!id) return showToast('Salve o card antes de enviar.', 'error');
-        if (!confirmationStage) { confirmationStage = true; btn.innerHTML = '<i class="fa-solid fa-question-circle"></i> Tem certeza? Clique p/ confirmar'; btn.classList.add('btn-confirmacao-ativa'); setTimeout(() => { if (confirmationStage) { confirmationStage = false; btn.innerHTML = '<i class="fa-solid fa-rocket"></i> ENVIAR PARA PRODUÇÃO'; btn.classList.remove('btn-confirmacao-ativa'); } }, 4000); return; }
+        if (!confirmationStage) { confirmationStage = true; btn.innerHTML = '<i class="fa-solid fa-question-circle"></i> Tem certeza? Clique p/ confirmar'; btn.classList.add('btn-confirmacao-ativa'); setTimeout(() => { if (confirmationStage) { confirmationStage = false; btn.innerHTML = '<i class="fa-solid fa-rocket"></i> APROVAR AGORA'; btn.classList.remove('btn-confirmacao-ativa'); } }, 4000); return; }
         btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:15px; height:15px; border-width:2px; display:inline-block; vertical-align:middle; margin:0; border-top-color:#fff;"></div> Enviando...'; btn.classList.remove('btn-confirmacao-ativa');
         
         let txt = ""; document.querySelectorAll('.material-item').forEach((d, i) => { txt += `--- Item ${i+1} ---\nMaterial: ${d.querySelector('.mat-desc').value}\nDetalhes: ${d.querySelector('.mat-det').value}\n\n`; });
@@ -390,7 +375,8 @@ function configurarBotaoProducao() { /* Mesma do anterior */
         } catch(err) { showToast(err.message, 'error', 15000); btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-rocket"></i> Tentar Novamente'; confirmationStage = false; }
     });
 }
-function setupModalCreditos() { /* Mesma do anterior */ 
+
+function setupModalCreditos() {
     const modal = document.getElementById("modal-adquirir-creditos");
     const form = document.getElementById("adquirir-creditos-form");
     if (!modal) return;
@@ -415,71 +401,3 @@ function setupModalCreditos() { /* Mesma do anterior */
         });
     }
 }
-function configurarFormularioVisual() { /* Já definida acima */ } // (Removido duplicata)
-
-// KANBAN LOAD (mesmo)
-async function carregarKanban() {
-    try {
-        const res = await fetch('/api/crm/listCards', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') }) });
-        if(!res.ok) throw new Error("Erro");
-        const cards = await res.json();
-        document.querySelectorAll('.kanban-items').forEach(c => c.innerHTML = '');
-        cards.forEach(card => criarCardHTML(card));
-        inicializarDragAndDrop();
-    } catch(err) { console.error(err); }
-}
-function criarCardHTML(card) {
-    const map = { 'Novos': 'col-novos-list', 'Visita Técnica': 'col-visita-list', 'Aguardando Orçamento': 'col-orcamento-list', 'Aguardando Pagamento': 'col-pagamento-list', 'Abrir Pedido': 'col-abrir-list' };
-    const container = document.getElementById(map[card.coluna] || 'col-novos-list');
-    const div = document.createElement('div');
-    div.className = 'kanban-card'; div.dataset.id = card.id; div.onclick = () => abrirPanelEdicao(card);
-    const valor = parseFloat(card.valor_orcamento||0).toLocaleString('pt-BR', {minimumFractionDigits:2});
-    div.innerHTML = `<span class="card-id">${card.titulo_automatico || 'Novo'}</span><div class="card-tags"><span class="card-tag tag-arte">${card.servico_tipo}</span></div><div class="card-title">${card.nome_cliente}</div><span class="card-price">R$ ${valor}</span>`;
-    container.appendChild(div);
-}
-function inicializarDragAndDrop() {
-    document.querySelectorAll('.kanban-items').forEach(col => {
-        if(col.getAttribute('init') === 'true') return;
-        new Sortable(col, { group: 'crm', animation: 150, delay: 100, delayOnTouchOnly: true, onEnd: function(evt) { if(evt.from !== evt.to) atualizarStatus(evt.item.dataset.id, evt.to.parentElement.dataset.status); } });
-        col.setAttribute('init', 'true');
-    });
-}
-function atualizarStatus(id, novaColuna) { fetch('/api/crm/moveCard', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: id, novaColuna }) }); }
-
-// SALVAR FORM (Para funcionar com o Wizard)
-document.getElementById('form-crm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btn-salvar-rascunho');
-    const originalText = btn.innerText;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...'; btn.disabled = true;
-    
-    const mats = [];
-    document.querySelectorAll('.material-item').forEach(d => { const desc = d.querySelector('.mat-desc').value; if(desc) mats.push({ descricao: desc, detalhes: d.querySelector('.mat-det').value }); });
-    
-    const payload = {
-        sessionToken: localStorage.getItem('sessionToken'),
-        id: document.getElementById('card-id-db').value,
-        titulo_manual: document.getElementById('crm-titulo-manual').value,
-        nome_cliente: document.getElementById('crm-nome').value,
-        wpp_cliente: document.getElementById('crm-wpp').value,
-        servico_tipo: document.getElementById('pedido-servico-hidden').value,
-        arte_origem: document.getElementById('pedido-arte-hidden').value, // ATENÇÃO: Agora usa input hidden
-        valor_orcamento: document.getElementById('crm-valor').value,
-        briefing_json: JSON.stringify({
-            tipo_entrega: document.getElementById('pedido-entrega-hidden').value, // ATENÇÃO: Agora usa input hidden
-            materiais: mats,
-            link_arquivo: document.getElementById('link-arquivo').value,
-            supervisao_wpp: document.getElementById('pedido-supervisao').value,
-            valor_designer: document.getElementById('valor-designer').value,
-            formato: document.getElementById('pedido-formato').value,
-            cdr_versao: document.getElementById('cdr-versao').value
-        })
-    };
-    
-    try {
-        const res = await fetch('/api/crm/saveCard', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-        if(res.ok) { fecharPanel(); carregarKanban(); showToast('Rascunho salvo com sucesso!', 'success'); } 
-        else { const err = await res.json(); showToast('Erro ao salvar: ' + (err.message || 'Desconhecido'), 'error'); }
-    } catch(err) { showToast('Erro de conexão ao salvar.', 'error'); }
-    finally { btn.innerText = originalText; btn.disabled = false; }
-});
