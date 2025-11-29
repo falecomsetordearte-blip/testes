@@ -17,11 +17,9 @@ module.exports = async (req, res) => {
         if (!sessionToken) return res.status(403).json({ message: 'Não autorizado' });
 
         // --- DEFINIÇÃO DOS FILTROS ---
-        
-        // 1. IDs de fases permitidas
         const fasesPermitidas = "'C17:UC_IKPW6X', 'C17:UC_WFTT1A', 'C17:UC_G2024K'";
 
-        // 2. Condição Base: Tabela pedidos
+        // Filtro Base
         const filtroBase = `
             bitrix_stage_id IN (${fasesPermitidas}) 
             AND (status_expedicao IS NULL OR status_expedicao != 'Entregue')
@@ -36,7 +34,7 @@ module.exports = async (req, res) => {
             const termoTexto = `%${termo}%`;
 
             if (!isNaN(termoNumero)) {
-                // Busca por ID na tabela PEDIDOS
+                // Busca por ID
                 sqlQuery = `
                     SELECT * FROM pedidos 
                     WHERE (${filtroBase})
@@ -46,11 +44,11 @@ module.exports = async (req, res) => {
                         OR titulo_automatico ILIKE $2
                         OR wpp_cliente ILIKE $2
                     )
-                    ORDER BY updated_at DESC LIMIT 50
+                    ORDER BY id DESC LIMIT 50
                 `;
                 params = [termoNumero, termoTexto];
             } else {
-                // Busca por Texto na tabela PEDIDOS
+                // Busca por Texto
                 sqlQuery = `
                     SELECT * FROM pedidos 
                     WHERE (${filtroBase})
@@ -60,27 +58,26 @@ module.exports = async (req, res) => {
                         OR wpp_cliente ILIKE $1
                         OR servico_tipo ILIKE $1
                     )
-                    ORDER BY updated_at DESC LIMIT 50
+                    ORDER BY id DESC LIMIT 50
                 `;
                 params = [termoTexto];
             }
         } else {
-            // Sem busca: Apenas Filtros Base na tabela PEDIDOS
+            // Sem busca
             sqlQuery = `
                 SELECT * FROM pedidos 
                 WHERE ${filtroBase}
-                ORDER BY updated_at DESC LIMIT 50
+                ORDER BY id DESC LIMIT 50
             `;
         }
 
         const pedidos = await prisma.$queryRawUnsafe(sqlQuery, ...params);
         
-        // Formatação
         const pedidosFormatados = pedidos.map(p => ({
             ...p,
             id: Number(p.id),
-            // Ajuste aqui se sua tabela pedidos usar outro nome para valor
-            valor_orcamento: parseFloat(p.valor_orcamento || 0), 
+            // Tenta 'valor_orcamento' (usado no CRM) ou 'valor' (comum em pedidos)
+            valor_orcamento: parseFloat(p.valor_orcamento || p.valor || 0), 
             status_expedicao: p.status_expedicao || 'Aguardando Retirada'
         }));
 
@@ -88,7 +85,6 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error("Erro Expedição Listar:", error);
-        // Dica de debug no log se der erro de coluna não existente
-        return res.status(500).json({ message: 'Erro ao buscar pedidos. Verifique os nomes das colunas na tabela pedidos.' });
+        return res.status(500).json({ message: `Erro SQL: ${error.meta?.message || error.message}` });
     }
 };
