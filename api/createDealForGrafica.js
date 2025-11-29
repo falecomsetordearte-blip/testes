@@ -6,8 +6,9 @@ const axios = require('axios');
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
 // --- CONFIGURAÇÃO DE ETAPAS (STAGES) ---
-const STAGE_FREELANCER = 'C17:NEW';         // Para "Setor de Arte"
-const STAGE_CONFERENCIA = 'C17:UC_ZHMX6W';  // Para "Arquivo do Cliente" e "Designer Próprio"
+const STAGE_FREELANCER = 'C17:NEW';         // Para "Setor de Arte" (Vai para o funil de freelancers)
+const STAGE_CONFERENCIA = 'C17:UC_ZHMX6W';  // Para "Arquivo do Cliente" (Vai direto para conferência/impressão)
+const STAGE_DESIGNER_PROPRIO = 'C17:UC_JHF0WH'; // NOVO: Para "Designer Próprio" (Vai para a fase interna da loja)
 
 // --- MAPEAMENTO DE CAMPOS BITRIX ---
 const FIELD_BRIEFING_COMPLETO = 'UF_CRM_1738249371';
@@ -24,9 +25,9 @@ const FIELD_ARQUIVO_IMPRESSAO = 'UF_CRM_1748277308731';
 const FIELD_ARQUIVO_DESIGNER = 'UF_CRM_1740770117580'; 
 
 module.exports = async (req, res) => {
-    console.log("\n========================================================");
-    console.log("[DEBUG] INICIANDO /api/createDealForGrafica");
-    console.log("========================================================");
+    // Debug log
+    const reqId = Date.now();
+    console.log(`\n[REQ-${reqId}] INICIANDO /api/createDealForGrafica`);
 
     // Headers CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -47,7 +48,6 @@ module.exports = async (req, res) => {
         // ------------------------------------------------------------------
         // 1. AUTENTICAÇÃO E BUSCA DA EMPRESA NO NEON
         // ------------------------------------------------------------------
-        console.log("[DEBUG] Passo 1: Autenticando usuário...");
         const searchUserResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken },
             select: ['ID', 'NAME', 'COMPANY_ID']
@@ -58,22 +58,17 @@ module.exports = async (req, res) => {
         if (!user) return res.status(403).json({ message: 'Usuário não encontrado.' });
         if (!user.COMPANY_ID) return res.status(403).json({ message: 'Usuário Bitrix sem empresa vinculada.' });
 
+        // Busca no banco local para ter o ID numérico (usado na tabela 'pedidos')
         const empresasLogadas = await prisma.$queryRaw`
             SELECT id FROM empresas WHERE bitrix_company_id = ${parseInt(user.COMPANY_ID)} LIMIT 1
         `;
         const empresaLogadaId = empresasLogadas.length > 0 ? empresasLogadas[0].id : null;
 
-        if (empresaLogadaId) {
-            console.log(`[DEBUG] Empresa Localizada no Neon ID: ${empresaLogadaId}`);
-        } else {
-            console.warn(`[ERRO CRÍTICO] Empresa ID Bitrix ${user.COMPANY_ID} não encontrada na tabela 'empresas'.`);
-        }
-
         // ------------------------------------------------------------------
         // 2. LÓGICA DE DEFINIÇÃO DE ETAPA E VALORES
         // ------------------------------------------------------------------
         let briefingFinal = formData.briefingFormatado || '';
-        let stageIdSelecionado = STAGE_CONFERENCIA; // Padrão
+        let stageIdSelecionado = STAGE_CONFERENCIA; // Padrão seguro
         let valorOportunidade = 0;
         
         let dbLinkImpressao = null;
@@ -90,7 +85,7 @@ module.exports = async (req, res) => {
             [FIELD_TIPO_ENTREGA]: tipoEntrega
         };
 
-        // --- REGRAS ESPECÍFICAS POR TIPO DE ARTE ---
+        // --- REGRAS POR TIPO DE ARTE ---
 
         // A) SETOR DE ARTE (FREELANCER)
         if (arte === 'Setor de Arte') {
@@ -122,9 +117,9 @@ module.exports = async (req, res) => {
             if (formatoTexto === 'CDR' && formData.cdrVersao) formatoTexto += ` (v${formData.cdrVersao})`;
             briefingFinal += `\n\n--- Formato ---\n${formatoTexto}`;
 
-        // B) ARQUIVO DO CLIENTE
+        // B) ARQUIVO DO CLIENTE (JÁ VEM PRONTO)
         } else if (arte === 'Arquivo do Cliente') {
-            stageIdSelecionado = STAGE_CONFERENCIA; // C17:UC_ZHMX6W
+            stageIdSelecionado = STAGE_CONFERENCIA; // Vai direto pra impressão
             
             if (linkArquivo) {
                 dealFields[FIELD_ARQUIVO_IMPRESSAO] = linkArquivo;
@@ -132,9 +127,14 @@ module.exports = async (req, res) => {
             }
             valorOportunidade = 0;
 
-        // C) DESIGNER PRÓPRIO
+        // C) DESIGNER PRÓPRIO (CORREÇÃO APLICADA AQUI)
+        } else if (arte === 'Designer Próprio') {
+            stageIdSelecionado = STAGE_DESIGNER_PROPRIO; // Vai para a fase interna C17:UC_JHF0WH
+            valorOportunidade = 0;
+        
+        // Fallback
         } else {
-            stageIdSelecionado = STAGE_CONFERENCIA; // C17:UC_ZHMX6W
+            stageIdSelecionado = STAGE_CONFERENCIA;
             valorOportunidade = 0;
         }
 
@@ -146,7 +146,7 @@ module.exports = async (req, res) => {
         // ------------------------------------------------------------------
         // 3. CRIAÇÃO NO BITRIX
         // ------------------------------------------------------------------
-        console.log(`[DEBUG] Criando Deal no Bitrix (Estágio: ${stageIdSelecionado})...`);
+        console.log(`[REQ-${reqId}] Criando Deal no Bitrix (Estágio: ${stageIdSelecionado})...`);
         const createDealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.add.json`, { fields: dealFields });
         
         if (createDealResponse.data.error) throw new Error(createDealResponse.data.error_description);
@@ -156,8 +156,9 @@ module.exports = async (req, res) => {
         // 4. SALVAMENTO NO BANCO DE DADOS LOCAL
         // ------------------------------------------------------------------
         if (empresaLogadaId && newDealId) {
-            console.log("[DEBUG] Salvando histórico na tabela 'pedidos'...");
+            console.log(`[REQ-${reqId}] Salvando histórico na tabela 'pedidos'...`);
             try {
+                // Inserção na tabela principal de pedidos (para histórico financeiro/geral)
                 await prisma.$executeRaw`
                     INSERT INTO pedidos (
                         empresa_id,
@@ -193,16 +194,28 @@ module.exports = async (req, res) => {
                         ${briefingFinal}
                     )
                 `;
-                console.log("[SUCESSO] Pedido salvo no Neon.");
+
+                // NOVO: Se for Designer Próprio, já insere na tabela do Kanban de Arte também
+                // Assim ele já aparece na coluna "NOVOS" imediatamente sem depender do getBoardData
+                if (arte === 'Designer Próprio') {
+                    await prisma.$executeRaw`
+                        INSERT INTO painel_arte_cards (empresa_id, bitrix_deal_id, coluna, posicao)
+                        VALUES (${empresaLogadaId}, ${newDealId}, 'NOVOS', 0)
+                        ON CONFLICT (bitrix_deal_id) DO NOTHING
+                    `;
+                    console.log(`[REQ-${reqId}] Card inserido no Kanban de Arte (Designer Próprio).`);
+                }
+
+                console.log(`[REQ-${reqId}] Sucesso no banco local.`);
             } catch (dbError) {
-                console.error("[ERRO DB] Falha ao salvar na tabela pedidos:", dbError.message);
+                console.error(`[REQ-${reqId}] ERRO DB:`, dbError.message);
             }
         }
 
         return res.status(200).json({ success: true, dealId: newDealId });
 
     } catch (error) {
-        console.error("[EXCEPTION]", error.message);
+        console.error(`[REQ-ERRO]`, error.message);
         return res.status(500).json({ message: error.message || 'Erro interno.' });
     }
 };
