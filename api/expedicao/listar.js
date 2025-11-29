@@ -14,47 +14,59 @@ module.exports = async (req, res) => {
     try {
         const { sessionToken, query } = req.body;
         
-        // Validação simples de sessão (pode ser aprimorada igual aos outros arqs)
+        // Validação simples
         if (!sessionToken) return res.status(403).json({ message: 'Não autorizado' });
 
-        // Filtro de Busca Precisa
-        let whereClause = {
-            // Filtra apenas pedidos que já passaram pelo financeiro ou produção, se desejar.
-            // Por enquanto, trazemos tudo ou filtramos por status_expedicao
-        };
+        let sqlQuery;
+        let params = [];
 
         if (query && query.trim().length > 0) {
             const termo = query.trim();
-            const termoNumero = parseInt(termo) || undefined;
+            // Tenta converter para número (para busca por ID)
+            const termoNumero = parseInt(termo); 
+            const termoTexto = `%${termo}%`; // Para busca ILIKE
 
-            whereClause = {
-                AND: [
-                    {
-                        OR: [
-                            // Busca por ID (se for número)
-                            ...(termoNumero ? [{ id: { equals: termoNumero } }] : []),
-                            // Busca por Título (Case Insensitive)
-                            { titulo_automatico: { contains: termo, mode: 'insensitive' } },
-                            // Busca por Nome do Cliente
-                            { nome_cliente: { contains: termo, mode: 'insensitive' } },
-                            // Busca por Whatsapp
-                            { wpp_cliente: { contains: termo } }
-                        ]
-                    }
-                ]
-            };
+            if (!isNaN(termoNumero)) {
+                // Se for número, busca por ID exato OU texto
+                sqlQuery = `
+                    SELECT * FROM crm_oportunidades 
+                    WHERE id = $1 
+                    OR nome_cliente ILIKE $2 
+                    OR titulo_automatico ILIKE $2
+                    OR wpp_cliente ILIKE $2
+                    ORDER BY updated_at DESC LIMIT 50
+                `;
+                params = [termoNumero, termoTexto];
+            } else {
+                // Se for texto apenas
+                sqlQuery = `
+                    SELECT * FROM crm_oportunidades 
+                    WHERE nome_cliente ILIKE $1 
+                    OR titulo_automatico ILIKE $1
+                    OR wpp_cliente ILIKE $1
+                    OR servico_tipo ILIKE $1
+                    ORDER BY updated_at DESC LIMIT 50
+                `;
+                params = [termoTexto];
+            }
+        } else {
+            // Sem busca: Traz os últimos 50
+            sqlQuery = `
+                SELECT * FROM crm_oportunidades 
+                ORDER BY updated_at DESC LIMIT 50
+            `;
         }
 
-        // Busca no Banco (Tabela crm_oportunidades ou pedidos)
-        const pedidos = await prisma.crm_oportunidades.findMany({
-            where: whereClause,
-            orderBy: {
-                updated_at: 'desc' // Mais recentes primeiro
-            },
-            take: 50 // Limite para não travar a tela se tiver milhoes
-        });
+        const pedidos = await prisma.$queryRawUnsafe(sqlQuery, ...params);
+        
+        // Tratamento de BigInt (caso o ID seja muito grande) e formatação
+        const pedidosFormatados = pedidos.map(p => ({
+            ...p,
+            id: Number(p.id),
+            valor_orcamento: parseFloat(p.valor_orcamento || 0)
+        }));
 
-        return res.status(200).json(pedidos);
+        return res.status(200).json(pedidosFormatados);
 
     } catch (error) {
         console.error("Erro Expedição Listar:", error);
