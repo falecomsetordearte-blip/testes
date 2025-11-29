@@ -1,16 +1,14 @@
-// /impressao/painel-script.js - VERSÃO CLEAN (VISUAL UNIFICADO)
+// /impressao/painel-script.js - VERSÃO CLEAN (Sem Alertas)
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
 
-        // --- SEGURANÇA ---
         const sessionToken = localStorage.getItem('sessionToken');
         if (!sessionToken) {
             window.location.href = '../login.html'; 
             return;
         }
         
-        // --- CONSTANTES DE CAMPOS ---
         const STATUS_IMPRESSAO_FIELD = 'UF_CRM_1757756651931';
         const NOME_CLIENTE_FIELD = 'UF_CRM_1741273407628';
         const CONTATO_CLIENTE_FIELD = 'UF_CRM_1749481565243';
@@ -19,8 +17,6 @@
         const LINK_ARQUIVO_FINAL_FIELD = 'UF_CRM_1748277308731';
         const PRAZO_FINAL_FIELD = 'UF_CRM_1757794109';
 
-        // --- MAPAS DE STATUS E CORES ---
-        // Mantemos a lógica de cores original, mas aplicada de forma mais elegante
         const STATUS_MAP = {
             '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao' }, 
             '2659': { nome: 'Na Fila',    cor: '#9b59b6', classe: 'na-fila' }, 
@@ -35,7 +31,6 @@
             '1441': { nome: 'Conferida', cor: '#2ecc71' }
         };
 
-        // --- ELEMENTOS DO DOM ---
         const impressoraFilterEl = document.getElementById('impressora-filter');
         const materialFilterEl = document.getElementById('material-filter');
         const btnFiltrar = document.getElementById('btn-filtrar');
@@ -47,21 +42,14 @@
 
         let allDealsData = [];
 
-        // --- ESTILOS CSS (CLEAN + ESPECÍFICOS DE IMPRESSÃO) ---
+        // --- ESTILOS VISUAIS CLEAN ---
         const style = document.createElement('style');
         style.textContent = `
             :root {
-                --primary: #4a90e2;
-                --success: #2ecc71;
-                --danger: #e74c3c;
-                --text-dark: #2c3e50;
-                --text-light: #7f8c8d;
-                --bg-card: #ffffff;
-                --shadow-sm: 0 2px 5px rgba(0,0,0,0.05);
-                --shadow-md: 0 5px 15px rgba(0,0,0,0.15);
+                --primary: #4a90e2; --success: #2ecc71; --danger: #e74c3c;
+                --text-dark: #2c3e50; --text-light: #7f8c8d; --bg-card: #ffffff;
+                --shadow-sm: 0 2px 5px rgba(0,0,0,0.05); --shadow-md: 0 5px 15px rgba(0,0,0,0.15);
             }
-
-            /* Filtros */
             .kanban-header { margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
             .filtros-pedidos { display: flex; gap: 10px; flex-wrap: wrap; }
             .filtros-pedidos select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; background: #fff; font-family: 'Poppins', sans-serif; cursor: pointer; outline: none; transition: border 0.3s; }
@@ -69,22 +57,10 @@
             #btn-filtrar { background: var(--primary); color: white; border: none; padding: 8px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
             #btn-filtrar:hover { background: #357abd; }
 
-            /* Kanban Board Transparente */
             .kanban-board { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 20px; align-items: flex-start; }
-            .kanban-column { 
-                background: transparent; 
-                min-width: 280px; max-width: 320px; 
-                padding: 0; margin-right: 10px; 
-                display: flex; flex-direction: column; 
-                max-height: 80vh; border: none; box-shadow: none;
-            }
-
-            /* Headers das Colunas */
-            .column-header { 
-                font-weight: 700; color: white; margin-bottom: 15px; 
-                text-transform: uppercase; font-size: 0.9rem; letter-spacing: 0.5px; 
-                padding: 10px 15px; border-radius: 6px; text-align: center; box-shadow: var(--shadow-sm);
-            }
+            .kanban-column { background: transparent; min-width: 280px; max-width: 320px; padding: 0; margin-right: 10px; display: flex; flex-direction: column; max-height: 80vh; border: none; box-shadow: none; }
+            
+            .column-header { font-weight: 700; color: white; margin-bottom: 15px; text-transform: uppercase; font-size: 0.9rem; padding: 10px 15px; border-radius: 6px; text-align: center; box-shadow: var(--shadow-sm); }
             .status-atrasado .column-header { background-color: var(--danger); }
             .status-hoje .column-header { background-color: #f1c40f; color: #333; }
             .status-esta-semana .column-header { background-color: #2980b9; }
@@ -93,16 +69,8 @@
 
             .column-cards { overflow-y: auto; flex-grow: 1; padding-right: 5px; scrollbar-width: thin; }
 
-            /* CARDS FLUTUANTES */
-            .kanban-card { 
-                background: var(--bg-card); border-radius: 8px; padding: 15px; margin-bottom: 12px; 
-                box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; 
-                border-left: 5px solid #ccc; /* Cor padrão se falhar */
-                cursor: pointer; position: relative; 
-            }
+            .kanban-card { background: var(--bg-card); border-radius: 8px; padding: 15px; margin-bottom: 12px; box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; border-left: 5px solid #ccc; cursor: pointer; position: relative; }
             .kanban-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
-
-            /* Cores da Borda do Card baseadas no Status da Impressão */
             .kanban-card.status-preparacao { border-left-color: ${STATUS_MAP['2657'].cor}; }
             .kanban-card.status-na-fila { border-left-color: ${STATUS_MAP['2659'].cor}; }
             .kanban-card.status-imprimindo { border-left-color: ${STATUS_MAP['2661'].cor}; }
@@ -112,13 +80,8 @@
             .card-client-name { font-size: 1rem; font-weight: 600; color: var(--text-dark); margin-bottom: 12px; line-height: 1.4; }
             .card-deadline-tag { display: inline-block; background-color: #f4f6f9; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; color: var(--text-light); margin-bottom: 10px; }
             
-            .btn-detalhes-visual { 
-                width: 100%; background: #f4f6f9; border: 1px solid #e1e1e1; padding: 8px; 
-                border-radius: 4px; color: var(--text-dark); font-weight: 600; font-size: 0.85rem; 
-                display: flex; align-items: center; justify-content: center; gap: 5px; pointer-events: none;
-            }
+            .btn-detalhes-visual { width: 100%; background: #f4f6f9; border: 1px solid #e1e1e1; padding: 8px; border-radius: 4px; color: var(--text-dark); font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 5px; pointer-events: none; }
 
-            /* --- MODAL ESPECÍFICO DE IMPRESSÃO --- */
             #modal-detalhes-rapidos.modal-overlay { background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); transition: opacity 0.3s; }
             #modal-detalhes-rapidos .modal-content { border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: none; padding: 0; overflow: hidden; max-width: 900px; width: 95%; }
             .modal-header { background: #f8f9fa; padding: 15px 25px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
@@ -126,32 +89,22 @@
             .close-modal { font-size: 1.5rem; color: #aaa; background: none; border: none; cursor: pointer; }
             .modal-body { padding: 25px; background: #fff; }
 
-            /* Barra de Etapas (Steps) */
             .steps-container { display: flex; padding: 0 0 20px 0; margin-bottom: 20px; border-bottom: 1px solid #eee; width: 100%; }
-            .step { 
-                flex: 1; text-align: center; position: relative; color: #aaa; font-weight: 600; font-size: 0.9rem; 
-                padding: 12px 5px; background-color: #f8f9fa; border: 1px solid #eee; cursor: pointer; transition: all 0.2s; 
-            }
+            .step { flex: 1; text-align: center; position: relative; color: #aaa; font-weight: 600; font-size: 0.9rem; padding: 12px 5px; background-color: #f8f9fa; border: 1px solid #eee; cursor: pointer; transition: all 0.2s; }
             .step:first-child { border-radius: 6px 0 0 6px; }
             .step:last-child { border-radius: 0 6px 6px 0; }
             .step.completed { background-color: #7f8c8d; color: white; border-color: #7f8c8d; }
             .step.active { z-index: 2; transform: scale(1.05); color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-            /* Cores específicas das Steps */
             .step.active.preparacao { background-color: ${STATUS_MAP['2657'].cor}; border-color: ${STATUS_MAP['2657'].cor}; }
             .step.active.na-fila { background-color: ${STATUS_MAP['2659'].cor}; border-color: ${STATUS_MAP['2659'].cor}; }
             .step.active.imprimindo { background-color: ${STATUS_MAP['2661'].cor}; border-color: ${STATUS_MAP['2661'].cor}; }
             .step.active.pronto { background-color: ${STATUS_MAP['2663'].cor}; border-color: ${STATUS_MAP['2663'].cor}; }
 
-            /* Layout Grid do Modal */
             .detalhe-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-            
-            .detalhe-col-principal { }
             .detalhe-col-lateral { display: flex; flex-direction: column; gap: 15px; }
-
             .card-detalhe { background-color: #fff; border-radius: 8px; padding: 15px; border: 1px solid #eee; }
             .card-detalhe h4 { font-size: 0.9rem; color: var(--text-light); text-transform: uppercase; margin: 0 0 10px 0; border-bottom: 2px solid #f1f1f1; padding-bottom: 5px; }
 
-            /* Botões do Modal */
             .btn-acao-modal { display: block; width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; text-align: center; cursor: pointer; border: none; font-size: 0.9rem; transition: all 0.2s; text-decoration: none; margin-bottom: 8px; }
             .btn-acao-modal.principal { background-color: var(--primary); color: white; }
             .btn-acao-modal.principal:hover { background-color: #357abd; }
@@ -161,7 +114,6 @@
             .info-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 0.9rem; }
             .tag-medidas { padding: 2px 8px; border-radius: 4px; color: white; font-weight: 600; font-size: 0.8rem; }
 
-            /* TOASTS */
             .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
             .toast { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 12px; min-width: 300px; animation: slideInRight 0.3s ease-out forwards; border-left: 5px solid #ccc; }
             .toast.success { border-left-color: var(--success); }
@@ -196,16 +148,13 @@
             }, 4000);
         }
 
-        // --- LÓGICA DE DADOS (FILTROS E CARREGAMENTO) ---
         async function carregarOpcoesDeFiltro() {
             try {
                 const response = await fetch('/api/getProductionFilters');
                 const filters = await response.json();
                 if (!response.ok) throw new Error('Falha ao carregar filtros.');
-                
                 impressoraFilterEl.innerHTML = `<option value="">Todas as Impressoras</option>`;
                 materialFilterEl.innerHTML = `<option value="">Todos os Materiais</option>`;
-                
                 filters.impressoras.forEach(option => { impressoraFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
                 filters.materiais.forEach(option => { materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
             } catch (error) { 
@@ -233,7 +182,7 @@
             } catch (error) {
                 console.error("Erro ao carregar pedidos de impressão:", error);
                 document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '<div style="text-align:center;color:#ccc;padding:10px;">Erro ao carregar</div>');
-                showToast(error.message, 'error');
+                showToast(error.message || "Erro na conexão", 'error');
             }
         }
 
@@ -303,7 +252,6 @@
             
             modalTitle.textContent = `Impressão #${deal.TITLE || deal.ID}`;
             
-            // Lógica da Barra de Etapas
             const statusAtualId = deal[STATUS_IMPRESSAO_FIELD] || STATUS_ORDER[0];
             const statusAtualIndex = STATUS_ORDER.indexOf(statusAtualId);
             let stepsHtml = '';
@@ -315,7 +263,6 @@
                 stepsHtml += `<div class="${stepClass}" data-status-id="${id}">${status.nome}</div>`;
             });
 
-            // Dados
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || '---';
             const contatoCliente = deal[CONTATO_CLIENTE_FIELD] || '---';
             const medidasId = deal[MEDIDAS_FIELD];
@@ -324,7 +271,6 @@
             const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
 
-            // Ações
             let actionsHtml = '';
             if (linkArquivo) { actionsHtml += `<a href="${linkArquivo}" target="_blank" class="btn-acao-modal principal"><i class="fas fa-download"></i> Baixar Arquivo</a>`; }
             if (linkAtendimento) { actionsHtml += `<a href="${linkAtendimento}" target="_blank" class="btn-acao-modal secundario"><i class="fab fa-whatsapp"></i> Ver Atendimento</a>`; }
@@ -334,7 +280,6 @@
             }
             if (actionsHtml === '') { actionsHtml = '<p style="text-align:center; color:#999; font-size:0.8rem;">Sem ações disponíveis</p>'; }
             
-            // Área Principal (Placeholder do Chat)
             const mainColumnHtml = `
                 <div class="card-detalhe" style="text-align: center; color: #aaa; padding: 50px 20px; border: 2px dashed #eee; height: 100%; display: flex; flex-direction: column; justify-content: center;">
                     <i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
@@ -366,7 +311,6 @@
             attachStatusStepListeners(deal.ID);
         }
 
-        // --- ATUALIZAÇÃO DE STATUS (ETAPAS) ---
         function attachStatusStepListeners(dealId) {
             const container = document.querySelector('.steps-container');
             if(!container) return;
@@ -380,9 +324,8 @@
                 if (dealIndex === -1) return;
                 
                 const oldStatusId = allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD];
-                if (newStatusId === oldStatusId) return; // Mesmo status, ignora
+                if (newStatusId === oldStatusId) return;
 
-                // Atualização Visual Otimista
                 updateVisualStatus(dealId, newStatusId);
                 allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = newStatusId;
 
@@ -405,8 +348,8 @@
                     }
                 })
                 .catch(error => {
-                    showToast(`Erro: ${error.message}. Revertendo...`, 'error');
-                    // Reverte visualmente
+                    // Substituição do Alert por Toast
+                    showToast('Erro ao atualizar status. Revertendo...', 'error');
                     updateVisualStatus(dealId, oldStatusId);
                     allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = oldStatusId;
                 });
@@ -414,7 +357,6 @@
         }
 
         function updateVisualStatus(dealId, newStatusId) {
-            // Atualiza Modal (Steps)
             const stepsContainer = document.querySelector('.steps-container');
             if (stepsContainer && document.getElementById('modal-detalhes-rapidos').classList.contains('active')) {
                 const steps = stepsContainer.querySelectorAll('.step');
@@ -428,18 +370,14 @@
                 });
             }
             
-            // Atualiza Card no Board
             const card = document.querySelector(`.kanban-card[data-deal-id-card="${dealId}"]`);
             if (card) {
-                // Remove todas as classes de status antigas
                 Object.values(STATUS_MAP).forEach(info => card.classList.remove('status-' + info.classe));
-                // Adiciona a nova
                 const newStatusInfo = STATUS_MAP[newStatusId];
                 if (newStatusInfo) card.classList.add('status-' + newStatusInfo.classe);
             }
         }
         
-        // --- EVENT LISTENERS GERAIS ---
         btnFiltrar.addEventListener('click', () => {
             carregarPedidosDeImpressao();
             showToast('Filtros aplicados', 'success');
@@ -448,7 +386,6 @@
         closeModalBtn.addEventListener('click', () => modal.classList.remove('active'));
         modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
 
-        // CARD CLICÁVEL GLOBAL
         board.addEventListener('click', (event) => {
             const card = event.target.closest('.kanban-card');
             if (card) {
