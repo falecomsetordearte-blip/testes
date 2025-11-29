@@ -16,29 +16,20 @@ module.exports = async (req, res) => {
         
         if (!sessionToken) return res.status(403).json({ message: 'Não autorizado' });
 
-        // --- DEFINIÇÃO DOS FILTROS ---
-        
-        // REMOVIDO O FILTRO DE BITRIX STAGE ID
-        // Agora a regra é simples: Trazer tudo da tabela pedidos que NÃO está Entregue.
-        
-        const filtroBase = `
-            (status_expedicao IS NULL OR status_expedicao != 'Entregue')
-        `;
-
         let sqlQuery;
         let params = [];
 
+        // Verifica se tem busca digitada
         if (query && query.trim().length > 0) {
             const termo = query.trim();
             const termoNumero = parseInt(termo); 
             const termoTexto = `%${termo}%`;
 
             if (!isNaN(termoNumero)) {
-                // Busca por ID
+                // Busca por ID (Sem filtrar status)
                 sqlQuery = `
                     SELECT * FROM pedidos 
-                    WHERE (${filtroBase})
-                    AND (
+                    WHERE (
                         id = $1 
                         OR nome_cliente ILIKE $2 
                         OR titulo_automatico ILIKE $2
@@ -48,11 +39,10 @@ module.exports = async (req, res) => {
                 `;
                 params = [termoNumero, termoTexto];
             } else {
-                // Busca por Texto
+                // Busca por Texto (Sem filtrar status)
                 sqlQuery = `
                     SELECT * FROM pedidos 
-                    WHERE (${filtroBase})
-                    AND (
+                    WHERE (
                         nome_cliente ILIKE $1 
                         OR titulo_automatico ILIKE $1
                         OR wpp_cliente ILIKE $1
@@ -63,10 +53,9 @@ module.exports = async (req, res) => {
                 params = [termoTexto];
             }
         } else {
-            // Sem busca: Traz tudo não entregue
+            // Sem busca: Traz TUDO (Entregues e Pendentes), ordenado pelo mais recente
             sqlQuery = `
                 SELECT * FROM pedidos 
-                WHERE ${filtroBase}
                 ORDER BY id DESC LIMIT 50
             `;
         }
