@@ -1,4 +1,3 @@
-<!-- crm.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -13,23 +12,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
     <style>
-        /* CSS ATUALIZADO E MINIMALISTA */
+        /* --- ESTILOS ORIGINAIS DO KANBAN (Mantidos) --- */
         .app-content .container { max-width: 100% !important; padding-right: 20px; }
-        
-        /* KANBAN */
         .kanban-board { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 20px; height: calc(100vh - 180px); align-items: flex-start; cursor: grab; user-select: none; }
         .kanban-board.active { cursor: grabbing; }
         .kanban-column { background: transparent !important; border: none !important; min-width: 300px; width: 300px; padding: 0; margin-right: 10px; display: inline-flex; flex-direction: column; max-height: 100%; vertical-align: top; }
-        
         .column-header { font-weight: 700; color: white !important; margin-bottom: 15px; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; padding: 12px 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .col-novos .column-header { background-color: #3498db; }
         .col-visita .column-header { background-color: #e67e22; }
         .col-orcamento .column-header { background-color: #f1c40f; color: #333 !important; }
         .col-pagamento .column-header { background-color: #9b59b6; }
         .col-abrir .column-header { background-color: #27ae60; }
-
         .kanban-items { overflow-y: auto; flex-grow: 1; padding-right: 5px; scrollbar-width: thin; display: flex; flex-direction: column; gap: 12px; min-height: 150px; }
-        
         .kanban-card { background: white; border-radius: 10px; padding: 18px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: transform 0.2s; border-left: 5px solid #ccc; cursor: pointer; position: relative; }
         .kanban-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
         .col-novos .kanban-card { border-left-color: #3498db; }
@@ -37,63 +31,81 @@
         .col-orcamento .kanban-card { border-left-color: #f1c40f; }
         .col-pagamento .kanban-card { border-left-color: #9b59b6; }
         .col-abrir .kanban-card { border-left-color: #27ae60; }
-
         .card-title { font-size: 1rem; font-weight: 600; color: #2c3e50; margin-bottom: 8px; line-height: 1.4; padding-right: 40px; }
         .card-price { font-weight: 700; color: #27ae60; font-size: 1rem; display: block; margin-top: 5px; }
         .card-id { position: absolute; top: 15px; right: 15px; font-size: 0.75rem; color: #aaa; font-weight: 600; }
         .card-tags { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
         .card-tag { font-size: 0.7rem; padding: 4px 8px; border-radius: 6px; font-weight: 600; text-transform: uppercase; background: #e0f7fa; color: #006064; }
 
-        /* DRAWER & FORM */
+        /* --- NOVO ESTILO DO DRAWER (WIZARD) --- */
         .slide-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(3px); z-index: 9990; opacity: 0; visibility: hidden; transition: opacity 0.3s; }
         .slide-overlay.active { opacity: 1; visibility: visible; }
-        .slide-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 800px; background: #fff; box-shadow: -10px 0 30px rgba(0,0,0,0.1); z-index: 9999; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; }
+        .slide-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 700px; background: #fff; box-shadow: -10px 0 30px rgba(0,0,0,0.1); z-index: 9999; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; }
         .slide-panel.active { transform: translateX(0); }
-        .panel-header { padding: 25px 30px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
-        .panel-body { padding: 30px; background: #f9fbfd; flex: 1; overflow-y: auto; }
+        
+        .panel-header { padding: 20px 30px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; background: #fff; z-index: 10; }
+        .panel-body { padding: 0; background: #f9fbfd; flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
         .close-panel-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #aaa; }
 
-        /* SELEÇÃO DE SERVIÇO MINIMALISTA */
-        #servico-selection-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .servico-card { padding: 20px; border-radius: 10px; text-align: center; cursor: pointer; background: white; border: 1px solid #e2e8f0; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .servico-card:hover { border-color: #cbd5e0; transform: translateY(-2px); }
-        .servico-card.active { border-color: #3498db; background-color: #f0f7ff; color: #3498db; font-weight: 600; }
-        .servico-card i { font-size: 1.5rem; color: #94a3b8; }
-        .servico-card.active i { color: #3498db; }
+        /* STEPPER (Barra de Progresso) */
+        .stepper-container { padding: 15px 30px; background: #fff; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .step-indicator { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #ccc; font-weight: 600; }
+        .step-indicator.active { color: #3498db; }
+        .step-indicator.completed { color: #2ecc71; }
+        .step-number { width: 28px; height: 28px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; }
+        .step-indicator.active .step-number { background: #3498db; color: white; }
+        .step-indicator.completed .step-number { background: #2ecc71; color: white; }
+        .step-line { flex: 1; height: 2px; background: #eee; margin: 0 10px; }
         
-        #servico-selection-container.selection-made { grid-template-columns: 1fr; }
-        #servico-selection-container.selection-made .servico-card:not(.active) { display: none; }
-        #servico-selection-container.selection-made .servico-card.active { flex-direction: row; padding: 15px; text-align: left; cursor: default; }
+        /* STEPS CONTENT */
+        .step-content { display: none; padding: 30px; animation: fadeIn 0.4s ease; }
+        .step-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* INPUTS & RADIOS */
-        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.85rem; color: #64748b; }
-        .form-control { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; transition: border 0.2s; }
-        .form-control:focus { outline: none; border-color: #3498db; }
-        
-        .radio-group { display: flex; flex-wrap: wrap; gap: 10px; }
-        .radio-option input { display: none; }
-        .radio-option label { 
-            padding: 10px 15px; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; background: white; 
-            font-size: 0.9rem; color: #475569; display: flex; align-items: center; gap: 8px; transition: 0.2s;
+        /* SELEÇÃO DE CARDS (Mais bonitos) */
+        .selection-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .selection-card { 
+            background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px 10px; 
+            text-align: center; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
         }
-        .radio-option input:checked + label { background: #3498db; color: white; border-color: #3498db; }
-        
-        /* ESTILO ESPECÍFICO FREELANCER (Com Logo) */
-        .radio-option label img { width: 22px; height: 22px; border-radius: 50%; opacity: 0.8; }
-        .radio-option input:checked + label img { opacity: 1; border: 1px solid white; box-shadow: 0 0 0 1px rgba(255,255,255,0.5); }
+        .selection-card:hover { border-color: #b0c4de; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .selection-card.selected { border-color: #3498db; background-color: #f0f7ff; color: #3498db; font-weight: 600; box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2); }
+        .selection-card i { font-size: 1.8rem; color: #94a3b8; }
+        .selection-card.selected i { color: #3498db; }
+        .selection-card img { width: 35px; height: 35px; border-radius: 50%; object-fit: contain; opacity: 0.7; }
+        .selection-card.selected img { opacity: 1; }
+
+        /* INPUTS MODERNOS */
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.85rem; color: #475569; }
+        .form-control { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; background: #fff; transition: 0.2s; }
+        .form-control:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1); }
+
+        /* RODAPÉ COM BOTÕES DE NAVEGAÇÃO */
+        .panel-footer { padding: 20px 30px; background: #fff; border-top: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+        .btn-nav { padding: 12px 25px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.95rem; border: none; transition: 0.2s; }
+        .btn-prev { background: #f1f5f9; color: #64748b; }
+        .btn-prev:hover { background: #e2e8f0; }
+        .btn-next { background: #3498db; color: white; display: flex; align-items: center; gap: 8px; }
+        .btn-next:hover { background: #2980b9; transform: translateY(-1px); }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #219150; }
 
         /* MATERIAIS & LIXEIRA */
-        .material-item { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px; position: relative; }
+        .material-item { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px; position: relative; padding-right: 40px; }
         .btn-remove-material { 
-            position: absolute; top: 10px; right: 10px; background: none; border: none; 
-            color: #ef4444; cursor: pointer; padding: 5px; opacity: 0.6; transition: opacity 0.2s;
+            position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: #fee2e2; border: none; 
+            color: #ef4444; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s;
         }
-        .btn-remove-material:hover { opacity: 1; }
+        .btn-remove-material:hover { background: #ef4444; color: white; }
 
+        /* AUTOCOMPLETE */
         .autocomplete-wrapper { position: relative; }
-        #search-results-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1000; list-style: none; padding: 0; margin: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
-        #search-results-list li { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; font-size: 0.9rem; }
-        #search-results-list li:hover { background-color: #f7fafc; color: #3498db; }
+        #search-results-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1000; list-style: none; padding: 0; margin: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: none; }
+        #search-results-list li { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; font-size: 0.9rem; }
+        #search-results-list li:hover { background-color: #f0f7ff; color: #3498db; }
+        .loading-search { position: absolute; right: 15px; top: 42px; font-size: 0.85rem; color: #aaa; pointer-events: none; display: none; }
+        .loading-search.active { display: block; }
 
         /* MODAL CRÉDITOS */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10005; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
@@ -102,13 +114,7 @@
         .btn-modal-submit { width: 100%; background: #4f46e5; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 15px; transition: background 0.2s; }
         .btn-modal-submit:hover { background: #4338ca; }
 
-        .loading-search { position: absolute; right: 10px; top: 38px; font-size: 0.8rem; color: #aaa; pointer-events: none; display: none; }
-        .loading-search.active { display: block; }
-        
-        /* Ajuste do Saldo */
-        #saldo-container { display: none; align-items: center; gap: 8px; background: #fff; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 6px; margin-top: 5px; width: fit-content; }
-        #btn-add-saldo-crm { font-size: 0.75rem; color: #3498db; font-weight: 700; text-decoration: none; background: #f0f7ff; padding: 2px 8px; border-radius: 4px; transition: 0.2s; }
-        #btn-add-saldo-crm:hover { background: #e0f2fe; }
+        @media (max-width: 768px) { .slide-panel { max-width: 100%; } .panel-footer { flex-direction: column-reverse; gap: 10px; } .btn-nav { width: 100%; justify-content: center; } }
     </style>
 </head>
 <body>
@@ -122,7 +128,7 @@
                     
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
                         <h2 style="margin:0; color: #2d3748;"><i class="fa-solid fa-trowel-bricks" style="color: #3498db; margin-right: 8px;"></i> Pipeline de Vendas</h2>
-                        <button class="btn btn-primary" onclick="window.abrirPanelNovo()" style="background:#3498db; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:8px;">
+                        <button class="btn btn-primary" onclick="window.abrirPanelNovo()" style="background:#3498db; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:8px; box-shadow: 0 4px 6px rgba(52, 152, 219, 0.3);">
                             <i class="fa-solid fa-plus"></i> Nova Oportunidade
                         </button>
                     </div>
@@ -141,7 +147,7 @@
         </div>
     </div>
 
-    <!-- PAINEL LATERAL (DRAWER) -->
+    <!-- WIZARD DRAWER (Novo Layout) -->
     <div id="slide-overlay" class="slide-overlay" onclick="window.fecharPanel()"></div>
     <div id="slide-panel" class="slide-panel">
         <div class="panel-header">
@@ -152,142 +158,153 @@
             <button class="close-panel-btn" onclick="window.fecharPanel()">×</button>
         </div>
 
+        <!-- Barra de Progresso -->
+        <div class="stepper-container">
+            <div class="step-indicator active" id="indicator-1"><div class="step-number">1</div> Cliente</div>
+            <div class="step-line"></div>
+            <div class="step-indicator" id="indicator-2"><div class="step-number">2</div> Detalhes</div>
+            <div class="step-line"></div>
+            <div class="step-indicator" id="indicator-3"><div class="step-number">3</div> Orçamento</div>
+        </div>
+
         <div class="panel-body">
-            <form id="form-crm">
+            <form id="form-crm" style="height: 100%; display: flex; flex-direction: column;">
                 <input type="hidden" id="card-id-db">
-                <input type="hidden" id="pedido-servico-hidden" required>
+                <!-- Inputs Ocultos de Controle -->
+                <input type="hidden" id="pedido-servico-hidden">
+                <input type="hidden" id="pedido-arte-hidden">
+                <input type="hidden" id="pedido-entrega-hidden">
 
-                <!-- 1. SERVIÇO -->
-                <div id="servico-selection-container">
-                    <div class="servico-card" data-value="Arte Impressão"><i class="fas fa-print"></i><span>Arte para Impressão</span></div>
-                    <div class="servico-card" data-value="Arte Digital"><i class="fas fa-desktop"></i><span>Arte Digital</span></div>
-                    <div class="servico-card" data-value="Edição de Vídeo"><i class="fas fa-video"></i><span>Edição de Vídeo</span></div>
-                </div>
-
-                <div id="form-content-wrapper" style="display:none;">
+                <!-- STEP 1: SERVIÇO E CLIENTE -->
+                <div id="step-1" class="step-content active">
+                    <h4 style="color:#64748b; margin-bottom:15px;">1. O que vamos fazer?</h4>
                     
-                    <!-- 2. IDENTIFICAÇÃO -->
-                    <div style="background:white; padding:20px; border-radius:8px; margin-bottom:20px; border:1px solid #e2e8f0;">
-                        <h4 style="margin-top:0; color:#3498db; margin-bottom:15px; font-size:1rem;">Identificação</h4>
-                        <div class="form-group">
-                            <label>Dê um nome ao Pedido (Opcional)</label>
-                            <input type="text" id="crm-titulo-manual" class="form-control" placeholder="Ex: Campanha Dia das Mães">
+                    <div class="selection-grid" id="servico-grid">
+                        <div class="selection-card" onclick="selectCard('servico', 'Arte Impressão', this)">
+                            <i class="fas fa-print"></i><span>Arte p/ Impressão</span>
                         </div>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                            <div class="form-group autocomplete-wrapper">
-                                <label>Cliente</label>
-                                <input type="text" id="crm-nome" class="form-control" required placeholder="Nome ou Telefone" autocomplete="off">
-                                <span class="loading-search" id="loading-cliente"><i class="fas fa-spinner fa-spin"></i> Buscando...</span>
-                                <ul id="search-results-list"></ul>
-                            </div>
-                            <div class="form-group">
-                                <label>WhatsApp</label>
-                                <input type="tel" id="crm-wpp" class="form-control" required>
-                            </div>
+                        <div class="selection-card" onclick="selectCard('servico', 'Arte Digital', this)">
+                            <i class="fas fa-desktop"></i><span>Arte Digital</span>
+                        </div>
+                        <div class="selection-card" onclick="selectCard('servico', 'Edição de Vídeo', this)">
+                            <i class="fas fa-video"></i><span>Vídeo</span>
                         </div>
                     </div>
 
-                    <!-- 3. ARTE -->
-                    <div style="background:white; padding:20px; border-radius:8px; margin-bottom:20px; border:1px solid #e2e8f0;">
-                        <h4 style="margin-top:0; color:#e67e22; margin-bottom:15px; font-size:1rem;">Arte</h4>
-                        <div class="form-group">
-                            <label>Quem fará a Arte?</label>
-                            <div class="radio-group" id="pedido-arte-container">
-                                <!-- Botão FREELANCER com Logo -->
-                                <div class="radio-option">
-                                    <input type="radio" id="arte-setor" name="pedido-arte" value="Setor de Arte">
-                                    <label for="arte-setor">
-                                        <img src="/images/logo-redonda.svg" alt="Logo"> FREELANCER
-                                    </label>
-                                </div>
-                                <div class="radio-option">
-                                    <input type="radio" id="arte-proprio" name="pedido-arte" value="Designer Próprio">
-                                    <label for="arte-proprio"><i class="fas fa-user-edit" style="color:#94a3b8; margin-right:5px;"></i> Designer Próprio</label>
-                                </div>
-                                <div class="radio-option">
-                                    <input type="radio" id="arte-arquivo" name="pedido-arte" value="Arquivo do Cliente">
-                                    <label for="arte-arquivo"><i class="fas fa-file-upload" style="color:#94a3b8; margin-right:5px;"></i> Arquivo do Cliente</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Condicionais -->
-                        <div id="arquivo-cliente-fields" class="hidden">
-                            <div class="form-group">
-                                <label>Link do Arquivo</label>
-                                <input type="url" id="link-arquivo" class="form-control" placeholder="Google Drive, WeTransfer...">
-                            </div>
-                        </div>
-
-                        <div id="setor-arte-fields" class="hidden" style="background:#f8f9fa; padding:15px; border-radius:8px;">
-                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                                <div class="form-group">
-                                    <label>Supervisão (Wpp)</label>
-                                    <input type="tel" id="pedido-supervisao" class="form-control">
-                                </div>
-                                <div class="form-group">
-                                    <label>Valor Designer (R$)</label>
-                                    <input type="number" id="valor-designer" class="form-control" step="0.01">
-                                    
-                                    <!-- SALDO INTELIGENTE -->
-                                    <div id="saldo-container">
-                                        <span style="font-size:0.8rem; color:#64748b;">Saldo: <strong id="crm-saldo-display">...</strong></span>
-                                        <a href="#" id="btn-add-saldo-crm">+ Adicionar</a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Formato</label>
-                                <select id="pedido-formato" class="form-control">
-                                    <option value="" disabled selected>Selecione</option>
-                                    <option value="PDF">PDF</option>
-                                    <option value="JPG">JPG</option>
-                                    <option value="CDR">CDR</option>
-                                </select>
-                            </div>
-                            <div id="cdr-versao-container" class="hidden" style="margin-top:10px;">
-                                <label>Versão Corel</label>
-                                <input type="text" id="cdr-versao" class="form-control" placeholder="Ex: 2024">
-                            </div>
-                        </div>
-
-                        <div class="form-group" style="margin-top:20px;">
-                            <label>Entrega</label>
-                            <div class="radio-group">
-                                <div class="radio-option"><input type="radio" id="ent-balcao" name="tipo-entrega" value="RETIRADA NO BALCÃO"><label for="ent-balcao"><i class="fas fa-store" style="color:#94a3b8; margin-right:5px;"></i> Balcão</label></div>
-                                <div class="radio-option"><input type="radio" id="ent-loja" name="tipo-entrega" value="INSTALAÇÃO NA LOJA"><label for="ent-loja"><i class="fas fa-tools" style="color:#94a3b8; margin-right:5px;"></i> Inst. Loja</label></div>
-                                <div class="radio-option"><input type="radio" id="ent-ext" name="tipo-entrega" value="INSTALAÇÃO EXTERNA"><label for="ent-ext"><i class="fas fa-truck-pickup" style="color:#94a3b8; margin-right:5px;"></i> Inst. Externa</label></div>
-                            </div>
-                        </div>
+                    <h4 style="color:#64748b; margin-bottom:15px; margin-top: 30px;">2. Para quem?</h4>
+                    <div class="form-group autocomplete-wrapper">
+                        <label>Nome do Cliente</label>
+                        <input type="text" id="crm-nome" class="form-control" placeholder="Busque por nome..." autocomplete="off">
+                        <span class="loading-search" id="loading-cliente"><i class="fas fa-spinner fa-spin"></i> Buscando...</span>
+                        <ul id="search-results-list"></ul>
                     </div>
-
-                    <!-- 4. ORÇAMENTO (COM LIXEIRA) -->
-                    <div style="background:white; padding:20px; border-radius:8px; margin-bottom:20px; border:1px solid #e2e8f0;">
-                        <h4 style="margin-top:0; color:#27ae60; margin-bottom:15px; font-size:1rem;">Orçamento</h4>
-                        
-                        <div id="materiais-container"></div>
-                        
-                        <button type="button" id="btn-add-material" style="width:100%; padding:10px; border:1px dashed #cbd5e1; background:#f8fafc; cursor:pointer; color:#64748b; font-weight:600; border-radius:6px; margin-bottom:20px; transition:0.2s;">
-                            <i class="fas fa-plus"></i> Adicionar Item
-                        </button>
-                        
-                        <div class="form-group">
-                            <label>Valor Total do Pedido (R$)</label>
-                            <input type="number" id="crm-valor" class="form-control" style="font-size:1.3rem; font-weight:bold; color:#27ae60; padding:15px;" step="0.01" placeholder="0,00">
-                        </div>
+                    <div class="form-group">
+                        <label>WhatsApp</label>
+                        <input type="tel" id="crm-wpp" class="form-control" placeholder="(00) 00000-0000">
                     </div>
-
-                    <!-- BOTÕES FINAIS -->
-                    <div style="display:flex; gap:10px; padding-bottom:30px;">
-                        <button type="submit" id="btn-salvar-rascunho" style="flex:1; padding:15px; background:#f1f5f9; color:#475569; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.95rem;">
-                            Salvar Rascunho
-                        </button>
-                        <button type="button" id="btn-produzir-final" style="flex:1; padding:15px; background:linear-gradient(135deg, #2ecc71, #27ae60); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:700; font-size:1rem; box-shadow:0 4px 10px rgba(46,204,113,0.3);">
-                            ENVIAR PARA PRODUÇÃO <i class="fas fa-paper-plane" style="margin-left:5px;"></i>
-                        </button>
+                    <div class="form-group">
+                        <label>Dê um nome ao Pedido (Opcional)</label>
+                        <input type="text" id="crm-titulo-manual" class="form-control" placeholder="Ex: Campanha de Natal">
                     </div>
-
                 </div>
+
+                <!-- STEP 2: ARTE E ENTREGA -->
+                <div id="step-2" class="step-content">
+                    <h4 style="color:#64748b; margin-bottom:15px;">3. Quem fará a arte?</h4>
+                    
+                    <div class="selection-grid" id="arte-grid">
+                        <div class="selection-card" onclick="selectCard('arte', 'Setor de Arte', this)">
+                            <img src="/images/logo-redonda.svg" alt="Logo"><span>FREELANCER</span>
+                        </div>
+                        <div class="selection-card" onclick="selectCard('arte', 'Designer Próprio', this)">
+                            <i class="fas fa-user-edit"></i><span>Designer Próprio</span>
+                        </div>
+                        <div class="selection-card" onclick="selectCard('arte', 'Arquivo do Cliente', this)">
+                            <i class="fas fa-file-upload"></i><span>Arquivo Pronto</span>
+                        </div>
+                    </div>
+
+                    <!-- Campos Condicionais -->
+                    <div id="arquivo-cliente-fields" class="hidden">
+                        <div class="form-group">
+                            <label>Link do Arquivo</label>
+                            <input type="url" id="link-arquivo" class="form-control" placeholder="Cole o link aqui...">
+                        </div>
+                    </div>
+
+                    <div id="setor-arte-fields" class="hidden" style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px dashed #cbd5e1;">
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                            <div class="form-group">
+                                <label>Supervisão (Wpp)</label>
+                                <input type="tel" id="pedido-supervisao" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Valor Designer (R$)</label>
+                                <input type="number" id="valor-designer" class="form-control" step="0.01">
+                                <!-- Saldo -->
+                                <div id="saldo-container" style="display:none; margin-top:8px; font-size:0.85rem; color:#555; background:#fff; padding:5px 10px; border-radius:4px; border:1px solid #e2e8f0; display:inline-flex; align-items:center; gap:10px;">
+                                    <span>Saldo: <strong id="crm-saldo-display" style="color:#2ecc71;">...</strong></span>
+                                    <a href="#" id="btn-add-saldo-crm" style="color:#3498db; font-weight:700; text-decoration:none; font-size:0.8rem; background:#f0f7ff; padding:2px 8px; border-radius:4px;">+ Adicionar</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Formato de Entrega</label>
+                            <select id="pedido-formato" class="form-control">
+                                <option value="" disabled selected>Selecione</option>
+                                <option value="PDF">PDF</option>
+                                <option value="JPG">JPG</option>
+                                <option value="CDR">CDR</option>
+                            </select>
+                        </div>
+                        <div id="cdr-versao-container" class="hidden" style="margin-top:10px;">
+                            <label>Versão do Corel</label>
+                            <input type="text" id="cdr-versao" class="form-control" placeholder="Ex: 2024">
+                        </div>
+                    </div>
+
+                    <h4 style="color:#64748b; margin-bottom:15px; margin-top: 30px;">4. Como será entregue?</h4>
+                    <div class="selection-grid" id="entrega-grid" style="grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));">
+                        <div class="selection-card" onclick="selectCard('entrega', 'RETIRADA NO BALCÃO', this)">
+                            <i class="fas fa-store"></i><span>Balcão</span>
+                        </div>
+                        <div class="selection-card" onclick="selectCard('entrega', 'INSTALAÇÃO NA LOJA', this)">
+                            <i class="fas fa-tools"></i><span>Inst. Loja</span>
+                        </div>
+                        <div class="selection-card" onclick="selectCard('entrega', 'INSTALAÇÃO EXTERNA', this)">
+                            <i class="fas fa-truck-pickup"></i><span>Externa</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 3: VALORES -->
+                <div id="step-3" class="step-content">
+                    <h4 style="color:#64748b; margin-bottom:15px;">5. O que será produzido?</h4>
+                    
+                    <div id="materiais-container"></div>
+                    
+                    <button type="button" id="btn-add-material" style="width:100%; padding:12px; border:2px dashed #cbd5e1; background:#f8fafc; cursor:pointer; color:#64748b; font-weight:600; border-radius:8px; margin-bottom:25px; transition:0.2s;">
+                        <i class="fas fa-plus"></i> Adicionar Item ao Orçamento
+                    </button>
+                    
+                    <div class="form-group">
+                        <label style="font-size:1.1rem; color:#2c3e50;">Valor Total do Pedido (R$)</label>
+                        <input type="number" id="crm-valor" class="form-control" style="font-size:1.5rem; font-weight:bold; color:#27ae60; padding:15px;" step="0.01" placeholder="0,00">
+                    </div>
+                </div>
+
+                <!-- FOOTER DE NAVEGAÇÃO -->
+                <div class="panel-footer">
+                    <button type="button" id="btn-prev" class="btn-nav btn-prev" onclick="mudarPasso(-1)" style="display:none;">Voltar</button>
+                    <button type="button" id="btn-next" class="btn-nav btn-next" onclick="mudarPasso(1)">Continuar <i class="fas fa-arrow-right"></i></button>
+                    
+                    <!-- Botões Finais (Só aparecem no último passo) -->
+                    <div id="final-buttons" style="display:none; gap:10px; flex:1; justify-content: flex-end;">
+                        <button type="submit" id="btn-salvar-rascunho" style="padding:12px 20px; background:#ecf0f1; color:#333; border:none; border-radius:8px; cursor:pointer; font-weight:600;">Salvar Rascunho</button>
+                        <button type="button" id="btn-produzir-final" style="padding:12px 25px; background:linear-gradient(135deg, #27ae60, #2ecc71); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:700; box-shadow:0 4px 10px rgba(46,204,113,0.3);">ENVIAR</button>
+                    </div>
+                </div>
+
             </form>
         </div>
     </div>
