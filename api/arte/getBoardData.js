@@ -12,14 +12,16 @@ const STAGE_TO_COLUMN_MAP = {
     // Designer Próprio
     'C17:UC_JHF0WH': 'NOVOS',              
 
-    // Freelancer / Setor de Arte
-    'C17:NEW': 'NOVOS',        // <--- SUA SOLICITAÇÃO (Novos)
-    'C17:UC_2OEE24': 'NOVOS',  // <--- SUA SOLICITAÇÃO (Novos)
+    // Freelancer / Setor de Arte (Novos requisitos)
+    'C17:NEW': 'NOVOS',        
+    'C17:UC_2OEE24': 'NOVOS',  
     
+    // Fases de Andamento
     'C17:PREPARATION': 'EM_ANDAMENTO',
     'C17:UC_Y31VM3': 'EM_ANDAMENTO',
-    'C17:UC_318C00': 'EM_ANDAMENTO', // Caso usem fases antigas
+    'C17:UC_318C00': 'EM_ANDAMENTO',
     
+    // Outras fases
     'C17:UC_5W020W': 'AJUSTES',            
     'C17:UC_HX3875': 'AGUARDANDO_CLIENTE',
     'C17:UC_HQSL5R': 'AGUARDANDO_CLIENTE'
@@ -73,9 +75,7 @@ module.exports = async (req, res) => {
         // 3. Processamento e Mapeamento
         const processedDeals = [];
 
-        // Busca estado local apenas para ordenação ou persistência de Designer Próprio se necessário
-        // Mas a regra da coluna será ditada pelo MAPA acima.
-        
+        // Busca estado local para ordenação (se existir)
         const empresas = await prisma.$queryRaw`SELECT id FROM empresas WHERE bitrix_company_id = ${parseInt(companyId)} LIMIT 1`;
         let localMap = new Map();
         
@@ -92,7 +92,6 @@ module.exports = async (req, res) => {
             let colunaFinal = STAGE_TO_COLUMN_MAP[stageId] || 'NOVOS';
             
             // Se for Designer Próprio e já tiver sido movido localmente, respeita o local
-            // (Opcional, mas bom para UX se você arrastar cards próprios)
             if (stageId === 'C17:UC_JHF0WH' && localMap.has(parseInt(deal.ID))) {
                 colunaFinal = localMap.get(parseInt(deal.ID)).coluna;
             }
