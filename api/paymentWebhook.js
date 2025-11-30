@@ -21,7 +21,6 @@ module.exports = async (req, res) => {
 
         if (event === 'PAYMENT_RECEIVED' && payment) {
 
-            // CASO 1: Recarga de Saldo (Carteira)
             if (payment.externalReference === 'Créditos') {
                 const asaasCustomerId = payment.customer;
                 const valorRecebido = parseFloat(payment.value);
@@ -34,7 +33,6 @@ module.exports = async (req, res) => {
                 const contact = contactResponse.data.result ? contactResponse.data.result[0] : null;
 
                 if (contact && contact.COMPANY_ID) {
-                    // Atualizar Saldo (SQL PURO)
                     await prisma.$executeRawUnsafe(
                         `UPDATE empresas 
                          SET saldo = COALESCE(saldo, 0) + $1 
@@ -43,19 +41,18 @@ module.exports = async (req, res) => {
                         parseInt(contact.COMPANY_ID)
                     );
 
-                    // Registrar Histórico (SQL PURO - CORREÇÃO PREVENTIVA)
                     const empresas = await prisma.$queryRawUnsafe(`SELECT id FROM empresas WHERE bitrix_company_id = $1`, parseInt(contact.COMPANY_ID));
                     if (empresas.length > 0) {
+                        // CORREÇÃO AQUI: Usando 'titulo'
                         await prisma.$executeRawUnsafe(
-                            `INSERT INTO historico_financeiro (empresa_id, valor, tipo, descricao, deal_id, data)
-                             VALUES ($1, $2, 'ENTRADA', 'Recarga de Saldo (Pix/Cartão)', 'RECARGA', NOW())`,
+                            `INSERT INTO historico_financeiro (empresa_id, valor, tipo, deal_id, titulo, data)
+                             VALUES ($1, $2, 'ENTRADA', 'RECARGA', 'Recarga de Saldo (Pix/Cartão)', NOW())`,
                             empresas[0].id,
                             valorRecebido
                         );
                     }
                 }
             }
-            // CASO 2: Pagamento de Pedido
             else if (payment.externalReference && payment.externalReference.startsWith('Pedido ')) {
                 const dealId = payment.externalReference.replace('Pedido ', '');
                 await axios.post(`${BITRIX24_API_URL}crm.deal.update.json`, {

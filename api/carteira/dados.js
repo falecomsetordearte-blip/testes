@@ -12,7 +12,6 @@ module.exports = async (req, res) => {
     if (!sessionToken) return res.status(403).json({ message: 'Token ausente' });
 
     try {
-        // 1. Identificar usuário no Bitrix
         const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken }, 
             select: ['ID', 'COMPANY_ID']
@@ -24,8 +23,6 @@ module.exports = async (req, res) => {
         
         const bitrixCompanyId = userCheck.data.result[0].COMPANY_ID;
 
-        // 2. Buscar Empresa no Banco usando SQL DIRETO (Resolve o problema do "undefined")
-        // COALESCE(coluna, 0) garante que se for NULL, retorne 0
         const resultEmpresa = await prisma.$queryRawUnsafe(
             `SELECT id, 
                     COALESCE(saldo, 0) as saldo, 
@@ -38,13 +35,10 @@ module.exports = async (req, res) => {
             parseInt(bitrixCompanyId)
         );
 
-        if (resultEmpresa.length === 0) {
-            return res.status(404).json({ message: 'Empresa não encontrada' });
-        }
+        if (resultEmpresa.length === 0) return res.status(404).json({ message: 'Empresa não encontrada' });
 
         const empresa = resultEmpresa[0];
 
-        // 3. Buscar Histórico (Mantém Prisma padrão aqui pois tabela historico nao mudou)
         const historico = await prisma.historicoFinanceiro.findMany({
             where: {
                 empresa_id: empresa.id,
@@ -53,14 +47,19 @@ module.exports = async (req, res) => {
             orderBy: { data: 'desc' }
         });
 
-        // 4. Retornar dados formatados
+        // Mapeia titulo -> descricao para o frontend
+        const historicoFormatado = historico.map(h => ({
+            ...h,
+            descricao: h.titulo || h.descricao // Garante que o frontend receba algo no campo 'descricao'
+        }));
+
         res.json({
             saldo_disponivel: parseFloat(empresa.saldo),
             em_andamento: parseFloat(empresa.saldo_devedor),
             a_pagar: parseFloat(empresa.aprovados),
             credito_aprovado: empresa.credito_aprovado || false,
             solicitacao_pendente: empresa.solicitacao_credito_pendente || false,
-            historico_recente: historico
+            historico_recente: historicoFormatado
         });
 
     } catch (error) {

@@ -41,7 +41,7 @@ module.exports = async (req, res) => {
         const user = userSearch.data.result ? userSearch.data.result[0] : null;
         if (!user || !user.COMPANY_ID) return res.status(403).json({ message: 'Empresa não identificada.' });
 
-        // 2. Validar Saldo (SQL PURO)
+        // 2. Validar Saldo
         const empresasLogadas = await prisma.$queryRawUnsafe(
             `SELECT id, COALESCE(saldo, 0) as saldo FROM empresas WHERE bitrix_company_id = $1 LIMIT 1`,
             parseInt(user.COMPANY_ID)
@@ -79,7 +79,6 @@ module.exports = async (req, res) => {
         if (arte === 'Setor de Arte') {
             stageId = STAGE_FREELANCER;
             const wppLimpo = supervisaoWpp ? supervisaoWpp.replace(/\D/g, '') : '';
-            // Mantemos queryRaw para segurança, embora findFirst funcionasse aqui
             const supervisores = await prisma.$queryRawUnsafe(`SELECT * FROM empresas WHERE whatsapp LIKE $1 LIMIT 1`, `%${wppLimpo}%`);
             
             if (supervisores.length > 0) {
@@ -98,7 +97,7 @@ module.exports = async (req, res) => {
         const createDealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.add.json`, { fields: dealFields });
         const newDealId = createDealResponse.data.result;
 
-        // 4. MOVIMENTAÇÃO FINANCEIRA (SQL PURO)
+        // 4. MOVIMENTAÇÃO FINANCEIRA (SQL PURO CORRIGIDO)
         if (newDealId && arte === 'Setor de Arte') {
             
             // Atualiza Saldos
@@ -111,19 +110,20 @@ module.exports = async (req, res) => {
                 empresa.id
             );
 
-            // Grava Histórico (CORREÇÃO AQUI: SQL PURO)
+            // Grava Histórico (Usando 'titulo' ao invés de 'descricao')
+            const tituloHistorico = `Produção: ${formData.titulo} (#${newDealId})`;
+            
             await prisma.$executeRawUnsafe(
-                `INSERT INTO historico_financeiro (empresa_id, valor, tipo, descricao, deal_id, titulo, data)
-                 VALUES ($1, $2, 'SAIDA', $3, $4, $5, NOW())`,
+                `INSERT INTO historico_financeiro (empresa_id, valor, tipo, deal_id, titulo, data)
+                 VALUES ($1, $2, 'SAIDA', $3, $4, NOW())`,
                 empresa.id,
                 custoDesigner,
-                `Início Produção Pedido #${newDealId}`,
                 String(newDealId),
-                formData.titulo
+                tituloHistorico
             );
         }
 
-        // 5. Salva Pedido na Tabela
+        // 5. Salva Pedido
         await prisma.$executeRawUnsafe(
             `INSERT INTO pedidos (empresa_id, bitrix_deal_id, titulo, nome_cliente, whatsapp_cliente, servico, tipo_arte, tipo_entrega, valor_designer, briefing_completo) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
