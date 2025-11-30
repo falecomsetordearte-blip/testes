@@ -1,4 +1,4 @@
-<!-- painel.html -->
+<!-- painel.html (Painel de Arte) -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -10,97 +10,8 @@
     <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-    <!-- SortableJS (Essencial para o Drag & Drop) -->
+    <!-- SortableJS para o Arrastar e Soltar -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-
-    <style>
-        /* --- ESTILOS VISUAIS (IDÊNTICOS AO CRM) --- */
-        .app-content .container { max-width: 100% !important; padding-right: 20px; }
-        
-        /* KANBAN LAYOUT */
-        .kanban-board { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 20px; height: calc(100vh - 180px); align-items: flex-start; }
-        .kanban-column { background: transparent !important; min-width: 320px; width: 320px; display: flex; flex-direction: column; max-height: 100%; margin-right: 10px; }
-        
-        .column-header { font-weight: 700; color: white !important; margin-bottom: 15px; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; padding: 12px 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        
-        /* CORES DAS COLUNAS */
-        .col-novos .column-header { background-color: #3498db; }
-        .col-andamento .column-header { background-color: #e67e22; }
-        .col-ajustes .column-header { background-color: #e74c3c; }
-        .col-aguardando .column-header { background-color: #f1c40f; color: #333 !important; }
-
-        .column-cards { overflow-y: auto; flex-grow: 1; padding-right: 5px; scrollbar-width: thin; display: flex; flex-direction: column; gap: 12px; min-height: 150px; }
-        
-        /* CARD MODERNO */
-        .kanban-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s; border-left: 5px solid #ccc; cursor: pointer; display: flex; flex-direction: column; gap: 8px; position: relative; }
-        .kanban-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
-        
-        /* Cores da borda lateral do card baseadas na coluna */
-        .col-novos .kanban-card { border-left-color: #3498db; }
-        .col-andamento .kanban-card { border-left-color: #e67e22; }
-        .col-ajustes .kanban-card { border-left-color: #e74c3c; }
-        .col-aguardando .kanban-card { border-left-color: #f1c40f; }
-        
-        /* Card Bloqueado (Freelancer) */
-        .kanban-card.card-locked { background-color: #f8fafc; opacity: 0.95; border-left-color: #94a3b8 !important; }
-        .kanban-card.card-locked:hover { transform: none; box-shadow: none; cursor: default; }
-
-        .card-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
-        .card-id { font-size: 0.75rem; color: #94a3b8; font-weight: 700; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }
-        .card-tag { font-size: 0.65rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-        .tag-proprio { background: #e0f2fe; color: #0284c7; }
-        .tag-freela { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; display: flex; align-items: center; gap: 4px; }
-        
-        .card-title { font-size: 0.95rem; font-weight: 600; color: #1e293b; line-height: 1.4; margin: 0; word-break: break-word; }
-        .card-footer-row { margin-top: 10px; padding-top: 10px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 8px; }
-        
-        .btn-card-action { padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
-        .btn-ver { background: #f1f5f9; color: #475569; }
-        .btn-ver:hover { background: #e2e8f0; color: #1e293b; }
-        .btn-whatsapp { background: #dcfce7; color: #166534; }
-        .btn-whatsapp:hover { background: #bbf7d0; }
-
-        /* DRAWER (PAINEL LATERAL) */
-        .slide-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(2px); z-index: 9990; opacity: 0; visibility: hidden; transition: opacity 0.3s; }
-        .slide-overlay.active { opacity: 1; visibility: visible; }
-        
-        .slide-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 600px; background: #fff; box-shadow: -10px 0 30px rgba(0,0,0,0.15); z-index: 9999; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; }
-        .slide-panel.active { transform: translateX(0); }
-        
-        .panel-header { padding: 25px 30px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #fff; }
-        .panel-header h2 { margin: 0; font-size: 1.25rem; color: #1e293b; }
-        .close-panel-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #94a3b8; transition: 0.2s; }
-        .close-panel-btn:hover { color: #ef4444; }
-
-        .panel-body { flex: 1; overflow-y: auto; padding: 30px; background: #f8fafc; }
-
-        .detail-group { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .detail-label { font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 5px; display: block; letter-spacing: 0.5px; }
-        .detail-value { font-size: 1rem; color: #334155; font-weight: 500; line-height: 1.5; }
-        
-        .image-placeholder { width: 100%; height: 200px; background: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; margin-bottom: 20px; }
-        
-        .panel-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
-        .btn-large-action { padding: 15px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.1s; }
-        .btn-large-action:hover { transform: translateY(-1px); }
-        .btn-ajustes { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
-        .btn-aprovar { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-
-        /* TOAST NOTIFICATIONS */
-        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
-        .toast { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-left: 5px solid #ccc; animation: slideIn 0.3s forwards; min-width: 300px; font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 10px; }
-        .toast.success { border-left-color: #2ecc71; }
-        .toast.error { border-left-color: #e74c3c; }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-
-        @media (max-width: 768px) {
-            .slide-panel { max-width: 100%; }
-            .kanban-board { flex-direction: column; height: auto; overflow-x: hidden; }
-            .kanban-column { width: 100%; min-width: 100%; margin-bottom: 20px; }
-            .column-cards { max-height: 400px; }
-        }
-    </style>
 </head>
 <body>
 
@@ -110,61 +21,60 @@
         <div class="app-content-wrapper">
             <div id="header-placeholder"></div>
 
-            <main class="app-content">
-                <div class="container">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <h2 style="margin:0; color: #2d3748; display:flex; align-items:center; gap:10px;">
-                            <i class="fas fa-palette" style="color: #e67e22;"></i> Painel de Arte
-                        </h2>
+            <main class="main-kanban app-content" style="padding: 0;">
+                <div class="kanban-header">
+                    <h1><i class="fas fa-palette"></i> Painel de Arte</h1>
+                </div>
+
+                <div class="kanban-board">
+                    <!-- COLUNA 1: NOVOS -->
+                    <div class="kanban-column col-novos" data-column-id="NOVOS">
+                        <div class="column-header"><span class="column-title">NOVOS</span></div>
+                        <div class="column-cards" id="cards-NOVOS"></div>
+                    </div>
+                    
+                    <!-- COLUNA 2: EM ANDAMENTO -->
+                    <div class="kanban-column col-andamento" data-column-id="EM_ANDAMENTO">
+                        <div class="column-header"><span class="column-title">EM ANDAMENTO</span></div>
+                        <div class="column-cards" id="cards-EM_ANDAMENTO"></div>
                     </div>
 
-                    <div class="kanban-board">
-                        <div class="kanban-column col-novos" data-column-id="NOVOS">
-                            <div class="column-header">NOVOS PEDIDOS</div>
-                            <div class="column-cards" id="cards-NOVOS"></div>
-                        </div>
-                        
-                        <div class="kanban-column col-andamento" data-column-id="EM_ANDAMENTO">
-                            <div class="column-header">EM CRIAÇÃO</div>
-                            <div class="column-cards" id="cards-EM_ANDAMENTO"></div>
-                        </div>
+                    <!-- COLUNA 3: AJUSTES -->
+                    <div class="kanban-column col-ajustes" data-column-id="AJUSTES">
+                        <div class="column-header"><span class="column-title">AJUSTES</span></div>
+                        <div class="column-cards" id="cards-AJUSTES"></div>
+                    </div>
 
-                        <div class="kanban-column col-ajustes" data-column-id="AJUSTES">
-                            <div class="column-header">AJUSTES SOLICITADOS</div>
-                            <div class="column-cards" id="cards-AJUSTES"></div>
-                        </div>
-
-                        <div class="kanban-column col-aguardando" data-column-id="AGUARDANDO_CLIENTE">
-                            <div class="column-header">AGUARDANDO APROVAÇÃO</div>
-                            <div class="column-cards" id="cards-AGUARDANDO_CLIENTE"></div>
-                        </div>
+                    <!-- COLUNA 4: AGUARDANDO CLIENTE -->
+                    <div class="kanban-column col-aguardando" data-column-id="AGUARDANDO_CLIENTE">
+                        <div class="column-header"><span class="column-title">AGUARDANDO CLIENTE</span></div>
+                        <div class="column-cards" id="cards-AGUARDANDO_CLIENTE"></div>
                     </div>
                 </div>
             </main>
+            
+            <div id="footer-placeholder" class="hidden"></div>
         </div>
     </div>
 
-    <!-- DRAWER LATERAL -->
-    <div class="slide-overlay" id="slide-overlay" onclick="fecharPanel()"></div>
-    <div class="slide-panel" id="slide-panel">
-        <div class="panel-header">
-            <div>
-                <h2 id="panel-titulo">Detalhes da Arte</h2>
-                <span id="panel-id" style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;">#000</span>
+    <!-- MODAL DE DETALHES -->
+    <div class="modal-overlay" id="modal-detalhes-rapidos">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3 id="modal-titulo">Detalhes da Arte</h3>
+                <button class="close-modal" title="Fechar">×</button>
             </div>
-            <button class="close-panel-btn" onclick="fecharPanel()">×</button>
-        </div>
-        
-        <div class="panel-body" id="panel-body-content">
-            <!-- Conteúdo injetado pelo JS -->
+            <div class="modal-body" id="modal-body-content">
+                <div class="loading-pedidos"><div class="spinner"></div></div>
+            </div>
         </div>
     </div>
 
-    <!-- TOAST CONTAINER -->
-    <div class="toast-container"></div>
-
+    <!-- SCRIPTS -->
     <script src="/layout.js"></script>
+    <!-- Script Global (Auth/Logout) -->
     <script src="/script.js"></script>
+    <!-- Script Específico do Kanban -->
     <script src="/painel-script.js"></script> 
 
 </body>
