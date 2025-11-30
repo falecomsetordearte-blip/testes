@@ -6,28 +6,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 let debounceTimeout = null;
-let pedidoSelecionadoId = null;
 
 // --- BUSCA E LISTAGEM ---
 function configurarBusca() {
     const input = document.getElementById('input-busca');
     input.addEventListener('input', (e) => {
-        const termo = e.target.value;
-        
-        // Debounce para não chamar API a cada tecla (espera 500ms)
         clearTimeout(debounceTimeout);
-        const container = document.getElementById('lista-expedicao');
-        container.innerHTML = '<div style="padding:40px; text-align:center; color:#94a3b8;"><i class="fas fa-search"></i> Filtrando...</div>';
-        
+        document.getElementById('lista-expedicao').innerHTML = '<div style="padding:40px; text-align:center; color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Filtrando...</div>';
         debounceTimeout = setTimeout(() => {
-            carregarPedidos(termo);
+            carregarPedidos(e.target.value);
         }, 600);
     });
 }
 
 async function carregarPedidos(termoBusca = '') {
     const container = document.getElementById('lista-expedicao');
-    
     try {
         const res = await fetch('/api/expedicao/listar', {
             method: 'POST',
@@ -46,10 +39,7 @@ async function carregarPedidos(termoBusca = '') {
         }
 
         container.innerHTML = '';
-        pedidos.forEach(p => {
-            const el = criarLinhaPedido(p);
-            container.appendChild(el);
-        });
+        pedidos.forEach(p => container.appendChild(criarLinhaPedido(p)));
 
     } catch (err) {
         console.error(err);
@@ -61,81 +51,87 @@ function criarLinhaPedido(p) {
     const div = document.createElement('div');
     div.className = 'exp-item';
     
-    // Status visual
-    const status = p.status_expedicao || 'Aguardando Retirada';
-    const isEntregue = status === 'Entregue';
+    const isEntregue = p.status_expedicao === 'Entregue';
     const badgeClass = isEntregue ? 'st-entregue' : 'st-aguardando';
     const iconClass = isEntregue ? 'fa-check' : 'fa-clock';
 
     div.innerHTML = `
-        <div style="font-weight:700; color:#334155;">#${p.id}</div>
-        <div style="font-weight:600;">${p.nome_cliente || 'Consumidor'}</div>
-        <div style="color:#64748b; font-size:0.9rem;">${p.titulo_automatico || p.servico_tipo || 'Pedido Geral'}</div>
+        <div style="font-weight:700; color:#334155;">#${p.id_bitrix}</div>
+        <div style="font-weight:600;">${p.nome_cliente}</div>
+        <div style="color:#64748b; font-size:0.9rem;">${p.titulo}</div>
         <div style="text-align:center;">
-            <span class="badge-status ${badgeClass}"><i class="fas ${iconClass}"></i> ${status}</span>
+            <span class="badge-status ${badgeClass}"><i class="fas ${iconClass}"></i> ${p.status_expedicao}</span>
         </div>
         <div style="text-align:center;">
-            <button class="btn-ver-item">Ver Detalhes</button>
+            <button class="btn-ver-item">Detalhes</button>
         </div>
     `;
 
-    // Evento de clique na linha toda
-    div.addEventListener('click', (e) => {
-        abrirModal(p);
-    });
-
+    div.addEventListener('click', () => abrirGaveta(p));
     return div;
 }
 
-// --- MODAL ---
-function abrirModal(pedido) {
-    pedidoSelecionadoId = pedido.id;
-    const modal = document.getElementById('modal-expedicao');
-    const content = document.getElementById('modal-info-content');
-    const btn = document.getElementById('btn-acao-entregar');
+// --- GAVETA LATERAL ---
+function abrirGaveta(p) {
+    const overlay = document.getElementById('drawer-overlay');
+    const panel = document.getElementById('drawer-panel');
 
-    const status = pedido.status_expedicao || 'Aguardando Retirada';
-    const isEntregue = status === 'Entregue';
+    // Preencher Dados
+    document.getElementById('drawer-header-title').innerText = `Pedido #${p.id_bitrix}`;
+    document.getElementById('d-cliente').innerText = p.nome_cliente;
+    document.getElementById('d-titulo').innerText = p.titulo;
+    document.getElementById('d-wpp').innerText = p.whatsapp;
+    document.getElementById('d-briefing').innerText = p.briefing || 'Sem detalhes.';
+    
+    // Status e Cores
+    const isEntregue = p.status_expedicao === 'Entregue';
+    const statusEl = document.getElementById('d-status');
+    statusEl.innerText = p.status_expedicao;
+    statusEl.style.color = isEntregue ? '#15803d' : '#c2410c';
 
-    // Popular Dados
-    content.innerHTML = `
-        <div class="info-row"><span class="info-label">ID do Pedido:</span> <span class="info-value">#${pedido.id}</span></div>
-        <div class="info-row"><span class="info-label">Cliente:</span> <span class="info-value">${pedido.nome_cliente}</span></div>
-        <div class="info-row"><span class="info-label">WhatsApp:</span> <span class="info-value">${pedido.wpp_cliente || '-'}</span></div>
-        <div class="info-row"><span class="info-label">Serviço:</span> <span class="info-value">${pedido.servico_tipo || '-'}</span></div>
-        <div class="info-row"><span class="info-label">Valor:</span> <span class="info-value">R$ ${parseFloat(pedido.valor_orcamento||0).toFixed(2)}</span></div>
-        <div class="info-row" style="border:none; margin-top:10px;">
-            <span class="info-label">Status Atual:</span> 
-            <span class="info-value" style="color:${isEntregue?'#15803d':'#c2410c'}">${status}</span>
-        </div>
-    `;
-
-    // Configurar Botão
-    if (isEntregue) {
-        btn.innerHTML = '<i class="fas fa-check-circle"></i> JÁ ENTREGUE';
-        btn.classList.add('btn-entregue-disabled');
-        btn.disabled = true;
+    // WhatsApp Link
+    const btnWpp = document.getElementById('btn-wpp-link');
+    if(p.whatsapp && p.whatsapp.length > 5) {
+        const num = p.whatsapp.replace(/\D/g, '');
+        btnWpp.href = `https://wa.me/55${num}`;
+        btnWpp.style.display = 'inline-block';
     } else {
-        btn.innerHTML = '<i class="fas fa-box"></i> MARCAR COMO ENTREGUE';
-        btn.classList.remove('btn-entregue-disabled');
-        btn.disabled = false;
-        btn.onclick = () => marcarEntregue(pedido.id);
+        btnWpp.style.display = 'none';
     }
 
-    modal.classList.add('active');
+    // Botão de Ação
+    const btnAcao = document.getElementById('btn-gaveta-entregar');
+    if (isEntregue) {
+        btnAcao.innerHTML = '<i class="fas fa-check-circle"></i> ENTREGUE EM ' + (p.data_entrega ? new Date(p.data_entrega).toLocaleDateString() : 'DATA N/D');
+        btnAcao.className = 'btn-entregar-lg btn-acao-entregue';
+        btnAcao.disabled = true;
+    } else {
+        btnAcao.innerHTML = '<i class="fas fa-box-open"></i> MARCAR COMO ENTREGUE';
+        btnAcao.className = 'btn-entregar-lg btn-acao-entregar';
+        btnAcao.disabled = false;
+        
+        // Verifica se temos o ID INTERNO para realizar o update
+        if(p.id_interno) {
+            btnAcao.onclick = () => marcarEntregue(p.id_interno);
+        } else {
+            btnAcao.innerHTML = 'Sincronização Pendente';
+            btnAcao.disabled = true;
+        }
+    }
+
+    overlay.classList.add('active');
+    panel.classList.add('active');
 }
 
-function fecharModal() {
-    document.getElementById('modal-expedicao').classList.remove('active');
+function fecharGaveta() {
+    document.getElementById('drawer-overlay').classList.remove('active');
+    document.getElementById('drawer-panel').classList.remove('active');
 }
 
-// --- AÇÃO ENTREGAR ---
-async function marcarEntregue(id) {
-    if (!confirm('Confirmar que o produto foi entregue ao cliente?')) return;
-
-    const btn = document.getElementById('btn-acao-entregar');
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
-    btn.disabled = true;
+async function marcarEntregue(idInterno) {
+    if (!confirm('Confirmar entrega do produto?')) return;
+    const btn = document.getElementById('btn-gaveta-entregar');
+    btn.innerHTML = 'Processando...'; btn.disabled = true;
 
     try {
         const res = await fetch('/api/expedicao/entregar', {
@@ -143,26 +139,23 @@ async function marcarEntregue(id) {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ 
                 sessionToken: localStorage.getItem('sessionToken'),
-                id: id 
+                id: idInterno 
             })
         });
 
         if (res.ok) {
-            showToast('Pedido marcado como Entregue!', 'success');
-            fecharModal();
-            carregarPedidos(document.getElementById('input-busca').value); // Recarrega lista mantendo busca
+            fecharGaveta();
+            showToast('Pedido entregue com sucesso!', 'success');
+            carregarPedidos(document.getElementById('input-busca').value);
         } else {
             throw new Error('Falha na API');
         }
-
     } catch (err) {
-        showToast('Erro ao atualizar status.', 'error');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-box"></i> MARCAR COMO ENTREGUE';
+        showToast('Erro ao atualizar.', 'error');
+        btn.innerHTML = 'Tentar Novamente'; btn.disabled = false;
     }
 }
 
-// Toast Notification
 function showToast(msg, type) {
     const container = document.querySelector('.toast-container');
     const div = document.createElement('div');
@@ -179,11 +172,5 @@ function showToast(msg, type) {
     } else {
         container.appendChild(div);
     }
-
     setTimeout(() => div.remove(), 4000);
 }
-
-// Fechar modal ao clicar fora
-document.getElementById('modal-expedicao').addEventListener('click', (e) => {
-    if(e.target === document.getElementById('modal-expedicao')) fecharModal();
-});

@@ -5,7 +5,6 @@ const axios = require('axios');
 
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
-// Fases que você quer monitorar
 const FASES_ALVO = [
     'C17:UC_IKPW6X', // Finalizado/Entregue
     'C17:UC_WFTT1A', // Pago
@@ -13,7 +12,7 @@ const FASES_ALVO = [
 ];
 
 module.exports = async (req, res) => {
-    // Headers Padrão
+    // CORS e Verificações Iniciais
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -24,96 +23,76 @@ module.exports = async (req, res) => {
         const { sessionToken, query } = req.body;
         if (!sessionToken) return res.status(403).json({ message: 'Não autorizado' });
 
-        // -----------------------------------------------------------
-        // 1. SEGURANÇA: Identificar Usuário e Empresa no Bitrix
-        // -----------------------------------------------------------
+        // 1. Identificar Usuário e Empresa
         const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken },
-            select: ['ID', 'COMPANY_ID', 'NAME']
+            select: ['ID', 'COMPANY_ID']
         });
 
-        if (!userCheck.data.result || !userCheck.data.result.length) {
-            return res.status(403).json({ message: 'Sessão inválida' });
-        }
+        if (!userCheck.data.result || !userCheck.data.result.length) return res.status(403).json({ message: 'Sessão inválida' });
         const user = userCheck.data.result[0];
         
-        // -----------------------------------------------------------
-        // 2. BUSCAR NO BITRIX (A Fonte da Verdade)
-        // -----------------------------------------------------------
-        let bitrixFilter = {
-            'COMPANY_ID': user.COMPANY_ID,
-            'STAGE_ID': FASES_ALVO
-        };
-
-        if (query && query.trim().length > 0) {
-            if (!isNaN(parseInt(query))) {
-                bitrixFilter['ID'] = parseInt(query);
-            } else {
-                bitrixFilter['%TITLE'] = query.trim();
-            }
-        }
+        // 2. Buscar IDs no Bitrix (Fonte da Verdade)
+        let bitrixFilter = { 'COMPANY_ID': user.COMPANY_ID, 'STAGE_ID': FASES_ALVO };
+        
+        // Busca simples no Bitrix (opcional, foco é filtrar no banco local depois)
+        if (query && !isNaN(parseInt(query))) bitrixFilter['ID'] = parseInt(query);
 
         const bitrixResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
             filter: bitrixFilter,
-            select: ['ID', 'TITLE', 'OPPORTUNITY', 'CURRENCY_ID', 'STAGE_ID'],
+            select: ['ID', 'TITLE', 'STAGE_ID'], 
             order: { 'ID': 'DESC' },
             start: 0
         });
 
         const dealsBitrix = bitrixResponse.data.result || [];
+        if (dealsBitrix.length === 0) return res.status(200).json([]);
 
-        if (dealsBitrix.length === 0) {
-            return res.status(200).json([]);
-        }
-
-        // -----------------------------------------------------------
-        // 3. CRUZAR COM BANCO LOCAL (CORRIGIDO)
-        // -----------------------------------------------------------
+        // 3. Cruzar com Banco Local usando bitrix_deal_id
         const dealIds = dealsBitrix.map(d => parseInt(d.ID));
 
-        // MUDANÇA AQUI: Trocamos 'SELECT id, wpp_cliente...' por 'SELECT *'
-        // Isso evita o erro se o nome da coluna for diferente.
+        // SELECT usando os campos exatos dos seus prints
         const dadosLocais = await prisma.$queryRawUnsafe(
-            `SELECT * FROM pedidos WHERE id IN (${dealIds.join(',')})`
+            `SELECT id, bitrix_deal_id, titulo, nome_cliente, whatsapp_cliente, briefing_completo, status_expedicao 
+             FROM pedidos 
+             WHERE bitrix_deal_id IN (${dealIds.join(',')})`
         );
 
-        // -----------------------------------------------------------
-        // 4. MESCLAR DADOS
-        // -----------------------------------------------------------
+        // 4. Mesclar
         const resultadoFinal = dealsBitrix.map(deal => {
-            const local = dadosLocais.find(l => Number(l.id) === Number(deal.ID));
-
-            // Tenta encontrar o whatsapp em várias colunas possíveis
-            const wpp = local?.wpp_cliente || local?.whatsapp || local?.telefone || local?.celular || '';
-            
-            // Tenta encontrar o nome do cliente
-            const nome = local?.nome_cliente || local?.cliente || local?.nome || 'Cliente (Ver no Bitrix)';
+            // Mágica: Encontra o registro local onde bitrix_deal_id é igual ao ID do Bitrix
+            const local = dadosLocais.find(l => Number(l.bitrix_deal_id) === Number(deal.ID));
 
             return {
-                id: parseInt(deal.ID),
-                titulo_automatico: local?.servico_tipo || deal.TITLE, 
-                nome_cliente: nome,
-                wpp_cliente: wpp,
-                valor_orcamento: parseFloat(deal.OPPORTUNITY || 0),
-                status_expedicao: local?.status_expedicao || 'Aguardando Retirada',
-                fase_atual_bitrix: deal.STAGE_ID 
+                id_bitrix: parseInt(deal.ID),
+                // Se achou local, usa o ID serial local (importante para o 'entregar.js'), senão null
+                id_interno: local ? local.id : null, 
+                
+                // Dados Visuais (Prioridade Local > Bitrix > Fallback)
+                titulo: local?.titulo || deal.TITLE,
+                nome_cliente: local?.nome_cliente || 'Cliente não sincronizado',
+                whatsapp: local?.whatsapp_cliente || '-',
+                briefing: local?.briefing_completo || 'Sem briefing registrado.',
+                
+                // Status
+                status_expedicao: local?.status_expedicao || 'Aguardando Retirada'
             };
         });
 
-        // Filtro final de texto (caso Bitrix não tenha filtrado nome do cliente local)
+        // Filtro de texto JS final (para garantir busca por nome/titulo local)
         let listaFiltrada = resultadoFinal;
         if (query && isNaN(parseInt(query))) {
             const q = query.toLowerCase();
             listaFiltrada = resultadoFinal.filter(item => 
                 (item.nome_cliente && item.nome_cliente.toLowerCase().includes(q)) ||
-                (item.titulo_automatico && item.titulo_automatico.toLowerCase().includes(q))
+                (item.titulo && item.titulo.toLowerCase().includes(q))
             );
         }
 
         return res.status(200).json(listaFiltrada);
 
     } catch (error) {
-        console.error("Erro Expedição Híbrida:", error);
-        return res.status(500).json({ message: 'Erro ao sincronizar dados.' });
+        console.error("Erro Expedição Listar:", error);
+        return res.status(500).json({ message: 'Erro ao listar dados.' });
     }
 };
