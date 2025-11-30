@@ -25,10 +25,9 @@ module.exports = async (req, res) => {
         console.log('[moveCard] 1. Verificando token de sessão no Bitrix...');
         const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken }, 
-            select: ['ID', 'NAME', 'COMPANY_ID'] // Adicionei ID e NAME para facilitar o log
+            select: ['ID', 'NAME', 'COMPANY_ID'] 
         });
 
-        // Log da resposta do Bitrix (Contatos)
         console.log('[moveCard] Resposta Bitrix (Contact List):', JSON.stringify(userCheck.data?.result));
 
         const user = userCheck.data.result ? userCheck.data.result[0] : null;
@@ -42,7 +41,9 @@ module.exports = async (req, res) => {
 
         // Buscar Empresa no Banco Local
         console.log(`[moveCard] Buscando empresa local com bitrix_company_id: ${user.COMPANY_ID}`);
-        const empresas = await prisma.$queryRaw`SELECT id, nome FROM empresas WHERE bitrix_company_id = ${parseInt(user.COMPANY_ID)} LIMIT 1`;
+        
+        // CORREÇÃO AQUI: Removi ", nome" e deixei apenas "id"
+        const empresas = await prisma.$queryRaw`SELECT id FROM empresas WHERE bitrix_company_id = ${parseInt(user.COMPANY_ID)} LIMIT 1`;
         
         console.log('[moveCard] Resultado busca empresa local:', empresas);
 
@@ -59,7 +60,6 @@ module.exports = async (req, res) => {
         
         const deal = dealCheck.data.result;
         
-        // Log dos dados relevantes do Deal
         if (deal) {
             const tipoArte = deal['UF_CRM_1761269158'];
             console.log(`[moveCard] Dados do Deal recuperados. ID: ${deal.ID}, Tipo de Arte (UF_CRM_1761269158): '${tipoArte}'`);
@@ -81,21 +81,17 @@ module.exports = async (req, res) => {
             WHERE bitrix_deal_id = ${parseInt(dealId)} AND empresa_id = ${empresaId}
         `;
 
-        // O prisma $queryRaw retorna o número de linhas afetadas em alguns drivers, ou um objeto.
         console.log('[moveCard] Resultado do Update (DB):', updateResult);
 
         console.log('[moveCard] Sucesso. Retornando 200.');
         return res.status(200).json({ success: true });
 
     } catch (error) {
-        // Log detalhado de Erro
         console.error("--- [moveCard] ERRO EXCEPTION ---");
         if (error.response) {
-            // Erro vindo do Axios (Bitrix)
             console.error("Status:", error.response.status);
             console.error("Data:", JSON.stringify(error.response.data));
         } else {
-            // Erro geral (Prisma ou JS)
             console.error("Mensagem:", error.message);
             console.error("Stack:", error.stack);
         }
