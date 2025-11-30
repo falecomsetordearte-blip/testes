@@ -1,21 +1,19 @@
-// /api/paymentWebhook.js - VERSÃO OTIMIZADA E FINAL
+// /api/paymentWebhook.js
 
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 const axios = require('axios');
 
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 const ASAAS_WEBHOOK_TOKEN = process.env.ASAAS_WEBHOOK_TOKEN;
-const BITRIX_SALDO_FIELD = 'UF_CRM_1751913325';
 const ASAAS_CUSTOMER_ID_FIELD = 'UF_CRM_1748911653';
 
 module.exports = async (req, res) => {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Método não permitido' });
-    }
+    if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido' });
 
     try {
         const receivedToken = req.headers['asaas-access-token'];
         if (!ASAAS_WEBHOOK_TOKEN || receivedToken !== ASAAS_WEBHOOK_TOKEN) {
-            console.warn('Tentativa de acesso ao webhook com token inválido.');
             return res.status(401).send('Acesso não autorizado.');
         }
 
@@ -23,61 +21,64 @@ module.exports = async (req, res) => {
 
         if (event === 'PAYMENT_RECEIVED' && payment) {
 
-            // CASO 1: Pagamento para adicionar créditos ao saldo da COMPANY
+            // CASO 1: Recarga de Saldo (Carteira)
             if (payment.externalReference === 'Créditos') {
-                console.log("[INFO] Processando ADIÇÃO DE CRÉDITOS.");
+                console.log("[WEBHOOK] Recebido pagamento para CRÉDITOS.");
                 const asaasCustomerId = payment.customer;
                 const valorRecebido = parseFloat(payment.value);
 
-                const contactSearchResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
+                // 1. Achar empresa pelo ID do Asaas no Bitrix
+                const contactResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
                     filter: { [ASAAS_CUSTOMER_ID_FIELD]: asaasCustomerId },
                     select: ['ID', 'COMPANY_ID']
                 });
-                const contact = contactSearchResponse.data.result[0];
+                
+                const contact = contactResponse.data.result ? contactResponse.data.result[0] : null;
 
                 if (contact && contact.COMPANY_ID) {
-                    const companyId = contact.COMPANY_ID;
-                    const companyGetResponse = await axios.post(`${BITRIX24_API_URL}crm.company.get.json`, { id: companyId });
-                    const company = companyGetResponse.data.result;
+                    // 2. ATUALIZAR BANCO LOCAL (NEON) VIA SQL PURO
+                    // Adiciona o valor ao saldo existente
+                    await prisma.$executeRawUnsafe(
+                        `UPDATE empresas 
+                         SET saldo = COALESCE(saldo, 0) + $1 
+                         WHERE bitrix_company_id = $2`,
+                        valorRecebido,
+                        parseInt(contact.COMPANY_ID)
+                    );
 
-                    if (company) {
-                        const saldoAtual = parseFloat(company[BITRIX_SALDO_FIELD] || 0);
-                        const novoSaldo = saldoAtual + valorRecebido;
-                        await axios.post(`${BITRIX24_API_URL}crm.company.update.json`, {
-                            id: companyId,
-                            fields: { [BITRIX_SALDO_FIELD]: novoSaldo.toFixed(2) }
+                    // 3. Registrar Histórico
+                    const empresas = await prisma.$queryRawUnsafe(`SELECT id FROM empresas WHERE bitrix_company_id = $1`, parseInt(contact.COMPANY_ID));
+                    if (empresas.length > 0) {
+                        await prisma.historicoFinanceiro.create({
+                            data: {
+                                empresa_id: empresas[0].id,
+                                valor: valorRecebido,
+                                tipo: 'ENTRADA',
+                                descricao: 'Recarga de Saldo (Pix/Cartão)',
+                                deal_id: 'RECARGA',
+                                data: new Date()
+                            }
                         });
-                        console.log(`[SUCESSO] Saldo da EMPRESA ID ${companyId} atualizado para R$ ${novoSaldo.toFixed(2)}.`);
                     }
-                } else {
-                    console.warn(`[AVISO] Contato com Asaas ID ${asaasCustomerId} não encontrado ou sem empresa para adicionar créditos.`);
+
+                    console.log(`[SUCESSO] R$ ${valorRecebido} adicionados à empresa Bitrix ID ${contact.COMPANY_ID}`);
                 }
             }
-            // CASO 2: Pagamento de um pedido específico (DEAL)
+            // CASO 2: Pagamento de Pedido Específico (Se houver lógica futura)
             else if (payment.externalReference && payment.externalReference.startsWith('Pedido ')) {
-                console.log("[INFO] Processando PAGAMENTO DE PEDIDO.");
                 const dealId = payment.externalReference.replace('Pedido ', '');
-                console.log(`[INFO] ID do Pedido identificado: ${dealId}`);
-
-                // Ação: Mudar a etapa do negócio para "Pago"
+                // Atualiza status no Bitrix
                 await axios.post(`${BITRIX24_API_URL}crm.deal.update.json`, {
                     id: dealId,
-                    fields: { 
-                        'STAGE_ID': 'C17:UC_2OEE24' // Etapa de "Pago" ou "Em Andamento"
-                    }
+                    fields: { 'STAGE_ID': 'C17:UC_2OEE24' } // Pago
                 });
-                console.log(`[SUCESSO] Pedido ID ${dealId} movido para a etapa de pago.`);
-            }
-            else {
-                console.log(`[INFO] Pagamento recebido com referência desconhecida: "${payment.externalReference}". Nenhuma ação foi tomada.`);
             }
         }
 
-        return res.status(200).send('Webhook recebido com sucesso.');
+        return res.status(200).send('OK');
 
     } catch (error) {
-        console.error('ERRO CRÍTICO no webhook:', error.response ? error.response.data : error.message);
-        // Responde 200 para o Asaas não pausar a fila, mas loga o erro para nós.
-        return res.status(200).send('Erro interno ao processar webhook.');
+        console.error('Erro Webhook:', error.message);
+        return res.status(200).send('Erro processado.'); // 200 para não travar fila
     }
 };

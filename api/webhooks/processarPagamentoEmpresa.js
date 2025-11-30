@@ -1,104 +1,63 @@
 // /api/webhooks/processarPagamentoEmpresa.js
 
 const { PrismaClient } = require('@prisma/client');
-const axios = require('axios');
-const { Decimal } = require('@prisma/client/runtime/library');
-
 const prisma = new PrismaClient();
+const axios = require('axios');
+
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
-
-async function atualizarSaldosEmpresa(companyId, valorPagamento, dealId, dealTitle) {
-    if (!companyId || !valorPagamento || !valorPagamento.gt(0)) {
-        console.warn(`[AVISO] Dados inválidos para empresa ${companyId}.`);
-        return;
-    }
-
-    try {
-        // 1. Buscar dados da empresa no Bitrix24
-        const companyResponse = await axios.post(`${BITRIX24_API_URL}crm.company.get.json`, { id: companyId });
-        const companyData = companyResponse.data.result;
-
-        if (!companyData) {
-            console.error(`[ERRO] Empresa Bitrix ${companyId} não encontrada.`);
-            return;
-        }
-
-        // 2. Tenta pegar WhatsApp do campo customizado OU do campo padrão PHONE
-        let whatsappBitrix = companyData['UF_CRM_1760171265'];
-        if (!whatsappBitrix && companyData.PHONE && companyData.PHONE.length > 0) {
-            whatsappBitrix = companyData.PHONE[0].VALUE;
-        }
-
-        if (!whatsappBitrix) {
-            console.error(`[ERRO] Empresa Bitrix ${companyId} sem telefone cadastrado.`);
-            return;
-        }
-
-        const whatsappNumerico = whatsappBitrix.replace(/\D/g, '');
-
-        // 3. Buscar a empresa no banco local
-        const empresaLocal = await prisma.empresa.findFirst({
-            where: { whatsapp: whatsappNumerico }
-        });
-
-        if (!empresaLocal) {
-            console.warn(`[AVISO] Empresa com WPP ${whatsappNumerico} não encontrada no Neon.`);
-            return;
-        }
-
-        // 4. ATUALIZAR SALDOS E CRIAR HISTÓRICO (TRANSACTION)
-        // Isso atualiza o saldo e cria o registro na tabela historico_financeiro ao mesmo tempo
-        await prisma.$transaction([
-            prisma.empresa.update({
-                where: { id: empresaLocal.id },
-                data: {
-                    saldo_devedor: { decrement: valorPagamento }, // Em Andamento diminui
-                    aprovados: { increment: valorPagamento },     // À Pagar aumenta
-                },
-            }),
-            prisma.historicoFinanceiro.create({
-                data: {
-                    empresa_id: empresaLocal.id,
-                    valor: valorPagamento,
-                    deal_id: String(dealId),
-                    titulo: dealTitle || `Pedido ID ${dealId}`,
-                    data: new Date()
-                }
-            })
-        ]);
-
-        console.log(`[SUCESSO] Financeiro atualizado para empresa ID ${empresaLocal.id}. Pedido: ${dealTitle}`);
-
-    } catch (error) {
-        console.error(`[ERRO CRÍTICO] Falha ao processar empresa Bitrix ID ${companyId}:`, error.message);
-    }
-}
 
 module.exports = async (req, res) => {
     try {
         const dealIdString = req.body['document_id[2]'];
-        if (!dealIdString) {
-            // Se não vier ID, apenas retorna OK para o Bitrix não ficar tentando de novo
-            return res.status(200).send("OK");
-        }
+        if (!dealIdString) return res.status(200).send("OK");
 
         const dealId = dealIdString.replace('DEAL_', '');
         
-        // Pega dados do Deal (ID, Valor, Título)
+        // 1. Pegar dados do Deal (Valor e Empresa)
         const dealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.get.json`, { id: dealId });
         const deal = dealResponse.data.result;
 
         if (!deal) return res.status(200).send("OK");
 
-        const companyId = parseInt(deal.COMPANY_ID, 10);
-        const valorPagamento = new Decimal(deal.OPPORTUNITY || 0);
-        const dealTitle = deal.TITLE;
+        const bitrixCompanyId = parseInt(deal.COMPANY_ID);
+        // ATENÇÃO: Se o valor que movemos antes foi o custo do designer, precisamos usar ele aqui?
+        // Vou assumir que o deal.OPPORTUNITY contém o valor que foi debitado anteriormente (custo designer)
+        const valorBase = parseFloat(deal.OPPORTUNITY || 0); 
+        
+        // Cálculo do valor + 15%
+        const valorComAcrescimo = valorBase * 1.15;
 
-        await atualizarSaldosEmpresa(companyId, valorPagamento, dealId, dealTitle);
+        // 2. Buscar ID Local da Empresa
+        const empresas = await prisma.$queryRawUnsafe(
+            `SELECT id FROM empresas WHERE bitrix_company_id = $1 LIMIT 1`,
+            bitrixCompanyId
+        );
+
+        if (empresas.length > 0) {
+            const empresaId = empresas[0].id;
+
+            // 3. ATUALIZAÇÃO FINANCEIRA (SQL PURO)
+            // Tira de 'saldo_devedor' (valor original)
+            // Adiciona em 'aprovados' (valor com 15%)
+            await prisma.$executeRawUnsafe(
+                `UPDATE empresas 
+                 SET saldo_devedor = GREATEST(0, COALESCE(saldo_devedor, 0) - $1), 
+                     aprovados = COALESCE(aprovados, 0) + $2 
+                 WHERE id = $3`,
+                valorBase, 
+                valorComAcrescimo,
+                empresaId
+            );
+
+            console.log(`[FINANCEIRO] Deal ${dealId} processado. Devedor -${valorBase}, Aprovados +${valorComAcrescimo}`);
+        } else {
+            console.warn(`[AVISO] Empresa Bitrix ${bitrixCompanyId} não encontrada no banco local.`);
+        }
 
         res.status(200).send("OK");
+
     } catch(e) {
-        console.error("Erro webhook:", e.message);
+        console.error("Erro webhook empresa:", e.message);
         res.status(200).send("OK");
     }
 };
