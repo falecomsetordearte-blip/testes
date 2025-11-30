@@ -2,8 +2,8 @@
 <style>
     /* Estilos Gerais da Sidebar */
     .app-sidebar {
-        background-color: #3a5262; /* Nova cor decidida */
-        color: #ffffff;            /* Texto branco */
+        background-color: #3a5262; /* Cor de fundo decidida */
+        color: #ffffff;
     }
 
     /* Links da sidebar */
@@ -12,31 +12,44 @@
         text-decoration: none;
     }
 
-    /* Container do cabeçalho para centralizar a logo */
+    /* Container do cabeçalho */
     .sidebar-header {
         text-align: center;
         padding: 1rem 0;
+        background: transparent !important; /* Garante que o container não tenha fundo branco */
+    }
+
+    /* Garante que o link em volta da logo não tenha fundo ou borda */
+    .logo-link {
+        display: block;
+        background: transparent !important;
+        border: none !important;
     }
 
     /* 
-       Estilo da Logo "Blindado" 
-       O uso de !important e os resets garantem que nenhum CSS externo distorça a imagem
+       Estilo da Logo "LIMPO"
+       Adicionei regras para remover qualquer filtro ou máscara antiga 
     */
     .sidebar-logo {
-        width: 200px;             /* Largura desejada */
-        max-width: 100%;          /* Responsividade */
-        
-        /* Força a altura a ser automática, ignorando regras externas */
+        width: 200px;             
+        max-width: 100%;          
         height: auto !important;  
-        
-        /* Garante a proporção interna da imagem */
         object-fit: contain;      
         
-        /* Reseta estilos que podem estar vindo de frameworks ou globais */
-        border: none !important;
+        /* --- BLOCO DE CORREÇÃO DA MÁSCARA BRANCA --- */
+        filter: none !important;           /* Remove filtros de cor/brilho */
+        -webkit-filter: none !important;   /* Compatibilidade */
+        mask: none !important;             /* Remove máscaras de recorte */
+        -webkit-mask: none !important;     /* Compatibilidade */
+        mix-blend-mode: normal !important; /* Remove misturas de cor com o fundo */
+        opacity: 1 !important;             /* Garante opacidade total */
+        /* ------------------------------------------- */
+
+        /* Resets visuais */
         background: transparent !important;
+        border: none !important;
         padding: 0 !important;
-        margin: 0 auto !important; /* Centraliza */
+        margin: 0 auto !important;
         box-shadow: none !important;
         border-radius: 0 !important;
         
@@ -49,13 +62,13 @@
     <!-- Cabeçalho (Logo) -->
     <div class="sidebar-header">
         <a href="/dashboard.html" class="logo-link">
-            <!-- Imagem atualizada para fundo escuro -->
+            <!-- Logo original sem filtros -->
             <img src="/images/fundo-escuro.png" alt="Logo Setor de Arte" class="sidebar-logo">
             <h1 class="visually-hidden">Setor de Arte</h1> 
         </a>
     </div>
 
-    <!-- Navegação Principal (Meio - Expansível) -->
+    <!-- Navegação Principal -->
     <nav class="sidebar-nav">
         <ul>
             <li>
@@ -100,7 +113,7 @@
                 </a>
             </li>
             
-            <!-- Instalação Loja (Vem antes) -->
+            <!-- Instalação Loja -->
             <li>
                 <a href="/instalacao-loja/painel.html">
                     <i class="fas fa-store"></i>
@@ -108,7 +121,7 @@
                 </a>
             </li>
 
-            <!-- Instalação Externa (Vem depois) -->
+            <!-- Instalação Externa -->
             <li>
                 <a href="/instalacao/painel.html">
                     <i class="fas fa-wrench"></i>
@@ -116,7 +129,7 @@
                 </a>
             </li>
             
-            <!-- Expedição (No lugar de Financeiro) -->
+            <!-- Expedição -->
             <li>
                 <a href="/expedicao/index.html">
                     <i class="fas fa-box"></i>
@@ -126,7 +139,7 @@
         </ul>
     </nav>
 
-    <!-- Rodapé da Sidebar (Fixado em baixo) -->
+    <!-- Rodapé da Sidebar -->
     <div class="sidebar-footer">
         <ul>
             <li>
