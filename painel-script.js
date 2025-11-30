@@ -17,12 +17,20 @@
         
         const FASES_ANALISE = ['C17:NEW', 'C17:UC_2OEE24'];
 
+        // Elementos do Modal de Detalhes
         const modalDetalhes = document.getElementById('modal-detalhes-rapidos');
         const modalTitle = document.getElementById('modal-titulo');
         const modalBody = document.getElementById('modal-body-content');
         const closeModalBtn = modalDetalhes.querySelector('.close-modal');
 
+        // Elementos do Modal de Aprovação (NOVO)
+        const modalAprovacao = document.getElementById('modal-aprovacao-link');
+        const inputLinkImpressao = document.getElementById('input-link-impressao');
+        const btnConfirmarAprovacao = document.getElementById('btn-confirmar-aprovacao');
+        const closeModalAprovacaoBtn = document.querySelector('.close-modal-aprovacao');
+        
         let allDealsData = [];
+        let dealIdPendenteAprovacao = null; // Armazena o ID temporariamente
 
         // --- ESTILOS VISUAIS (CSS) ---
         const style = document.createElement('style');
@@ -45,7 +53,7 @@
             
             .column-cards { flex-grow: 1; overflow-y: auto; padding-right: 5px; display: flex; flex-direction: column; gap: 12px; }
 
-            /* --- SCROLLBAR SUTIL (NOVO) --- */
+            /* --- SCROLLBAR SUTIL --- */
             .column-cards::-webkit-scrollbar { width: 5px; }
             .column-cards::-webkit-scrollbar-track { background: transparent; }
             .column-cards::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 10px; }
@@ -307,7 +315,7 @@
                     </div>
                 `;
             } else {
-                // Apenas Aprovar (Removeu "Ajustes")
+                // Ao clicar em Aprovar, chama a função passando 'APROVADO'
                 actionsHtml = `
                     <button class="btn-modal-action btn-aprovar" onclick="atualizarStatusArte(${deal.ID}, 'APROVADO')">
                         <i class="fas fa-check-circle"></i> Aprovar e Finalizar
@@ -361,20 +369,33 @@
             document.body.appendChild(overlay);
         };
 
+        // --- ATUALIZAR STATUS (AGORA TRATA O APROVAR COM MODAL) ---
         window.atualizarStatusArte = async function(dealId, action) {
-            if(!confirm('Confirma a aprovação da arte?')) return;
-            const btn = document.activeElement;
-            btn.innerText = '...'; btn.disabled = true;
+            // Se for aprovação, INTERROMPE e abre o modal de link
+            if (action === 'APROVADO') {
+                dealIdPendenteAprovacao = dealId;
+                inputLinkImpressao.value = ''; // Limpa input anterior
+                modalAprovacao.classList.add('active'); // Abre o modal de link
+                return; // Para aqui e aguarda o usuário confirmar no outro modal
+            }
 
+            // Para outras ações (como Ajustes, se houver futuramente), segue fluxo normal
+            await enviarAtualizacao(dealId, action, null);
+        }
+
+        // Função interna para fazer o fetch de fato
+        async function enviarAtualizacao(dealId, action, linkArquivo) {
             try {
                 const res = await fetch('/api/arte/updateStatus', {
                     method: 'POST', headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({ sessionToken, dealId, action })
+                    body: JSON.stringify({ sessionToken, dealId, action, linkArquivo }) // Envia linkArquivo (pode ser null se não for aprovado)
                 });
                 const data = await res.json();
                 if(!res.ok) throw new Error(data.message);
 
-                modalDetalhes.classList.remove('active');
+                modalDetalhes.classList.remove('active'); // Fecha modal principal
+                modalAprovacao.classList.remove('active'); // Fecha modal de link (se estiver aberto)
+                
                 if(data.movedToNextStage) {
                     const card = document.querySelector(`.kanban-card[data-deal-id="${dealId}"]`);
                     if(card) card.remove();
@@ -383,8 +404,45 @@
                 }
             } catch(e) {
                 console.error(e);
-                btn.disabled = false;
+                alert('Erro: ' + e.message);
             }
+        }
+
+        // --- NOVA FUNÇÃO: CONFIRMAR APROVAÇÃO COM LINK ---
+        if(btnConfirmarAprovacao) {
+            btnConfirmarAprovacao.addEventListener('click', () => {
+                const link = inputLinkImpressao.value.trim();
+                
+                if(!link) {
+                    alert('Por favor, insira o link do arquivo de impressão.');
+                    return;
+                }
+                
+                // Chama a função de envio passando o ID salvo, a ação APROVADO e o link digitado
+                if(dealIdPendenteAprovacao) {
+                    // Muda texto do botão para dar feedback
+                    const textoOriginal = btnConfirmarAprovacao.innerText;
+                    btnConfirmarAprovacao.innerText = 'Enviando...';
+                    btnConfirmarAprovacao.disabled = true;
+
+                    enviarAtualizacao(dealIdPendenteAprovacao, 'APROVADO', link)
+                        .then(() => {
+                            btnConfirmarAprovacao.innerText = textoOriginal;
+                            btnConfirmarAprovacao.disabled = false;
+                        })
+                        .catch(() => {
+                            btnConfirmarAprovacao.innerText = textoOriginal;
+                            btnConfirmarAprovacao.disabled = false;
+                        });
+                }
+            });
+        }
+
+        // Fechar modal de aprovação
+        if(closeModalAprovacaoBtn) {
+            closeModalAprovacaoBtn.addEventListener('click', () => {
+                modalAprovacao.classList.remove('active');
+            });
         }
 
         function initDragAndDrop() {
