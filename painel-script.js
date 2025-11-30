@@ -244,7 +244,7 @@
                     <p>O pedido está sendo analisado pelos freelancers para confirmar se o briefing está completo.</p>
                     <p>Use o botão azul <strong>'Designer'</strong> no card para conversar com eles caso necessite de mais negociação.</p>
                     
-                    <button class="btn-info-action" onclick="window.open('https://ajuda.setordearte.com.br', '_blank')">
+                    <button class="btn-info-action" onclick="window.open('https://app.setordearte.com.br/pedido-em-analise.html', '_blank')">
                         Saiba Mais
                     </button>
                     <button class="btn-info-close" onclick="document.getElementById('custom-info-modal').remove()">

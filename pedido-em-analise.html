@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entenda o Status: Em Análise - Setor de Arte</title>
+    
+    <!-- Ícone -->
+    <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
+    
+    <!-- Fontes e Ícones -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        /* RESET E CONFIGURAÇÕES GERAIS */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f7fc;
+            color: #334155;
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        /* CONTAINER PRINCIPAL */
+        .container {
+            background: white;
+            width: 100%;
+            max-width: 800px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* CABEÇALHO */
+        .header {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .header p {
+            font-size: 1rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        /* CONTEÚDO */
+        .content {
+            padding: 40px;
+        }
+
+        /* BLOCOS DE INFORMAÇÃO */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+
+        .info-card {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .icon-box {
+            background: #f3e5f5;
+            color: #8e44ad;
+            min-width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .text-box h3 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .text-box p {
+            font-size: 0.95rem;
+            color: #64748b;
+        }
+
+        /* CAIXA DE DESTAQUE (GARANTIA) */
+        .guarantee-box {
+            background: #eafaf1;
+            border: 1px solid #2ecc71;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 40px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .guarantee-box i {
+            color: #27ae60;
+            font-size: 2rem;
+        }
+        .guarantee-content h4 {
+            color: #27ae60;
+            margin-bottom: 5px;
+        }
+        .guarantee-content p {
+            font-size: 0.9rem;
+            margin: 0;
+            color: #1e4620;
+        }
+
+        /* RODAPÉ E BOTÃO */
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .btn-voltar {
+            display: inline-block;
+            background: #34495e;
+            color: white;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .btn-voltar:hover {
+            background: #2c3e50;
+            transform: translateY(-2px);
+        }
+
+        /* RESPONSIVIDADE */
+        @media (min-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .info-card.full-width {
+                grid-column: span 2;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="header">
+            <h1><i class="fas fa-search-dollar"></i> Pedido em Análise</h1>
+            <p>Entenda como funciona o processo de aceitação pelos freelancers</p>
+        </div>
+
+        <div class="content">
+            <div class="info-grid">
+                
+                <!-- Ponto 1 -->
+                <div class="info-card">
+                    <div class="icon-box"><i class="fas fa-user-astronaut"></i></div>
+                    <div class="text-box">
+                        <h3>Autonomia do Designer</h3>
+                        <p>Os designers são freelancers parceiros. Eles possuem liberdade para escolher quais pedidos desejam atender baseados na complexidade e no prazo.</p>
+                    </div>
+                </div>
+
+                <!-- Ponto 2 -->
+                <div class="info-card">
+                    <div class="icon-box"><i class="fas fa-chart-pie"></i></div>
+                    <div class="text-box">
+                        <h3>O que eles analisam?</h3>
+                        <p>Principalmente o equilíbrio entre o <strong>Briefing</strong> (trabalho necessário), o <strong>Prazo</strong> exigido e o <strong>Valor</strong> ofertado.</p>
+                    </div>
+                </div>
+
+                <!-- Ponto 3 -->
+                <div class="info-card full-width">
+                    <div class="icon-box"><i class="fas fa-comments"></i></div>
+                    <div class="text-box">
+                        <h3>Use o Chat "Designer"</h3>
+                        <p>Se o pedido estiver demorando, use o botão azul <strong>Designer</strong> no card. Ele serve para explicar melhor o briefing, negociar um prazo mais longo ou ajustar valores caso necessário.</p>
+                    </div>
+                </div>
+
+                <!-- Ponto 4 -->
+                <div class="info-card full-width">
+                    <div class="icon-box"><i class="fas fa-chart-line"></i></div>
+                    <div class="text-box">
+                        <h3>Taxa de Sucesso</h3>
+                        <p>Fique tranquilo: <strong>99% dos pedidos são aceitos</strong>. Casos de não atendimento são raríssimos e geralmente ocorrem devido a prazos extremamente curtos.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Garantia -->
+            <div class="guarantee-box">
+                <i class="fas fa-wallet"></i>
+                <div class="guarantee-content">
+                    <h4>Seu saldo está seguro</h4>
+                    <p>Caso nenhum designer aceite o pedido após o período de análise, o valor total é <strong>estornado automaticamente</strong> para sua carteira e fica disponível para uso imediato.</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px; text-align: center; color: #64748b; font-size: 0.9rem;">
+                <p>Se o pedido passar muito tempo em análise sem resposta, <a href="#" style="color:#8e44ad; font-weight:bold;">contate o suporte</a>.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <a href="javascript:window.close();" class="btn-voltar">Entendi, fechar página</a>
+        </div>
+
+    </div>
+
+</body>
+</html>
