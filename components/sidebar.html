@@ -1,13 +1,25 @@
 <!-- components/sidebar.html -->
 <style>
-    /* Aumenta a logo em 100% (aprox 200px) respeitando o limite da sidebar */
+    /* Estilos Gerais da Sidebar: Cor de fundo #7893a5 e texto branco */
+    .app-sidebar {
+        background-color: #7893a5;
+        color: #ffffff;
+    }
+
+    /* Links brancos para garantir leitura no fundo colorido */
+    .app-sidebar a {
+        color: #ffffff;
+        text-decoration: none;
+    }
+
+    /* Ajuste da Logo: Largura 200px mantendo a proporção real */
     .sidebar-logo {
         width: 200px;
         max-width: 100%;
-        height: auto;        /* Garante a proporção da altura em relação a largura */
-        object-fit: contain; /* Impede que a imagem seja esticada ou achatada */
-        display: block;      /* Melhora o comportamento do layout */
-        margin: 0 auto;      /* Centraliza a logo horizontalmente */
+        height: auto;        /* ESSENCIAL: Calcula a altura pela largura original */
+        object-fit: contain; /* ESSENCIAL: Impede achatamento/distorção */
+        display: block;
+        margin: 0 auto;      /* Centraliza */
     }
 </style>
 
@@ -16,7 +28,8 @@
     <!-- Cabeçalho (Logo) -->
     <div class="sidebar-header">
         <a href="/dashboard.html" class="logo-link">
-            <img src="/images/logo-fundo-claro-100x100.png" alt="Logo Setor de Arte" class="sidebar-logo">
+            <!-- Logo alterada para a versão de fundo escuro -->
+            <img src="/images/fundo-escuro.png" alt="Logo Setor de Arte" class="sidebar-logo">
             <h1 class="visually-hidden">Setor de Arte</h1> 
         </a>
     </div>
