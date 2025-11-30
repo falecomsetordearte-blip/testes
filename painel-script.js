@@ -1,10 +1,13 @@
-// painel-script.js - ATUALIZADO
+// painel-script.js - COM LOGS DE DEPURAÇÃO
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
 
         const sessionToken = localStorage.getItem('sessionToken');
-        if (!sessionToken) { window.location.href = 'login.html'; return; }
+        if (!sessionToken) {
+            window.location.href = 'login.html'; 
+            return;
+        }
         
         // --- CONFIGURAÇÕES ---
         const CAMPO_TIPO_ARTE = 'UF_CRM_1761269158';
@@ -13,9 +16,6 @@
         const CAMPO_MEDIDAS = 'UF_CRM_1727464924690';
         const CAMPO_CLIENTE = 'UF_CRM_1741273407628';
         
-        // IDs das fases que mostram a tarja roxa
-        const FASES_ANALISE = ['C17:NEW', 'C17:UC_2OEE24'];
-
         const board = document.querySelector('.kanban-board');
         const modal = document.getElementById('modal-detalhes-rapidos');
         const modalTitle = document.getElementById('modal-titulo');
@@ -24,7 +24,7 @@
 
         let allDealsData = [];
 
-        // --- ESTILOS VISUAIS INJETADOS ---
+        // --- ESTILOS VISUAIS INJETADOS (Mantidos do anterior) ---
         const style = document.createElement('style');
         style.textContent = `
             :root { --primary: #e67e22; --locked: #95a5a6; --success: #27ae60; --bg-card: #fff; --shadow-sm: 0 2px 5px rgba(0,0,0,0.05); }
@@ -39,16 +39,6 @@
             .kanban-card { background: var(--bg-card); border-radius: 10px; padding: 15px; box-shadow: var(--shadow-sm); border-left: 5px solid var(--primary); cursor: grab; position: relative; transition: transform 0.2s; }
             .kanban-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
             .kanban-card.card-locked { border-left-color: var(--locked); background-color: #f8f9fa; opacity: 0.9; cursor: default !important; }
-            
-            /* ESTILO TARJA ROXA */
-            .badge-analise {
-                background: #8e44ad; color: white; padding: 6px 12px; border-radius: 6px;
-                font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: space-between;
-                margin-bottom: 12px; width: 100%; box-shadow: 0 2px 4px rgba(142, 68, 173, 0.3);
-            }
-            .info-icon-btn { cursor: pointer; font-size: 1rem; margin-left: 8px; transition: transform 0.2s; }
-            .info-icon-btn:hover { transform: scale(1.2); color: #f3e5f5; }
-
             .card-id { font-size: 0.75rem; color: #aaa; font-weight: 600; position: absolute; top: 15px; right: 15px; }
             .card-title { font-size: 1rem; font-weight: 600; color: #333; margin-bottom: 10px; padding-right: 40px; }
             .freelancer-tag { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; background: #eee; padding: 5px 10px; border-radius: 20px; width: fit-content; }
@@ -91,7 +81,7 @@
         // --- API CALLS ---
         async function carregarPainelArte() {
             console.log("[FRONT] Iniciando carregamento do painel...");
-            document.querySelectorAll('.column-cards').forEach(c => c.innerHTML = '<div style="padding:20px;text-align:center;color:#ccc"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>');
+            document.querySelectorAll('.column-cards').forEach(c => c.innerHTML = '<div style="padding:20px;text-align:center;color:#ccc">Carregando...</div>');
             
             try {
                 const res = await fetch('/api/arte/getBoardData', {
@@ -100,43 +90,44 @@
                 });
                 
                 const data = await res.json();
+                console.log("[FRONT] Resposta API:", data);
+
                 if(!res.ok) throw new Error(data.message);
                 
                 allDealsData = data.deals;
+                
+                if (allDealsData.length === 0) {
+                    console.warn("[FRONT] Nenhum pedido retornado pela API.");
+                }
+
                 renderizarBoard(allDealsData);
             } catch(e) {
-                console.error("[FRONT] Erro:", e);
+                console.error("[FRONT] Erro no carregamento:", e);
                 showToast(e.message, 'error');
             }
         }
 
         function renderizarBoard(deals) {
+            console.log(`[FRONT] Renderizando ${deals.length} cards...`);
+            
+            // Limpa as colunas
             document.querySelectorAll('.column-cards').forEach(c => c.innerHTML = '');
             
-            if (deals.length === 0) {
-                document.getElementById('cards-NOVOS').innerHTML = '<div style="padding:20px;text-align:center;color:#ccc">Nenhum pedido de arte.</div>';
-                return;
-            }
-
             deals.forEach(deal => {
                 const colunaId = deal.coluna_local || 'NOVOS';
+                console.log(`[FRONT] Card #${deal.ID} -> Coluna: ${colunaId}`);
+                
                 const container = document.getElementById(`cards-${colunaId}`);
-                if(container) container.innerHTML += criarCardHTML(deal);
+                
+                if(container) {
+                    container.innerHTML += criarCardHTML(deal);
+                } else {
+                    console.error(`[FRONT] Coluna não encontrada no HTML: cards-${colunaId}`);
+                }
             });
 
             initDragAndDrop();
         }
-
-        // Função global para o clique no ícone de informação
-        window.mostrarInfoAnalise = function(event) {
-            event.stopPropagation(); // Evita abrir o modal do card
-            const msg = "O pedido está sendo analisado pelos freelancers.\n\nUse o botão azul 'Designer' para conversar com eles caso necessite de mais negociação.";
-            
-            // Simples confirm/alert melhorado ou poderia ser outro modal
-            if(confirm(msg + "\n\nDeseja saber mais sobre o processo?")) {
-                window.open('https://ajuda.setordearte.com.br/analise-freelancer', '_blank'); // URL Exemplo
-            }
-        };
 
         function criarCardHTML(deal) {
             const tipoArte = deal[CAMPO_TIPO_ARTE];
@@ -145,28 +136,11 @@
             const linkDesigner = deal[CAMPO_LINK_FALAR_DESIGNER];
             const displayId = deal.TITLE ? `#${deal.TITLE}` : `#${deal.ID}`;
             const nomeCliente = deal[CAMPO_CLIENTE] || 'Cliente não id.';
-            
-            // VERIFICA SE É FASE DE ANÁLISE
-            const isEmAnalise = FASES_ANALISE.includes(deal.STAGE_ID);
 
             let extraContent = '';
             let cardClass = 'kanban-card';
 
-            // --- LÓGICA DO CARD "EM ANÁLISE" (ROXO) ---
-            if (isEmAnalise) {
-                cardClass += ' card-locked'; // Bloqueia drag
-                extraContent += `
-                    <div class="badge-analise">
-                        <span>EM ANÁLISE</span>
-                        <i class="fas fa-info-circle info-icon-btn" onclick="mostrarInfoAnalise(event)" title="Clique para saber mais"></i>
-                    </div>
-                    <div class="card-actions">
-                        ${linkDesigner ? `<a href="${linkDesigner}" target="_blank" class="btn-card btn-designer"><i class="fab fa-whatsapp"></i> Designer</a>` : '<span style="font-size:0.75rem; color:#aaa; width:100%; text-align:center;">Aguardando designer...</span>'}
-                    </div>
-                `;
-            } 
-            // --- LÓGICA PADRÃO FREELANCER (Já em produção) ---
-            else if (isFreelancer) {
+            if (isFreelancer) {
                 cardClass += ' card-locked';
                 extraContent += `
                     <div class="freelancer-tag">
@@ -179,9 +153,7 @@
                         <button class="btn-card btn-visualizar" onclick="abrirModal(${deal.ID})">Visualizar</button>
                     </div>
                 `;
-            } 
-            // --- LÓGICA PADRÃO INTERNO ---
-            else {
+            } else {
                 extraContent += `
                     <div class="card-actions">
                         <button class="btn-card btn-visualizar" style="background:#fff; border:1px solid #ccc; color:#333;" onclick="abrirModal(${deal.ID})">
@@ -192,7 +164,7 @@
             }
 
             return `
-                <div class="${cardClass}" data-deal-id="${deal.ID}" ${isFreelancer || isEmAnalise ? 'data-locked="true"' : ''}>
+                <div class="${cardClass}" data-deal-id="${deal.ID}" ${isFreelancer ? 'data-locked="true"' : ''}>
                     <div class="card-id">${displayId}</div>
                     <div class="card-title">${nomeCliente}</div>
                     ${extraContent}
@@ -206,7 +178,7 @@
                 new Sortable(col, {
                     group: 'arteBoard',
                     animation: 150,
-                    filter: '.card-locked', // Bloqueia arrastar itens roxos e cinzas
+                    filter: '.card-locked',
                     onMove: function (evt) {
                         return !evt.dragged.classList.contains('card-locked');
                     },
@@ -214,6 +186,7 @@
                         if (evt.from !== evt.to) {
                             const dealId = evt.item.dataset.dealId;
                             const novaColuna = evt.to.parentElement.dataset.columnId;
+                            console.log(`[FRONT] Movendo Card #${dealId} para ${novaColuna}`);
                             moverCard(dealId, novaColuna);
                         }
                     }
@@ -233,7 +206,7 @@
             }
         }
 
-        // --- MODAL PADRÃO (Mantido) ---
+        // --- MODAL ---
         window.abrirModal = function(dealId) {
             const deal = allDealsData.find(d => d.ID == dealId);
             if(!deal) return;
@@ -258,6 +231,10 @@
                     <div class="alert-bloqueado">
                         <i class="fas fa-lock"></i> Pedido com Freelancer/Setor de Arte.<br>
                         Acompanhe o status pelo Bitrix ou WhatsApp.
+                    </div>
+                    <div class="card-actions" style="margin-bottom:15px;">
+                        ${deal[CAMPO_LINK_ACOMPANHAR] ? `<a href="${deal[CAMPO_LINK_ACOMPANHAR]}" target="_blank" class="btn-card btn-acompanhar" style="padding:12px;">Acompanhar (Zap)</a>` : ''}
+                        ${deal[CAMPO_LINK_FALAR_DESIGNER] ? `<a href="${deal[CAMPO_LINK_FALAR_DESIGNER]}" target="_blank" class="btn-card btn-designer" style="padding:12px;">Falar c/ Designer</a>` : ''}
                     </div>
                 `;
             } else {
@@ -305,6 +282,7 @@
                     body: JSON.stringify({ sessionToken, dealId, action })
                 });
                 const data = await res.json();
+                
                 if(!res.ok) throw new Error(data.message);
 
                 showToast(data.message, 'success');
