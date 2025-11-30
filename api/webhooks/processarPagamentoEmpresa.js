@@ -20,12 +20,16 @@ module.exports = async (req, res) => {
         if (!deal) return res.status(200).send("OK");
 
         const bitrixCompanyId = parseInt(deal.COMPANY_ID);
-        // ATENÇÃO: Se o valor que movemos antes foi o custo do designer, precisamos usar ele aqui?
-        // Vou assumir que o deal.OPPORTUNITY contém o valor que foi debitado anteriormente (custo designer)
+        
+        // O valor que vem do Bitrix (OPPORTUNITY) é o valor Líquido (o que vai para o designer)
+        // Exemplo: 85.00
         const valorBase = parseFloat(deal.OPPORTUNITY || 0); 
         
-        // Cálculo do valor + 15%
-        const valorComAcrescimo = valorBase * 1.15;
+        // CÁLCULO CORRIGIDO:
+        // Para reverter o desconto de 15% e achar o Valor Bruto Original (pago pela Gráfica),
+        // dividimos o valor líquido por 0.85.
+        // Exemplo: 85.00 / 0.85 = 100.00
+        const valorComAcrescimo = parseFloat((valorBase / 0.85).toFixed(2));
 
         // 2. Buscar ID Local da Empresa
         const empresas = await prisma.$queryRawUnsafe(
@@ -37,8 +41,8 @@ module.exports = async (req, res) => {
             const empresaId = empresas[0].id;
 
             // 3. ATUALIZAÇÃO FINANCEIRA (SQL PURO)
-            // Tira de 'saldo_devedor' (valor original)
-            // Adiciona em 'aprovados' (valor com 15%)
+            // Tira de 'saldo_devedor' o valor líquido (Ex: 85.00 - Custo do Designer)
+            // Adiciona em 'aprovados' o valor bruto (Ex: 100.00 - O que o cliente pagou originalmente)
             await prisma.$executeRawUnsafe(
                 `UPDATE empresas 
                  SET saldo_devedor = GREATEST(0, COALESCE(saldo_devedor, 0) - $1), 
