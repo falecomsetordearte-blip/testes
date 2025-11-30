@@ -16,7 +16,7 @@
     .sidebar-header {
         text-align: center;
         padding: 1rem 0;
-        background: transparent !important; /* Garante que o container não tenha fundo branco */
+        background: transparent !important;
     }
 
     /* Garante que o link em volta da logo não tenha fundo ou borda */
@@ -27,22 +27,23 @@
     }
 
     /* 
-       Estilo da Logo "LIMPO"
-       Adicionei regras para remover qualquer filtro ou máscara antiga 
+       Estilo da Logo
+       - Tamanho reduzido para 150px
+       - Filtros e máscaras removidos
     */
     .sidebar-logo {
-        width: 200px;             
+        width: 150px;             /* Reduzido de 200px para 150px */
         max-width: 100%;          
         height: auto !important;  
         object-fit: contain;      
         
         /* --- BLOCO DE CORREÇÃO DA MÁSCARA BRANCA --- */
-        filter: none !important;           /* Remove filtros de cor/brilho */
-        -webkit-filter: none !important;   /* Compatibilidade */
-        mask: none !important;             /* Remove máscaras de recorte */
-        -webkit-mask: none !important;     /* Compatibilidade */
-        mix-blend-mode: normal !important; /* Remove misturas de cor com o fundo */
-        opacity: 1 !important;             /* Garante opacidade total */
+        filter: none !important;           
+        -webkit-filter: none !important;   
+        mask: none !important;             
+        -webkit-mask: none !important;     
+        mix-blend-mode: normal !important; 
+        opacity: 1 !important;             
         /* ------------------------------------------- */
 
         /* Resets visuais */
@@ -63,7 +64,7 @@
     <div class="sidebar-header">
         <a href="/dashboard.html" class="logo-link">
             <!-- Logo original sem filtros -->
-            <img src="/images/semfundo.svg" alt="Logo Setor de Arte" class="sidebar-logo">
+            <img src="/images/fundo-escuro.png" alt="Logo Setor de Arte" class="sidebar-logo">
             <h1 class="visually-hidden">Setor de Arte</h1> 
         </a>
     </div>
