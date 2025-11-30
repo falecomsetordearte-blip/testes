@@ -1,7 +1,7 @@
 // expedicao/script.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    injectCleanStyles(); // Garante estilos do toast
+    injectCleanStyles(); 
     carregarPedidos();
     configurarBusca();
 });
@@ -50,13 +50,12 @@ async function carregarPedidos(termoBusca = '') {
 
 function criarLinhaPedido(p) {
     const div = document.createElement('div');
-    div.className = 'exp-item grid-layout'; // Aplica o grid novo
+    div.className = 'exp-item grid-layout';
     
     const isEntregue = p.status_expedicao === 'Entregue';
     const badgeClass = isEntregue ? 'st-entregue' : 'st-aguardando';
     const iconClass = isEntregue ? 'fa-check' : 'fa-clock';
 
-    // Novo Layout: Título | Cliente | Status | Icone
     div.innerHTML = `
         <div style="font-weight:700; color:#334155;">${p.titulo}</div>
         <div style="font-weight:600; color:#64748b;">${p.nome_cliente}</div>
@@ -77,20 +76,24 @@ function abrirGaveta(p) {
     const overlay = document.getElementById('drawer-overlay');
     const panel = document.getElementById('drawer-panel');
 
-    // Preencher Dados
-    document.getElementById('d-id-bitrix').innerText = `#${p.id_bitrix}`;
+    // PREENCHIMENTO DOS DADOS (Sem ID Bitrix)
+    
+    // Cabeçalho recebe o Título
+    document.getElementById('drawer-header-title').innerText = p.titulo;
+
+    // Corpo da Gaveta
     document.getElementById('d-titulo').innerText = p.titulo;
     document.getElementById('d-cliente').innerText = p.nome_cliente;
     document.getElementById('d-wpp').innerText = p.whatsapp;
-    document.getElementById('d-briefing').innerText = p.briefing || 'Sem detalhes.';
+    document.getElementById('d-briefing').innerText = p.briefing || 'Sem detalhes disponíveis.';
     
-    // Status e Cores
+    // Status
     const isEntregue = p.status_expedicao === 'Entregue';
     const statusEl = document.getElementById('d-status');
     statusEl.innerText = p.status_expedicao;
     statusEl.style.color = isEntregue ? '#15803d' : '#c2410c';
 
-    // WhatsApp Link
+    // Link WhatsApp
     const btnWpp = document.getElementById('btn-wpp-link');
     if(p.whatsapp && p.whatsapp.length > 5) {
         const num = p.whatsapp.replace(/\D/g, '');
@@ -100,7 +103,7 @@ function abrirGaveta(p) {
         btnWpp.style.display = 'none';
     }
 
-    // Botão de Ação com Lógica de Confirmação
+    // Configurar Botão de Ação
     configurarBotaoAcao(p, isEntregue);
 
     overlay.classList.add('active');
@@ -110,7 +113,6 @@ function abrirGaveta(p) {
 function configurarBotaoAcao(p, isEntregue) {
     const btnAcao = document.getElementById('btn-gaveta-entregar');
     
-    // Reset visual e lógica
     btnAcao.dataset.confirming = "false";
     btnAcao.classList.remove('btn-confirm-state');
 
@@ -134,7 +136,6 @@ function configurarBotaoAcao(p, isEntregue) {
                     btnAcao.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Clique novamente para confirmar';
                     btnAcao.classList.add('btn-confirm-state');
                     
-                    // Reseta após 3 segundos se não clicar
                     setTimeout(() => {
                         if (btnAcao.dataset.confirming === "true") {
                             btnAcao.dataset.confirming = "false";
@@ -157,7 +158,6 @@ function fecharGaveta() {
 }
 
 async function marcarEntregue(idInterno, btnElement) {
-    // Estado de Carregamento
     btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...'; 
     btnElement.classList.remove('btn-confirm-state');
     btnElement.disabled = true;
@@ -175,24 +175,19 @@ async function marcarEntregue(idInterno, btnElement) {
         if (res.ok) {
             fecharGaveta();
             showToast('Pedido entregue com sucesso!', 'success');
-            // Atualiza a lista mantendo a busca
             carregarPedidos(document.getElementById('input-busca').value);
         } else {
             throw new Error('Falha na API');
         }
     } catch (err) {
         showToast('Erro ao atualizar: ' + err.message, 'error');
-        // Restaura botão
         btnElement.innerHTML = 'Tentar Novamente'; 
         btnElement.disabled = false;
         btnElement.dataset.confirming = "false";
     }
 }
 
-// --- UTILITÁRIOS (Toast e CSS) ---
-
 function injectCleanStyles() {
-    // Garante que o CSS do Toast exista mesmo se o CSS principal falhar
     if(document.getElementById('dynamic-toast-style')) return;
     const style = document.createElement('style');
     style.id = 'dynamic-toast-style';

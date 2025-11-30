@@ -11,8 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
-        /* Ajuste do Grid para remover ID e Botão */
-        /* Colunas: Título (2fr) | Cliente (2fr) | Status (150px) | Ícone (50px) */
+        /* Ajuste do Grid */
         .grid-layout { display: grid; grid-template-columns: 2fr 2fr 150px 50px; gap: 15px; align-items: center; }
 
         .search-bar-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; gap: 10px; }
@@ -49,16 +48,10 @@
         .btn-acao-entregar:hover { background: #27ae60; box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3); }
         .btn-acao-entregue { background: #cbd5e1; color: #64748b; cursor: not-allowed; }
         
-        /* Estado de Confirmação (Vermelho Pulsante) */
         .btn-confirm-state { background: #e74c3c !important; animation: pulse 0.5s; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
-        /* Toast Styles (Injetados via JS no original, mas mantendo aqui para garantia) */
         .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10010; display: flex; flex-direction: column; gap: 10px; }
-        .toast { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); border-left: 5px solid #ccc; min-width: 300px; animation: slideIn 0.3s forwards; display: flex; align-items: center; gap: 10px; }
-        .toast.success { border-left-color: #2ecc71; }
-        .toast.error { border-left-color: #e74c3c; }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
         @media (max-width: 768px) {
             .exp-list-header { display: none; }
@@ -91,7 +84,7 @@
                             <div>Título do Pedido</div>
                             <div>Cliente</div>
                             <div style="text-align:center;">Status</div>
-                            <div></div> <!-- Espaço para ícone -->
+                            <div></div>
                         </div>
                         <div id="lista-expedicao" class="exp-list-container">
                             <div style="padding:40px; text-align:center; color:#94a3b8;">Carregando...</div>
@@ -103,26 +96,28 @@
         </div>
     </div>
 
-    <!-- GAVETA LATERAL -->
+    <!-- GAVETA LATERAL ATUALIZADA -->
     <div class="drawer-overlay" id="drawer-overlay" onclick="fecharGaveta()"></div>
     <div class="drawer-panel" id="drawer-panel">
         <div class="drawer-header">
-            <h3 style="margin:0; color:#1e293b;">Detalhes do Pedido</h3>
-            <button onclick="fecharGaveta()" style="border:none; background:none; font-size:1.5rem; cursor:pointer; color:#94a3b8;">×</button>
+            <!-- Cabeçalho agora recebe o Título via JS -->
+            <h3 style="margin:0; color:#1e293b; font-size:1.1rem; line-height:1.4;" id="drawer-header-title">Detalhes</h3>
+            <button onclick="fecharGaveta()" style="border:none; background:none; font-size:1.5rem; cursor:pointer; color:#94a3b8; margin-left:10px;">×</button>
         </div>
         
         <div class="drawer-body">
-            <div class="drawer-info-group">
-                
-            </div>
+            <!-- ID BITRIX REMOVIDO -->
+            
             <div class="drawer-info-group">
                 <span class="drawer-label">Título do Pedido</span>
                 <div class="drawer-value" id="d-titulo" style="font-weight:700; color:#2c3e50;">--</div>
             </div>
+            
             <div class="drawer-info-group">
                 <span class="drawer-label">Cliente</span>
                 <div class="drawer-value" id="d-cliente">--</div>
             </div>
+            
             <div class="drawer-info-group">
                 <span class="drawer-label">WhatsApp</span>
                 <div class="drawer-value">
@@ -135,6 +130,7 @@
                 <span class="drawer-label">Briefing / Detalhes</span>
                 <div class="briefing-box" id="d-briefing">Carregando...</div>
             </div>
+            
             <div class="drawer-info-group">
                 <span class="drawer-label">Status Atual</span>
                 <div class="drawer-value" id="d-status" style="font-weight:700;">--</div>
