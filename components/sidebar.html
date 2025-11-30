@@ -1,4 +1,13 @@
 <!-- components/sidebar.html -->
+<style>
+    /* Aumenta a logo em 100% (aprox 200px) respeitando o limite da sidebar */
+    .sidebar-logo {
+        width: 200px;
+        max-width: 100%;
+        height: auto;
+    }
+</style>
+
 <aside class="app-sidebar">
     
     <!-- Cabeçalho (Logo) -->
@@ -54,25 +63,27 @@
                 </a>
             </li>
             
-            <li>
-                <a href="/instalacao/painel.html">
-                    <i class="fas fa-wrench"></i>
-                    <span>Instalação Ext.</span>
-                </a>
-            </li>
-
-            <!-- NOVO LINK ADICIONADO AQUI -->
+            <!-- Instalação Loja (Vem antes) -->
             <li>
                 <a href="/instalacao-loja/painel.html">
                     <i class="fas fa-store"></i>
                     <span>Instalação Loja</span>
                 </a>
             </li>
-            
+
+            <!-- Instalação Externa (Vem depois) -->
             <li>
-                <a href="/financeiro.html">
-                    <i class="fas fa-dollar-sign"></i>
-                    <span>Financeiro</span>
+                <a href="/instalacao/painel.html">
+                    <i class="fas fa-wrench"></i>
+                    <span>Instalação Ext.</span>
+                </a>
+            </li>
+            
+            <!-- Expedição (No lugar de Financeiro) -->
+            <li>
+                <a href="/expedicao/index.html">
+                    <i class="fas fa-box"></i>
+                    <span>Expedição</span>
                 </a>
             </li>
         </ul>
