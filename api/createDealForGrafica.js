@@ -90,8 +90,6 @@ module.exports = async (req, res) => {
             dealFields[FIELD_SERVICO] = formData.servico;
 
             // --- CORREÇÃO DO CÁLCULO E CAMPO DE VALOR ---
-            // Aplica desconto de 15% (multiplica por 0.85)
-            // Usa parseFloat para garantir que o Bitrix receba um número, não string
             valorOportunidade = parseFloat((custoDesigner * 0.85).toFixed(2));
 
         } else if (arte === 'Designer Próprio') {
@@ -102,7 +100,7 @@ module.exports = async (req, res) => {
         if (linkArquivo) dealFields[FIELD_ARQUIVO_IMPRESSAO] = linkArquivo;
         
         dealFields['STAGE_ID'] = stageId;
-        dealFields['OPPORTUNITY'] = valorOportunidade; // Campo padrão de valor do Bitrix
+        dealFields['OPPORTUNITY'] = valorOportunidade; 
         dealFields[FIELD_BRIEFING_COMPLETO] = briefingFinal;
 
         const createDealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.add.json`, { fields: dealFields });
@@ -134,11 +132,20 @@ module.exports = async (req, res) => {
             );
         }
 
-        // 5. Salva Pedido
+        // 5. Salva Pedido (Tabela de Relatório)
         await prisma.$executeRawUnsafe(
             `INSERT INTO pedidos (empresa_id, bitrix_deal_id, titulo, nome_cliente, whatsapp_cliente, servico, tipo_arte, tipo_entrega, valor_designer, briefing_completo) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
             empresa.id, newDealId, formData.titulo, formData.nomeCliente, formData.wppCliente, formData.servico, arte, tipoEntrega, custoDesigner, briefingFinal
+        );
+
+        // 6. ADIÇÃO CRÍTICA: Cria o Card no Painel Kanban (Tabela Visual)
+        // Sem isso, o moveCard.js não encontra o registro para mover depois.
+        await prisma.$executeRawUnsafe(
+            `INSERT INTO painel_arte_cards (empresa_id, bitrix_deal_id, coluna, posicao, updated_at) 
+             VALUES ($1, $2, 'NOVOS', 0, NOW())`,
+            empresa.id, 
+            newDealId
         );
 
         return res.status(200).json({ success: true, dealId: newDealId });
