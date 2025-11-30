@@ -1,4 +1,4 @@
-// /impressao/painel-script.js - VERSÃO CLEAN (Sem Alertas)
+// /impressao/painel-script.js
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
@@ -9,6 +9,7 @@
             return;
         }
         
+        // Campos
         const STATUS_IMPRESSAO_FIELD = 'UF_CRM_1757756651931';
         const NOME_CLIENTE_FIELD = 'UF_CRM_1741273407628';
         const CONTATO_CLIENTE_FIELD = 'UF_CRM_1749481565243';
@@ -16,6 +17,7 @@
         const MEDIDAS_FIELD = 'UF_CRM_1727464924690';
         const LINK_ARQUIVO_FINAL_FIELD = 'UF_CRM_1748277308731';
         const PRAZO_FINAL_FIELD = 'UF_CRM_1757794109';
+        const BRIEFING_FIELD = 'UF_CRM_1738249371'; // Novo campo
 
         const STATUS_MAP = {
             '2657': { nome: 'Preparação', cor: '#2ecc71', classe: 'preparacao' }, 
@@ -41,8 +43,9 @@
         const closeModalBtn = modal.querySelector('.close-modal');
 
         let allDealsData = [];
+        let currentLocalCompanyId = 0; // Armazena o ID da empresa logada
 
-        // --- ESTILOS VISUAIS CLEAN ---
+        // --- ESTILOS VISUAIS ---
         const style = document.createElement('style');
         style.textContent = `
             :root {
@@ -105,6 +108,24 @@
             .card-detalhe { background-color: #fff; border-radius: 8px; padding: 15px; border: 1px solid #eee; }
             .card-detalhe h4 { font-size: 0.9rem; color: var(--text-light); text-transform: uppercase; margin: 0 0 10px 0; border-bottom: 2px solid #f1f1f1; padding-bottom: 5px; }
 
+            /* Estilo do Briefing */
+            .briefing-scroll-area {
+                background-color: #fcfcfc;
+                border: 1px solid #eee;
+                border-radius: 6px;
+                padding: 15px;
+                height: 100%;
+                max-height: 400px;
+                overflow-y: auto;
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 0.9rem;
+                color: #444;
+                white-space: pre-wrap; /* Mantém quebras de linha */
+                line-height: 1.5;
+            }
+            .briefing-scroll-area::-webkit-scrollbar { width: 5px; }
+            .briefing-scroll-area::-webkit-scrollbar-thumb { background: #ddd; border-radius: 5px; }
+
             .btn-acao-modal { display: block; width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; text-align: center; cursor: pointer; border: none; font-size: 0.9rem; transition: all 0.2s; text-decoration: none; margin-bottom: 8px; }
             .btn-acao-modal.principal { background-color: var(--primary); color: white; }
             .btn-acao-modal.principal:hover { background-color: #357abd; }
@@ -114,6 +135,7 @@
             .info-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 0.9rem; }
             .tag-medidas { padding: 2px 8px; border-radius: 4px; color: white; font-weight: 600; font-size: 0.8rem; }
 
+            /* Toast e Spinner */
             .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
             .toast { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 12px; min-width: 300px; animation: slideInRight 0.3s ease-out forwards; border-left: 5px solid #ccc; }
             .toast.success { border-left-color: var(--success); }
@@ -177,7 +199,11 @@
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.message);
+                
                 allDealsData = data.deals;
+                // CAPTURA O ID DA EMPRESA LOCAL
+                currentLocalCompanyId = data.localCompanyId || 0;
+
                 organizarPedidosNasColunas(allDealsData);
             } catch (error) {
                 console.error("Erro ao carregar pedidos de impressão:", error);
@@ -252,6 +278,7 @@
             
             modalTitle.textContent = `Impressão #${deal.TITLE || deal.ID}`;
             
+            // Renderiza barra de progresso (Steps)
             const statusAtualId = deal[STATUS_IMPRESSAO_FIELD] || STATUS_ORDER[0];
             const statusAtualIndex = STATUS_ORDER.indexOf(statusAtualId);
             let stepsHtml = '';
@@ -270,21 +297,27 @@
             let medidasHtml = medidaInfo ? `<span class="tag-medidas" style="background-color: ${medidaInfo.cor};">${medidaInfo.nome}</span>` : '<span style="color:#aaa">Não def.</span>';
             const linkArquivo = deal[LINK_ARQUIVO_FINAL_FIELD];
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
+            const briefingTexto = deal[BRIEFING_FIELD] || "Nenhum briefing disponível para este pedido.";
 
             let actionsHtml = '';
             if (linkArquivo) { actionsHtml += `<a href="${linkArquivo}" target="_blank" class="btn-acao-modal principal"><i class="fas fa-download"></i> Baixar Arquivo</a>`; }
             if (linkAtendimento) { actionsHtml += `<a href="${linkAtendimento}" target="_blank" class="btn-acao-modal secundario"><i class="fab fa-whatsapp"></i> Ver Atendimento</a>`; }
-            if (deal.TITLE) {
+            
+            // --- REGRA DE OURO: BOTÃO VISÍVEL SÓ PARA EMPRESAS 4 e 24 ---
+            if (deal.TITLE && (currentLocalCompanyId === 4 || currentLocalCompanyId === 24)) {
                 const urlVerPedido = `https://www.visiva.com.br/admin/?imprimastore=pedidos/detalhes&id=${encodeURIComponent(deal.TITLE)}`;
                 actionsHtml += `<a href="${urlVerPedido}" target="_blank" class="btn-acao-modal secundario"><i class="fa-solid fa-external-link-alt"></i> Ver Pedido</a>`;
             }
+            
             if (actionsHtml === '') { actionsHtml = '<p style="text-align:center; color:#999; font-size:0.8rem;">Sem ações disponíveis</p>'; }
             
+            // COLUNA PRINCIPAL AGORA CONTÉM O BRIEFING
             const mainColumnHtml = `
-                <div class="card-detalhe" style="text-align: center; color: #aaa; padding: 50px 20px; border: 2px dashed #eee; height: 100%; display: flex; flex-direction: column; justify-content: center;">
-                    <i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
-                    <h3 style="margin: 0 0 10px 0; color: var(--text-dark);">Chat de Revisão</h3>
-                    <p style="font-size: 0.9rem;">Funcionalidade em desenvolvimento</p>
+                <div class="card-detalhe" style="height: 100%; display: flex; flex-direction: column;">
+                    <h3 style="margin: 0 0 10px 0; color: var(--text-dark); font-size: 1rem;"><i class="fas fa-file-alt"></i> Briefing</h3>
+                    <div class="briefing-scroll-area">
+                        ${briefingTexto}
+                    </div>
                 </div>
             `;
 
@@ -348,7 +381,6 @@
                     }
                 })
                 .catch(error => {
-                    // Substituição do Alert por Toast
                     showToast('Erro ao atualizar status. Revertendo...', 'error');
                     updateVisualStatus(dealId, oldStatusId);
                     allDealsData[dealIndex][STATUS_IMPRESSAO_FIELD] = oldStatusId;
