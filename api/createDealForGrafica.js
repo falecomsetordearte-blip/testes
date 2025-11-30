@@ -6,7 +6,7 @@ const axios = require('axios');
 
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
-// Constantes de campos (mantidas do seu código original)
+// Constantes
 const STAGE_FREELANCER = 'C17:NEW';         
 const STAGE_CONFERENCIA = 'C17:UC_ZHMX6W';  
 const STAGE_DESIGNER_PROPRIO = 'C17:UC_JHF0WH';
@@ -53,7 +53,6 @@ module.exports = async (req, res) => {
         const saldoAtual = parseFloat(empresa.saldo);
         const custoDesigner = parseFloat(valorDesigner || 0);
 
-        // Se for "Setor de Arte", verifica e debita saldo
         if (arte === 'Setor de Arte') {
             if (saldoAtual < custoDesigner) {
                 return res.status(400).json({ 
@@ -79,13 +78,12 @@ module.exports = async (req, res) => {
 
         if (arte === 'Setor de Arte') {
             stageId = STAGE_FREELANCER;
-            // Busca dados do supervisor (exemplo simplificado)
             const wppLimpo = supervisaoWpp ? supervisaoWpp.replace(/\D/g, '') : '';
-            // Aqui mantemos a busca do supervisor, mas cuidado com performance se tiver muitas empresas
-            const supervisor = await prisma.empresa.findFirst({ where: { whatsapp: { contains: wppLimpo } } });
+            // Mantemos queryRaw para segurança, embora findFirst funcionasse aqui
+            const supervisores = await prisma.$queryRawUnsafe(`SELECT * FROM empresas WHERE whatsapp LIKE $1 LIMIT 1`, `%${wppLimpo}%`);
             
-            if (supervisor) {
-                dealFields[FIELD_LOGO_ID] = supervisor.logo_id || supervisor.logo;
+            if (supervisores.length > 0) {
+                dealFields[FIELD_LOGO_ID] = supervisores[0].logo_id || supervisores[0].logo;
             }
             dealFields[FIELD_WHATSAPP_GRAFICA] = supervisaoWpp;
             dealFields[FIELD_SERVICO] = formData.servico;
@@ -102,7 +100,8 @@ module.exports = async (req, res) => {
 
         // 4. MOVIMENTAÇÃO FINANCEIRA (SQL PURO)
         if (newDealId && arte === 'Setor de Arte') {
-            // Tira do Saldo Livre e Coloca no Saldo Devedor (Em produção)
+            
+            // Atualiza Saldos
             await prisma.$executeRawUnsafe(
                 `UPDATE empresas 
                  SET saldo = saldo - $1, 
@@ -112,21 +111,19 @@ module.exports = async (req, res) => {
                 empresa.id
             );
 
-            // Grava Histórico de Saída
-            await prisma.historicoFinanceiro.create({
-                data: {
-                    empresa_id: empresa.id,
-                    valor: custoDesigner,
-                    tipo: 'SAIDA', // Ou 'RESERVA'
-                    descricao: `Início Produção Pedido #${newDealId}`,
-                    deal_id: String(newDealId),
-                    titulo: formData.titulo,
-                    data: new Date()
-                }
-            });
+            // Grava Histórico (CORREÇÃO AQUI: SQL PURO)
+            await prisma.$executeRawUnsafe(
+                `INSERT INTO historico_financeiro (empresa_id, valor, tipo, descricao, deal_id, titulo, data)
+                 VALUES ($1, $2, 'SAIDA', $3, $4, $5, NOW())`,
+                empresa.id,
+                custoDesigner,
+                `Início Produção Pedido #${newDealId}`,
+                String(newDealId),
+                formData.titulo
+            );
         }
 
-        // 5. Salva Pedido na Tabela (Mantido do original)
+        // 5. Salva Pedido na Tabela
         await prisma.$executeRawUnsafe(
             `INSERT INTO pedidos (empresa_id, bitrix_deal_id, titulo, nome_cliente, whatsapp_cliente, servico, tipo_arte, tipo_entrega, valor_designer, briefing_completo) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,

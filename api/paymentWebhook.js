@@ -23,11 +23,9 @@ module.exports = async (req, res) => {
 
             // CASO 1: Recarga de Saldo (Carteira)
             if (payment.externalReference === 'Créditos') {
-                console.log("[WEBHOOK] Recebido pagamento para CRÉDITOS.");
                 const asaasCustomerId = payment.customer;
                 const valorRecebido = parseFloat(payment.value);
 
-                // 1. Achar empresa pelo ID do Asaas no Bitrix
                 const contactResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
                     filter: { [ASAAS_CUSTOMER_ID_FIELD]: asaasCustomerId },
                     select: ['ID', 'COMPANY_ID']
@@ -36,8 +34,7 @@ module.exports = async (req, res) => {
                 const contact = contactResponse.data.result ? contactResponse.data.result[0] : null;
 
                 if (contact && contact.COMPANY_ID) {
-                    // 2. ATUALIZAR BANCO LOCAL (NEON) VIA SQL PURO
-                    // Adiciona o valor ao saldo existente
+                    // Atualizar Saldo (SQL PURO)
                     await prisma.$executeRawUnsafe(
                         `UPDATE empresas 
                          SET saldo = COALESCE(saldo, 0) + $1 
@@ -46,31 +43,24 @@ module.exports = async (req, res) => {
                         parseInt(contact.COMPANY_ID)
                     );
 
-                    // 3. Registrar Histórico
+                    // Registrar Histórico (SQL PURO - CORREÇÃO PREVENTIVA)
                     const empresas = await prisma.$queryRawUnsafe(`SELECT id FROM empresas WHERE bitrix_company_id = $1`, parseInt(contact.COMPANY_ID));
                     if (empresas.length > 0) {
-                        await prisma.historicoFinanceiro.create({
-                            data: {
-                                empresa_id: empresas[0].id,
-                                valor: valorRecebido,
-                                tipo: 'ENTRADA',
-                                descricao: 'Recarga de Saldo (Pix/Cartão)',
-                                deal_id: 'RECARGA',
-                                data: new Date()
-                            }
-                        });
+                        await prisma.$executeRawUnsafe(
+                            `INSERT INTO historico_financeiro (empresa_id, valor, tipo, descricao, deal_id, data)
+                             VALUES ($1, $2, 'ENTRADA', 'Recarga de Saldo (Pix/Cartão)', 'RECARGA', NOW())`,
+                            empresas[0].id,
+                            valorRecebido
+                        );
                     }
-
-                    console.log(`[SUCESSO] R$ ${valorRecebido} adicionados à empresa Bitrix ID ${contact.COMPANY_ID}`);
                 }
             }
-            // CASO 2: Pagamento de Pedido Específico (Se houver lógica futura)
+            // CASO 2: Pagamento de Pedido
             else if (payment.externalReference && payment.externalReference.startsWith('Pedido ')) {
                 const dealId = payment.externalReference.replace('Pedido ', '');
-                // Atualiza status no Bitrix
                 await axios.post(`${BITRIX24_API_URL}crm.deal.update.json`, {
                     id: dealId,
-                    fields: { 'STAGE_ID': 'C17:UC_2OEE24' } // Pago
+                    fields: { 'STAGE_ID': 'C17:UC_2OEE24' }
                 });
             }
         }
@@ -79,6 +69,6 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error('Erro Webhook:', error.message);
-        return res.status(200).send('Erro processado.'); // 200 para não travar fila
+        return res.status(200).send('Erro processado.');
     }
 };
