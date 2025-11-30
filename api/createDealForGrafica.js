@@ -65,6 +65,8 @@ module.exports = async (req, res) => {
         // 3. Criar Deal no Bitrix
         let briefingFinal = formData.briefingFormatado || '';
         let stageId = STAGE_CONFERENCIA;
+        let valorOportunidade = 0; // Valor padrão
+
         let dealFields = {
             'TITLE': formData.titulo,
             'CURRENCY_ID': 'BRL',
@@ -86,18 +88,27 @@ module.exports = async (req, res) => {
             }
             dealFields[FIELD_WHATSAPP_GRAFICA] = supervisaoWpp;
             dealFields[FIELD_SERVICO] = formData.servico;
+
+            // --- CORREÇÃO DO CÁLCULO E CAMPO DE VALOR ---
+            // Aplica desconto de 15% (multiplica por 0.85)
+            // Usa parseFloat para garantir que o Bitrix receba um número, não string
+            valorOportunidade = parseFloat((custoDesigner * 0.85).toFixed(2));
+
         } else if (arte === 'Designer Próprio') {
             stageId = STAGE_DESIGNER_PROPRIO;
+            valorOportunidade = 0;
         }
 
         if (linkArquivo) dealFields[FIELD_ARQUIVO_IMPRESSAO] = linkArquivo;
+        
         dealFields['STAGE_ID'] = stageId;
+        dealFields['OPPORTUNITY'] = valorOportunidade; // Campo padrão de valor do Bitrix
         dealFields[FIELD_BRIEFING_COMPLETO] = briefingFinal;
 
         const createDealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.add.json`, { fields: dealFields });
         const newDealId = createDealResponse.data.result;
 
-        // 4. MOVIMENTAÇÃO FINANCEIRA (SQL PURO CORRIGIDO)
+        // 4. MOVIMENTAÇÃO FINANCEIRA
         if (newDealId && arte === 'Setor de Arte') {
             
             // Atualiza Saldos
@@ -110,7 +121,7 @@ module.exports = async (req, res) => {
                 empresa.id
             );
 
-            // Grava Histórico (Usando 'titulo' ao invés de 'descricao')
+            // Grava Histórico
             const tituloHistorico = `Produção: ${formData.titulo} (#${newDealId})`;
             
             await prisma.$executeRawUnsafe(
