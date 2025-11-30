@@ -1,4 +1,4 @@
-// /acabamento/acabamento-script.js - VERSÃO CARD INTEIRO CLICÁVEL
+// /acabamento/acabamento-script.js
 
 (function() {
     document.addEventListener('DOMContentLoaded', () => {
@@ -15,6 +15,7 @@
         const CONTATO_CLIENTE_FIELD = 'UF_CRM_1749481565243';
         const MEDIDAS_FIELD = 'UF_CRM_1727464924690';
         const PRAZO_FINAL_FIELD = 'UF_CRM_1757794109';
+        const BRIEFING_FIELD = 'UF_CRM_1738249371'; // Novo campo
 
         const MEDIDAS_MAP = {
             '1437': { nome: 'Conferir', cor: '#e74c3c' },   // Vermelho
@@ -33,6 +34,7 @@
         const closeModalBtn = modal.querySelector('.close-modal');
 
         let allDealsData = [];
+        let currentLocalCompanyId = 0; // Armazena o ID local
 
         // --- ESTILOS VISUAIS ---
         const style = document.createElement('style');
@@ -80,7 +82,7 @@
 
             .column-cards { overflow-y: auto; flex-grow: 1; padding-right: 5px; scrollbar-width: thin; }
             
-            /* Cards Styling - CLICÁVEIS */
+            /* Cards Styling */
             .kanban-card { 
                 background: var(--bg-card); 
                 border-radius: 8px; 
@@ -89,7 +91,7 @@
                 box-shadow: var(--shadow-sm); 
                 transition: transform 0.2s, box-shadow 0.2s; 
                 border-left: 5px solid transparent; 
-                cursor: pointer; /* IMPORTANTE: Cursor de mão em todo o card */
+                cursor: pointer;
                 position: relative; 
             }
             .kanban-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
@@ -103,11 +105,10 @@
             .card-id { font-size: 0.75rem; color: var(--text-light); font-weight: 600; margin-bottom: 5px; }
             .card-client-name { font-size: 1rem; font-weight: 600; color: var(--text-dark); margin-bottom: 12px; line-height: 1.4; }
             
-            /* Botão visual apenas (clique é no card) */
             .btn-detalhes-visual { 
                 width: 100%; background: #f4f6f9; border: 1px solid #e1e1e1; padding: 8px; 
                 border-radius: 4px; color: var(--text-dark); font-weight: 600; font-size: 0.85rem; 
-                display: flex; align-items: center; justify-content: center; gap: 5px; pointer-events: none; /* Deixa o clique passar para o card */
+                display: flex; align-items: center; justify-content: center; gap: 5px; pointer-events: none;
             }
 
             /* Modal Styling */
@@ -122,6 +123,24 @@
             .card-detalhe { background: #fff; }
             .card-detalhe h3 { font-size: 1rem; color: var(--text-light); text-transform: uppercase; margin-bottom: 15px; border-bottom: 2px solid #f1f1f1; padding-bottom: 5px; }
             
+            /* Briefing Styles */
+            .briefing-scroll-area {
+                background-color: #fcfcfc;
+                border: 1px solid #eee;
+                border-radius: 6px;
+                padding: 15px;
+                height: 100%;
+                max-height: 400px;
+                overflow-y: auto;
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 0.9rem;
+                color: #444;
+                white-space: pre-wrap;
+                line-height: 1.5;
+            }
+            .briefing-scroll-area::-webkit-scrollbar { width: 5px; }
+            .briefing-scroll-area::-webkit-scrollbar-thumb { background: #ddd; border-radius: 5px; }
+
             .info-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f5f5f5; }
             .info-item-label { color: var(--text-light); font-weight: 500; font-size: 0.9rem; }
             .info-item-value { font-weight: 600; color: var(--text-dark); text-align: right; }
@@ -134,11 +153,9 @@
             .btn-acao-modal.secundario { background-color: #fff; border: 1px solid #ddd; color: var(--text-dark); }
             .btn-acao-modal.secundario:hover { background-color: #f8f9fa; border-color: #ccc; }
 
-            /* Confirmação */
             .btn-confirmacao-ativa { background-color: var(--danger) !important; animation: pulse 1s infinite; }
             @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
-            /* Toast */
             .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
             .toast { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 12px; min-width: 300px; animation: slideInRight 0.3s ease-out forwards; border-left: 5px solid #ccc; }
             .toast.success { border-left-color: var(--success); }
@@ -198,7 +215,11 @@
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.message || 'Erro de conexão');
+                
                 allDealsData = data.deals;
+                // CAPTURA ID LOCAL
+                currentLocalCompanyId = data.localCompanyId || 0;
+
                 organizarPedidosNasColunas(allDealsData);
             } catch (error) {
                 console.error("Erro ao carregar pedidos:", error);
@@ -261,6 +282,7 @@
             const contatoCliente = deal[CONTATO_CLIENTE_FIELD] || '---';
             const medidasId = deal[MEDIDAS_FIELD];
             const medidaInfo = MEDIDAS_MAP[medidasId];
+            const briefingTexto = deal[BRIEFING_FIELD] || "Nenhum briefing disponível para este pedido.";
             
             let medidasHtml = '<span style="color:#aaa;">Não definido</span>';
             if (medidaInfo) { 
@@ -268,17 +290,30 @@
             }
 
             let actionsHtml = '';
-            if (deal.TITLE) {
+            
+            // --- REGRA DE OURO: BOTÃO VISÍVEL SÓ PARA EMPRESAS 4 e 24 ---
+            if (deal.TITLE && (currentLocalCompanyId === 4 || currentLocalCompanyId === 24)) {
                 const urlVerPedido = `https://www.visiva.com.br/admin/?imprimastore=pedidos/detalhes&id=${encodeURIComponent(deal.TITLE)}`;
                 actionsHtml += `<a href="${urlVerPedido}" target="_blank" class="btn-acao-modal secundario"><i class="fa-solid fa-external-link-alt"></i> Ver Pedido Completo</a>`;
             }
+
             actionsHtml += `<button class="btn-acao-modal principal" data-action="concluir-deal"><i class="fa-solid fa-check"></i> Concluir Etapa</button>`;
 
+            // Coluna Principal = BRIEFING
+            // Coluna Lateral = Informações do Cliente + Ações
             modalBody.innerHTML = `
                 <div class="detalhe-layout">
                     <div class="detalhe-col-principal">
+                        <div class="card-detalhe" style="height: 100%; display: flex; flex-direction: column;">
+                             <h3><i class="fas fa-file-alt"></i> Briefing</h3>
+                             <div class="briefing-scroll-area">
+                                ${briefingTexto}
+                             </div>
+                        </div>
+                    </div>
+                    <div class="detalhe-col-lateral">
                         <div class="card-detalhe">
-                             <h3>Informações Principais</h3>
+                             <h3>Dados do Cliente</h3>
                              <div class="info-item">
                                 <span class="info-item-label">Cliente</span>
                                 <span class="info-item-value">${nomeCliente}</span>
@@ -292,9 +327,7 @@
                                 <div class="info-item-value">${medidasHtml}</div>
                              </div>
                         </div>
-                    </div>
-                    <div class="detalhe-col-lateral">
-                        <div class="card-detalhe modal-actions-container">
+                        <div class="card-detalhe modal-actions-container" style="margin-top: 20px;">
                             ${actionsHtml}
                         </div>
                     </div>
@@ -362,12 +395,9 @@
         closeModalBtn.addEventListener('click', () => modal.classList.remove('active'));
         modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
         
-        // --- CLICK EVENT ON THE WHOLE CARD ---
         board.addEventListener('click', (event) => {
-            // Procura o card pai
             const card = event.target.closest('.kanban-card');
             if (card) {
-                // Recupera o ID do dataset
                 const dealId = card.dataset.dealIdCard;
                 if(dealId) openDetailsModal(dealId);
             }
