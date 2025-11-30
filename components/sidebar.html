@@ -1,25 +1,46 @@
 <!-- components/sidebar.html -->
 <style>
-    /* Estilos Gerais da Sidebar: Cor de fundo #7893a5 e texto branco */
+    /* Estilos Gerais da Sidebar */
     .app-sidebar {
-        background-color: #7893a5;
-        color: #ffffff;
+        background-color: #3a5262; /* Nova cor decidida */
+        color: #ffffff;            /* Texto branco */
     }
 
-    /* Links brancos para garantir leitura no fundo colorido */
+    /* Links da sidebar */
     .app-sidebar a {
         color: #ffffff;
         text-decoration: none;
     }
 
-    /* Ajuste da Logo: Largura 200px mantendo a proporção real */
+    /* Container do cabeçalho para centralizar a logo */
+    .sidebar-header {
+        text-align: center;
+        padding: 1rem 0;
+    }
+
+    /* 
+       Estilo da Logo "Blindado" 
+       O uso de !important e os resets garantem que nenhum CSS externo distorça a imagem
+    */
     .sidebar-logo {
-        width: 200px;
-        max-width: 100%;
-        height: auto;        /* ESSENCIAL: Calcula a altura pela largura original */
-        object-fit: contain; /* ESSENCIAL: Impede achatamento/distorção */
+        width: 200px;             /* Largura desejada */
+        max-width: 100%;          /* Responsividade */
+        
+        /* Força a altura a ser automática, ignorando regras externas */
+        height: auto !important;  
+        
+        /* Garante a proporção interna da imagem */
+        object-fit: contain;      
+        
+        /* Reseta estilos que podem estar vindo de frameworks ou globais */
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 auto !important; /* Centraliza */
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        
         display: block;
-        margin: 0 auto;      /* Centraliza */
     }
 </style>
 
@@ -28,7 +49,7 @@
     <!-- Cabeçalho (Logo) -->
     <div class="sidebar-header">
         <a href="/dashboard.html" class="logo-link">
-            <!-- Logo alterada para a versão de fundo escuro -->
+            <!-- Imagem atualizada para fundo escuro -->
             <img src="/images/fundo-escuro.png" alt="Logo Setor de Arte" class="sidebar-logo">
             <h1 class="visually-hidden">Setor de Arte</h1> 
         </a>
