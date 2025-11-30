@@ -12,8 +12,8 @@
         const CAMPO_LINK_FALAR_DESIGNER = 'UF_CRM_1764429361'; 
         const CAMPO_MEDIDAS = 'UF_CRM_1727464924690';
         const CAMPO_CLIENTE = 'UF_CRM_1741273407628';
-        const CAMPO_BRIEFING = 'UF_CRM_1738249371'; // Novo
-        const CAMPO_SERVICO = 'UF_CRM_1761123161542'; // Novo
+        const CAMPO_BRIEFING = 'UF_CRM_1738249371'; 
+        const CAMPO_SERVICO = 'UF_CRM_1761123161542'; 
         
         const FASES_ANALISE = ['C17:NEW', 'C17:UC_2OEE24'];
 
@@ -44,6 +44,14 @@
             .col-aguardando .column-header { background-color: #2c3e50; }
             
             .column-cards { flex-grow: 1; overflow-y: auto; padding-right: 5px; display: flex; flex-direction: column; gap: 12px; }
+
+            /* --- SCROLLBAR SUTIL (NOVO) --- */
+            .column-cards::-webkit-scrollbar { width: 5px; }
+            .column-cards::-webkit-scrollbar-track { background: transparent; }
+            .column-cards::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 10px; }
+            .column-cards::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.2); }
+            /* Firefox */
+            .column-cards { scrollbar-width: thin; scrollbar-color: rgba(0, 0, 0, 0.1) transparent; }
             
             /* --- CARD BASE (CLICÁVEL) --- */
             .kanban-card { 
@@ -122,6 +130,11 @@
                 white-space: pre-wrap; /* Mantém quebra de linha */
                 box-shadow: inset 0 2px 5px rgba(0,0,0,0.03);
             }
+            /* Scrollbar do briefing também sutil */
+            .briefing-area::-webkit-scrollbar { width: 5px; }
+            .briefing-area::-webkit-scrollbar-track { background: transparent; }
+            .briefing-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+
             .briefing-label { font-weight: 700; color: #3498db; margin-bottom: 10px; display: block; font-family: 'Poppins', sans-serif; }
 
             /* Coluna Direita Modal */
@@ -134,7 +147,7 @@
             .btn-aprovar { background-color: #27ae60; }
             .btn-aprovar:hover { background-color: #219150; }
 
-            /* MODAL INFO (Alert Replacement) */
+            /* MODAL INFO */
             .custom-info-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); animation: fadeIn 0.2s; }
             .custom-info-box { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
             .custom-info-box h3 { color: var(--purple-badge); margin-top: 0; }
@@ -186,7 +199,7 @@
             const linkDesigner = deal[CAMPO_LINK_FALAR_DESIGNER];
             const displayId = deal.TITLE ? `#${deal.TITLE}` : `#${deal.ID}`;
             const nomeCliente = deal[CAMPO_CLIENTE] || 'Cliente não ident.';
-            const servico = deal['UF_CRM_1761123161542'] || 'Arte Digital'; // Campo Serviço
+            const servico = deal[CAMPO_SERVICO] || 'Arte Digital'; 
             
             const isEmAnalise = FASES_ANALISE.includes(deal.STAGE_ID);
 
@@ -222,7 +235,7 @@
             // --- TIPO 2: FREELANCER PADRÃO (Faded) ---
             else if (isFreelancer) {
                 cardClasses += ' card-faded card-locked';
-                dragLocked = true; // Freelancer geralmente não move manualmente nas colunas internas
+                dragLocked = true; 
                 
                 bodyHtml = `
                     <div class="freelancer-tag">
@@ -249,8 +262,6 @@
                         <span class="tag-servico">${servico}</span>
                         <i class="fas fa-pencil-ruler internal-icon"></i>
                     </div>`;
-                
-                // Sem botões no footer, pois o clique no card abre tudo
             }
 
             // O ID flutuante
@@ -274,7 +285,7 @@
 
             const tipoArte = deal[CAMPO_TIPO_ARTE];
             const isFreelancer = (tipoArte === 'Setor de Arte' || tipoArte === 'Freelancer');
-            const briefingTexto = deal['UF_CRM_1738249371'] || 'Nenhum briefing registrado no sistema.';
+            const briefingTexto = deal[CAMPO_BRIEFING] || 'Nenhum briefing registrado no sistema.';
 
             modalTitle.innerText = `Detalhes: ${deal.TITLE || deal.ID}`;
 
@@ -311,7 +322,7 @@
                 <div class="card-info-modal">
                     <div class="modal-row"><span>Cliente:</span> <strong>${deal[CAMPO_CLIENTE] || '-'}</strong></div>
                     <div class="modal-row"><span>Medidas:</span> <strong>${deal[CAMPO_MEDIDAS] || '-'}</strong></div>
-                    <div class="modal-row"><span>Serviço:</span> <strong>${deal['UF_CRM_1761123161542'] || '-'}</strong></div>
+                    <div class="modal-row"><span>Serviço:</span> <strong>${deal[CAMPO_SERVICO] || '-'}</strong></div>
                 </div>
                 ${actionsHtml}
             `;
