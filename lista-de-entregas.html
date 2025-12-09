@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Entregas</title>
+    <style>
+        /* CSS INLINE (Interno) */
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --bg-color: #f4f6f8;
+            --card-bg: #ffffff;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .job-card {
+            background-color: var(--card-bg);
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--accent-color);
+        }
+
+        .main-task {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            display: block;
+            color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 20px;
+            margin: 0;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        label {
+            display: flex;
+            align-items: flex-start;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        input[type="checkbox"] {
+            margin-right: 10px;
+            margin-top: 4px;
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+
+        /* Efeito quando marcado */
+        .completed {
+            text-decoration: line-through;
+            color: #888;
+            opacity: 0.7;
+        }
+
+        .btn-reset {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #e74c3c;
+            color: white;
+            text-align: center;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            margin-top: 30px;
+            cursor: pointer;
+        }
+        .btn-reset:hover {
+            background-color: #c0392b;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Lista de Entregas</h1>
+
+        <!-- FLEMING AFONSO CLAUDIO -->
+        <div class="job-card">
+            <label class="main-task">
+                <input type="checkbox" id="job_fleming_ac">
+                <span>FLEMING AFONSO CLAUDIO</span>
+            </label>
+            <ul>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_fleming_ac_1">
+                        <span>Revestir os adesivos das paredes com jateado</span>
+                    </label>
+                </li>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_fleming_ac_2">
+                        <span>Aplicar logo alto relevo na recepção</span>
+                    </label>
+                </li>
+            </ul>
+        </div>
+
+        <!-- CINFONO NOVA AUDIO -->
+        <div class="job-card">
+            <label class="main-task">
+                <input type="checkbox" id="job_cinfono">
+                <span>CINFONO NOVA AUDIO</span>
+            </label>
+            <ul>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_cinfono_1">
+                        <span>Aplicar adesivos vidro Cinfono</span>
+                    </label>
+                </li>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_cinfono_2">
+                        <span>Instalar letras alto relevo galeria e prédio</span>
+                    </label>
+                </li>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_cinfono_3">
+                        <span>Instalar placa Nova Audio</span>
+                    </label>
+                </li>
+            </ul>
+        </div>
+
+        <!-- FLEMING SANTA MARIA -->
+        <div class="job-card">
+            <label class="main-task">
+                <input type="checkbox" id="job_fleming_sm">
+                <span>FLEMING SANTA MARIA</span>
+            </label>
+            <ul>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_fleming_sm_1">
+                        <span>Aplicar adesivo jateado nos adesivos de parede</span>
+                    </label>
+                </li>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_fleming_sm_2">
+                        <span>Instalar refletores na placa existente</span>
+                    </label>
+                </li>
+            </ul>
+        </div>
+
+        <!-- BM SANTA MARIA -->
+        <div class="job-card">
+            <label class="main-task">
+                <input type="checkbox" id="job_bm_sm">
+                <span>BM SANTA MARIA</span>
+            </label>
+            <ul>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_bm_sm_1">
+                        <span>Instalar placa de fachada</span>
+                    </label>
+                </li>
+            </ul>
+        </div>
+
+        <!-- EDIFÍCIO GRIGIO -->
+        <div class="job-card">
+            <label class="main-task">
+                <input type="checkbox" id="job_grigio">
+                <span>EDIFÍCIO GRIGIO</span>
+            </label>
+            <ul>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_grigio_1">
+                        <span>Instalar letreiro da fachada do prédio</span>
+                    </label>
+                </li>
+            </ul>
+        </div>
+
+        <!-- CICLO VILA -->
+        <div class="job-card">
+            <label class="main-task">
+                <input type="checkbox" id="job_ciclo">
+                <span>CICLO VILA</span>
+            </label>
+            <ul>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_ciclo_1">
+                        <span>Remover adesivos da fachada</span>
+                    </label>
+                </li>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_ciclo_2">
+                        <span>Aplicar novos adesivos na placa</span>
+                    </label>
+                </li>
+            </ul>
+        </div>
+
+        <!-- POUSADA VALE DA MATA -->
+        <div class="job-card">
+            <label class="main-task">
+                <input type="checkbox" id="job_pousada">
+                <span>POUSADA VALE DA MATA</span>
+            </label>
+            <ul>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_pousada_1">
+                        <span>Produzir painel de ACM</span>
+                    </label>
+                </li>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_pousada_2">
+                        <span>Aplicar a logo alto relevo no painel</span>
+                    </label>
+                </li>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_pousada_3">
+                        <span>Produzir estrutura se necessário</span>
+                    </label>
+                </li>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_pousada_4">
+                        <span>Reposicionar toco da placa no local</span>
+                    </label>
+                </li>
+            </ul>
+        </div>
+
+        <!-- PLOTAGEM ÔNIBUS -->
+        <div class="job-card">
+            <label class="main-task">
+                <input type="checkbox" id="job_onibus">
+                <span>PLOTAGEM ÔNIBUS</span>
+            </label>
+            <ul>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_onibus_1">
+                        <span>Produzir adesivos</span>
+                    </label>
+                </li>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_onibus_2">
+                        <span>Aplicar verniz</span>
+                    </label>
+                </li>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_onibus_3">
+                        <span>Envelopar ônibus</span>
+                    </label>
+                </li>
+            </ul>
+        </div>
+
+        <!-- LCM -->
+        <div class="job-card">
+            <label class="main-task">
+                <input type="checkbox" id="job_lcm">
+                <span>LCM</span>
+            </label>
+            <ul>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_lcm_1">
+                        <span>Aplicar adesivos nas placas de aço</span>
+                    </label>
+                </li>
+            </ul>
+        </div>
+
+        <!-- EDP -->
+        <div class="job-card">
+            <label class="main-task">
+                <input type="checkbox" id="job_edp">
+                <span>EDP</span>
+            </label>
+            <ul>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_edp_1">
+                        <span>Cortar 30 chapas de aço (tamanho a definir)</span>
+                    </label>
+                </li>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_edp_2">
+                        <span>Aplicar adesivos nas chapas</span>
+                    </label>
+                </li>
+            </ul>
+        </div>
+
+        <!-- CANAL – LEONARDO CAFÉ -->
+        <div class="job-card">
+            <label class="main-task">
+                <input type="checkbox" id="job_canal">
+                <span>CANAL – LEONARDO CAFÉ</span>
+            </label>
+            <ul>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_canal_1">
+                        <span>(definir tarefas)</span>
+                    </label>
+                </li>
+            </ul>
+        </div>
+
+        <!-- MARIANA VENTURIM -->
+        <div class="job-card">
+            <label class="main-task">
+                <input type="checkbox" id="job_mariana">
+                <span>MARIANA VENTURIM</span>
+            </label>
+            <ul>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_mariana_1">
+                        <span>(definir tarefas)</span>
+                    </label>
+                </li>
+            </ul>
+        </div>
+
+        <!-- RENATO BLACK PIANO -->
+        <div class="job-card">
+            <label class="main-task">
+                <input type="checkbox" id="job_renato">
+                <span>RENATO BLACK PIANO</span>
+            </label>
+            <ul>
+                <li>
+                    <label>
+                        <input type="checkbox" id="task_renato_1">
+                        <span>(definir tarefas)</span>
+                    </label>
+                </li>
+            </ul>
+        </div>
+
+        <button class="btn-reset" onclick="resetarTudo()">Limpar Todas as Marcações</button>
+        <br><br>
+    </div>
+
+    <script>
+        // JAVASCRIPT INLINE
+
+        // Executa quando a página carrega
+        document.addEventListener("DOMContentLoaded", function() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+
+            checkboxes.forEach(function(checkbox) {
+                // 1. Carregar estado do LocalStorage
+                const savedState = localStorage.getItem(checkbox.id);
+                
+                if (savedState === 'true') {
+                    checkbox.checked = true;
+                    applyVisualState(checkbox);
+                }
+
+                // 2. Adicionar evento de clique (Change)
+                checkbox.addEventListener('change', function() {
+                    // Salva no LocalStorage (ID do checkbox = true/false)
+                    localStorage.setItem(this.id, this.checked);
+                    applyVisualState(this);
+                });
+            });
+        });
+
+        // Função para aplicar o risco no texto (strikethrough)
+        function applyVisualState(checkbox) {
+            // Pega o elemento <span> irmão do checkbox
+            const textSpan = checkbox.nextElementSibling;
+            if (checkbox.checked) {
+                textSpan.classList.add('completed');
+            } else {
+                textSpan.classList.remove('completed');
+            }
+        }
+
+        // Função extra para limpar tudo caso precise recomeçar
+        function resetarTudo() {
+            if(confirm("Tem certeza que deseja desmarcar todas as tarefas?")) {
+                const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(cb => {
+                    cb.checked = false;
+                    localStorage.removeItem(cb.id);
+                    applyVisualState(cb);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
