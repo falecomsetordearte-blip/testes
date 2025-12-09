@@ -5,418 +5,392 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de Entregas</title>
     <style>
-        /* CSS INLINE (Interno) */
+        /* CSS INLINE */
         :root {
-            --primary-color: #2c3e50;
-            --accent-color: #3498db;
-            --bg-color: #f4f6f8;
+            --primary-bg: #f0f2f5;
             --card-bg: #ffffff;
-            --text-color: #333;
+            --text-main: #333;
+            --text-muted: #666;
+            --accent-color: #007bff; /* Azul */
+            --progress-bg: #e9ecef;
+            --progress-fill: #28a745; /* Verde */
+            --header-height: 70px;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: var(--primary-bg);
+            color: var(--text-main);
             margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+            padding: 0;
         }
 
-        .container {
+        /* BARRA DE PROGRESSO FIXA NO TOPO */
+        .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            max-width: 600px;
+            height: var(--header-height);
+            background-color: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 20px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
         }
 
         h1 {
-            text-align: center;
-            color: var(--primary-color);
-            margin-bottom: 30px;
-            font-size: 1.8rem;
+            margin: 0;
+            font-size: 1.2rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            color: #444;
+        }
+
+        .progress-stats {
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .progress-container {
+            width: 100%;
+            background-color: var(--progress-bg);
+            border-radius: 5px;
+            height: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--progress-fill);
+            transition: width 0.3s ease;
+        }
+
+        /* GRID DE CARTÕES */
+        .grid-container {
+            display: grid;
+            /* Cria colunas automáticas. Mínimo 300px, máximo 1fr (fração disponível) */
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            margin-top: var(--header-height); /* Para não ficar atrás do header */
         }
 
         .job-card {
             background-color: var(--card-bg);
-            padding: 15px 20px;
-            margin-bottom: 15px;
             border-radius: 8px;
+            padding: 20px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            border-left: 5px solid var(--accent-color);
+            border-top: 4px solid var(--accent-color);
+            transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
         }
 
-        .main-task {
+        .job-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        /* TAREFA PRINCIPAL (TÍTULO DO BLOCO) */
+        .main-task-label {
+            display: flex;
+            align-items: center;
             font-weight: bold;
             font-size: 1.1rem;
-            margin-bottom: 10px;
-            display: block;
-            color: var(--primary-color);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
             cursor: pointer;
+            color: #2c3e50;
         }
 
+        .main-task-label input {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+
+        /* SUBTAREFAS */
         ul {
             list-style-type: none;
-            padding-left: 20px;
+            padding-left: 5px;
             margin: 0;
+            flex-grow: 1; /* Faz a lista ocupar o espaço */
         }
 
         li {
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
-        label {
+        .subtask-label {
             display: flex;
             align-items: flex-start;
             cursor: pointer;
-            transition: color 0.2s;
+            font-size: 0.95rem;
+            color: #555;
+            line-height: 1.4;
         }
 
-        input[type="checkbox"] {
+        .subtask-label input {
+            margin-top: 3px;
             margin-right: 10px;
-            margin-top: 4px;
             transform: scale(1.2);
             cursor: pointer;
+            flex-shrink: 0; /* Impede que o checkbox encolha */
         }
 
-        /* Efeito quando marcado */
+        /* ESTADO CONCLUÍDO */
         .completed {
             text-decoration: line-through;
-            color: #888;
-            opacity: 0.7;
+            color: #aaa;
+        }
+        
+        /* Se o card inteiro estiver "pronto" (opcional, visual) */
+        .job-card.card-done {
+            background-color: #f9f9f9;
+            border-top-color: #aaa;
+        }
+
+        /* BOTÃO RESETAR NO RODAPÉ */
+        .footer-actions {
+            grid-column: 1 / -1; /* Ocupa toda a largura da grid */
+            text-align: center;
+            padding: 30px;
         }
 
         .btn-reset {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            background-color: #e74c3c;
+            background-color: #dc3545;
             color: white;
-            text-align: center;
             border: none;
+            padding: 10px 20px;
             border-radius: 5px;
-            font-size: 1rem;
-            margin-top: 30px;
             cursor: pointer;
+            font-size: 1rem;
         }
-        .btn-reset:hover {
-            background-color: #c0392b;
-        }
+        .btn-reset:hover { background-color: #c82333; }
 
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Lista de Entregas</h1>
+    <!-- BARRA FIXA -->
+    <div class="fixed-header">
+        <div class="header-content">
+            <h1>Lista de Entregas</h1>
+            <div class="progress-stats">
+                <span id="txt-percentage">0%</span> Concluído
+            </div>
+        </div>
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+    </div>
+
+    <!-- CONTEÚDO EM GRID -->
+    <div class="grid-container">
 
         <!-- FLEMING AFONSO CLAUDIO -->
         <div class="job-card">
-            <label class="main-task">
+            <label class="main-task-label">
                 <input type="checkbox" id="job_fleming_ac">
                 <span>FLEMING AFONSO CLAUDIO</span>
             </label>
             <ul>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_fleming_ac_1">
-                        <span>Revestir os adesivos das paredes com jateado</span>
-                    </label>
-                </li>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_fleming_ac_2">
-                        <span>Aplicar logo alto relevo na recepção</span>
-                    </label>
-                </li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_fleming_ac_1"><span>Revestir os adesivos das paredes com jateado</span></label></li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_fleming_ac_2"><span>Aplicar logo alto relevo na recepção</span></label></li>
             </ul>
         </div>
 
         <!-- CINFONO NOVA AUDIO -->
         <div class="job-card">
-            <label class="main-task">
+            <label class="main-task-label">
                 <input type="checkbox" id="job_cinfono">
                 <span>CINFONO NOVA AUDIO</span>
             </label>
             <ul>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_cinfono_1">
-                        <span>Aplicar adesivos vidro Cinfono</span>
-                    </label>
-                </li>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_cinfono_2">
-                        <span>Instalar letras alto relevo galeria e prédio</span>
-                    </label>
-                </li>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_cinfono_3">
-                        <span>Instalar placa Nova Audio</span>
-                    </label>
-                </li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_cinfono_1"><span>Aplicar adesivos vidro Cinfono</span></label></li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_cinfono_2"><span>Instalar letras alto relevo galeria e prédio</span></label></li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_cinfono_3"><span>Instalar placa Nova Audio</span></label></li>
             </ul>
         </div>
 
         <!-- FLEMING SANTA MARIA -->
         <div class="job-card">
-            <label class="main-task">
+            <label class="main-task-label">
                 <input type="checkbox" id="job_fleming_sm">
                 <span>FLEMING SANTA MARIA</span>
             </label>
             <ul>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_fleming_sm_1">
-                        <span>Aplicar adesivo jateado nos adesivos de parede</span>
-                    </label>
-                </li>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_fleming_sm_2">
-                        <span>Instalar refletores na placa existente</span>
-                    </label>
-                </li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_fleming_sm_1"><span>Aplicar adesivo jateado nos adesivos de parede</span></label></li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_fleming_sm_2"><span>Instalar refletores na placa existente</span></label></li>
             </ul>
         </div>
 
         <!-- BM SANTA MARIA -->
         <div class="job-card">
-            <label class="main-task">
+            <label class="main-task-label">
                 <input type="checkbox" id="job_bm_sm">
                 <span>BM SANTA MARIA</span>
             </label>
             <ul>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_bm_sm_1">
-                        <span>Instalar placa de fachada</span>
-                    </label>
-                </li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_bm_sm_1"><span>Instalar placa de fachada</span></label></li>
             </ul>
         </div>
 
         <!-- EDIFÍCIO GRIGIO -->
         <div class="job-card">
-            <label class="main-task">
+            <label class="main-task-label">
                 <input type="checkbox" id="job_grigio">
                 <span>EDIFÍCIO GRIGIO</span>
             </label>
             <ul>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_grigio_1">
-                        <span>Instalar letreiro da fachada do prédio</span>
-                    </label>
-                </li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_grigio_1"><span>Instalar letreiro da fachada do prédio</span></label></li>
             </ul>
         </div>
 
         <!-- CICLO VILA -->
         <div class="job-card">
-            <label class="main-task">
+            <label class="main-task-label">
                 <input type="checkbox" id="job_ciclo">
                 <span>CICLO VILA</span>
             </label>
             <ul>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_ciclo_1">
-                        <span>Remover adesivos da fachada</span>
-                    </label>
-                </li>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_ciclo_2">
-                        <span>Aplicar novos adesivos na placa</span>
-                    </label>
-                </li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_ciclo_1"><span>Remover adesivos da fachada</span></label></li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_ciclo_2"><span>Aplicar novos adesivos na placa</span></label></li>
             </ul>
         </div>
 
         <!-- POUSADA VALE DA MATA -->
         <div class="job-card">
-            <label class="main-task">
+            <label class="main-task-label">
                 <input type="checkbox" id="job_pousada">
                 <span>POUSADA VALE DA MATA</span>
             </label>
             <ul>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_pousada_1">
-                        <span>Produzir painel de ACM</span>
-                    </label>
-                </li>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_pousada_2">
-                        <span>Aplicar a logo alto relevo no painel</span>
-                    </label>
-                </li>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_pousada_3">
-                        <span>Produzir estrutura se necessário</span>
-                    </label>
-                </li>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_pousada_4">
-                        <span>Reposicionar toco da placa no local</span>
-                    </label>
-                </li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_pousada_1"><span>Produzir painel de ACM</span></label></li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_pousada_2"><span>Aplicar a logo alto relevo no painel</span></label></li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_pousada_3"><span>Produzir estrutura se necessário</span></label></li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_pousada_4"><span>Reposicionar toco da placa no local</span></label></li>
             </ul>
         </div>
 
         <!-- PLOTAGEM ÔNIBUS -->
         <div class="job-card">
-            <label class="main-task">
+            <label class="main-task-label">
                 <input type="checkbox" id="job_onibus">
                 <span>PLOTAGEM ÔNIBUS</span>
             </label>
             <ul>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_onibus_1">
-                        <span>Produzir adesivos</span>
-                    </label>
-                </li>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_onibus_2">
-                        <span>Aplicar verniz</span>
-                    </label>
-                </li>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_onibus_3">
-                        <span>Envelopar ônibus</span>
-                    </label>
-                </li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_onibus_1"><span>Produzir adesivos</span></label></li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_onibus_2"><span>Aplicar verniz</span></label></li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_onibus_3"><span>Envelopar ônibus</span></label></li>
             </ul>
         </div>
 
         <!-- LCM -->
         <div class="job-card">
-            <label class="main-task">
+            <label class="main-task-label">
                 <input type="checkbox" id="job_lcm">
                 <span>LCM</span>
             </label>
             <ul>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_lcm_1">
-                        <span>Aplicar adesivos nas placas de aço</span>
-                    </label>
-                </li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_lcm_1"><span>Aplicar adesivos nas placas de aço</span></label></li>
             </ul>
         </div>
 
         <!-- EDP -->
         <div class="job-card">
-            <label class="main-task">
+            <label class="main-task-label">
                 <input type="checkbox" id="job_edp">
                 <span>EDP</span>
             </label>
             <ul>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_edp_1">
-                        <span>Cortar 30 chapas de aço (tamanho a definir)</span>
-                    </label>
-                </li>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_edp_2">
-                        <span>Aplicar adesivos nas chapas</span>
-                    </label>
-                </li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_edp_1"><span>Cortar 30 chapas de aço (tamanho a definir)</span></label></li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_edp_2"><span>Aplicar adesivos nas chapas</span></label></li>
             </ul>
         </div>
 
         <!-- CANAL – LEONARDO CAFÉ -->
         <div class="job-card">
-            <label class="main-task">
+            <label class="main-task-label">
                 <input type="checkbox" id="job_canal">
                 <span>CANAL – LEONARDO CAFÉ</span>
             </label>
             <ul>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_canal_1">
-                        <span>(definir tarefas)</span>
-                    </label>
-                </li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_canal_1"><span>(definir tarefas)</span></label></li>
             </ul>
         </div>
 
         <!-- MARIANA VENTURIM -->
         <div class="job-card">
-            <label class="main-task">
+            <label class="main-task-label">
                 <input type="checkbox" id="job_mariana">
                 <span>MARIANA VENTURIM</span>
             </label>
             <ul>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_mariana_1">
-                        <span>(definir tarefas)</span>
-                    </label>
-                </li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_mariana_1"><span>(definir tarefas)</span></label></li>
             </ul>
         </div>
 
         <!-- RENATO BLACK PIANO -->
         <div class="job-card">
-            <label class="main-task">
+            <label class="main-task-label">
                 <input type="checkbox" id="job_renato">
                 <span>RENATO BLACK PIANO</span>
             </label>
             <ul>
-                <li>
-                    <label>
-                        <input type="checkbox" id="task_renato_1">
-                        <span>(definir tarefas)</span>
-                    </label>
-                </li>
+                <li><label class="subtask-label"><input type="checkbox" id="t_renato_1"><span>(definir tarefas)</span></label></li>
             </ul>
         </div>
 
-        <button class="btn-reset" onclick="resetarTudo()">Limpar Todas as Marcações</button>
-        <br><br>
+        <!-- Botão Limpar -->
+        <div class="footer-actions">
+            <button class="btn-reset" onclick="resetarTudo()">Limpar Todas as Marcações</button>
+        </div>
+
     </div>
 
     <script>
         // JAVASCRIPT INLINE
-
-        // Executa quando a página carrega
         document.addEventListener("DOMContentLoaded", function() {
             const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-
+            
+            // 1. Carregar estado
             checkboxes.forEach(function(checkbox) {
-                // 1. Carregar estado do LocalStorage
                 const savedState = localStorage.getItem(checkbox.id);
-                
                 if (savedState === 'true') {
                     checkbox.checked = true;
-                    applyVisualState(checkbox);
                 }
-
-                // 2. Adicionar evento de clique (Change)
+                applyVisualState(checkbox);
+                
+                // Adicionar Listener
                 checkbox.addEventListener('change', function() {
-                    // Salva no LocalStorage (ID do checkbox = true/false)
                     localStorage.setItem(this.id, this.checked);
                     applyVisualState(this);
+                    updateProgressBar(); // Atualiza a barra ao clicar
                 });
             });
+
+            // 2. Atualizar barra inicial
+            updateProgressBar();
         });
 
-        // Função para aplicar o risco no texto (strikethrough)
+        // Aplica o risco no texto
         function applyVisualState(checkbox) {
-            // Pega o elemento <span> irmão do checkbox
             const textSpan = checkbox.nextElementSibling;
             if (checkbox.checked) {
                 textSpan.classList.add('completed');
@@ -425,15 +399,37 @@
             }
         }
 
-        // Função extra para limpar tudo caso precise recomeçar
+        // Atualiza a Barra de Progresso
+        function updateProgressBar() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            const total = checkboxes.length;
+            const checked = document.querySelectorAll('input[type="checkbox"]:checked').length;
+            
+            let percentage = 0;
+            if (total > 0) {
+                percentage = Math.round((checked / total) * 100);
+            }
+
+            document.getElementById('progress-bar').style.width = percentage + '%';
+            document.getElementById('txt-percentage').innerText = percentage + '%';
+
+            // Muda a cor da barra se estiver completo
+            if(percentage === 100) {
+                document.getElementById('progress-bar').style.backgroundColor = '#218838'; // Verde escuro
+            } else {
+                document.getElementById('progress-bar').style.backgroundColor = '#28a745'; // Verde padrão
+            }
+        }
+
         function resetarTudo() {
-            if(confirm("Tem certeza que deseja desmarcar todas as tarefas?")) {
+            if(confirm("Deseja apagar todo o progresso?")) {
                 const checkboxes = document.querySelectorAll('input[type="checkbox"]');
                 checkboxes.forEach(cb => {
                     cb.checked = false;
                     localStorage.removeItem(cb.id);
                     applyVisualState(cb);
                 });
+                updateProgressBar();
             }
         }
     </script>
