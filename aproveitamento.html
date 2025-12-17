@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cálculo de Aproveitamento - Impressora 122cm</title>
+  
+  <!-- AQUI ESTÁ O "CSS DE SCRIPT" (Tailwind CSS via CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Configuração opcional para deixar a fonte mais bonita -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: '#2563eb', // Um azul personalizado
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 font-sans">
+
+  <!-- Card Principal -->
+  <div class="bg-white shadow-xl rounded-lg p-8 w-full max-w-md border-t-4 border-brand">
+    
+    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Impressora 122 cm</h2>
+
+    <div class="space-y-4">
+      
+      <!-- Input Largura -->
+      <div>
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="largura">
+          Largura da peça (cm)
+        </label>
+        <input 
+          class="shadow appearance-none border rounded w-full py-3 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition" 
+          id="largura" 
+          type="number" 
+          step="0.1" 
+          placeholder="Ex: 50.5">
+      </div>
+
+      <!-- Input Altura -->
+      <div>
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="altura">
+          Altura da peça (cm)
+        </label>
+        <input 
+          class="shadow appearance-none border rounded w-full py-3 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition" 
+          id="altura" 
+          type="number" 
+          step="0.1" 
+          placeholder="Ex: 100">
+      </div>
+
+      <!-- Botão -->
+      <button 
+        onclick="calcular()" 
+        class="w-full bg-brand hover:bg-blue-700 text-white font-bold py-3 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200 transform hover:scale-[1.02]">
+        Calcular Aproveitamento
+      </button>
+
+      <!-- Resultado -->
+      <div id="resultado-box" class="hidden mt-6 p-4 bg-gray-50 rounded border border-gray-200 text-center">
+         <p id="resultado" class="text-gray-800"></p>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function calcular() {
+      const largura = parseFloat(document.getElementById('largura').value);
+      const altura = parseFloat(document.getElementById('altura').value);
+      const boxResultado = document.getElementById('resultado-box');
+      const textoResultado = document.getElementById('resultado');
+
+      // Mostrar a caixa de resultado
+      boxResultado.classList.remove('hidden');
+
+      if (!largura || !altura) {
+        textoResultado.innerHTML = "<span class='text-red-500 font-bold'>Preencha as duas medidas.</span>";
+        return;
+      }
+
+      // Lógica: Tenta encaixar o menor lado da peça na largura da impressora (rotação automática)
+      const larguraUtil = Math.min(largura, altura);
+      
+      const quantidade = Math.floor(122 / larguraUtil);
+      const ocupacao = (quantidade * larguraUtil).toFixed(1);
+      const sobra = (122 - ocupacao).toFixed(1);
+
+      // Formatação do resultado com HTML e classes do Tailwind
+      textoResultado.innerHTML = `
+        <div class="space-y-2">
+            <div class="text-lg text-gray-600">Peças por linha: <span class="text-3xl font-bold text-brand block">${quantidade}</span></div>
+            <div class="flex justify-between text-sm mt-3 px-4">
+                <span>Ocupação: <b>${ocupacao} cm</b></span>
+                <span class="text-red-500">Sobra: <b>${sobra} cm</b></span>
+            </div>
+        </div>
+      `;
+    }
+  </script>
+
+</body>
+</html>
