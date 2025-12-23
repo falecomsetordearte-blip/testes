@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- LÓGICA DE PRODUÇÃO DIRETA DO CARD ---
 window.produzirCardDireto = function(cardId, btnElement) {
-    event.stopPropagation(); // Impede abrir o modal de edição
+    event.stopPropagation(); 
 
     if (btnElement.dataset.confirming === "true") {
         const card = allCardsCache.find(c => c.id == cardId);
@@ -74,7 +74,7 @@ window.produzirCardDireto = function(cardId, btnElement) {
 
 // --- LÓGICA DE EXCLUSÃO DO CARD ---
 window.confirmarExclusaoCard = async function(cardId, event) {
-    event.stopPropagation(); // Impede de abrir o painel lateral de edição
+    event.stopPropagation(); 
 
     if (confirm("Deseja realmente excluir este card permanentemente? Esta ação não pode ser desfeita.")) {
         try {
@@ -89,7 +89,7 @@ window.confirmarExclusaoCard = async function(cardId, event) {
 
             if (res.ok) {
                 showToast("Card excluído com sucesso!", "success");
-                carregarKanban(); // Atualiza a tela
+                carregarKanban(); 
             } else {
                 const data = await res.json();
                 showToast("Erro ao excluir: " + (data.message || "Erro desconhecido"), "error");
@@ -132,7 +132,7 @@ async function enviarProducaoAPI(payload, cardId, btnElement) {
     }
 }
 
-// --- SALVAR NO CRM (DRAFT) ---
+// --- SALVAR NO CRM ---
 document.getElementById('form-crm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-salvar-rascunho');
@@ -173,7 +173,7 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
     finally { btn.innerText = originalText; btn.disabled = false; }
 });
 
-// --- LÓGICA DE ABERTURA DE EDIÇÃO ---
+// --- ABRIR EDIÇÃO ---
 window.abrirPanelEdicao = function(card) {
     resetarForm();
     document.getElementById('panel-titulo').innerText = 'Editar Oportunidade';
@@ -184,7 +184,6 @@ window.abrirPanelEdicao = function(card) {
         btnProduzir.style.display = 'block';
         const novoBtn = btnProduzir.cloneNode(true);
         btnProduzir.parentNode.replaceChild(novoBtn, btnProduzir);
-        
         novoBtn.addEventListener('click', () => {
            const mats = [];
            document.querySelectorAll('.material-item').forEach(d => { 
@@ -192,7 +191,6 @@ window.abrirPanelEdicao = function(card) {
                if(desc) mats.push({ descricao: desc, detalhes: d.querySelector('.mat-det').value }); 
            });
            let txt = ""; mats.forEach((d, i) => { txt += `--- Item ${i+1} ---\nMaterial: ${d.descricao}\nDetalhes: ${d.detalhes}\n\n`; });
-
            const payload = {
                sessionToken: localStorage.getItem('sessionToken'),
                titulo: document.getElementById('crm-titulo-manual').value || document.getElementById('display-id-automatico').innerText,
@@ -208,7 +206,6 @@ window.abrirPanelEdicao = function(card) {
                formato: document.getElementById('pedido-formato').value,
                cdrVersao: document.getElementById('cdr-versao').value
            };
-           
            if(confirm("Confirmar envio para produção?")) enviarProducaoAPI(payload, card.id, novoBtn);
         });
     }
@@ -224,22 +221,18 @@ window.abrirPanelEdicao = function(card) {
         const el = document.querySelector(`#servico-grid .selection-card[onclick*="'${servicoVal}'"]`); 
         if(el) selectCard('servico', servicoVal, el); 
     }
-
     const arteVal = card.arte_origem;
     if(arteVal) { 
         const el = document.querySelector(`#arte-grid .selection-card[onclick*="'${arteVal}'"]`); 
         if(el) selectCard('arte', arteVal, el); 
     }
-
     let extras = {};
     try { if (card.briefing_json) extras = (typeof card.briefing_json === 'string') ? JSON.parse(card.briefing_json) : card.briefing_json; } catch(e){}
-
     const entregaVal = extras.tipo_entrega;
     if(entregaVal) { 
         const el = document.querySelector(`#entrega-grid .selection-card[onclick*="'${entregaVal}'"]`); 
         if(el) selectCard('entrega', entregaVal, el); 
     }
-
     if(extras.link_arquivo) document.getElementById('link-arquivo').value = extras.link_arquivo;
     if(extras.supervisao_wpp) document.getElementById('pedido-supervisao').value = extras.supervisao_wpp;
     if(extras.valor_designer) document.getElementById('valor-designer').value = extras.valor_designer;
@@ -253,7 +246,6 @@ window.abrirPanelEdicao = function(card) {
     } else {
         adicionarMaterialNoForm();
     }
-
     configurarMascaras();
     currentStep = 1;
     renderizarPasso();
@@ -261,34 +253,26 @@ window.abrirPanelEdicao = function(card) {
     document.getElementById('slide-panel').classList.add('active');
 };
 
-// --- SELEÇÃO DE CARDS ---
 window.selectCard = function(group, value, element) {
     document.getElementById(`pedido-${group}-hidden`).value = value;
     const container = element.parentElement;
     container.querySelectorAll('.selection-card').forEach(c => c.classList.remove('selected'));
     element.classList.add('selected');
-    
     if (group === 'arte') {
         const arqFields = document.getElementById('arquivo-cliente-fields');
         const setorFields = document.getElementById('setor-arte-fields');
         const saldoContainer = document.getElementById('saldo-container');
-        
         arqFields.classList.add('hidden');
         setorFields.classList.add('hidden');
         if(saldoContainer) saldoContainer.style.display = 'none';
-
         if (value === 'Arquivo do Cliente') arqFields.classList.remove('hidden');
         if (value === 'Setor de Arte') {
             setorFields.classList.remove('hidden');
-            if(saldoContainer) { 
-                saldoContainer.style.display = 'inline-flex'; 
-                fetchSaldoCRM(); 
-            }
+            if(saldoContainer) { saldoContainer.style.display = 'inline-flex'; fetchSaldoCRM(); }
         }
     }
 };
 
-// --- WIZARD ---
 window.mudarPasso = function(direction) {
     if (direction === 1 && !validarPassoAtual()) return;
     currentStep += direction;
@@ -309,7 +293,6 @@ function renderizarPasso() {
     const btnPrev = document.getElementById('btn-prev');
     const btnNext = document.getElementById('btn-next');
     const finalBtns = document.getElementById('final-buttons');
-
     if (currentStep === 1) btnPrev.style.display = 'none'; else btnPrev.style.display = 'block';
     if (currentStep === totalSteps) { btnNext.style.display = 'none'; finalBtns.style.display = 'flex'; } 
     else { btnNext.style.display = 'flex'; finalBtns.style.display = 'none'; }
@@ -325,11 +308,6 @@ function validarPassoAtual() {
         const arte = document.getElementById('pedido-arte-hidden').value;
         if (!arte) { showToast("Selecione a arte.", "error"); return false; }
         if (arte === 'Arquivo do Cliente' && !document.getElementById('link-arquivo').value) { showToast("Cole o link.", "error"); return false; }
-        if (arte === 'Setor de Arte') {
-            if(!document.getElementById('pedido-supervisao').value) { showToast("Informe a supervisão.", "error"); return false; }
-            if(!document.getElementById('valor-designer').value) { showToast("Informe o valor do designer.", "error"); return false; }
-            if(!document.getElementById('pedido-formato').value) { showToast("Selecione o formato.", "error"); return false; }
-        }
         const entrega = document.getElementById('pedido-entrega-hidden').value;
         if (!entrega && arte !== 'Designer Próprio') { showToast("Selecione a entrega.", "error"); return false; }
     }
@@ -340,7 +318,6 @@ window.abrirPanelNovo = function() {
     resetarForm();
     document.getElementById('panel-titulo').innerText = 'Nova Oportunidade';
     document.getElementById('display-id-automatico').innerText = '# NOVO';
-    document.getElementById('crm-titulo-manual').value = '';
     const btnProduzir = document.getElementById('btn-produzir-final');
     if(btnProduzir) btnProduzir.style.display = 'none';
     currentStep = 1; renderizarPasso(); adicionarMaterialNoForm();
@@ -351,7 +328,6 @@ window.abrirPanelNovo = function() {
 window.fecharPanel = function() {
     document.getElementById('slide-overlay').classList.remove('active');
     document.getElementById('slide-panel').classList.remove('active');
-    setTimeout(() => { const list = document.getElementById('search-results-list'); if(list) list.style.display = 'none'; }, 300);
 };
 
 function resetarForm() {
@@ -378,12 +354,11 @@ function adicionarMaterialNoForm(desc = '', det = '') {
 function configurarBuscaCliente() {
     const input = document.getElementById('crm-nome'); const list = document.getElementById('search-results-list'); const loading = document.getElementById('loading-cliente');
     input.addEventListener('input', function() { clearTimeout(searchTimeout); if(this.value.length < 2) { list.style.display = 'none'; loading.classList.remove('active'); return; } loading.classList.add('active'); searchTimeout = setTimeout(async () => { try { const res = await fetch('/api/crm/searchClients', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), query: input.value }) }); const clientes = await res.json(); list.innerHTML = ''; if(clientes.length > 0) { clientes.forEach(c => { const li = document.createElement('li'); li.innerHTML = `<span>${c.nome}</span> <small style="color:#aaa">${c.whatsapp}</small>`; li.onclick = () => { input.value = c.nome; document.getElementById('crm-wpp').value = c.whatsapp; list.style.display = 'none'; }; list.appendChild(li); }); list.style.display = 'block'; } else list.style.display = 'none'; } catch(e){} finally { loading.classList.remove('active'); } }, 500); });
-    document.addEventListener('click', (e) => { if(!input.contains(e.target) && !list.contains(e.target)) list.style.display='none'; });
 }
 
 async function fetchSaldoCRM() {
-    const display = document.getElementById('crm-saldo-display'); if(!display) return; display.innerText = "...";
-    try { const res = await fetch('/api/crm/getBalance', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') }) }); const data = await res.json(); const v = parseFloat(data.saldo || 0); display.innerText = v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); display.style.color = v > 0 ? '#2ecc71' : '#e74c3c'; } catch(e) { display.innerText = "Erro"; }
+    const display = document.getElementById('crm-saldo-display'); if(!display) return;
+    try { const res = await fetch('/api/crm/getBalance', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') }) }); const data = await res.json(); const v = parseFloat(data.saldo || 0); display.innerText = v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); } catch(e) {}
 }
 
 function injectCleanStyles() { const style = document.createElement('style'); style.textContent = `.toast-message a { color: #e74c3c; font-weight: bold; text-decoration: underline; cursor: pointer; }`; document.head.appendChild(style); }
@@ -392,12 +367,11 @@ function showToast(message, type = 'success', duration = 5000) { const container
 function configurarDragScroll() { const slider = document.querySelector('.kanban-board'); if (!slider) return; let isDown = false; let startX; let scrollLeft; slider.addEventListener('mousedown', (e) => { if (e.target.closest('.kanban-card') || e.target.closest('button')) return; isDown = true; slider.classList.add('active'); startX = e.pageX - slider.offsetLeft; scrollLeft = slider.scrollLeft; }); slider.addEventListener('mouseleave', () => { isDown = false; slider.classList.remove('active'); }); slider.addEventListener('mouseup', () => { isDown = false; slider.classList.remove('active'); }); slider.addEventListener('mousemove', (e) => { if (!isDown) return; e.preventDefault(); const x = e.pageX - slider.offsetLeft; const walk = (x - startX) * 2; slider.scrollLeft = scrollLeft - walk; }); }
 function configurarMascaras() { if (typeof IMask !== 'undefined') { ['crm-wpp', 'pedido-supervisao'].forEach(id => { const el = document.getElementById(id); if (el) IMask(el, { mask: '(00) 00000-0000' }); }); } }
 function configurarFormularioVisual() { const btnAddSaldo = document.getElementById('btn-add-saldo-crm'); if(btnAddSaldo) { btnAddSaldo.addEventListener('click', (e) => { e.preventDefault(); document.getElementById("modal-adquirir-creditos").classList.add("active"); }); } }
-function setupModalCreditos() { const modal = document.getElementById("modal-adquirir-creditos"); const form = document.getElementById("adquirir-creditos-form"); if (!modal) return; const btnClose = modal.querySelector(".close-modal"); if(btnClose) btnClose.addEventListener("click", () => modal.classList.remove("active")); modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("active"); }); if (form) { form.addEventListener('submit', async (event) => { event.preventDefault(); const btn = form.querySelector("button[type='submit']"); const valor = document.getElementById("creditos-valor").value; const errorDiv = document.getElementById("creditos-form-error"); errorDiv.style.display = 'none'; if (!valor || parseFloat(valor) < 5) { errorDiv.innerText = "Mínimo R$ 5,00."; errorDiv.style.display = 'block'; return; } btn.disabled = true; btn.textContent = "Gerando..."; try { const res = await fetch('/api/addCredit', { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: localStorage.getItem("sessionToken"), valor: valor }) }); const data = await res.json(); if (!res.ok) throw new Error(data.message); window.open(data.url, '_blank'); modal.classList.remove("active"); form.reset(); alert("Cobrança gerada! A página será atualizada."); window.location.reload(); } catch (error) { errorDiv.innerText = error.message; errorDiv.style.display = 'block'; } finally { btn.disabled = false; btn.textContent = "Pagar Agora"; } }); } }
+function setupModalCreditos() { const modal = document.getElementById("modal-adquirir-creditos"); const form = document.getElementById("adquirir-creditos-form"); if (!modal) return; const btnClose = modal.querySelector(".close-modal"); if(btnClose) btnClose.addEventListener("click", () => modal.classList.remove("active")); modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("active"); }); if (form) { form.addEventListener('submit', async (event) => { event.preventDefault(); const btn = form.querySelector("button[type='submit']"); const valor = document.getElementById("creditos-valor").value; const errorDiv = document.getElementById("creditos-form-error"); errorDiv.style.display = 'none'; if (!valor || parseFloat(valor) < 5) { errorDiv.innerText = "Mínimo R$ 5,00."; errorDiv.style.display = 'block'; return; } btn.disabled = true; btn.textContent = "Gerando..."; try { const res = await fetch('/api/addCredit', { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: localStorage.getItem("sessionToken"), valor: valor }) }); const data = await res.json(); if (!res.ok) throw new Error(data.message); window.open(data.url, '_blank'); modal.classList.remove("active"); form.reset(); alert("Cobrança gerada!"); window.location.reload(); } catch (error) { errorDiv.innerText = error.message; errorDiv.style.display = 'block'; } finally { btn.disabled = false; btn.textContent = "Pagar Agora"; } }); } }
 
 async function carregarKanban() {
     try {
         const res = await fetch('/api/crm/listCards', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') }) });
-        if(!res.ok) throw new Error("Erro");
         const cards = await res.json();
         allCardsCache = cards;
         document.querySelectorAll('.kanban-items').forEach(c => c.innerHTML = '');
@@ -413,7 +387,6 @@ function criarCardHTML(card) {
     div.className = 'kanban-card'; 
     div.dataset.id = card.id; 
     
-    // Abrir edição APENAS se não clicar em botões internos
     div.onclick = (e) => { 
         if(!e.target.closest('.btn-card-produzir') && !e.target.closest('.btn-card-delete')) {
             abrirPanelEdicao(card); 
