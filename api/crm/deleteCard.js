@@ -27,13 +27,9 @@ module.exports = async (req, res) => {
         
         const bitrixCompanyId = userCheck.data.result[0].COMPANY_ID;
 
-        // --- CORREÇÃO AQUI ---
-        // Busca na nova coluna 'bitrix_company_id'
+        // 2. Localizar Empresa no Neon
         const empresas = await prisma.$queryRaw`
-            SELECT id 
-            FROM empresas 
-            WHERE bitrix_company_id = ${parseInt(bitrixCompanyId)} 
-            LIMIT 1
+            SELECT id FROM empresas WHERE bitrix_company_id = ${parseInt(bitrixCompanyId)} LIMIT 1
         `;
 
         if (empresas.length === 0) {
@@ -42,7 +38,7 @@ module.exports = async (req, res) => {
 
         const empresaId = empresas[0].id;
 
-        // 2. Deletar Oportunidade
+        // 3. Deletar Oportunidade (Segurança: Garante que pertence à empresa logada)
         await prisma.$queryRaw`
             DELETE FROM crm_oportunidades 
             WHERE id = ${parseInt(cardId)} AND empresa_id = ${empresaId}
@@ -52,6 +48,6 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error("Erro deleteCard:", error);
-        return res.status(500).json({ message: 'Erro ao deletar' });
+        return res.status(500).json({ message: 'Erro ao deletar card' });
     }
 };

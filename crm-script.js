@@ -1,4 +1,4 @@
-// crm-script.js - CORREÇÕES FINAIS (Botão Card + Persistência)
+// crm-script.js - CORREÇÕES FINAIS + Lógica de Exclusão
 
 let currentStep = 1;
 const totalSteps = 3;
@@ -27,16 +27,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-add-material').addEventListener('click', () => adicionarMaterialNoForm());
 });
 
-// --- LÓGICA DE PRODUÇÃO DIRETA DO CARD (SEM ALERT) ---
+// --- LÓGICA DE PRODUÇÃO DIRETA DO CARD ---
 window.produzirCardDireto = function(cardId, btnElement) {
-    event.stopPropagation(); // Impede abrir o modal
+    event.stopPropagation(); // Impede abrir o modal de edição
 
     if (btnElement.dataset.confirming === "true") {
-        // Confirmou!
         const card = allCardsCache.find(c => c.id == cardId);
         if(!card) return showToast("Erro: Card não encontrado.", "error");
 
-        // Monta Payload do Cache
         let extras = {};
         try { if(card.briefing_json) extras = (typeof card.briefing_json === 'string') ? JSON.parse(card.briefing_json) : card.briefing_json; } catch(e){}
         
@@ -62,10 +60,9 @@ window.produzirCardDireto = function(cardId, btnElement) {
         enviarProducaoAPI(payload, cardId, btnElement);
         
     } else {
-        // Primeiro clique: Pede confirmação
         btnElement.dataset.confirming = "true";
         btnElement.innerHTML = '<i class="fas fa-exclamation"></i> Confirmar?';
-        btnElement.classList.add('confirm-state'); // Fica vermelho
+        btnElement.classList.add('confirm-state');
         
         setTimeout(() => {
             btnElement.dataset.confirming = "false";
@@ -75,8 +72,36 @@ window.produzirCardDireto = function(cardId, btnElement) {
     }
 }
 
+// --- LÓGICA DE EXCLUSÃO DO CARD ---
+window.confirmarExclusaoCard = async function(cardId, event) {
+    event.stopPropagation(); // Impede de abrir o painel lateral de edição
+
+    if (confirm("Deseja realmente excluir este card permanentemente? Esta ação não pode ser desfeita.")) {
+        try {
+            const res = await fetch('/api/crm/deleteCard', { 
+                method: 'POST', 
+                headers: {'Content-Type':'application/json'}, 
+                body: JSON.stringify({ 
+                    sessionToken: localStorage.getItem('sessionToken'), 
+                    cardId: cardId 
+                }) 
+            });
+
+            if (res.ok) {
+                showToast("Card excluído com sucesso!", "success");
+                carregarKanban(); // Atualiza a tela
+            } else {
+                const data = await res.json();
+                showToast("Erro ao excluir: " + (data.message || "Erro desconhecido"), "error");
+            }
+        } catch (err) {
+            console.error(err);
+            showToast("Erro de conexão ao tentar excluir.", "error");
+        }
+    }
+};
+
 async function enviarProducaoAPI(payload, cardId, btnElement) {
-    // Trava botão
     if(btnElement) {
         btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         btnElement.style.pointerEvents = 'none';
@@ -88,7 +113,6 @@ async function enviarProducaoAPI(payload, cardId, btnElement) {
         
         if(!data.success && !data.dealId) throw new Error(data.message || 'Erro desconhecido');
         
-        // Sucesso: Deleta do Kanban Local
         if(cardId) {
             await fetch('/api/crm/deleteCard', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: cardId }) });
         }
@@ -98,7 +122,6 @@ async function enviarProducaoAPI(payload, cardId, btnElement) {
         carregarKanban();
 
     } catch(err) {
-        // Mostra erro (pode conter link HTML do saldo)
         showToast(err.message, 'error', 10000);
         if(btnElement) {
             btnElement.innerHTML = '<i class="fas fa-rocket"></i> Tentar Novamente';
@@ -108,7 +131,6 @@ async function enviarProducaoAPI(payload, cardId, btnElement) {
         }
     }
 }
-
 
 // --- SALVAR NO CRM (DRAFT) ---
 document.getElementById('form-crm').addEventListener('submit', async (e) => {
@@ -123,7 +145,6 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
         if(desc) mats.push({ descricao: desc, detalhes: d.querySelector('.mat-det').value }); 
     });
     
-    // CORREÇÃO: Pega valores dos HIDDENS, pois eles que guardam a seleção dos cards
     const payload = {
         sessionToken: localStorage.getItem('sessionToken'),
         id: document.getElementById('card-id-db').value,
@@ -152,24 +173,19 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
     finally { btn.innerText = originalText; btn.disabled = false; }
 });
 
-
-// --- LÓGICA DE ABERTURA DE EDIÇÃO (CARREGAR DADOS) ---
+// --- LÓGICA DE ABERTURA DE EDIÇÃO ---
 window.abrirPanelEdicao = function(card) {
     resetarForm();
     document.getElementById('panel-titulo').innerText = 'Editar Oportunidade';
     document.getElementById('display-id-automatico').innerText = card.titulo_automatico || '';
     
-    // Botão Produzir Disponível na Edição
     const btnProduzir = document.getElementById('btn-produzir-final');
     if(btnProduzir) {
         btnProduzir.style.display = 'block';
-        // Clone para remover listeners antigos
         const novoBtn = btnProduzir.cloneNode(true);
         btnProduzir.parentNode.replaceChild(novoBtn, btnProduzir);
         
-        // Configura envio pelo modal
         novoBtn.addEventListener('click', () => {
-           // Pega dados frescos do form (pois user pode ter editado)
            const mats = [];
            document.querySelectorAll('.material-item').forEach(d => { 
                const desc = d.querySelector('.mat-desc').value; 
@@ -197,14 +213,12 @@ window.abrirPanelEdicao = function(card) {
         });
     }
 
-    // Dados Básicos
     document.getElementById('card-id-db').value = card.id;
     document.getElementById('crm-titulo-manual').value = card.titulo_automatico || '';
     document.getElementById('crm-nome').value = card.nome_cliente;
     document.getElementById('crm-wpp').value = card.wpp_cliente;
     document.getElementById('crm-valor').value = card.valor_orcamento;
 
-    // --- TRIGGER DE SELEÇÕES VISUAIS (CORREÇÃO IMPORTANTE) ---
     const servicoVal = card.servico_tipo;
     if(servicoVal) { 
         const el = document.querySelector(`#servico-grid .selection-card[onclick*="'${servicoVal}'"]`); 
@@ -217,7 +231,6 @@ window.abrirPanelEdicao = function(card) {
         if(el) selectCard('arte', arteVal, el); 
     }
 
-    // Parse Extras
     let extras = {};
     try { if (card.briefing_json) extras = (typeof card.briefing_json === 'string') ? JSON.parse(card.briefing_json) : card.briefing_json; } catch(e){}
 
@@ -227,14 +240,12 @@ window.abrirPanelEdicao = function(card) {
         if(el) selectCard('entrega', entregaVal, el); 
     }
 
-    // Inputs Condicionais
     if(extras.link_arquivo) document.getElementById('link-arquivo').value = extras.link_arquivo;
     if(extras.supervisao_wpp) document.getElementById('pedido-supervisao').value = extras.supervisao_wpp;
     if(extras.valor_designer) document.getElementById('valor-designer').value = extras.valor_designer;
     if(extras.formato) document.getElementById('pedido-formato').value = extras.formato;
     if(extras.cdr_versao) document.getElementById('cdr-versao').value = extras.cdr_versao;
 
-    // Materiais
     const matContainer = document.getElementById('materiais-container');
     matContainer.innerHTML = '';
     if(extras.materiais && extras.materiais.length > 0) {
@@ -250,8 +261,7 @@ window.abrirPanelEdicao = function(card) {
     document.getElementById('slide-panel').classList.add('active');
 };
 
-
-// --- SELEÇÃO DE CARDS (VISUAL + LÓGICA) ---
+// --- SELEÇÃO DE CARDS ---
 window.selectCard = function(group, value, element) {
     document.getElementById(`pedido-${group}-hidden`).value = value;
     const container = element.parentElement;
@@ -277,7 +287,6 @@ window.selectCard = function(group, value, element) {
         }
     }
 };
-
 
 // --- WIZARD ---
 window.mudarPasso = function(direction) {
@@ -327,7 +336,6 @@ function validarPassoAtual() {
     return true;
 }
 
-// --- DRAWER ABERTURA NOVO ---
 window.abrirPanelNovo = function() {
     resetarForm();
     document.getElementById('panel-titulo').innerText = 'Nova Oportunidade';
@@ -356,7 +364,6 @@ function resetarForm() {
     document.getElementById('saldo-container').style.display = 'none';
 }
 
-// --- PADRÕES ---
 window.removerMaterial = function(btn) { if(confirm("Tem certeza?")) btn.closest('.material-item').remove(); };
 function adicionarMaterialNoForm(desc = '', det = '') {
     const container = document.getElementById('materiais-container');
@@ -405,10 +412,20 @@ function criarCardHTML(card) {
     const div = document.createElement('div');
     div.className = 'kanban-card'; 
     div.dataset.id = card.id; 
-    div.onclick = (e) => { if(!e.target.closest('.btn-card-produzir')) abrirPanelEdicao(card); };
+    
+    // Abrir edição APENAS se não clicar em botões internos
+    div.onclick = (e) => { 
+        if(!e.target.closest('.btn-card-produzir') && !e.target.closest('.btn-card-delete')) {
+            abrirPanelEdicao(card); 
+        }
+    };
+
     const valor = parseFloat(card.valor_orcamento||0).toLocaleString('pt-BR', {minimumFractionDigits:2});
     
     div.innerHTML = `
+        <button class="btn-card-delete" onclick="window.confirmarExclusaoCard(${card.id}, event)" title="Excluir Oportunidade">
+            <i class="fas fa-trash-alt"></i>
+        </button>
         <div class="card-header-row">
             <span class="card-id">${card.titulo_automatico || 'Novo'}</span>
             <div class="card-tags"><span class="card-tag tag-arte">${card.servico_tipo}</span></div>
