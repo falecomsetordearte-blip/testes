@@ -19,13 +19,23 @@
             <div id="header-placeholder"></div>
 
             <main class="main-kanban app-content" style="padding: 0;">
+                
+                <!-- HEADER COM SELETOR DE VISUALIZAÇÃO -->
                 <div class="kanban-header">
-                    <!-- NOME ALTERADO AQUI -->
                     <h1><i class="fas fa-wrench"></i> Instalação Externa</h1>
+                    
+                    <div class="view-switcher">
+                        <button id="btn-view-kanban" class="active" title="Visualização em Colunas">
+                            <i class="fas fa-columns"></i> Kanban
+                        </button>
+                        <button id="btn-view-calendar" title="Agendamento Semanal">
+                            <i class="far fa-calendar-alt"></i> Agenda
+                        </button>
+                    </div>
                 </div>
 
-                <div class="kanban-board">
-                    <!-- Colunas mantidas -->
+                <!-- 1. VISÃO KANBAN (ORIGINAL) -->
+                <div id="view-kanban" class="kanban-board">
                     <div class="kanban-column status-atrasado" data-column-id="ATRASADO">
                         <div class="column-header"><span class="column-title">ATRASADO</span></div>
                         <div class="column-cards" id="cards-ATRASADO"></div>
@@ -47,12 +57,56 @@
                         <div class="column-cards" id="cards-SEM_DATA"></div>
                     </div>
                 </div>
+
+                <!-- 2. VISÃO CALENDÁRIO (NOVA) -->
+                <div id="view-calendar" class="calendar-container hidden">
+                    <!-- Sidebar: Pedidos não agendados -->
+                    <div class="calendar-sidebar">
+                        <h3>A Agendar</h3>
+                        <p class="hint"><i class="fas fa-hand-pointer"></i> Arraste para o dia desejado</p>
+                        <div id="calendar-backlog" class="backlog-list">
+                            <!-- Cards serão inseridos aqui via JS -->
+                            <div style="text-align:center; padding:10px; color:#ccc;">Carregando...</div>
+                        </div>
+                    </div>
+
+                    <!-- Grid Principal -->
+                    <div class="calendar-main">
+                        <!-- Cabeçalho das Datas (Seg, Ter...) -->
+                        <div class="calendar-header-dates" id="calendar-header-row">
+                            <!-- JS preenche aqui -->
+                        </div>
+                        
+                        <div class="calendar-grid-body">
+                            <!-- Coluna de Horários (Eixo Y) -->
+                            <div class="time-labels">
+                                <div>08:00</div>
+                                <div>09:00</div>
+                                <div>10:00</div>
+                                <div>11:00</div>
+                                <div>12:00</div>
+                                <div>13:00</div>
+                                <div>14:00</div>
+                                <div>15:00</div>
+                                <div>16:00</div>
+                                <div>17:00</div>
+                                <div>18:00</div>
+                            </div>
+
+                            <!-- Colunas dos Dias (Seg a Sex) -->
+                            <div class="day-columns-wrapper" id="calendar-columns-container">
+                                <!-- Colunas e Agulha Vermelha entram aqui via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </main>
             <div id="footer-placeholder" class="hidden"></div>
         </div>
     </div>
 
-    <!-- MODAL -->
+    <!-- MODAL 1: DETALHES RÁPIDOS (VISUALIZAR PEDIDO) -->
     <div class="modal-overlay" id="modal-detalhes-rapidos">
         <div class="modal-content modal-lg">
             <div class="modal-header">
@@ -61,6 +115,32 @@
             </div>
             <div class="modal-body" id="modal-body-content">
                 <div class="loading-pedidos"><div class="spinner"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: EDIÇÃO DE AGENDAMENTO (NOVO) -->
+    <div class="modal-overlay" id="modal-agendamento">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="far fa-clock"></i> Editar Agendamento</h3>
+                <button class="close-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:5px; color:#555;">Instaladores (nomes):</label>
+                    <input type="text" id="input-instaladores" placeholder="Ex: João, Marcos" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px;">
+                    <small style="color:#999;">Separe por vírgula para criar tags</small>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display:block; font-weight:600; margin-bottom:5px; color:#555;">Duração Estimada (horas):</label>
+                    <input type="number" id="input-duracao" min="0.5" step="0.5" max="10" value="2" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px;">
+                </div>
+                
+                <button id="btn-salvar-agendamento" class="btn-concluir" style="width:100%;">
+                    <i class="fas fa-save"></i> Salvar Alterações
+                </button>
             </div>
         </div>
     </div>
