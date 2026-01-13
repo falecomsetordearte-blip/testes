@@ -95,7 +95,7 @@
 
                             <!-- Colunas dos Dias (Seg a Sex) -->
                             <div class="day-columns-wrapper" id="calendar-columns-container">
-                                <!-- Colunas e Agulha Vermelha entram aqui via JS -->
+                                <!-- Colunas, Eventos e Agulha Vermelha entram aqui via JS -->
                             </div>
                         </div>
                     </div>
@@ -119,27 +119,40 @@
         </div>
     </div>
 
-    <!-- MODAL 2: EDIÇÃO DE AGENDAMENTO (NOVO) -->
+    <!-- MODAL 2: EDIÇÃO DE AGENDAMENTO (ATUALIZADO COM DATA E HORA) -->
     <div class="modal-overlay" id="modal-agendamento">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="far fa-clock"></i> Editar Agendamento</h3>
+                <h3><i class="far fa-calendar-check"></i> Detalhes do Agendamento</h3>
                 <button class="close-modal">×</button>
             </div>
             <div class="modal-body">
-                <div style="margin-bottom: 15px;">
-                    <label style="display:block; font-weight:600; margin-bottom:5px; color:#555;">Instaladores (nomes):</label>
-                    <input type="text" id="input-instaladores" placeholder="Ex: João, Marcos" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px;">
-                    <small style="color:#999;">Separe por vírgula para criar tags</small>
-                </div>
                 
+                <!-- Nova linha: Data e Hora -->
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <label style="display:block; font-weight:600; margin-bottom:5px; color:#555; font-size:0.85rem;">Dia:</label>
+                        <input type="date" id="input-dia-inicio" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display:block; font-weight:600; margin-bottom:5px; color:#555; font-size:0.85rem;">Hora Início:</label>
+                        <input type="time" id="input-hora-inicio" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:5px; color:#555; font-size:0.85rem;">Duração Estimada (horas):</label>
+                    <input type="number" id="input-duracao" min="0.5" step="0.5" max="12" value="2" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                </div>
+
                 <div style="margin-bottom: 20px;">
-                    <label style="display:block; font-weight:600; margin-bottom:5px; color:#555;">Duração Estimada (horas):</label>
-                    <input type="number" id="input-duracao" min="0.5" step="0.5" max="10" value="2" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px;">
+                    <label style="display:block; font-weight:600; margin-bottom:5px; color:#555; font-size:0.85rem;">Instaladores (Tags):</label>
+                    <input type="text" id="input-instaladores" placeholder="Ex: João, Marcos" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                    <small style="color:#999; font-size:0.75rem;">Separe nomes por vírgula</small>
                 </div>
                 
                 <button id="btn-salvar-agendamento" class="btn-concluir" style="width:100%;">
-                    <i class="fas fa-save"></i> Salvar Alterações
+                    <i class="fas fa-save"></i> Salvar Agendamento
                 </button>
             </div>
         </div>
