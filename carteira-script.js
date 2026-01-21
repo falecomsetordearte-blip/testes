@@ -1,34 +1,30 @@
 // carteira-script.js
 
-let dadosExtratoAtual = []; // Variável global para armazenar dados da tabela para exportação
+let dadosExtratoAtual = []; 
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Configura datas iniciais do filtro (Hoje e -30 dias)
+    // Filtro de data padrão (30 dias)
     const hoje = new Date();
     const passado = new Date();
     passado.setDate(passado.getDate() - 30);
     
-    // Verifica se os elementos existem antes de setar valor (segurança)
     const inputFim = document.getElementById('filtro-fim');
     const inputInicio = document.getElementById('filtro-inicio');
     
     if(inputFim) inputFim.valueAsDate = hoje;
     if(inputInicio) inputInicio.valueAsDate = passado;
 
-    carregarDadosCarteira(); // Carrega os saldos (cards do topo)
-    carregarExtrato();       // Carrega a tabela detalhada
+    carregarDadosCarteira();
+    carregarExtrato();      
     configurarMascaras();
     configurarFormularios();
 });
 
-// --- FUNÇÕES DE INTERFACE --- //
-
-// Formatação Monetária
+// --- UI HELPERS --- //
 const fmtMoeda = (valor) => {
     return parseFloat(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 };
 
-// Toast Notification
 function showToast(message, type = 'success') {
     let container = document.querySelector('.toast-container');
     if (!container) {
@@ -49,19 +45,16 @@ window.abrirModalRecarga = () => document.getElementById('modal-recarga').classL
 window.abrirModalAnalise = () => document.getElementById('modal-analise').classList.add('active');
 window.fecharModal = (id) => document.getElementById(id).classList.remove('active');
 
-// Máscaras (IMask)
 function configurarMascaras() {
     const cnpj = document.getElementById('input-cnpj');
     if (cnpj) IMask(cnpj, { mask: '00.000.000/0000-00' });
-
     const valor = document.getElementById('input-valor-recarga');
     if (valor) IMask(valor, { mask: Number, scale: 2, thousandsSeparator: '.', padFractionalZeros: true, normalizeZeros: true, radix: ',' });
-    
     const fat = document.getElementById('input-faturamento');
     if(fat) IMask(fat, { mask: 'R$ num', blocks: { num: { mask: Number, scale: 2, thousandsSeparator: '.', padFractionalZeros: true, radix: ',' }}});
 }
 
-// --- INTEGRAÇÃO COM API --- //
+// --- APIS --- //
 
 async function carregarDadosCarteira() {
     const token = localStorage.getItem('sessionToken');
@@ -77,19 +70,16 @@ async function carregarDadosCarteira() {
         if(!res.ok) throw new Error('Erro de conexão');
         const data = await res.json();
 
-        // 1. Preencher Saldos
         document.getElementById('val-saldo').innerText = fmtMoeda(data.saldo_disponivel);
         document.getElementById('val-andamento').innerText = fmtMoeda(data.em_andamento);
         document.getElementById('val-pagar').innerText = fmtMoeda(data.a_pagar);
 
-        // 2. Lógica de Status de Crédito
         const box = document.getElementById('credit-status-box');
         const btn = document.getElementById('btn-solicitar-credito');
         const lbl = document.getElementById('lbl-tipo-conta');
         const msg = document.getElementById('msg-credito');
 
-        box.className = 'credit-status'; // Reset
-
+        box.className = 'credit-status'; 
         if (data.credito_aprovado) {
             box.classList.add('status-postpaid');
             lbl.innerText = 'Pós-paga (Crédito Aprovado)';
@@ -98,26 +88,21 @@ async function carregarDadosCarteira() {
         } else if (data.solicitacao_pendente) {
             box.classList.add('status-analyzing');
             lbl.innerText = 'Em Análise';
-            msg.innerText = 'Estamos analisando seus dados. Você receberá um retorno em breve.';
+            msg.innerText = 'Estamos analisando seus dados.';
             btn.innerText = 'Análise em Andamento';
             btn.disabled = true;
-            btn.style.background = 'transparent';
-            btn.style.color = '#c2410c';
-            btn.style.border = '1px dashed #f97316';
+            btn.style.cssText = 'background:transparent; color:#c2410c; border:1px dashed #f97316';
         } else {
             box.classList.add('status-prepaid');
             lbl.innerText = 'Pré-paga';
-            msg.innerText = 'No momento, necessário pagamento antecipado para liberar produção.';
+            msg.innerText = 'Necessário pagamento antecipado para liberar produção.';
             btn.onclick = abrirModalAnalise;
         }
-
     } catch (err) {
         console.error(err);
-        showToast('Erro ao carregar saldos.', 'error');
     }
 }
 
-// --- NOVA FUNÇÃO: CARREGAR EXTRATO COM FILTROS ---
 window.carregarExtrato = async function() {
     const token = localStorage.getItem('sessionToken');
     const dataInicio = document.getElementById('filtro-inicio').value;
@@ -136,11 +121,11 @@ window.carregarExtrato = async function() {
         if(!res.ok) throw new Error('Erro ao buscar extrato');
         const responseData = await res.json();
         
-        dadosExtratoAtual = responseData.extrato || []; // Salva para exportação
+        dadosExtratoAtual = responseData.extrato || [];
         lista.innerHTML = '';
 
         if (dadosExtratoAtual.length === 0) {
-            lista.innerHTML = '<li style="text-align:center; padding:20px; color:#94a3b8;">Nenhum registro encontrado neste período.</li>';
+            lista.innerHTML = '<li style="text-align:center; padding:20px; color:#94a3b8;">Nenhum registro neste período.</li>';
             return;
         }
 
@@ -150,12 +135,12 @@ window.carregarExtrato = async function() {
             
             const date = new Date(item.data).toLocaleDateString('pt-BR');
             
-            // Lógica de Cores: Entrada = Verde / Saída (Custo) = Vermelho
-            const isSaida = item.tipo === 'SAIDA' || item.valor < 0;
+            // Lógica baseada em valor Negativo = Saída (Vermelho)
+            const isSaida = item.valor < 0;
             const color = isSaida ? '#e74c3c' : '#27ae60';
-            const signal = isSaida ? '-' : '+';
+            const signal = isSaida ? '' : '+'; // Negativo já vem com sinal do banco
             
-            // Botão Ver Atendimento (Se tiver link)
+            // Botão Link
             let btnHtml = '<span style="color:#ccc; font-size:0.8rem; text-align:center; display:block;">-</span>';
             if (item.link_atendimento) {
                 btnHtml = `
@@ -169,7 +154,7 @@ window.carregarExtrato = async function() {
                     ${item.descricao || 'Movimentação'}
                 </div>
                 <div style="font-size:0.85rem; color:#64748b;">${date}</div>
-                <div style="font-weight:700; color:${color}; text-align:right;">${signal} ${fmtMoeda(Math.abs(item.valor))}</div>
+                <div style="font-weight:700; color:${color}; text-align:right;">${signal} ${fmtMoeda(item.valor)}</div>
                 <div>${btnHtml}</div>
             `;
             lista.appendChild(li);
@@ -177,28 +162,24 @@ window.carregarExtrato = async function() {
 
     } catch (err) {
         console.error(err);
-        lista.innerHTML = '<li style="text-align:center; padding:20px; color:#e74c3c;">Erro ao carregar extrato.</li>';
+        lista.innerHTML = '<li style="text-align:center; padding:20px; color:#e74c3c;">Erro ao carregar dados.</li>';
     }
 }
 
-// --- NOVA FUNÇÃO: EXPORTAR CSV ---
 window.exportarCSV = function() {
     if (!dadosExtratoAtual || dadosExtratoAtual.length === 0) {
-        showToast('Não há dados visíveis para exportar.', 'error');
+        showToast('Sem dados para exportar.', 'error');
         return;
     }
 
     let csvContent = "data:text/csv;charset=utf-8,";
-    // Cabeçalho CSV
     csvContent += "Data;Descricao;Valor;Tipo;Link Atendimento\r\n";
 
     dadosExtratoAtual.forEach(row => {
         const data = new Date(row.data).toLocaleDateString('pt-BR');
-        // Limpa ponto e vírgula para não quebrar CSV
-        const desc = (row.descricao || row.titulo || '').replace(/;/g, ' '); 
-        // Formata valor para padrão excel PT-BR (vírgula decimal)
-        const val = Math.abs(row.valor).toString().replace('.', ','); 
-        const tipo = row.tipo || '';
+        const desc = (row.descricao || '').replace(/;/g, ' '); 
+        const val = row.valor.toString().replace('.', ','); 
+        const tipo = row.valor < 0 ? 'SAIDA' : 'ENTRADA';
         const link = row.link_atendimento || '';
         
         csvContent += `${data};${desc};${val};${tipo};${link}\r\n`;
@@ -207,8 +188,7 @@ window.exportarCSV = function() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    const dataStr = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-    link.setAttribute("download", `extrato_setor_arte_${dataStr}.csv`);
+    link.setAttribute("download", `extrato_setor_arte.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -217,7 +197,6 @@ window.exportarCSV = function() {
 function configurarFormularios() {
     const token = localStorage.getItem('sessionToken');
 
-    // FORM DE RECARGA
     const formRecarga = document.getElementById('form-recarga');
     if (formRecarga) {
         formRecarga.addEventListener('submit', async (e) => {
@@ -226,44 +205,31 @@ function configurarFormularios() {
             const valorRaw = document.getElementById('input-valor-recarga').value;
             const valorNumerico = parseFloat(valorRaw.replace(/\./g, '').replace(',', '.'));
 
-            if(isNaN(valorNumerico) || valorNumerico < 5) {
-                return showToast('Valor mínimo de R$ 5,00', 'error');
-            }
+            if(isNaN(valorNumerico) || valorNumerico < 5) return showToast('Valor mínimo de R$ 5,00', 'error');
 
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
-
             try {
                 const res = await fetch('/api/addCredit', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ token, valor: valorNumerico })
                 });
                 const data = await res.json();
-
                 if(res.ok && data.url) {
                     window.open(data.url, '_blank');
                     fecharModal('modal-recarga');
-                    showToast('Cobrança gerada! Aguardando pagamento.', 'success');
-                } else {
-                    throw new Error(data.message || 'Erro ao gerar');
-                }
-            } catch (err) {
-                showToast(err.message, 'error');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-qrcode"></i> Gerar Pagamento Agora';
-            }
+                    showToast('Cobrança gerada!', 'success');
+                } else throw new Error(data.message);
+            } catch (err) { showToast(err.message, 'error'); } 
+            finally { btn.disabled = false; btn.innerHTML = '<i class="fas fa-qrcode"></i> Gerar Pagamento'; }
         });
     }
 
-    // FORM DE ANÁLISE DE CRÉDITO
     const formAnalise = document.getElementById('form-analise');
     if(formAnalise) {
         formAnalise.addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btn-submit-analise');
-            
             const formData = {
                 razaoSocial: document.querySelector('[name="razaoSocial"]').value,
                 cnpj: document.querySelector('[name="cnpj"]').value,
@@ -272,26 +238,20 @@ function configurarFormularios() {
                 contador: document.querySelector('[name="contador"]').value,
                 obs: document.querySelector('[name="obs"]').value
             };
-
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
-
             try {
                 const res = await fetch('/api/carteira/solicitarCredito', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ sessionToken: token, formData })
                 });
-                
                 if(res.ok) {
                     fecharModal('modal-analise');
-                    showToast('Solicitação enviada com sucesso!', 'success');
+                    showToast('Enviado com sucesso!', 'success');
                     carregarDadosCarteira();
-                } else {
-                    throw new Error('Erro ao enviar solicitação.');
-                }
+                } else throw new Error('Erro ao enviar.');
             } catch (err) {
-                showToast('Erro ao enviar dados.', 'error');
+                showToast('Erro ao enviar.', 'error');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar para Análise';
             }

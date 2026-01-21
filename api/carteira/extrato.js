@@ -1,5 +1,4 @@
 // api/carteira/extrato.js
-
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const axios = require('axios');
@@ -14,7 +13,6 @@ module.exports = async (req, res) => {
     if (!sessionToken) return res.status(403).json({ message: 'Token ausente' });
 
     try {
-        // 1. Verificar Sessão no Bitrix
         const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken }, 
             select: ['ID', 'COMPANY_ID']
@@ -26,58 +24,52 @@ module.exports = async (req, res) => {
         
         const bitrixCompanyId = userCheck.data.result[0].COMPANY_ID;
 
-        // 2. Pegar ID da Empresa Local
         const empresaLocal = await prisma.empresa.findFirst({
             where: { bitrix_company_id: parseInt(bitrixCompanyId) }
         });
 
         if (!empresaLocal) return res.status(404).json({ message: 'Empresa não encontrada' });
 
-        // 3. Configurar datas do filtro
-        // Se não vier data, assume últimos 30 dias
+        // Configuração de datas
         let start = dataInicio ? new Date(dataInicio) : new Date(new Date().setDate(new Date().getDate() - 30));
         let end = dataFim ? new Date(dataFim) : new Date();
-        
-        // Ajuste de fuso/horário para garantir o dia inteiro
-        // Zera o horário do inicio
         start.setHours(0, 0, 0, 0);
-        // Seta o final do dia para o fim
         end.setHours(23, 59, 59, 999);
 
-        // 4. Buscar no Banco
         const historico = await prisma.historicoFinanceiro.findMany({
             where: {
                 empresa_id: empresaLocal.id,
-                data: {
-                    gte: start,
-                    lte: end
-                }
+                data: { gte: start, lte: end }
             },
             orderBy: { data: 'desc' }
         });
 
-        // 5. Formatar Resposta (Extraindo Link)
+        // Formatação e extração do Link
         const extratoFormatado = historico.map(item => {
+            let descricaoLimpa = item.descricao || item.titulo || 'Sem descrição';
             let link = null;
-            
-            // Tenta extrair link do JSON de metadados
-            if (item.metadados) {
-                try {
-                    // Se estiver salvo como string JSON
-                    const meta = typeof item.metadados === 'string' ? JSON.parse(item.metadados) : item.metadados;
-                    link = meta.link_atendimento || null;
-                } catch (e) {
-                    // Ignora erro de parse
-                }
+            let tipoCalculado = 'ENTRADA';
+
+            // 1. Extrair Link da string (separador |||)
+            if (descricaoLimpa.includes('|||')) {
+                const partes = descricaoLimpa.split('|||');
+                descricaoLimpa = partes[0].trim();
+                link = partes[1] ? partes[1].trim() : null;
+            }
+
+            // 2. Determinar Tipo baseado no valor (Negativo = Saída)
+            const valorNum = parseFloat(item.valor);
+            if (valorNum < 0) {
+                tipoCalculado = 'SAIDA';
             }
 
             return {
                 id: item.id,
                 data: item.data,
                 titulo: item.titulo,
-                descricao: item.descricao,
-                valor: parseFloat(item.valor),
-                tipo: item.tipo, // 'ENTRADA' ou 'SAIDA'
+                descricao: descricaoLimpa,
+                valor: valorNum,
+                tipo: tipoCalculado,
                 link_atendimento: link
             };
         });
@@ -86,6 +78,6 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error("Erro API Extrato:", error);
-        res.status(500).json({ message: 'Erro interno ao buscar extrato' });
+        res.status(500).json({ message: 'Erro interno' });
     }
 };
