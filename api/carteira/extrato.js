@@ -1,4 +1,5 @@
 // api/carteira/extrato.js
+
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const axios = require('axios');
@@ -6,10 +7,9 @@ const axios = require('axios');
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
 module.exports = async (req, res) => {
-    if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
+    if (req.method !== 'POST') return res.status(405).end();
 
     const { sessionToken, dataInicio, dataFim } = req.body;
-
     if (!sessionToken) return res.status(403).json({ message: 'Token ausente' });
 
     try {
@@ -30,7 +30,7 @@ module.exports = async (req, res) => {
 
         if (!empresaLocal) return res.status(404).json({ message: 'Empresa não encontrada' });
 
-        // Configuração de datas
+        // Filtro de Data
         let start = dataInicio ? new Date(dataInicio) : new Date(new Date().setDate(new Date().getDate() - 30));
         let end = dataFim ? new Date(dataFim) : new Date();
         start.setHours(0, 0, 0, 0);
@@ -44,40 +44,38 @@ module.exports = async (req, res) => {
             orderBy: { data: 'desc' }
         });
 
-        // Formatação e extração do Link
+        // Formatação
         const extratoFormatado = historico.map(item => {
-            let descricaoLimpa = item.descricao || item.titulo || 'Sem descrição';
             let link = null;
-            let tipoCalculado = 'ENTRADA';
-
-            // 1. Extrair Link da string (separador |||)
-            if (descricaoLimpa.includes('|||')) {
-                const partes = descricaoLimpa.split('|||');
-                descricaoLimpa = partes[0].trim();
-                link = partes[1] ? partes[1].trim() : null;
+            
+            // Tenta ler o JSON do campo metadados
+            if (item.metadados) {
+                try {
+                    const meta = JSON.parse(item.metadados);
+                    link = meta.link_atendimento;
+                } catch (e) {
+                    // Se falhar o parse, ignora
+                }
             }
 
-            // 2. Determinar Tipo baseado no valor (Negativo = Saída)
-            const valorNum = parseFloat(item.valor);
-            if (valorNum < 0) {
-                tipoCalculado = 'SAIDA';
-            }
+            // Define se é saída baseado no campo TIPO ou se o valor for negativo (legado)
+            const isSaida = item.tipo === 'SAIDA' || item.valor < 0;
 
             return {
                 id: item.id,
                 data: item.data,
                 titulo: item.titulo,
-                descricao: descricaoLimpa,
-                valor: valorNum,
-                tipo: tipoCalculado,
+                descricao: item.descricao || item.titulo,
+                valor: parseFloat(item.valor),
+                tipo: isSaida ? 'SAIDA' : 'ENTRADA',
                 link_atendimento: link
             };
         });
 
-        res.status(200).json({ extrato: extratoFormatado });
+        res.json({ extrato: extratoFormatado });
 
     } catch (error) {
-        console.error("Erro API Extrato:", error);
+        console.error("Erro Extrato:", error);
         res.status(500).json({ message: 'Erro interno' });
     }
 };
