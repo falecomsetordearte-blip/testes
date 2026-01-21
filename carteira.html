@@ -65,6 +65,20 @@
         .btn-send { background: #3498db; color: white; }
         .btn-send:hover { background: #2980b9; }
 
+        /* Botões de Ação na Tabela */
+        .btn-action-sm {
+            padding: 5px 10px; font-size: 0.8rem; border-radius: 4px; border: none; cursor: pointer; color: white; text-decoration: none; display: inline-block;
+        }
+        .btn-ver-atendimento { background-color: #3498db; }
+        .btn-ver-atendimento:hover { background-color: #2980b9; }
+
+        .filter-bar {
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+        }
+        .filter-input {
+            padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-family: 'Poppins', sans-serif;
+        }
+
         /* Toast */
         .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10010; display: flex; flex-direction: column; gap: 10px; }
         .toast { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); border-left: 5px solid #ccc; min-width: 300px; animation: slideInLeft 0.3s forwards; display: flex; align-items: center; gap: 10px; }
@@ -100,7 +114,7 @@
                     <!-- CARDS DE VALORES -->
                     <div class="wallet-grid">
                         
-                        <!-- NOVO CARD: SALDO DISPONÍVEL -->
+                        <!-- CARD 1: SALDO DISPONÍVEL -->
                         <div class="wallet-card card-saldo">
                             <div>
                                 <h3>Saldo Disponível</h3>
@@ -113,7 +127,7 @@
                             <i class="fas fa-coins wallet-icon"></i>
                         </div>
 
-                        <!-- Em Andamento -->
+                        <!-- CARD 2: Em Produção -->
                         <div class="wallet-card card-andamento">
                             <div>
                                 <h3>Em Produção</h3>
@@ -123,7 +137,7 @@
                             <i class="fas fa-cog wallet-icon"></i>
                         </div>
 
-                        <!-- À Pagar -->
+                        <!-- CARD 3: À Pagar / Histórico -->
                         <div class="wallet-card card-pagar">
                             <div>
                                 <h3>Total Faturado/Gasto</h3>
@@ -134,13 +148,38 @@
                         </div>
                     </div>
 
-                    <!-- HISTÓRICO RECENTE -->
+                    <!-- HISTÓRICO DETALHADO E FILTROS -->
                     <div class="history-container" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.04);">
-                        <div style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
-                            <h4 style="margin:0; color: #4a5568;">Extrato Recente</h4>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                            <h4 style="margin:0; color: #4a5568;">Extrato Financeiro</h4>
+                            
+                            <!-- BARRA DE FILTROS -->
+                            <div class="filter-bar">
+                                <input type="date" id="filtro-inicio" class="filter-input" title="Data Início">
+                                <span style="color: #aaa; font-size: 0.9rem;">até</span>
+                                <input type="date" id="filtro-fim" class="filter-input" title="Data Fim">
+                                
+                                <button onclick="carregarExtrato()" class="btn-action-sm" style="background: #2c3e50; padding: 9px 15px;">
+                                    <i class="fas fa-filter"></i> Filtrar
+                                </button>
+                                
+                                <button onclick="exportarCSV()" class="btn-action-sm" style="background: #27ae60; padding: 9px 15px;">
+                                    <i class="fas fa-file-csv"></i> Baixar Excel/CSV
+                                </button>
+                            </div>
                         </div>
+
+                        <!-- CABEÇALHO TABELA -->
+                        <div style="display: grid; grid-template-columns: 2.5fr 1fr 1fr 1fr; gap: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-weight: 600; color: #64748b; font-size: 0.9rem; margin-bottom: 10px;">
+                            <div>Descrição / Pedido</div>
+                            <div>Data</div>
+                            <div style="text-align: right;">Valor</div>
+                            <div style="text-align: center;">Detalhes</div>
+                        </div>
+
                         <ul class="history-list" id="lista-historico" style="list-style:none; padding:0;">
-                            <li style="text-align:center; padding:20px; color:#94a3b8;">Carregando...</li>
+                            <li style="text-align:center; padding:20px; color:#94a3b8;">Carregando extrato...</li>
                         </ul>
                     </div>
 
