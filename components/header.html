@@ -1,17 +1,16 @@
 <!-- components/header.html -->
 <style>
-    /* --- ESTRUTURA PRINCIPAL DO HEADER --- */
+    /* HEADER VISUAL (O input aqui é só fachada) */
     .app-header {
         background: #fff;
         border-bottom: 1px solid #e2e8f0;
         height: 70px;
         position: sticky;
         top: 0;
-        z-index: 900; 
+        z-index: 900;
         padding: 0 30px;
         display: flex;
         align-items: center;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
     }
 
     .header-content {
@@ -19,356 +18,285 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        max-width: 100%;
-        margin: 0 auto;
     }
 
-    /* --- CONTAINER DA BUSCA (Posição Relativa para o Dropdown) --- */
-    .search-container {
-        flex-grow: 1;
-        max-width: 600px;
-        margin: 0 40px;
-        position: relative; /* Isso segura o dropdown no lugar certo */
-    }
-
-    /* --- INPUT DE BUSCA --- */
-    .search-box {
-        display: flex;
-        align-items: center;
+    /* O INPUT FALSO NO HEADER (Serve como botão) */
+    .search-trigger-box {
         background: #f1f5f9;
         border-radius: 8px;
         padding: 0 15px;
-        border: 2px solid transparent;
-        transition: all 0.2s ease;
         height: 45px;
-    }
-    
-    .search-box:focus-within {
-        background: #fff;
-        border-color: #3498db;
-        box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1);
-    }
-
-    .search-box input {
-        border: none;
-        background: transparent;
-        outline: none;
-        flex-grow: 1;
-        padding: 0 10px;
-        font-size: 0.95rem;
-        color: #334155;
-        font-weight: 500;
-        font-family: 'Poppins', sans-serif;
-    }
-
-    .search-icon {
+        display: flex;
+        align-items: center;
+        width: 400px;
+        max-width: 100%;
+        cursor: text;
         color: #94a3b8;
-        font-size: 1.1rem;
+        border: 1px solid transparent;
+        transition: 0.2s;
+    }
+    .search-trigger-box:hover {
+        background: #e2e8f0;
+        border-color: #cbd5e1;
+    }
+    .search-trigger-text {
+        margin-left: 10px;
+        font-size: 0.9rem;
     }
 
-    /* --- SPINNER DE CARREGAMENTO --- */
-    .search-spinner {
-        width: 18px;
-        height: 18px;
-        border: 2px solid #e2e8f0;
-        border-top-color: #3498db;
-        border-radius: 50%;
-        animation: spinSearch 0.8s linear infinite;
-        display: none; /* Oculto por padrão */
-    }
-    @keyframes spinSearch { to { transform: rotate(360deg); } }
-
-    /* --- DROPDOWN FLUTUANTE DE RESULTADOS --- */
-    #search-dropdown {
-        position: absolute;
-        top: 110%; /* Fica logo abaixo da barra */
+    /* --- O MODAL REAL (SPOTLIGHT STYLE) --- */
+    .spotlight-overlay {
+        position: fixed;
+        top: 0;
         left: 0;
-        width: 100%;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 23, 42, 0.6); /* Fundo escuro */
+        backdrop-filter: blur(4px);
+        z-index: 99999; /* GARANTE QUE FIQUE ACIMA DE TUDO */
+        display: none;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: 10vh;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .spotlight-overlay.active {
+        display: flex;
+        opacity: 1;
+    }
+
+    .spotlight-container {
+        width: 600px;
+        max-width: 90%;
         background: white;
         border-radius: 12px;
-        /* Sombra forte para destacar sobre outros elementos */
-        box-shadow: 0 10px 40px -10px rgba(0,0,0,0.25);
-        border: 1px solid #e2e8f0;
-        z-index: 10001; /* Z-INDEX ALTO: Garante que fique por cima de tudo */
-        display: none;
-        flex-direction: column;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         overflow: hidden;
-        max-height: 450px;
-        overflow-y: auto;
-    }
-
-    #search-dropdown.active {
         display: flex;
-        animation: slideDownFade 0.2s ease-out;
+        flex-direction: column;
+        transform: scale(0.95);
+        transition: transform 0.2s ease;
     }
 
-    @keyframes slideDownFade {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
+    .spotlight-overlay.active .spotlight-container {
+        transform: scale(1);
     }
 
-    /* --- ITEM DE RESULTADO --- */
-    .search-result-item {
+    /* Input Real dentro do Modal */
+    .spotlight-header {
+        padding: 20px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+    }
+    
+    .spotlight-input {
+        width: 100%;
+        font-size: 1.2rem;
+        border: none;
+        outline: none;
+        color: #334155;
+        margin-left: 15px;
+    }
+
+    .spotlight-results {
+        max-height: 60vh;
+        overflow-y: auto;
+        padding: 0;
+    }
+
+    .spotlight-item {
         padding: 15px 20px;
-        border-bottom: 1px solid #f1f5f9;
+        border-bottom: 1px solid #f8fafc;
         cursor: pointer;
         display: flex;
         justify-content: space-between;
         align-items: center;
         transition: background 0.1s;
     }
-
-    .search-result-item:hover {
-        background-color: #f8fafc;
-    }
-
-    .search-result-item:last-child {
-        border-bottom: none;
-    }
-
-    .result-left { display: flex; flex-direction: column; gap: 4px; }
+    .spotlight-item:hover { background: #f1f5f9; }
     
-    .result-left h4 {
-        margin: 0;
-        font-size: 0.95rem;
-        color: #1e293b;
-        font-weight: 600;
+    .sp-left h4 { margin: 0; font-size: 1rem; color: #1e293b; font-weight: 600; }
+    .sp-left p { margin: 2px 0 0; font-size: 0.85rem; color: #64748b; }
+    
+    .sp-badge {
+        font-size: 0.75rem; font-weight: 700; color: white;
+        padding: 4px 10px; border-radius: 4px; text-transform: uppercase;
     }
 
-    .result-left p {
-        margin: 0;
-        font-size: 0.8rem;
-        color: #64748b;
-    }
-
-    /* --- ETIQUETA (BADGE) DE SETOR --- */
-    .result-badge {
-        padding: 5px 12px;
-        border-radius: 6px;
-        font-size: 0.7rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        color: white;
-        white-space: nowrap;
-        letter-spacing: 0.5px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    /* --- MENU DE USUÁRIO (Lado Direito) --- */
-    .user-menu {
+    .spotlight-footer {
+        background: #f8fafc;
+        padding: 10px 20px;
+        font-size: 0.75rem;
+        color: #94a3b8;
+        border-top: 1px solid #e2e8f0;
         display: flex;
-        align-items: center;
-        gap: 20px;
-    }
-    
-    #logout-button {
-        padding: 8px 16px;
-        border: 1px solid #e2e8f0;
-        background: transparent;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #64748b;
-        transition: 0.2s;
-    }
-    #logout-button:hover {
-        background: #f1f5f9;
-        color: #ef4444;
-        border-color: #ef4444;
+        justify-content: space-between;
     }
 
-    /* Notificações */
-    .notification-wrapper { position: relative; display: flex; align-items: center; }
-    .notification-bell { background: none; border: none; cursor: pointer; padding: 5px; font-size: 1.2rem; color: #64748b; position: relative; transition: color 0.2s; }
-    .notification-bell:hover { color: #3498db; }
-    .notification-badge { position: absolute; top: 0; right: 0; width: 10px; height: 10px; background: #ef4444; border: 2px solid #fff; border-radius: 50%; display: none; }
-    .notification-badge.active { display: block; }
-    
-    /* Dropdown de Notificações */
-    .notification-dropdown {
-        position: absolute;
-        top: 140%;
-        right: -10px;
-        width: 300px;
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-        z-index: 2000;
-        display: none;
-        flex-direction: column;
-    }
-    .notification-dropdown.active { display: flex; }
+    /* User Menu */
+    .user-menu { display: flex; gap: 15px; align-items: center; }
+    #logout-button { background: none; border: 1px solid #cbd5e1; padding: 5px 15px; border-radius: 6px; cursor: pointer; }
+
+    /* Spinner */
+    .sp-spinner { width: 20px; height: 20px; border: 2px solid #ddd; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
 </style>
 
 <header class="app-header">
     <div class="header-content">
-        <!-- Logo Espaçador (Oculto ou Pequeno se a sidebar já tem logo) -->
-        <div class="logo-area" style="width: 20px;"></div> 
+        <div class="logo-area" style="width: 20px;"></div>
         
-        <!-- --- ÁREA DE BUSCA (LIVE SEARCH) --- -->
-        <div class="search-container">
-            <div class="search-box">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" id="global-search-input" placeholder="Pesquisar pedido, cliente ou ID..." autocomplete="off">
-                <div class="search-spinner" id="search-loading"></div>
-            </div>
-
-            <!-- DROPDOWN DE RESULTADOS -->
-            <div id="search-dropdown">
-                <!-- Resultados serão injetados aqui via JS -->
-            </div>
+        <!-- GATILHO DA BUSCA (Apenas visual) -->
+        <div class="search-trigger-box" onclick="abrirBuscaGlobal()">
+            <i class="fas fa-search"></i>
+            <span class="search-trigger-text">Pesquisar pedido... (Ctrl + K)</span>
         </div>
 
-        <!-- --- MENU USUÁRIO --- -->
         <div class="user-menu">
-            <div class="notification-wrapper">
-                <button class="notification-bell" id="btn-notificacoes">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge" id="notif-badge"></span>
-                </button>
-                <!-- Dropdown de Notificação (Simples) -->
-                <div class="notification-dropdown" id="notif-dropdown">
-                     <div style="padding:15px; border-bottom:1px solid #eee; font-weight:600; font-size:0.9rem;">Notificações</div>
-                     <div id="notif-list" style="max-height:250px; overflow-y:auto;"></div>
-                </div>
-            </div>
-            
-            <div style="text-align:right; line-height:1.2;">
-                <span id="user-greeting" style="display:block; font-weight:600; color:#334155; font-size:0.9rem;">Olá!</span>
-                <span style="font-size:0.75rem; color:#94a3b8;">Setor de Arte</span>
-            </div>
-            
+            <span id="user-greeting">Olá!</span>
             <button id="logout-button">Sair</button>
         </div>
     </div>
 </header>
 
+<!-- O MODAL QUE VAI FICAR POR CIMA DE TUDO -->
+<div id="spotlight-overlay" class="spotlight-overlay" onclick="fecharBuscaGlobal(event)">
+    <div class="spotlight-container">
+        <div class="spotlight-header">
+            <i class="fas fa-search" style="color: #94a3b8; font-size: 1.2rem;"></i>
+            <input type="text" id="spotlight-input" class="spotlight-input" placeholder="Digite o número, cliente ou título..." autocomplete="off">
+            <div id="spotlight-spinner" class="sp-spinner"></div>
+        </div>
+        
+        <div id="spotlight-results" class="spotlight-results">
+            <!-- Resultados aparecem aqui -->
+            <div style="padding:40px; text-align:center; color:#cbd5e1;">
+                Digite para buscar em todo o sistema
+            </div>
+        </div>
+
+        <div class="spotlight-footer">
+            <span>Use as setas para navegar</span>
+            <span>ESC para fechar</span>
+        </div>
+    </div>
+</div>
+
 <script>
+    // Funções globais para abrir/fechar
+    window.abrirBuscaGlobal = function() {
+        const overlay = document.getElementById('spotlight-overlay');
+        const input = document.getElementById('spotlight-input');
+        overlay.classList.add('active');
+        setTimeout(() => input.focus(), 100); // Foca no input
+    };
+
+    window.fecharBuscaGlobal = function(e) {
+        // Se clicar no overlay (parte escura) ou chamar via ESC
+        if (!e || e.target.id === 'spotlight-overlay') {
+            document.getElementById('spotlight-overlay').classList.remove('active');
+            document.getElementById('spotlight-input').value = '';
+            document.getElementById('spotlight-results').innerHTML = '<div style="padding:40px; text-align:center; color:#cbd5e1;">Digite para buscar...</div>';
+        }
+    };
+
     document.addEventListener("DOMContentLoaded", () => {
-        // --- CONFIGURAÇÃO DA BUSCA ---
-        const searchInput = document.getElementById('global-search-input');
-        const searchDropdown = document.getElementById('search-dropdown');
-        const searchSpinner = document.getElementById('search-loading');
-        let debounceTimer = null;
+        const input = document.getElementById('spotlight-input');
+        const resultsDiv = document.getElementById('spotlight-results');
+        const spinner = document.getElementById('spotlight-spinner');
+        let debounceTimeout = null;
 
-        // Evento de Digitação (Live Search)
-        searchInput.addEventListener('input', (e) => {
+        // Atalho de Teclado (Ctrl+K)
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                window.abrirBuscaGlobal();
+            }
+            if (e.key === 'Escape') {
+                window.fecharBuscaGlobal({ target: { id: 'spotlight-overlay' } });
+            }
+        });
+
+        // Evento de Input
+        input.addEventListener('input', (e) => {
             const query = e.target.value.trim();
-            
-            // 1. Limpa timer anterior (Debounce)
-            clearTimeout(debounceTimer);
+            clearTimeout(debounceTimeout);
 
-            // 2. Se vazio, esconde tudo
             if (query.length === 0) {
-                searchDropdown.classList.remove('active');
-                searchSpinner.style.display = 'none';
+                resultsDiv.innerHTML = '<div style="padding:40px; text-align:center; color:#cbd5e1;">Digite para buscar...</div>';
+                spinner.style.display = 'none';
                 return;
             }
 
-            // 3. Mostra Spinner
-            searchSpinner.style.display = 'block';
+            spinner.style.display = 'block';
 
-            // 4. Aguarda 500ms após parar de digitar para chamar a API
-            debounceTimer = setTimeout(() => {
-                buscarPedidosAPI(query);
+            debounceTimeout = setTimeout(async () => {
+                try {
+                    const sessionToken = localStorage.getItem('sessionToken');
+                    const res = await fetch('/api/searchDeal', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sessionToken, query })
+                    });
+                    const data = await res.json();
+                    renderResults(data.results);
+                } catch (err) {
+                    resultsDiv.innerHTML = '<div style="padding:20px; color:red; text-align:center">Erro ao buscar</div>';
+                } finally {
+                    spinner.style.display = 'none';
+                }
             }, 500);
         });
 
-        // Fechar ao clicar fora
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.search-container')) {
-                searchDropdown.classList.remove('active');
+        function renderResults(list) {
+            resultsDiv.innerHTML = '';
+            if (!list || list.length === 0) {
+                resultsDiv.innerHTML = '<div style="padding:20px; text-align:center; color:#94a3b8;">Nenhum resultado encontrado.</div>';
+                return;
             }
-        });
 
-        // Função que chama o Backend
-        async function buscarPedidosAPI(query) {
-            try {
-                const sessionToken = localStorage.getItem('sessionToken');
-                const response = await fetch('/api/searchDeal', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionToken, query })
-                });
+            list.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'spotlight-item';
+                
+                const valor = item.valor ? parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) : '';
+                const dataCriacao = new Date(item.data).toLocaleDateString('pt-BR');
 
-                const data = await response.json();
-                renderizarResultados(data.results);
-
-            } catch (error) {
-                console.error("Erro na busca:", error);
-                searchDropdown.innerHTML = '<div style="padding:20px; text-align:center; color:#ef4444;">Erro ao buscar dados.</div>';
-                searchDropdown.classList.add('active');
-            } finally {
-                searchSpinner.style.display = 'none';
-            }
-        }
-
-        // Função que monta o HTML dos resultados
-        function renderizarResultados(resultados) {
-            searchDropdown.innerHTML = '';
-
-            if (!resultados || resultados.length === 0) {
-                searchDropdown.innerHTML = '<div style="padding:25px; text-align:center; color:#94a3b8; font-size:0.9rem;">Nenhum pedido encontrado.</div>';
-            } else {
-                resultados.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'search-result-item';
+                div.innerHTML = `
+                    <div class="sp-left">
+                        <h4>#${item.id} - ${item.titulo}</h4>
+                        <p>${dataCriacao} • ${valor}</p>
+                    </div>
+                    <div class="sp-right">
+                        <span class="sp-badge" style="background-color: ${item.cor_setor}">${item.setor}</span>
+                    </div>
+                `;
+                
+                div.onclick = () => {
+                    // Lógica de Redirecionamento Inteligente
+                    window.fecharBuscaGlobal({ target: { id: 'spotlight-overlay' } });
                     
-                    // Formatação de Data
-                    const dataFormatada = item.data ? new Date(item.data).toLocaleDateString('pt-BR') : '-';
-                    const valorFormatado = item.valor ? parseFloat(item.valor).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) : '';
+                    // Exemplo: Se for ARTE, vai pro painel de arte, se for CRM vai pro CRM
+                    if(item.setor.includes('CRM')) window.location.href = '/crm.html';
+                    else if(item.setor.includes('ARTE')) window.location.href = '/painel.html';
+                    else if(item.setor.includes('ACABAMENTO')) window.location.href = '/acabamento/acabamento.html';
+                    else if(item.setor.includes('EXPEDIÇÃO')) window.location.href = '/expedicao/index.html';
+                    else alert('Pedido #' + item.id + ' selecionado!');
+                };
 
-                    div.innerHTML = `
-                        <div class="result-left">
-                            <h4>#${item.id} - ${item.titulo}</h4>
-                            <p>${dataFormatada} ${valorFormatado ? '• ' + valorFormatado : ''}</p>
-                        </div>
-                        <div class="result-right">
-                            <span class="result-badge" style="background-color: ${item.cor_setor || '#95a5a6'}">
-                                ${item.setor}
-                            </span>
-                        </div>
-                    `;
-
-                    // Ação ao clicar (Pode ser ajustado conforme suas rotas)
-                    div.onclick = () => {
-                        alert(`Redirecionando para o pedido #${item.id} (${item.setor})`);
-                        // Exemplo de redirecionamento real:
-                        // window.location.href = `/pedido/detalhes.html?id=${item.id}`;
-                    };
-
-                    searchDropdown.appendChild(div);
-                });
-            }
-
-            searchDropdown.classList.add('active');
+                resultsDiv.appendChild(div);
+            });
         }
-
-        // --- LÓGICA DE LOGOUT (MANTIDA) ---
+        
+        // Logout
         const btnLogout = document.getElementById('logout-button');
-        if(btnLogout) {
-            btnLogout.addEventListener('click', () => {
-                localStorage.removeItem('sessionToken');
-                window.location.href = '/login.html';
-            });
-        }
-
-        // --- LÓGICA DE NOTIFICAÇÃO (SIMPLIFICADA) ---
-        const btnNotif = document.getElementById('btn-notificacoes');
-        const notifDrop = document.getElementById('notif-dropdown');
-        if(btnNotif) {
-            btnNotif.addEventListener('click', (e) => {
-                e.stopPropagation();
-                notifDrop.classList.toggle('active');
-            });
-            window.addEventListener('click', (e) => {
-                if(!e.target.closest('.notification-wrapper')) {
-                    notifDrop.classList.remove('active');
-                }
-            });
-        }
+        if(btnLogout) btnLogout.onclick = () => {
+            localStorage.removeItem('sessionToken');
+            window.location.href = '/login.html';
+        };
     });
 </script>
