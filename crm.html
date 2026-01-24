@@ -264,10 +264,20 @@
                         <div id="cdr-versao-container" class="hidden"><label>Versão Corel</label><input type="text" id="cdr-versao" class="form-control"></div>
                     </div>
 
-                    <h4 style="color:#64748b; margin-bottom:15px; margin-top: 30px;">4. Entrega?</h4>
+                    <h4 style="color:#64748b; margin-bottom:15px; margin-top: 30px;">4. Entrega / Instalação?</h4>
                     <div class="selection-grid" id="entrega-grid">
-                        <div class="selection-card" onclick="selectCard('entrega', 'RETIRADA NO BALCÃO', this)"><i class="fas fa-store"></i><span>Retirar</span></div>
-                        <div class="selection-card" onclick="selectCard('entrega', 'INSTALAÇÃO EXTERNA', this)"><i class="fas fa-truck-pickup"></i><span>Instalar</span></div>
+                        <!-- Opção 1 -->
+                        <div class="selection-card" onclick="selectCard('entrega', 'RETIRADA NO BALCÃO', this)">
+                            <i class="fas fa-box-open"></i><span>Só Retirar</span>
+                        </div>
+                        <!-- Opção 2 (Adicionada) -->
+                        <div class="selection-card" onclick="selectCard('entrega', 'INSTALAÇÃO NA LOJA', this)">
+                            <i class="fas fa-store"></i><span>Instal. na Loja</span>
+                        </div>
+                        <!-- Opção 3 -->
+                        <div class="selection-card" onclick="selectCard('entrega', 'INSTALAÇÃO EXTERNA', this)">
+                            <i class="fas fa-truck-pickup"></i><span>Instal. Externa</span>
+                        </div>
                     </div>
                 </div>
 
