@@ -37,7 +37,6 @@
         .col-pagamento .kanban-card { border-left-color: #9b59b6; }
         .col-abrir .kanban-card { border-left-color: #27ae60; }
 
-        /* Ajuste do Header para não bater na lixeira */
         .card-header-row { display: flex; justify-content: space-between; align-items: flex-start; padding-right: 20px; }
         .card-title { font-size: 1rem; font-weight: 600; color: #2c3e50; line-height: 1.3; margin: 0; word-break: break-word; }
         .card-id { font-size: 0.7rem; color: #aaa; font-weight: 600; }
@@ -64,7 +63,6 @@
         }
         .btn-card-produzir:hover { transform: scale(1.05); }
         .btn-card-produzir.confirm-state { background: #e74c3c; animation: pulse 0.5s; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
         /* DRAWER */
         .slide-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(3px); z-index: 9990; opacity: 0; visibility: hidden; transition: opacity 0.3s; }
@@ -75,7 +73,7 @@
         .panel-body { padding: 0; background: #f9fbfd; flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
         .close-panel-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #aaa; }
 
-        /* WIZARD STEPPER */
+        /* STEPPER */
         .stepper-container { padding: 15px 30px; background: #fff; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
         .step-indicator { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #ccc; font-weight: 600; }
         .step-indicator.active { color: #3498db; }
@@ -87,7 +85,7 @@
         .step-content { display: none; padding: 30px; animation: fadeIn 0.4s ease; }
         .step-content.active { display: block; }
 
-        /* SELECTIONS */
+        /* SELECTIONS & FORMS */
         .selection-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .selection-card { background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px 10px; text-align: center; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .selection-card:hover { border-color: #b0c4de; transform: translateY(-2px); }
@@ -96,18 +94,13 @@
         .selection-card.selected i { color: #3498db; }
         .selection-card img { width: 35px; height: 35px; border-radius: 50%; object-fit: contain; }
 
-        /* FORM */
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.85rem; color: #475569; }
         .form-control { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; }
         .hidden { display: none; }
         
-        /* SEARCH GROUP STYLES (NOVO) */
         .search-group { display: flex; gap: 5px; }
-        .btn-search-trigger {
-            background: #3498db; color: white; border: none; border-radius: 8px; padding: 0 15px; cursor: pointer;
-            transition: background 0.2s;
-        }
+        .btn-search-trigger { background: #3498db; color: white; border: none; border-radius: 8px; padding: 0 15px; cursor: pointer; transition: background 0.2s; }
         .btn-search-trigger:hover { background: #2980b9; }
 
         .material-item { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px; position: relative; padding-right: 40px; }
@@ -118,7 +111,6 @@
         .btn-prev { background: #f1f5f9; color: #64748b; }
         .btn-next { background: #3498db; color: white; display: flex; align-items: center; gap: 8px; }
 
-        .autocomplete-wrapper { position: relative; }
         #search-results-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1000; list-style: none; padding: 0; margin: 0; display: none; }
         #search-results-list li { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
         #search-results-list li:hover { background-color: #f0f7ff; color: #3498db; }
@@ -134,7 +126,6 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        @media (max-width: 768px) { .slide-panel { max-width: 100%; } }
     </style>
 </head>
 <body>
@@ -160,7 +151,6 @@
                         <div class="kanban-column col-pagamento" data-status="Aguardando Pagamento"><div class="column-header">Aguard. Pagamento</div><div class="kanban-items" id="col-pagamento-list"></div></div>
                         <div class="kanban-column col-abrir" data-status="Abrir Pedido"><div class="column-header">Abrir Pedido</div><div class="kanban-items" id="col-abrir-list"></div></div>
                     </div>
-
                 </div>
             </main>
         </div>
@@ -204,7 +194,6 @@
                     <h4 style="color:#64748b; margin-bottom:15px; margin-top: 30px;">2. Para quem?</h4>
                     <div class="form-group autocomplete-wrapper">
                         <label>Nome do Cliente</label>
-                        <!-- MODIFICADO: Grupo com botão -->
                         <div class="search-group">
                             <input type="text" id="crm-nome" class="form-control" placeholder="Digite nome ou telefone..." autocomplete="off">
                             <button type="button" id="btn-buscar-cliente" class="btn-search-trigger"><i class="fas fa-search"></i></button>
@@ -260,26 +249,32 @@
 
                     <h4 style="color:#64748b; margin-bottom:15px; margin-top: 30px;">4. Entrega / Instalação?</h4>
                     <div class="selection-grid" id="entrega-grid">
-                        <div class="selection-card" onclick="selectCard('entrega', 'RETIRADA NO BALCÃO', this)">
-                            <i class="fas fa-box-open"></i><span>Só Retirar</span>
-                        </div>
-                        <div class="selection-card" onclick="selectCard('entrega', 'INSTALAÇÃO NA LOJA', this)">
-                            <i class="fas fa-store"></i><span>Instal. na Loja</span>
-                        </div>
-                        <div class="selection-card" onclick="selectCard('entrega', 'INSTALAÇÃO EXTERNA', this)">
-                            <i class="fas fa-truck-pickup"></i><span>Instal. Externa</span>
-                        </div>
+                        <div class="selection-card" onclick="selectCard('entrega', 'RETIRADA NO BALCÃO', this)"><i class="fas fa-box-open"></i><span>Só Retirar</span></div>
+                        <div class="selection-card" onclick="selectCard('entrega', 'INSTALAÇÃO NA LOJA', this)"><i class="fas fa-store"></i><span>Instal. na Loja</span></div>
+                        <div class="selection-card" onclick="selectCard('entrega', 'INSTALAÇÃO EXTERNA', this)"><i class="fas fa-truck-pickup"></i><span>Instal. Externa</span></div>
                     </div>
                 </div>
 
-                <!-- STEP 3 -->
+                <!-- STEP 3 (ATUALIZADO) -->
                 <div id="step-3" class="step-content">
                     <h4 style="color:#64748b; margin-bottom:15px;">5. Itens</h4>
                     <div id="materiais-container"></div>
-                    <button type="button" id="btn-add-material" style="width:100%; padding:10px; border:1px dashed #ccc; background:none; cursor:pointer;">+ Adicionar Item</button>
-                    <div class="form-group" style="margin-top:20px;">
-                        <label>Valor Total (R$)</label>
-                        <input type="number" id="crm-valor" class="form-control" style="font-size:1.5rem; font-weight:700; color:#27ae60;" step="0.01">
+                    <button type="button" id="btn-add-material" style="width:100%; padding:10px; border:1px dashed #ccc; background:none; cursor:pointer; margin-bottom:20px;">+ Adicionar Item</button>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Valor Total (R$)</label>
+                            <input type="number" id="crm-valor" class="form-control" style="font-weight:700; color:#2c3e50;" step="0.01" value="0">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Valor Pago (R$)</label>
+                            <input type="number" id="crm-valor-pago" class="form-control" style="font-weight:700; color:#27ae60;" step="0.01" value="0">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top:15px;">
+                        <label>Resta a Pagar (R$)</label>
+                        <input type="number" id="crm-valor-restante" class="form-control" style="font-size:1.5rem; font-weight:700; color:#e74c3c; background:#fff1f0;" step="0.01" readonly>
                     </div>
                 </div>
 

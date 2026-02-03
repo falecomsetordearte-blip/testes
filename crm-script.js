@@ -1,4 +1,4 @@
-// crm-script.js - CORREÇÕES FINAIS + Lógica de Exclusão + Busca Manual
+// crm-script.js - COMPLETO COM LÓGICA DE VALORES
 
 let currentStep = 1;
 const totalSteps = 3;
@@ -12,11 +12,15 @@ document.addEventListener('DOMContentLoaded', () => {
     createToastContainer();
     configurarMascaras();
     carregarKanban();
-    configurarBuscaCliente(); // Lógica atualizada aqui
+    configurarBuscaCliente();
     configurarFormularioVisual();
     configurarDragScroll();
     setupModalCreditos();
     
+    // Listeners para Cálculo Automático
+    document.getElementById('crm-valor').addEventListener('input', calcularSaldoRestante);
+    document.getElementById('crm-valor-pago').addEventListener('input', calcularSaldoRestante);
+
     // Listeners Extras
     document.getElementById('pedido-formato').addEventListener('change', (e) => {
         const div = document.getElementById('cdr-versao-container');
@@ -25,6 +29,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('btn-add-material').addEventListener('click', () => adicionarMaterialNoForm());
 });
+
+// --- LÓGICA DE CÁLCULO ---
+function calcularSaldoRestante() {
+    const total = parseFloat(document.getElementById('crm-valor').value) || 0;
+    const pago = parseFloat(document.getElementById('crm-valor-pago').value) || 0;
+    const restante = total - pago;
+    document.getElementById('crm-valor-restante').value = restante.toFixed(2);
+}
 
 // --- LÓGICA DE PRODUÇÃO DIRETA DO CARD ---
 window.produzirCardDireto = function(cardId, btnElement) {
@@ -153,6 +165,8 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
         servico_tipo: document.getElementById('pedido-servico-hidden').value, 
         arte_origem: document.getElementById('pedido-arte-hidden').value,     
         valor_orcamento: document.getElementById('crm-valor').value,
+        valor_pago: document.getElementById('crm-valor-pago').value, // NOVO
+        valor_restante: document.getElementById('crm-valor-restante').value, // NOVO
         briefing_json: JSON.stringify({
             tipo_entrega: document.getElementById('pedido-entrega-hidden').value, 
             materiais: mats,
@@ -213,7 +227,11 @@ window.abrirPanelEdicao = function(card) {
     document.getElementById('crm-titulo-manual').value = card.titulo_automatico || '';
     document.getElementById('crm-nome').value = card.nome_cliente;
     document.getElementById('crm-wpp').value = card.wpp_cliente;
-    document.getElementById('crm-valor').value = card.valor_orcamento;
+    
+    // CARREGAR VALORES ATUALIZADOS
+    document.getElementById('crm-valor').value = card.valor_orcamento || 0;
+    document.getElementById('crm-valor-pago').value = card.valor_pago || 0;
+    calcularSaldoRestante();
 
     const servicoVal = card.servico_tipo;
     if(servicoVal) { 
@@ -338,6 +356,7 @@ function resetarForm() {
     document.getElementById('setor-arte-fields').classList.add('hidden');
     document.getElementById('saldo-container').style.display = 'none';
     document.getElementById('search-results-list').style.display = 'none';
+    document.getElementById('crm-valor-restante').value = '0.00';
 }
 
 window.removerMaterial = function(btn) { if(confirm("Tem certeza?")) btn.closest('.material-item').remove(); };
@@ -357,29 +376,18 @@ function configurarBuscaCliente() {
     const btnBuscar = document.getElementById('btn-buscar-cliente');
     const list = document.getElementById('search-results-list');
     
-    // Função que executa a busca
     const performSearch = async () => {
         const term = input.value;
-        if(term.length < 2) { 
-            showToast("Digite pelo menos 2 caracteres.", "error");
-            return; 
-        }
-
+        if(term.length < 2) { showToast("Digite pelo menos 2 caracteres.", "error"); return; }
         btnBuscar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        
         try {
             const res = await fetch('/api/crm/searchClients', {
                 method: 'POST',
                 headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({
-                    sessionToken: localStorage.getItem('sessionToken'),
-                    query: term
-                })
+                body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), query: term })
             });
             const clientes = await res.json();
-            
             list.innerHTML = '';
-            
             if(clientes.length > 0) {
                 clientes.forEach(c => {
                     const li = document.createElement('li');
@@ -392,39 +400,14 @@ function configurarBuscaCliente() {
                     list.appendChild(li);
                 });
                 list.style.display = 'block';
-            } else {
-                showToast("Nenhum cliente encontrado.", "error");
-                list.style.display = 'none';
-            }
-        } catch(e) {
-            console.error(e);
-            showToast("Erro ao buscar clientes.", "error");
-        } finally {
-            btnBuscar.innerHTML = '<i class="fas fa-search"></i>';
-        }
+            } else { showToast("Nenhum cliente encontrado.", "error"); list.style.display = 'none'; }
+        } catch(e) { showToast("Erro ao buscar clientes.", "error"); } finally { btnBuscar.innerHTML = '<i class="fas fa-search"></i>'; }
     };
 
-    // Evento de clique no botão
-    if(btnBuscar) {
-        btnBuscar.addEventListener('click', (e) => {
-            e.preventDefault(); 
-            performSearch();
-        });
-    }
-
-    // Evento de Enter no input
+    if(btnBuscar) btnBuscar.addEventListener('click', (e) => { e.preventDefault(); performSearch(); });
     if(input) {
-        input.addEventListener('keypress', (e) => {
-            if(e.key === 'Enter') {
-                e.preventDefault();
-                performSearch();
-            }
-        });
-        
-        // Esconder lista ao limpar input manualmente
-        input.addEventListener('input', () => {
-            if(input.value === '') list.style.display = 'none';
-        });
+        input.addEventListener('keypress', (e) => { if(e.key === 'Enter') { e.preventDefault(); performSearch(); } });
+        input.addEventListener('input', () => { if(input.value === '') list.style.display = 'none'; });
     }
 }
 
@@ -458,31 +441,9 @@ function criarCardHTML(card) {
     const div = document.createElement('div');
     div.className = 'kanban-card'; 
     div.dataset.id = card.id; 
-    
-    div.onclick = (e) => { 
-        if(!e.target.closest('.btn-card-produzir') && !e.target.closest('.btn-card-delete')) {
-            abrirPanelEdicao(card); 
-        }
-    };
-
+    div.onclick = (e) => { if(!e.target.closest('.btn-card-produzir') && !e.target.closest('.btn-card-delete')) { abrirPanelEdicao(card); } };
     const valor = parseFloat(card.valor_orcamento||0).toLocaleString('pt-BR', {minimumFractionDigits:2});
-    
-    div.innerHTML = `
-        <button class="btn-card-delete" onclick="window.confirmarExclusaoCard(${card.id}, event)" title="Excluir Oportunidade">
-            <i class="fas fa-trash-alt"></i>
-        </button>
-        <div class="card-header-row">
-            <span class="card-id">${card.titulo_automatico || 'Novo'}</span>
-            <div class="card-tags"><span class="card-tag tag-arte">${card.servico_tipo}</span></div>
-        </div>
-        <div class="card-title">${card.nome_cliente}</div>
-        <div class="card-footer-row">
-            <span class="card-price">R$ ${valor}</span>
-            <button class="btn-card-produzir" onclick="window.produzirCardDireto(${card.id}, this)">
-                <i class="fas fa-rocket"></i> PRODUZIR
-            </button>
-        </div>
-    `;
+    div.innerHTML = `<button class="btn-card-delete" onclick="window.confirmarExclusaoCard(${card.id}, event)" title="Excluir Oportunidade"><i class="fas fa-trash-alt"></i></button><div class="card-header-row"><span class="card-id">${card.titulo_automatico || 'Novo'}</span><div class="card-tags"><span class="card-tag tag-arte">${card.servico_tipo}</span></div></div><div class="card-title">${card.nome_cliente}</div><div class="card-footer-row"><span class="card-price">R$ ${valor}</span><button class="btn-card-produzir" onclick="window.produzirCardDireto(${card.id}, this)"><i class="fas fa-rocket"></i> PRODUZIR</button></div>`;
     container.appendChild(div);
 }
 
