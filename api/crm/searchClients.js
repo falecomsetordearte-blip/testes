@@ -67,7 +67,7 @@ module.exports = async (req, res) => {
             ORDER BY nome ASC
             LIMIT 20
         `;
-
+ 
         return res.status(200).json(clientes);
 
     } catch (error) {
