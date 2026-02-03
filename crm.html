@@ -28,7 +28,7 @@
 
         .kanban-items { overflow-y: auto; flex-grow: 1; padding-right: 5px; scrollbar-width: thin; display: flex; flex-direction: column; gap: 12px; min-height: 150px; }
         
-        /* CARD MODERNO */
+        /* CARD */
         .kanban-card { background: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: transform 0.2s; border-left: 5px solid #ccc; cursor: pointer; position: relative; display: flex; flex-direction: column; gap: 8px; }
         .kanban-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
         .col-novos .kanban-card { border-left-color: #3498db; }
@@ -85,23 +85,27 @@
         .step-content { display: none; padding: 30px; animation: fadeIn 0.4s ease; }
         .step-content.active { display: block; }
 
-        /* SELECTIONS & FORMS */
+        /* SELECTIONS */
         .selection-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .selection-card { background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px 10px; text-align: center; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .selection-card:hover { border-color: #b0c4de; transform: translateY(-2px); }
         .selection-card.selected { border-color: #3498db; background-color: #f0f7ff; color: #3498db; font-weight: 600; }
         .selection-card i { font-size: 1.8rem; color: #94a3b8; }
-        .selection-card.selected i { color: #3498db; }
         .selection-card img { width: 35px; height: 35px; border-radius: 50%; object-fit: contain; }
 
+        /* FORMS */
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.85rem; color: #475569; }
         .form-control { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; }
         .hidden { display: none; }
         
-        .search-group { display: flex; gap: 5px; }
+        /* BUSCA CLIENTE */
+        .autocomplete-wrapper { position: relative; }
+        .search-group { display: flex; gap: 5px; position: relative; z-index: 10; }
         .btn-search-trigger { background: #3498db; color: white; border: none; border-radius: 8px; padding: 0 15px; cursor: pointer; transition: background 0.2s; }
-        .btn-search-trigger:hover { background: #2980b9; }
+        #search-results-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 99999 !important; list-style: none; padding: 0; margin: 0; display: none; box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
+        #search-results-list li { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+        #search-results-list li:hover { background-color: #f0f7ff; color: #3498db; }
 
         .material-item { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px; position: relative; padding-right: 40px; }
         .btn-remove-material { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: #fee2e2; border: none; color: #ef4444; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
@@ -111,14 +115,11 @@
         .btn-prev { background: #f1f5f9; color: #64748b; }
         .btn-next { background: #3498db; color: white; display: flex; align-items: center; gap: 8px; }
 
-        #search-results-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1000; list-style: none; padding: 0; margin: 0; display: none; }
-        #search-results-list li { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
-        #search-results-list li:hover { background-color: #f0f7ff; color: #3498db; }
-        
+        /* MODAL */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10005; display: none; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: #fff; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; position: relative; }
-        
+
         .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10010; display: flex; flex-direction: column; gap: 10px; }
         .toast { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); border-left: 5px solid #ccc; min-width: 300px; animation: slideIn 0.3s forwards; display: flex; align-items: center; gap: 10px; }
         .toast.success { border-left-color: #2ecc71; }
@@ -151,6 +152,7 @@
                         <div class="kanban-column col-pagamento" data-status="Aguardando Pagamento"><div class="column-header">Aguard. Pagamento</div><div class="kanban-items" id="col-pagamento-list"></div></div>
                         <div class="kanban-column col-abrir" data-status="Abrir Pedido"><div class="column-header">Abrir Pedido</div><div class="kanban-items" id="col-abrir-list"></div></div>
                     </div>
+
                 </div>
             </main>
         </div>
@@ -255,7 +257,7 @@
                     </div>
                 </div>
 
-                <!-- STEP 3 (ATUALIZADO) -->
+                <!-- STEP 3 -->
                 <div id="step-3" class="step-content">
                     <h4 style="color:#64748b; margin-bottom:15px;">5. Itens</h4>
                     <div id="materiais-container"></div>
@@ -288,22 +290,6 @@
                     </div>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <!-- MODAL CRÉDITOS -->
-    <div class="modal-overlay" id="modal-adquirir-creditos">
-        <div class="modal-content">
-            <h3>Adicionar Créditos</h3>
-            <form id="adquirir-creditos-form">
-                <div id="creditos-form-error" style="color:red; display:none; margin-bottom:10px;"></div>
-                <div class="form-group">
-                    <label>Valor (R$)</label>
-                    <input type="number" id="creditos-valor" min="5" placeholder="50.00" required>
-                </div>
-                <button type="submit" class="btn-nav" style="width:100%; background:#3498db; color:white;">Pagar Agora</button>
-            </form>
-            <button class="close-modal" onclick="document.getElementById('modal-adquirir-creditos').classList.remove('active')" style="margin-top:10px; background:none; border:none; color:#aaa; cursor:pointer;">Fechar</button>
         </div>
     </div>
 
