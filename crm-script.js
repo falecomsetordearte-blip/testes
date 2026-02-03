@@ -1,8 +1,7 @@
-// crm-script.js - CORREÇÕES FINAIS + Lógica de Exclusão
+// crm-script.js - CORREÇÕES FINAIS + Lógica de Exclusão + Busca Manual
 
 let currentStep = 1;
 const totalSteps = 3;
-let searchTimeout = null;
 let allCardsCache = [];
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     createToastContainer();
     configurarMascaras();
     carregarKanban();
-    configurarBuscaCliente();
+    configurarBuscaCliente(); // Lógica atualizada aqui
     configurarFormularioVisual();
     configurarDragScroll();
     setupModalCreditos();
@@ -338,6 +337,7 @@ function resetarForm() {
     document.getElementById('arquivo-cliente-fields').classList.add('hidden');
     document.getElementById('setor-arte-fields').classList.add('hidden');
     document.getElementById('saldo-container').style.display = 'none';
+    document.getElementById('search-results-list').style.display = 'none';
 }
 
 window.removerMaterial = function(btn) { if(confirm("Tem certeza?")) btn.closest('.material-item').remove(); };
@@ -351,9 +351,81 @@ function adicionarMaterialNoForm(desc = '', det = '') {
     container.appendChild(div);
 }
 
+// --- CONFIGURAÇÃO DE BUSCA MANUAL ---
 function configurarBuscaCliente() {
-    const input = document.getElementById('crm-nome'); const list = document.getElementById('search-results-list'); const loading = document.getElementById('loading-cliente');
-    input.addEventListener('input', function() { clearTimeout(searchTimeout); if(this.value.length < 2) { list.style.display = 'none'; loading.classList.remove('active'); return; } loading.classList.add('active'); searchTimeout = setTimeout(async () => { try { const res = await fetch('/api/crm/searchClients', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), query: input.value }) }); const clientes = await res.json(); list.innerHTML = ''; if(clientes.length > 0) { clientes.forEach(c => { const li = document.createElement('li'); li.innerHTML = `<span>${c.nome}</span> <small style="color:#aaa">${c.whatsapp}</small>`; li.onclick = () => { input.value = c.nome; document.getElementById('crm-wpp').value = c.whatsapp; list.style.display = 'none'; }; list.appendChild(li); }); list.style.display = 'block'; } else list.style.display = 'none'; } catch(e){} finally { loading.classList.remove('active'); } }, 500); });
+    const input = document.getElementById('crm-nome');
+    const btnBuscar = document.getElementById('btn-buscar-cliente');
+    const list = document.getElementById('search-results-list');
+    
+    // Função que executa a busca
+    const performSearch = async () => {
+        const term = input.value;
+        if(term.length < 2) { 
+            showToast("Digite pelo menos 2 caracteres.", "error");
+            return; 
+        }
+
+        btnBuscar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        try {
+            const res = await fetch('/api/crm/searchClients', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    sessionToken: localStorage.getItem('sessionToken'),
+                    query: term
+                })
+            });
+            const clientes = await res.json();
+            
+            list.innerHTML = '';
+            
+            if(clientes.length > 0) {
+                clientes.forEach(c => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span>${c.nome}</span> <small style="color:#aaa">${c.whatsapp}</small>`;
+                    li.onclick = () => {
+                        input.value = c.nome;
+                        document.getElementById('crm-wpp').value = c.whatsapp;
+                        list.style.display = 'none';
+                    };
+                    list.appendChild(li);
+                });
+                list.style.display = 'block';
+            } else {
+                showToast("Nenhum cliente encontrado.", "error");
+                list.style.display = 'none';
+            }
+        } catch(e) {
+            console.error(e);
+            showToast("Erro ao buscar clientes.", "error");
+        } finally {
+            btnBuscar.innerHTML = '<i class="fas fa-search"></i>';
+        }
+    };
+
+    // Evento de clique no botão
+    if(btnBuscar) {
+        btnBuscar.addEventListener('click', (e) => {
+            e.preventDefault(); 
+            performSearch();
+        });
+    }
+
+    // Evento de Enter no input
+    if(input) {
+        input.addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') {
+                e.preventDefault();
+                performSearch();
+            }
+        });
+        
+        // Esconder lista ao limpar input manualmente
+        input.addEventListener('input', () => {
+            if(input.value === '') list.style.display = 'none';
+        });
+    }
 }
 
 async function fetchSaldoCRM() {

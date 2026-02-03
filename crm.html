@@ -47,24 +47,10 @@
         .card-footer-row { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; }
         .card-price { font-weight: 700; color: #27ae60; font-size: 0.95rem; }
 
-        /* LIXEIRA - POSIÇÃO EXATA DO CORNER */
         .btn-card-delete {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: transparent;
-            border: none;
-            color: #d1d5db; /* Cor discreta */
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            opacity: 0;
-            transition: all 0.2s ease;
-            z-index: 25;
-            font-size: 0.85rem;
+            position: absolute; top: 5px; right: 5px; background: transparent; border: none; color: #d1d5db;
+            width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; opacity: 0; transition: all 0.2s ease; z-index: 25; font-size: 0.85rem;
         }
         .kanban-card:hover .btn-card-delete { opacity: 1; }
         .btn-card-delete:hover { color: #ef4444; transform: scale(1.2); }
@@ -78,7 +64,6 @@
         }
         .btn-card-produzir:hover { transform: scale(1.05); }
         .btn-card-produzir.confirm-state { background: #e74c3c; animation: pulse 0.5s; }
-
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
         /* DRAWER */
@@ -116,6 +101,14 @@
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.85rem; color: #475569; }
         .form-control { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; }
         .hidden { display: none; }
+        
+        /* SEARCH GROUP STYLES (NOVO) */
+        .search-group { display: flex; gap: 5px; }
+        .btn-search-trigger {
+            background: #3498db; color: white; border: none; border-radius: 8px; padding: 0 15px; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-search-trigger:hover { background: #2980b9; }
 
         .material-item { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px; position: relative; padding-right: 40px; }
         .btn-remove-material { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: #fee2e2; border: none; color: #ef4444; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
@@ -129,9 +122,7 @@
         #search-results-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1000; list-style: none; padding: 0; margin: 0; display: none; }
         #search-results-list li { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
         #search-results-list li:hover { background-color: #f0f7ff; color: #3498db; }
-        .loading-search { position: absolute; right: 15px; top: 42px; font-size: 0.85rem; color: #aaa; display: none; }
-        .loading-search.active { display: block; }
-
+        
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10005; display: none; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: #fff; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; position: relative; }
@@ -213,8 +204,11 @@
                     <h4 style="color:#64748b; margin-bottom:15px; margin-top: 30px;">2. Para quem?</h4>
                     <div class="form-group autocomplete-wrapper">
                         <label>Nome do Cliente</label>
-                        <input type="text" id="crm-nome" class="form-control" placeholder="Busque por nome..." autocomplete="off">
-                        <span class="loading-search" id="loading-cliente"><i class="fas fa-spinner fa-spin"></i></span>
+                        <!-- MODIFICADO: Grupo com botão -->
+                        <div class="search-group">
+                            <input type="text" id="crm-nome" class="form-control" placeholder="Digite nome ou telefone..." autocomplete="off">
+                            <button type="button" id="btn-buscar-cliente" class="btn-search-trigger"><i class="fas fa-search"></i></button>
+                        </div>
                         <ul id="search-results-list"></ul>
                     </div>
                     <div class="form-group">
@@ -266,15 +260,12 @@
 
                     <h4 style="color:#64748b; margin-bottom:15px; margin-top: 30px;">4. Entrega / Instalação?</h4>
                     <div class="selection-grid" id="entrega-grid">
-                        <!-- Opção 1 -->
                         <div class="selection-card" onclick="selectCard('entrega', 'RETIRADA NO BALCÃO', this)">
                             <i class="fas fa-box-open"></i><span>Só Retirar</span>
                         </div>
-                        <!-- Opção 2 (Adicionada) -->
                         <div class="selection-card" onclick="selectCard('entrega', 'INSTALAÇÃO NA LOJA', this)">
                             <i class="fas fa-store"></i><span>Instal. na Loja</span>
                         </div>
-                        <!-- Opção 3 -->
                         <div class="selection-card" onclick="selectCard('entrega', 'INSTALAÇÃO EXTERNA', this)">
                             <i class="fas fa-truck-pickup"></i><span>Instal. Externa</span>
                         </div>

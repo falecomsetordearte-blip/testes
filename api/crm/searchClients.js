@@ -16,7 +16,8 @@ module.exports = async (req, res) => {
     try {
         const { sessionToken, query } = req.body;
 
-        if (!query || query.length < 2) return res.status(200).json([]);
+        // Validação básica
+        if (!query || query.trim().length === 0) return res.status(200).json([]);
 
         // 1. Autenticação Bitrix
         const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
@@ -38,25 +39,33 @@ module.exports = async (req, res) => {
         if (!empresas.length) return res.status(404).json([]);
         const empresaId = empresas[0].id;
 
-        // 3. Tratamento da Busca (Limpeza de strings)
-        // Remove tudo que não for letra ou número para busca geral
+        // 3. Tratamento da Busca (CORREÇÃO DA LÓGICA)
+        // Remove espaços extras
         const termoLimpo = query.trim(); 
-        // Remove tudo que não for número para busca de telefone
+        
+        // Remove tudo que não for número
         const termoNumerico = query.replace(/\D/g, ''); 
 
-        // Query SQL:
-        // - Nome: ILIKE (Case insensitive)
-        // - WhatsApp: Removemos caracteres não numéricos do banco para comparar com o termo numérico
+        // IMPORTANTE: Lógica para impedir retorno de todos os dados
+        // Se houver números na busca, buscamos no WhatsApp usando ILIKE.
+        // Se NÃO houver números, usamos '__nomatch__' para garantir que a parte do OR do telefone seja falsa.
+        const buscaTelefone = termoNumerico.length > 0 ? '%' + termoNumerico + '%' : '__nomatch__';
+        
+        // Busca por nome é sempre feita
+        const buscaNome = '%' + termoLimpo + '%';
+
+        // Query SQL
         const clientes = await prisma.$queryRaw`
             SELECT id, nome, whatsapp 
             FROM crm_clientes 
             WHERE empresa_id = ${empresaId} 
             AND (
-                nome ILIKE ${'%' + termoLimpo + '%'} 
+                nome ILIKE ${buscaNome} 
                 OR 
-                REGEXP_REPLACE(whatsapp, '\\D', '', 'g') ILIKE ${'%' + termoNumerico + '%'}
+                REGEXP_REPLACE(whatsapp, '\\D', '', 'g') ILIKE ${buscaTelefone}
             )
-            LIMIT 5
+            ORDER BY nome ASC
+            LIMIT 20
         `;
 
         return res.status(200).json(clientes);
