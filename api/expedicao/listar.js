@@ -22,6 +22,7 @@ module.exports = async (req, res) => {
         const { sessionToken, query } = req.body;
         if (!sessionToken) return res.status(403).json({ message: 'Não autorizado' });
 
+        // 1. Identificar Usuário no Bitrix
         const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken },
             select: ['ID', 'COMPANY_ID']
@@ -30,6 +31,14 @@ module.exports = async (req, res) => {
         if (!userCheck.data.result || !userCheck.data.result.length) return res.status(403).json({ message: 'Sessão inválida' });
         const user = userCheck.data.result[0];
         
+        // 2. Descobrir o ID Local da Empresa (Regra de Ouro)
+        const empresasLocais = await prisma.$queryRawUnsafe(
+            `SELECT id FROM empresas WHERE bitrix_company_id = $1 LIMIT 1`, 
+            parseInt(user.COMPANY_ID)
+        );
+        const localCompanyId = empresasLocais.length > 0 ? empresasLocais[0].id : 0;
+
+        // 3. Buscar Deals no Bitrix
         let bitrixFilter = { 'COMPANY_ID': user.COMPANY_ID, 'STAGE_ID': FASES_ALVO };
         if (query && !isNaN(parseInt(query))) bitrixFilter['ID'] = parseInt(query);
 
@@ -40,11 +49,11 @@ module.exports = async (req, res) => {
         });
 
         const dealsBitrix = bitrixResponse.data.result || [];
-        if (dealsBitrix.length === 0) return res.status(200).json([]);
+        if (dealsBitrix.length === 0) return res.status(200).json({ deals: [], localCompanyId });
 
         const dealIds = dealsBitrix.map(d => parseInt(d.ID));
 
-        // SELECT buscando as novas colunas financeiras
+        // 4. Buscar dados financeiros e briefing no banco local
         const dadosLocais = await prisma.$queryRawUnsafe(
             `SELECT id, bitrix_deal_id, titulo, nome_cliente, whatsapp_cliente, briefing_completo, status_expedicao, valor_pago, valor_restante 
              FROM pedidos 
@@ -67,7 +76,10 @@ module.exports = async (req, res) => {
             };
         });
 
-        return res.status(200).json(resultadoFinal);
+        return res.status(200).json({ 
+            deals: resultadoFinal, 
+            localCompanyId: localCompanyId 
+        });
 
     } catch (error) {
         console.error("Erro Expedição Listar:", error);

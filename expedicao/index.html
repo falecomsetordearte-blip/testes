@@ -17,35 +17,37 @@
         .exp-list-container { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .exp-item { padding: 15px 20px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: 0.2s; }
         .exp-item:hover { background-color: #f8fafc; border-left: 4px solid #3498db; }
-        .badge-status { padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; text-align: center; display: inline-block; width: 100%; }
-        .st-aguardando { background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; }
-        .st-entregue { background: #f0fdf4; color: #15803d; border: 1px solid #dcfce7; }
+        .badge-status { padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; text-align: center; }
+        .st-aguardando { background: #fff7ed; color: #c2410c; }
+        .st-entregue { background: #f0fdf4; color: #15803d; }
 
         .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9998; opacity: 0; visibility: hidden; transition: 0.3s; backdrop-filter: blur(2px); }
         .drawer-overlay.active { opacity: 1; visibility: visible; }
-        .drawer-panel { position: fixed; top: 0; right: -100%; width: 100%; max-width: 500px; height: 100%; background: white; z-index: 9999; transition: 0.4s cubic-bezier(0.25, 1, 0.5, 1); display: flex; flex-direction: column; }
+        .drawer-panel { position: fixed; top: 0; right: -100%; width: 100%; max-width: 500px; height: 100%; background: white; z-index: 9999; transition: 0.4s; display: flex; flex-direction: column; }
         .drawer-panel.active { right: 0; }
-        .drawer-header { padding: 25px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; }
-        .drawer-body { padding: 25px; flex: 1; overflow-y: auto; }
-        .drawer-footer { padding: 20px 25px; border-top: 1px solid #e2e8f0; }
-        .drawer-info-group { margin-bottom: 20px; }
-        .drawer-label { font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 5px; display: block; }
-        .drawer-value { font-size: 1rem; color: #334155; font-weight: 500; }
-        .briefing-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; font-size: 0.95rem; white-space: pre-wrap; }
+        .drawer-header { padding: 20px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; }
+        .drawer-body { padding: 20px; flex: 1; overflow-y: auto; }
+        .drawer-footer { padding: 20px; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 10px; }
 
-        /* Estilo para os cards financeiros */
-        .finance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
+        .finance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         .finance-card { padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
         .finance-card.paid { background: #f0fdf4; border-color: #dcfce7; }
         .finance-card.debt { background: #fef2f2; border-color: #fee2e2; }
+        .finance-value { font-size: 1.1rem; font-weight: 700; display: block; }
 
-        .btn-entregar-lg { width: 100%; padding: 15px; border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .drawer-info-group { margin-bottom: 15px; }
+        .drawer-label { font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase; display: block; margin-bottom: 4px; }
+        .briefing-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 6px; white-space: pre-wrap; font-size: 0.95rem; }
+
+        .btn-base { width: 100%; padding: 15px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; font-size: 1rem; text-decoration: none; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-acao-entregar { background: #2ecc71; color: white; }
         .btn-acao-entregue { background: #cbd5e1; color: #64748b; cursor: not-allowed; }
+        .btn-acao-externo { background: #fff; border: 1px solid #ddd; color: #334155; }
+        .btn-acao-externo:hover { background: #f8fafc; }
+        .btn-confirm-state { background: #e74c3c !important; }
     </style>
 </head>
 <body>
-
     <div class="app-layout-grid">
         <div id="sidebar-placeholder"></div>
         <div class="app-content-wrapper">
@@ -55,77 +57,61 @@
                     <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
                         <h2 style="margin:0; color: #2d3748;"><i class="fa-solid fa-truck-fast" style="color: #3498db; margin-right: 10px;"></i> Expedição</h2>
                     </div>
-
                     <div class="search-bar-container">
-                        <i class="fas fa-search" style="color:#94a3b8; align-self:center;"></i>
                         <input type="text" id="input-busca" class="search-input" placeholder="Buscar por Título ou Cliente...">
                     </div>
-
-                    <div id="lista-expedicao" class="exp-list-container">
-                        <div style="padding:40px; text-align:center; color:#94a3b8;">Carregando...</div>
-                    </div>
+                    <div id="lista-expedicao" class="exp-list-container"></div>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- GAVETA LATERAL -->
+    <!-- GAVETA -->
     <div class="drawer-overlay" id="drawer-overlay" onclick="fecharGaveta()"></div>
     <div class="drawer-panel" id="drawer-panel">
         <div class="drawer-header">
-            <h3 style="margin:0; color:#1e293b;" id="drawer-header-title">Detalhes</h3>
-            <button onclick="fecharGaveta()" style="border:none; background:none; font-size:1.5rem; cursor:pointer; color:#94a3b8;">×</button>
+            <h3 id="drawer-header-title" style="margin:0;">Detalhes</h3>
+            <button onclick="fecharGaveta()" style="border:none; background:none; font-size:1.5rem; cursor:pointer;">×</button>
         </div>
-        
         <div class="drawer-body">
-            <div class="drawer-info-group">
-                <span class="drawer-label">Título do Pedido</span>
-                <div class="drawer-value" id="d-titulo" style="font-weight:700;">--</div>
-            </div>
-
-            <!-- SEÇÃO FINANCEIRA ADICIONADA -->
-            <div class="drawer-info-group">
-                <span class="drawer-label">Situação Financeira</span>
-                <div class="finance-grid">
-                    <div class="finance-card paid">
-                        <span style="font-size:0.75rem; color:#15803d; font-weight:600; display:block;">JÁ PAGO</span>
-                        <span id="d-valor-pago" style="font-size:1.1rem; font-weight:700; color:#166534;">R$ 0,00</span>
-                    </div>
-                    <div class="finance-card debt">
-                        <span style="font-size:0.75rem; color:#b91c1c; font-weight:600; display:block;">RESTA A PAGAR</span>
-                        <span id="d-valor-restante" style="font-size:1.1rem; font-weight:700; color:#991b1b;">R$ 0,00</span>
-                    </div>
+            <!-- FINANCEIRO -->
+            <div class="finance-grid">
+                <div class="finance-card paid">
+                    <span class="drawer-label" style="color: #15803d;">Já Pago</span>
+                    <span id="d-valor-pago" class="finance-value" style="color: #166534;">R$ 0,00</span>
+                </div>
+                <div class="finance-card debt">
+                    <span class="drawer-label" style="color: #b91c1c;">Resta Pagar</span>
+                    <span id="d-valor-restante" class="finance-value" style="color: #991b1b;">R$ 0,00</span>
                 </div>
             </div>
-            
+
             <div class="drawer-info-group">
                 <span class="drawer-label">Cliente</span>
-                <div class="drawer-value" id="d-cliente">--</div>
+                <div id="d-cliente" style="font-weight:600; color: #1e293b;">--</div>
             </div>
-            
             <div class="drawer-info-group">
                 <span class="drawer-label">WhatsApp</span>
-                <div class="drawer-value">
+                <div id="d-wpp-container">
                     <span id="d-wpp">--</span>
                     <a id="btn-wpp-link" href="#" target="_blank" style="margin-left:10px; color:#25D366; display:none;"><i class="fab fa-whatsapp"></i> Chamar</a>
                 </div>
             </div>
-            
             <div class="drawer-info-group">
                 <span class="drawer-label">Briefing / Detalhes</span>
                 <div class="briefing-box" id="d-briefing">--</div>
             </div>
-            
             <div class="drawer-info-group">
-                <span class="drawer-label">Status Atual</span>
-                <div class="drawer-value" id="d-status">--</div>
+                <span class="drawer-label">Status</span>
+                <div id="d-status" style="font-weight:700;">--</div>
             </div>
         </div>
-
         <div class="drawer-footer">
-            <button id="btn-gaveta-entregar" class="btn-entregar-lg btn-acao-entregar">
-                <i class="fas fa-box-open"></i> MARCAR COMO ENTREGUE
-            </button>
+            <!-- BOTÃO EXTERNO (CONDICIONAL) -->
+            <a id="btn-ver-pedido-externo" href="#" target="_blank" class="btn-base btn-acao-externo" style="display:none;">
+                <i class="fa-solid fa-external-link-alt"></i> VER PEDIDO COMPLETO
+            </a>
+            <button id="btn-gaveta-entregar" class="btn-base btn-acao-entregar">MARCAR COMO ENTREGUE</button>
         </div>
     </div>
 

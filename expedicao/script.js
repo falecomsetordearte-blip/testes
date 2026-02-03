@@ -1,7 +1,8 @@
 // expedicao/script.js
 
+let currentLocalCompanyId = 0; // Armazena o ID da empresa logada
+
 document.addEventListener('DOMContentLoaded', () => {
-    injectCleanStyles(); 
     carregarPedidos();
     configurarBusca();
 });
@@ -27,13 +28,17 @@ async function carregarPedidos(termoBusca = '') {
                 query: termoBusca 
             })
         });
-        const pedidos = await res.json();
-        if (pedidos.length === 0) {
+        const data = await res.json();
+        
+        // Salva o ID da empresa para usar na abertura da gaveta
+        currentLocalCompanyId = data.localCompanyId;
+
+        if (data.deals.length === 0) {
             container.innerHTML = '<div style="padding:40px; text-align:center;">Nenhum pedido encontrado.</div>';
             return;
         }
         container.innerHTML = '';
-        pedidos.forEach(p => container.appendChild(criarLinhaPedido(p)));
+        data.deals.forEach(p => container.appendChild(criarLinhaPedido(p)));
     } catch (err) {
         container.innerHTML = 'Erro ao carregar lista.';
     }
@@ -49,7 +54,7 @@ function criarLinhaPedido(p) {
         <div style="text-align:center;">
             <span class="badge-status ${isEntregue ? 'st-entregue' : 'st-aguardando'}">${p.status_expedicao}</span>
         </div>
-        <div style="text-align:right;"><i class="fas fa-chevron-right"></i></div>
+        <div style="text-align:right; color:#cbd5e1;"><i class="fas fa-chevron-right"></i></div>
     `;
     div.addEventListener('click', () => abrirGaveta(p));
     return div;
@@ -62,13 +67,23 @@ function abrirGaveta(p) {
     document.getElementById('drawer-header-title').innerText = p.titulo;
     document.getElementById('d-cliente').innerText = p.nome_cliente;
     document.getElementById('d-wpp').innerText = p.whatsapp;
-    document.getElementById('d-briefing').innerText = p.briefing || 'Sem detalhes.';
+    document.getElementById('d-briefing').innerText = p.briefing || 'Sem detalhes registrados.';
     document.getElementById('d-status').innerText = p.status_expedicao;
 
-    // --- FORMATAÇÃO FINANCEIRA ---
+    // --- FINANCEIRO ---
     const f = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
     document.getElementById('d-valor-pago').innerText = f.format(p.valor_pago || 0);
     document.getElementById('d-valor-restante').innerText = f.format(p.valor_restante || 0);
+
+    // --- REGRA DE OURO: BOTÃO VISÍVEL SÓ PARA EMPRESAS 4 e 24 ---
+    const btnExterno = document.getElementById('btn-ver-pedido-externo');
+    // Verificamos se o título parece ser um ID numérico (padrão de pedidos externos)
+    if (p.titulo && (currentLocalCompanyId === 4 || currentLocalCompanyId === 24)) {
+        btnExterno.href = `https://www.visiva.com.br/admin/?imprimastore=pedidos/detalhes&id=${encodeURIComponent(p.titulo)}`;
+        btnExterno.style.display = 'flex';
+    } else {
+        btnExterno.style.display = 'none';
+    }
 
     // Link WhatsApp
     const btnWpp = document.getElementById('btn-wpp-link');
@@ -90,23 +105,23 @@ function configurarBotaoAcao(p) {
     btnAcao.classList.remove('btn-confirm-state');
 
     if (isEntregue) {
-        btnAcao.innerHTML = 'PEDIDO ENTREGUE';
-        btnAcao.className = 'btn-entregar-lg btn-acao-entregue';
+        btnAcao.innerHTML = '<i class="fas fa-check-circle"></i> PEDIDO JÁ ENTREGUE';
+        btnAcao.className = 'btn-base btn-acao-entregue';
         btnAcao.disabled = true;
     } else {
-        btnAcao.innerHTML = 'MARCAR COMO ENTREGUE';
-        btnAcao.className = 'btn-entregar-lg btn-acao-entregar';
+        btnAcao.innerHTML = '<i class="fas fa-box-open"></i> MARCAR COMO ENTREGUE';
+        btnAcao.className = 'btn-base btn-acao-entregar';
         btnAcao.disabled = false;
         btnAcao.onclick = () => {
             if (btnAcao.dataset.confirming === "true") {
                 marcarEntregue(p.id_interno, btnAcao);
             } else {
                 btnAcao.dataset.confirming = "true";
-                btnAcao.innerHTML = 'CLIQUE NOVAMENTE PARA CONFIRMAR';
+                btnAcao.innerHTML = '<i class="fas fa-exclamation-triangle"></i> CLIQUE PARA CONFIRMAR';
                 btnAcao.classList.add('btn-confirm-state');
                 setTimeout(() => {
                     btnAcao.dataset.confirming = "false";
-                    btnAcao.innerHTML = 'MARCAR COMO ENTREGUE';
+                    btnAcao.innerHTML = '<i class="fas fa-box-open"></i> MARCAR COMO ENTREGUE';
                     btnAcao.classList.remove('btn-confirm-state');
                 }, 3000);
             }
@@ -120,6 +135,8 @@ function fecharGaveta() {
 }
 
 async function marcarEntregue(idInterno, btnElement) {
+    btnElement.disabled = true;
+    btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
     try {
         const res = await fetch('/api/expedicao/entregar', {
             method: 'POST',
@@ -128,24 +145,7 @@ async function marcarEntregue(idInterno, btnElement) {
         });
         if (res.ok) {
             fecharGaveta();
-            showToast('Entregue com sucesso!');
             carregarPedidos(document.getElementById('input-busca').value);
         }
-    } catch (err) { showToast('Erro ao atualizar', 'error'); }
+    } catch (err) { alert("Erro ao atualizar."); btnElement.disabled = false; }
 }
-
-function showToast(message, type = 'success') {
-    let container = document.querySelector('.toast-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.className = 'toast-container';
-        document.body.appendChild(container);
-    }
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `<div class="toast-message">${message}</div>`;
-    container.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
-}
-
-function injectCleanStyles() { /* Mantido igual ao original */ }
