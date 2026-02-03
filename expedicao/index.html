@@ -11,54 +11,37 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
-        /* Ajuste do Grid */
         .grid-layout { display: grid; grid-template-columns: 2fr 2fr 150px 50px; gap: 15px; align-items: center; }
-
         .search-bar-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; gap: 10px; }
-        .search-input { flex: 1; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 1rem; transition: 0.2s; }
-        .search-input:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1); }
-        
-        .exp-list-header { padding: 15px 20px; background: #f8f9fa; font-weight: 600; color: #64748b; border-radius: 8px 8px 0 0; border-bottom: 2px solid #e2e8f0; }
-        .exp-list-container { background: white; border-radius: 0 0 8px 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-height: 200px; }
-        
-        .exp-item { padding: 15px 20px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: all 0.2s; position: relative; }
-        .exp-item:hover { background-color: #f8fafc; transform: translateX(5px); border-left: 4px solid #3498db; }
-        .exp-item:last-child { border-bottom: none; }
-        
+        .search-input { flex: 1; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 1rem; }
+        .exp-list-container { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .exp-item { padding: 15px 20px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: 0.2s; }
+        .exp-item:hover { background-color: #f8fafc; border-left: 4px solid #3498db; }
         .badge-status { padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; text-align: center; display: inline-block; width: 100%; }
         .st-aguardando { background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; }
         .st-entregue { background: #f0fdf4; color: #15803d; border: 1px solid #dcfce7; }
 
-        /* GAVETA LATERAL */
         .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9998; opacity: 0; visibility: hidden; transition: 0.3s; backdrop-filter: blur(2px); }
         .drawer-overlay.active { opacity: 1; visibility: visible; }
-        .drawer-panel { position: fixed; top: 0; right: -100%; width: 100%; max-width: 500px; height: 100%; background: white; z-index: 9999; box-shadow: -5px 0 25px rgba(0,0,0,0.15); transition: right 0.4s cubic-bezier(0.25, 1, 0.5, 1); display: flex; flex-direction: column; }
+        .drawer-panel { position: fixed; top: 0; right: -100%; width: 100%; max-width: 500px; height: 100%; background: white; z-index: 9999; transition: 0.4s cubic-bezier(0.25, 1, 0.5, 1); display: flex; flex-direction: column; }
         .drawer-panel.active { right: 0; }
-        .drawer-header { padding: 25px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
+        .drawer-header { padding: 25px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; }
         .drawer-body { padding: 25px; flex: 1; overflow-y: auto; }
-        .drawer-footer { padding: 20px 25px; border-top: 1px solid #e2e8f0; background: white; }
-
+        .drawer-footer { padding: 20px 25px; border-top: 1px solid #e2e8f0; }
         .drawer-info-group { margin-bottom: 20px; }
         .drawer-label { font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 5px; display: block; }
-        .drawer-value { font-size: 1rem; color: #334155; font-weight: 500; word-break: break-word; }
-        .briefing-box { background: #fff; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; white-space: pre-wrap; font-family: inherit; font-size: 0.95rem; color: #475569; background-color: #f8fafc; }
+        .drawer-value { font-size: 1rem; color: #334155; font-weight: 500; }
+        .briefing-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; font-size: 0.95rem; white-space: pre-wrap; }
 
-        .btn-entregar-lg { width: 100%; padding: 15px; border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; }
+        /* Estilo para os cards financeiros */
+        .finance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
+        .finance-card { padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .finance-card.paid { background: #f0fdf4; border-color: #dcfce7; }
+        .finance-card.debt { background: #fef2f2; border-color: #fee2e2; }
+
+        .btn-entregar-lg { width: 100%; padding: 15px; border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-acao-entregar { background: #2ecc71; color: white; }
-        .btn-acao-entregar:hover { background: #27ae60; box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3); }
         .btn-acao-entregue { background: #cbd5e1; color: #64748b; cursor: not-allowed; }
-        
-        .btn-confirm-state { background: #e74c3c !important; animation: pulse 0.5s; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
-
-        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10010; display: flex; flex-direction: column; gap: 10px; }
-
-        @media (max-width: 768px) {
-            .exp-list-header { display: none; }
-            .grid-layout { grid-template-columns: 1fr; gap: 5px; }
-            .exp-item { padding: 20px; }
-            .drawer-panel { max-width: 90%; }
-        }
     </style>
 </head>
 <body>
@@ -69,7 +52,6 @@
             <div id="header-placeholder"></div>
             <main class="app-content">
                 <div class="container">
-                    
                     <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
                         <h2 style="margin:0; color: #2d3748;"><i class="fa-solid fa-truck-fast" style="color: #3498db; margin-right: 10px;"></i> Expedição</h2>
                     </div>
@@ -79,38 +61,41 @@
                         <input type="text" id="input-busca" class="search-input" placeholder="Buscar por Título ou Cliente...">
                     </div>
 
-                    <div>
-                        <div class="exp-list-header grid-layout">
-                            <div>Título do Pedido</div>
-                            <div>Cliente</div>
-                            <div style="text-align:center;">Status</div>
-                            <div></div>
-                        </div>
-                        <div id="lista-expedicao" class="exp-list-container">
-                            <div style="padding:40px; text-align:center; color:#94a3b8;">Carregando...</div>
-                        </div>
+                    <div id="lista-expedicao" class="exp-list-container">
+                        <div style="padding:40px; text-align:center; color:#94a3b8;">Carregando...</div>
                     </div>
-
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- GAVETA LATERAL ATUALIZADA -->
+    <!-- GAVETA LATERAL -->
     <div class="drawer-overlay" id="drawer-overlay" onclick="fecharGaveta()"></div>
     <div class="drawer-panel" id="drawer-panel">
         <div class="drawer-header">
-            <!-- Cabeçalho agora recebe o Título via JS -->
-            <h3 style="margin:0; color:#1e293b; font-size:1.1rem; line-height:1.4;" id="drawer-header-title">Detalhes</h3>
-            <button onclick="fecharGaveta()" style="border:none; background:none; font-size:1.5rem; cursor:pointer; color:#94a3b8; margin-left:10px;">×</button>
+            <h3 style="margin:0; color:#1e293b;" id="drawer-header-title">Detalhes</h3>
+            <button onclick="fecharGaveta()" style="border:none; background:none; font-size:1.5rem; cursor:pointer; color:#94a3b8;">×</button>
         </div>
         
         <div class="drawer-body">
-            <!-- ID BITRIX REMOVIDO -->
-            
             <div class="drawer-info-group">
                 <span class="drawer-label">Título do Pedido</span>
-                <div class="drawer-value" id="d-titulo" style="font-weight:700; color:#2c3e50;">--</div>
+                <div class="drawer-value" id="d-titulo" style="font-weight:700;">--</div>
+            </div>
+
+            <!-- SEÇÃO FINANCEIRA ADICIONADA -->
+            <div class="drawer-info-group">
+                <span class="drawer-label">Situação Financeira</span>
+                <div class="finance-grid">
+                    <div class="finance-card paid">
+                        <span style="font-size:0.75rem; color:#15803d; font-weight:600; display:block;">JÁ PAGO</span>
+                        <span id="d-valor-pago" style="font-size:1.1rem; font-weight:700; color:#166534;">R$ 0,00</span>
+                    </div>
+                    <div class="finance-card debt">
+                        <span style="font-size:0.75rem; color:#b91c1c; font-weight:600; display:block;">RESTA A PAGAR</span>
+                        <span id="d-valor-restante" style="font-size:1.1rem; font-weight:700; color:#991b1b;">R$ 0,00</span>
+                    </div>
+                </div>
             </div>
             
             <div class="drawer-info-group">
@@ -122,29 +107,28 @@
                 <span class="drawer-label">WhatsApp</span>
                 <div class="drawer-value">
                     <span id="d-wpp">--</span>
-                    <a id="btn-wpp-link" href="#" target="_blank" style="margin-left:10px; font-size:0.9rem; color:#25D366; display:none;"><i class="fab fa-whatsapp"></i> Chamar</a>
+                    <a id="btn-wpp-link" href="#" target="_blank" style="margin-left:10px; color:#25D366; display:none;"><i class="fab fa-whatsapp"></i> Chamar</a>
                 </div>
             </div>
             
             <div class="drawer-info-group">
                 <span class="drawer-label">Briefing / Detalhes</span>
-                <div class="briefing-box" id="d-briefing">Carregando...</div>
+                <div class="briefing-box" id="d-briefing">--</div>
             </div>
             
             <div class="drawer-info-group">
                 <span class="drawer-label">Status Atual</span>
-                <div class="drawer-value" id="d-status" style="font-weight:700;">--</div>
+                <div class="drawer-value" id="d-status">--</div>
             </div>
         </div>
 
         <div class="drawer-footer">
             <button id="btn-gaveta-entregar" class="btn-entregar-lg btn-acao-entregar">
-                <i class="fas fa-box"></i> MARCAR COMO ENTREGUE
+                <i class="fas fa-box-open"></i> MARCAR COMO ENTREGUE
             </button>
         </div>
     </div>
 
-    <div class="toast-container"></div>
     <script src="/layout.js"></script>
     <script src="/expedicao/script.js"></script>
 </body>
