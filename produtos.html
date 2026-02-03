@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Produtos</title>
+    <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
+    <link rel="stylesheet" href="/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        /* Estilos Específicos do Módulo de Produtos */
+        .tabs-header { display: flex; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; gap: 20px; }
+        .tab-btn { background: none; border: none; padding: 10px 5px; font-weight: 600; color: #64748b; cursor: pointer; position: relative; }
+        .tab-btn.active { color: #3498db; }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 2px; background: #3498db; }
+        
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+        
+        .card-variacao { border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #f8f9fa; }
+        .card-variacao-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .grid-opcoes { display: grid; grid-template-columns: 2fr 1fr 40px; gap: 10px; align-items: center; margin-bottom: 5px; }
+        
+        .product-list-item { background: white; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; transition: transform 0.2s; }
+        .product-list-item:hover { transform: translateX(5px); border-color: #3498db; }
+
+        .price-mode-selector { display: flex; gap: 10px; margin-bottom: 20px; }
+        .price-mode-card { flex: 1; border: 2px solid #e2e8f0; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; }
+        .price-mode-card.selected { border-color: #3498db; background: #f0f7ff; color: #3498db; font-weight: bold; }
+        
+        .hidden { display: none !important; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="app-layout-grid">
+        <div id="sidebar-placeholder"></div> <!-- Carregado via JS -->
+        
+        <div class="app-content-wrapper">
+            <main class="app-content">
+                <div class="container">
+                    
+                    <!-- HEADER -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <h2 style="margin:0; color:#2d3748;">Meus Produtos</h2>
+                            <p style="margin:0; color:#888; font-size:0.9rem;">Gerencie os itens do seu portfólio.</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="window.novoProduto()">
+                            <i class="fas fa-plus"></i> Novo Produto
+                        </button>
+                    </div>
+
+                    <!-- LISTA DE PRODUTOS (Visível Inicialmente) -->
+                    <div id="lista-produtos-view">
+                        <div id="loading-list" style="text-align:center; padding:20px; color:#aaa;">Carregando...</div>
+                        <div id="products-container"></div>
+                    </div>
+
+                    <!-- FORMULÁRIO DE CADASTRO (Escondido Inicialmente) -->
+                    <div id="cadastro-produto-view" class="hidden" style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                        
+                        <div class="tabs-header">
+                            <button class="tab-btn active" onclick="switchTab('geral')"><i class="fas fa-info-circle"></i> Geral</button>
+                            <button class="tab-btn" onclick="switchTab('preco')"><i class="fas fa-dollar-sign"></i> Preço</button>
+                            <button class="tab-btn" onclick="switchTab('detalhes')"><i class="fas fa-list"></i> Variações</button>
+                        </div>
+
+                        <form id="form-produto">
+                            <input type="hidden" id="prod-id">
+
+                            <!-- TAB GERAL -->
+                            <div id="tab-geral" class="tab-content active">
+                                <div class="form-group">
+                                    <label>Título do Produto *</label>
+                                    <input type="text" id="prod-nome" class="form-control" placeholder="Ex: Cartão de Visita" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Prazo de Produção</label>
+                                    <input type="text" id="prod-prazo" class="form-control" placeholder="Ex: 2 dias úteis">
+                                </div>
+                            </div>
+
+                            <!-- TAB PREÇO -->
+                            <div id="tab-preco" class="tab-content">
+                                <label style="display:block; margin-bottom:10px; font-weight:600;">Como este produto será cobrado?</label>
+                                <div class="price-mode-selector">
+                                    <div class="price-mode-card" onclick="selectPriceMode('UNIDADE')" id="mode-unidade">
+                                        <i class="fas fa-box"></i><br>Por Unidade
+                                    </div>
+                                    <div class="price-mode-card" onclick="selectPriceMode('METRO')" id="mode-metro">
+                                        <i class="fas fa-ruler-combined"></i><br>Por Metro (m²)
+                                    </div>
+                                    <div class="price-mode-card" onclick="selectPriceMode('FAIXA')" id="mode-faixa">
+                                        <i class="fas fa-layer-group"></i><br>Por Quantidade (Atacado)
+                                    </div>
+                                </div>
+                                <input type="hidden" id="prod-tipo-calculo" value="UNIDADE">
+
+                                <!-- Input Preço Base (Unidade ou Metro) -->
+                                <div id="input-preco-base" class="form-group">
+                                    <label id="label-preco-base">Preço Unitário (R$)</label>
+                                    <input type="number" id="prod-preco-base" class="form-control" step="0.01" placeholder="0.00">
+                                </div>
+
+                                <!-- Input Tabela de Faixas (Atacado) -->
+                                <div id="input-tabela-faixas" class="hidden">
+                                    <div style="background:#f8f9fa; padding:15px; border-radius:8px;">
+                                        <label>Tabela de Preços</label>
+                                        <div id="faixas-container"></div>
+                                        <button type="button" class="btn-search-trigger" onclick="addFaixa()" style="margin-top:10px; font-size:0.8rem;">+ Adicionar Faixa</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB VARIAÇÕES (DETALHES) -->
+                            <div id="tab-detalhes" class="tab-content">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                                    <p style="color:#666; font-size:0.9rem; margin:0;">Crie opções como Acabamento, Papel, Cor, etc.</p>
+                                    <button type="button" class="btn-search-trigger" onclick="addVariacao()">+ Nova Variação</button>
+                                </div>
+                                <div id="variacoes-container"></div>
+                            </div>
+
+                            <!-- ACTIONS -->
+                            <div style="border-top:1px solid #eee; padding-top:20px; margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
+                                <button type="button" class="btn btn-secondary" onclick="window.cancelarEdicao()" style="background:#eee; color:#333; border:none; padding:10px 20px; border-radius:6px; cursor:pointer;">Cancelar</button>
+                                <button type="submit" class="btn btn-primary" style="background:#27ae60; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:600;">Salvar Produto <i class="fas fa-check"></i></button>
+                            </div>
+
+                        </form>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container"></div>
+
+    <script src="/layout.js"></script> <!-- Seu script de layout existente -->
+    <script src="/produtos.js"></script>
+</body>
+</html>

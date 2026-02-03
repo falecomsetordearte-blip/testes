@@ -50,8 +50,9 @@ model Empresa {
   solicitacao_credito_pendente Boolean  @default(false)
   dados_analise_credito        Json?    // Salva o formulário de solicitação
 
-  // Relacionamento com histórico
+  // Relacionamentos
   historico_financeiro         HistoricoFinanceiro[]
+  produtos                     Produto[] // <--- ADICIONADO: Relação com produtos
 
   @@map("empresas")
 }
@@ -75,4 +76,68 @@ model HistoricoFinanceiro {
   empresa     Empresa  @relation(fields: [empresa_id], references: [id])
 
   @@map("historico_financeiro")
+}
+
+// ---------------------------------------------------------
+// MODELOS DE PRODUTOS (NOVO MÓDULO)
+// ---------------------------------------------------------
+
+model Produto {
+  id             Int      @id @default(autoincrement())
+  empresa_id     Int
+  nome           String
+  prazo_producao String?  // Ex: "2 dias úteis"
+  
+  // Lógica de Preço
+  tipo_calculo   String   @default("UNIDADE") // Opções: 'UNIDADE', 'METRO', 'FIXO', 'FAIXA'
+  preco_base     Decimal  @default(0.00) @db.Decimal(10, 2) // Preço unitário ou Preço do m²
+  
+  // Dimensões (Opcional, para valores padrão)
+  largura_padrao Decimal? @db.Decimal(10, 2)
+  altura_padrao  Decimal? @db.Decimal(10, 2)
+
+  criado_em      DateTime @default(now())
+  atualizado_em  DateTime @updatedAt 
+
+  // Relacionamentos
+  empresa        Empresa  @relation(fields: [empresa_id], references: [id])
+  variacoes      ProdutoVariacao[]
+  faixas_preco   ProdutoPrecoFaixa[] // Para quando for preço por quantidade (atacado)
+
+  @@map("produtos")
+}
+
+model ProdutoVariacao {
+  id            Int      @id @default(autoincrement())
+  produto_id    Int
+  nome          String   // Ex: "Acabamento", "Papel", "Cor"
+  tipo_selecao  String   @default("UNICA") // 'UNICA' (Radio/Select) ou 'MULTIPLA' (Checkbox)
+  
+  produto       Produto  @relation(fields: [produto_id], references: [id], onDelete: Cascade)
+  opcoes        ProdutoVariacaoOpcao[]
+
+  @@map("produto_variacoes")
+}
+
+model ProdutoVariacaoOpcao {
+  id              Int             @id @default(autoincrement())
+  variacao_id     Int
+  nome            String          // Ex: "Fosco", "Couchê 300g"
+  preco_adicional Decimal         @default(0.00) @db.Decimal(10, 2) // Quanto soma ao preço base?
+
+  variacao        ProdutoVariacao @relation(fields: [variacao_id], references: [id], onDelete: Cascade)
+
+  @@map("produto_variacao_opcoes")
+}
+
+model ProdutoPrecoFaixa {
+  id             Int      @id @default(autoincrement())
+  produto_id     Int
+  minimo         Int      // De: 10 unidades
+  maximo         Int?     // Até: 50 unidades (null = infinito)
+  valor_unitario Decimal  @db.Decimal(10, 2) // Preço: R$ 5,00 cada
+
+  produto        Produto  @relation(fields: [produto_id], references: [id], onDelete: Cascade)
+
+  @@map("produto_preco_faixas")
 }
