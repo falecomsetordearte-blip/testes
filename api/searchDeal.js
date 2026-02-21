@@ -7,19 +7,22 @@ function identificarSetor(stageId, title = '') {
     const stage = stageId.toUpperCase();
     const titulo = title.toUpperCase();
 
-    // Log para depurar o estágio real que vem do Bitrix
-    // console.log(`DEBUG SETOR: Titulo: ${titulo} | StageID: ${stage}`);
-
+    // 1. EXPEDIÇÃO / FINALIZADOS
     if (['WON', 'C17:UC_IKPW6X', 'C17:UC_WFTT1A', 'C17:UC_G2024K', 'LOSE'].includes(stage)) return { setor: 'EXPEDIÇÃO / ARQUIVADO', cor: '#2ecc71' };
+    
+    // 2. ARTE
     if (stage === 'C17:NEW' || stage === 'C17:UC_ZHMX6W' || stage === 'C17:UC_JHF0WH') return { setor: 'ARTE (Novos)', cor: '#3498db' };
     
-    // Verificando Impressão/Acabamento (Aqui pode estar o erro de mapeamento)
-    if (stage.includes('PREPARATION') || stage.includes('EXECUTING') || stage.includes('UC_487F6S')) { // Adicionei um exemplo de ID comum
+    // 3. IMPRESSÃO / ACABAMENTO 
+    // OBS: Aqui vamos conferir nos logs se o seu Bitrix usa IDs diferentes para Impressão
+    if (stage.includes('PREPARATION') || stage.includes('EXECUTING') || stage.includes('UC_487F6S')) {
         return { setor: 'IMPRESSÃO / ACABAMENTO', cor: '#e67e22' };
     }
     
+    // 4. INSTALAÇÃO
     if (titulo.includes('INSTALA') || stage.includes('INSTALL') || stage.includes('EXTERNA') || stage.includes('LOJA')) return { setor: 'INSTALAÇÃO', cor: '#9b59b6' };
     
+    // 5. CRM
     if (!stage.startsWith('C17')) return { setor: 'CRM (Vendas)', cor: '#f1c40f' };
     
     return { setor: 'EM PRODUÇÃO', cor: '#7f8c8d' };
@@ -33,36 +36,41 @@ module.exports = async (req, res) => {
 
     try {
         const { sessionToken, query } = req.body;
-        const cleanQuery = query.toString().trim().replace('#', '');
+        const cleanQuery = query.toString().trim();
 
-        // 1. BUSCAR USUÁRIO (Omitido logs aqui para focar no resultado)
-        const userSearch = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-            filter: { '%UF_CRM_1751824225': sessionToken }, 
-            select: ['ID', 'NAME'] 
-        });
-        if (!userSearch.data.result?.length) return res.status(401).json({ message: 'Sessão inválida.' });
+        console.log(`--- INICIANDO BUSCA RESILIENTE PARA: "${cleanQuery}" ---`);
 
-        // 2. BUSCA CORRIGIDA (Operador % na chave)
-        console.log(`--- PESQUISANDO POR: "${cleanQuery}" ---`);
-        const searchResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
-            filter: {
-                'LOGIC': 'OR',
-                '%TITLE': cleanQuery, // AGORA ESTÁ CORRETO
-                'ID': cleanQuery      // Busca por ID exato
-            },
+        // 1. BUSCA POR TÍTULO (O QUE FUNCIONOU NO LOG ANTERIOR)
+        const responseTitle = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
+            filter: { '%TITLE': cleanQuery },
             select: ['ID', 'TITLE', 'STAGE_ID', 'DATE_CREATE', 'OPPORTUNITY'],
             order: { 'ID': 'DESC' }
         });
 
-        const deals = searchResponse.data.result || [];
-        console.log(`Quantidade de negócios encontrados: ${deals.length}`);
+        let resultsArray = responseTitle.data.result || [];
+        console.log(`Busca por Título encontrou: ${resultsArray.length} itens`);
 
-        // 3. LOG DETALHADO DOS RESULTADOS PARA DEPURAÇÃO
-        deals.forEach((d, index) => {
-            console.log(`[Resultado ${index + 1}] ID: ${d.ID} | Título: ${d.TITLE} | StageID: ${d.STAGE_ID}`);
+        // 2. BUSCA POR ID (APENAS SE FOR NÚMERO E NÃO TIVER ENCONTRADO POR TÍTULO)
+        if (!isNaN(cleanQuery)) {
+            const responseId = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
+                filter: { 'ID': cleanQuery },
+                select: ['ID', 'TITLE', 'STAGE_ID', 'DATE_CREATE', 'OPPORTUNITY']
+            });
+            const idResults = responseId.data.result || [];
+            // Mesclar resultados sem duplicar
+            idResults.forEach(item => {
+                if (!resultsArray.find(r => r.ID === item.ID)) {
+                    resultsArray.push(item);
+                }
+            });
+        }
+
+        // 3. LOG DE DIAGNÓSTICO (IMPORTANTE!)
+        resultsArray.forEach((d, i) => {
+            console.log(`[Item ${i+1}] ID: ${d.ID} | Título: ${d.TITLE} | StageID: ${d.STAGE_ID}`);
         });
 
-        const results = deals.map(deal => {
+        const finalResults = resultsArray.map(deal => {
             const info = identificarSetor(deal.STAGE_ID, deal.TITLE);
             return {
                 id: deal.ID,
@@ -74,10 +82,11 @@ module.exports = async (req, res) => {
             };
         });
 
-        return res.status(200).json({ results });
+        console.log(`--- BUSCA CONCLUÍDA: ${finalResults.length} RESULTADOS ---`);
+        return res.status(200).json({ results: finalResults });
 
     } catch (error) {
-        console.error('Erro na busca:', error.message);
+        console.error('Erro na busca resiliente:', error.message);
         return res.status(500).json({ message: 'Erro interno.' });
     }
 };
