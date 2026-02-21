@@ -1,31 +1,41 @@
-// /api/searchDeal.js
 const axios = require('axios');
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
-function identificarSetor(stageId, title = '') {
-    if (!stageId) return { setor: 'DESCONHECIDO', cor: '#95a5a6' };
-    const stage = stageId.toUpperCase();
-    const titulo = title.toUpperCase();
+/**
+ * MAPEAMENTO OFICIAL DE SETORES (Baseado nos IDs do seu Bitrix)
+ */
+const MAPA_DE_SETORES = {
+    "C17:UC_ZHMX6W": { nome: "IMPRESSÃO", cor: "#e67e22" },      // Laranja
+    "C17:UC_QA8TN5": { nome: "ACABAMENTO", cor: "#1abc9c" },    // Turquesa
+    "C17:UC_ZPMNF9": { nome: "INSTALAÇÃO EXT.", cor: "#9b59b6" }, // Roxo
+    "C17:UC_EYLXD9": { nome: "INSTALAÇÃO LOJA", cor: "#8e44ad" }, // Roxo Escuro
+    "C17:UC_IKPW6X": { nome: "PRONTO", cor: "#2ecc71" },        // Verde
+    "C17:UC_G2024K": { nome: "PRONTO", cor: "#2ecc71" },        // Verde
+    "C17:UC_WFTT1A": { nome: "PRONTO", cor: "#2ecc71" },        // Verde
+    "WON":           { nome: "PRONTO / CONCLUÍDO", cor: "#27ae60" },
+    "LOSE":          { nome: "CANCELADO", cor: "#e74c3c" }
+};
 
-    // 1. EXPEDIÇÃO / FINALIZADOS
-    if (['WON', 'C17:UC_IKPW6X', 'C17:UC_WFTT1A', 'C17:UC_G2024K', 'LOSE'].includes(stage)) return { setor: 'EXPEDIÇÃO / ARQUIVADO', cor: '#2ecc71' };
+function identificarSetor(stageId) {
+    if (!stageId) return { setor: 'DESCONHECIDO', cor: '#95a5a6' };
     
-    // 2. ARTE
-    if (stage === 'C17:NEW' || stage === 'C17:UC_ZHMX6W' || stage === 'C17:UC_JHF0WH') return { setor: 'ARTE (Novos)', cor: '#3498db' };
-    
-    // 3. IMPRESSÃO / ACABAMENTO 
-    // OBS: Aqui vamos conferir nos logs se o seu Bitrix usa IDs diferentes para Impressão
-    if (stage.includes('PREPARATION') || stage.includes('EXECUTING') || stage.includes('UC_487F6S')) {
-        return { setor: 'IMPRESSÃO / ACABAMENTO', cor: '#e67e22' };
+    const stage = stageId.toUpperCase();
+
+    // 1. Verifica se está no nosso mapa de IDs específicos
+    if (MAPA_DE_SETORES[stage]) {
+        return { 
+            setor: MAPA_DE_SETORES[stage].nome, 
+            cor: MAPA_DE_SETORES[stage].cor 
+        };
     }
-    
-    // 4. INSTALAÇÃO
-    if (titulo.includes('INSTALA') || stage.includes('INSTALL') || stage.includes('EXTERNA') || stage.includes('LOJA')) return { setor: 'INSTALAÇÃO', cor: '#9b59b6' };
-    
-    // 5. CRM
-    if (!stage.startsWith('C17')) return { setor: 'CRM (Vendas)', cor: '#f1c40f' };
-    
-    return { setor: 'EM PRODUÇÃO', cor: '#7f8c8d' };
+
+    // 2. Se for qualquer outro da Pipeline de Arte (C17), é ARTE
+    if (stage.startsWith('C17')) {
+        return { setor: 'ARTE', cor: '#3498db' }; // Azul
+    }
+
+    // 3. Se não for C17, é do CRM padrão (Vendas)
+    return { setor: 'CRM (VENDAS)', cor: '#f1c40f' }; // Amarelo
 }
 
 module.exports = async (req, res) => {
@@ -36,11 +46,19 @@ module.exports = async (req, res) => {
 
     try {
         const { sessionToken, query } = req.body;
-        const cleanQuery = query.toString().trim();
+        if (!sessionToken || !query) return res.status(400).json({ message: 'Dados insuficientes.' });
 
-        console.log(`--- INICIANDO BUSCA RESILIENTE PARA: "${cleanQuery}" ---`);
+        const cleanQuery = query.toString().trim().replace('#', '');
 
-        // 1. BUSCA POR TÍTULO (O QUE FUNCIONOU NO LOG ANTERIOR)
+        // 1. BUSCAR USUÁRIO PARA VALIDAÇÃO
+        const userSearch = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
+            filter: { '%UF_CRM_1751824225': sessionToken }, 
+            select: ['ID', 'NAME'] 
+        });
+        if (!userSearch.data.result?.length) return res.status(401).json({ message: 'Sessão inválida.' });
+
+        // 2. BUSCA RESILIENTE (TÍTULO E ID SEPARADOS)
+        // Busca por Título (que é o número do pedido no seu caso)
         const responseTitle = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
             filter: { '%TITLE': cleanQuery },
             select: ['ID', 'TITLE', 'STAGE_ID', 'DATE_CREATE', 'OPPORTUNITY'],
@@ -48,30 +66,22 @@ module.exports = async (req, res) => {
         });
 
         let resultsArray = responseTitle.data.result || [];
-        console.log(`Busca por Título encontrou: ${resultsArray.length} itens`);
 
-        // 2. BUSCA POR ID (APENAS SE FOR NÚMERO E NÃO TIVER ENCONTRADO POR TÍTULO)
+        // Busca por ID Interno (Fallback se digitar o ID de 5 dígitos do Bitrix)
         if (!isNaN(cleanQuery)) {
             const responseId = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
                 filter: { 'ID': cleanQuery },
                 select: ['ID', 'TITLE', 'STAGE_ID', 'DATE_CREATE', 'OPPORTUNITY']
             });
             const idResults = responseId.data.result || [];
-            // Mesclar resultados sem duplicar
             idResults.forEach(item => {
-                if (!resultsArray.find(r => r.ID === item.ID)) {
-                    resultsArray.push(item);
-                }
+                if (!resultsArray.find(r => r.ID === item.ID)) resultsArray.push(item);
             });
         }
 
-        // 3. LOG DE DIAGNÓSTICO (IMPORTANTE!)
-        resultsArray.forEach((d, i) => {
-            console.log(`[Item ${i+1}] ID: ${d.ID} | Título: ${d.TITLE} | StageID: ${d.STAGE_ID}`);
-        });
-
+        // 3. FORMATAR COM O NOVO MAPEAMENTO
         const finalResults = resultsArray.map(deal => {
-            const info = identificarSetor(deal.STAGE_ID, deal.TITLE);
+            const info = identificarSetor(deal.STAGE_ID);
             return {
                 id: deal.ID,
                 titulo: deal.TITLE,
@@ -82,11 +92,11 @@ module.exports = async (req, res) => {
             };
         });
 
-        console.log(`--- BUSCA CONCLUÍDA: ${finalResults.length} RESULTADOS ---`);
+        console.log(`Busca para "${cleanQuery}" finalizada: ${finalResults.length} resultados.`);
         return res.status(200).json({ results: finalResults });
 
     } catch (error) {
-        console.error('Erro na busca resiliente:', error.message);
-        return res.status(500).json({ message: 'Erro interno.' });
+        console.error('Erro na busca final:', error.message);
+        return res.status(500).json({ message: 'Erro interno na busca.' });
     }
 };
