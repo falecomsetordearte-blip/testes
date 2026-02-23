@@ -1,93 +1,64 @@
-// /api/getPanelData.js - AUMENTO AJUSTADO PARA 25%
-
-const axios = require('axios');
-
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 module.exports = async (req, res) => {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Método não permitido' });
-    }
+    // Cabeçalhos CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido' });
 
     try {
         const { token: sessionToken } = req.body;
+
         if (!sessionToken) {
             return res.status(400).json({ message: 'Token de sessão é obrigatório.' });
         }
 
-        const searchUserResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-            filter: { '%UF_CRM_1751824225': sessionToken },
-            select: ['ID', 'NAME', 'COMPANY_ID']
-        });
+        // 1. Identificar a Empresa pelo Token (busca segura com LIKE)
+        const empresas = await prisma.$queryRawUnsafe(`
+            SELECT id, nome_fantasia, responsavel, saldo 
+            FROM empresas 
+            WHERE session_tokens LIKE $1 
+            LIMIT 1
+        `, `%${sessionToken}%`);
 
-        const user = searchUserResponse.data.result[0];
-        if (!user) {
+        if (empresas.length === 0) {
             return res.status(401).json({ message: 'Sessão inválida ou expirada.' });
         }
-        
-        let saldoDaEmpresa = 0;
-        if (user.COMPANY_ID) {
-            const companyResponse = await axios.post(`${BITRIX24_API_URL}crm.company.get.json`, {
-                id: user.COMPANY_ID
-            });
-            const company = companyResponse.data.result;
-            if (company) {
-                saldoDaEmpresa = company['UF_CRM_1751913325'] || 0;
-            }
-        }
-        
-        const dealsResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.list.json`, {
-            filter: {
-                'COMPANY_ID': user.COMPANY_ID,
-                'CATEGORY_ID': 17, // Filtra apenas para o pipeline de arte
-                '!STAGE_ID': [
-                    'C17:UC_ZHMX6W', // Stage de Impressão
-                    'C11:UC_YYHPKI', // Stage Financeiro
-                    'C17:UC_ZPMNF9'  // Stage de Acabamento Concluído
-                ]
-            },
-            order: { 'ID': 'DESC' },
-            select: [
-                'ID', 'TITLE', 'STAGE_ID', 'OPPORTUNITY', 'COMMENTS',
-                'UF_CRM_1755374245504',
-                'UF_CRM_1755374266027'
-            ]
-        });
 
-        let pedidos = dealsResponse.data.result || [];
-        
-        pedidos = pedidos.map(pedido => {
-            let temNotificacao = false;
-            const msgDesigner = pedido.UF_CRM_1755374266027;
-            const msgCliente = pedido.UF_CRM_1755374245504;
-            
-            if (msgDesigner && msgCliente) {
-                if (new Date(msgDesigner) > new Date(msgCliente)) {
-                    temNotificacao = true;
-                }
-            } else if (msgDesigner) {
-                temNotificacao = true;
-            }
-            
-            return {
-                ID: pedido.ID,
-                TITLE: pedido.TITLE,
-                STAGE_ID: pedido.STAGE_ID,
-                // AQUI ESTÁ O AJUSTE PARA 25%: Multiplica por 1.25
-                OPPORTUNITY: parseFloat(pedido.OPPORTUNITY || 0) * 1.25,
-                COMMENTS: pedido.COMMENTS,
-                notificacao: temNotificacao
-            };
-        });
+        const empresa = empresas[0];
+        const saldoDaEmpresa = parseFloat(empresa.saldo || 0);
+
+        // 2. Buscar os Pedidos dessa Empresa no Neon
+        // Usamos o empresa_id para filtrar apenas os pedidos DESSE cliente
+        const pedidosRaw = await prisma.$queryRawUnsafe(`
+            SELECT id, titulo, etapa, created_at
+            FROM pedidos 
+            WHERE empresa_id = $1
+            ORDER BY id DESC
+            LIMIT 20
+        `, empresa.id);
+
+        // 3. Formatar para o Frontend
+        const pedidosFormatados = pedidosRaw.map(p => ({
+            ID: p.id,
+            TITLE: p.titulo || 'Pedido sem título',
+            STAGE_ID: p.etapa || 'ATENDIMENTO', // Agora usamos a coluna etapa
+            OPPORTUNITY: 0, // Como não temos a coluna valor no banco ainda, enviamos 0 para não quebrar
+            COMMENTS: ''
+        }));
 
         return res.status(200).json({
             status: 'success',
             saldo: saldoDaEmpresa,
-            pedidos: pedidos
+            pedidos: pedidosFormatados
         });
 
     } catch (error) {
-        console.error('Erro ao carregar dados do painel:', error.response ? error.response.data : error.message);
-        return res.status(500).json({ message: 'Ocorreu um erro ao carregar os dados do painel.' });
+        console.error('Erro ao carregar painel:', error);
+        return res.status(500).json({ message: 'Erro interno ao carregar dados.' });
     }
 };
