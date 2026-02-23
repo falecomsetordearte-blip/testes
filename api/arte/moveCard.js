@@ -1,101 +1,37 @@
 // /api/arte/moveCard.js
-const prisma = require('../../lib/prisma');
-const axios = require('axios');
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 module.exports = async (req, res) => {
-    // LOG 1: Entrada da requisição
-    console.log('--- [moveCard] Iniciando requisição ---');
-    console.log('Body recebido:', req.body);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    if (req.method !== 'POST') {
-        console.log('[moveCard] Erro: Método não permitido:', req.method);
-        return res.status(405).send('Method Not Allowed');
-    }
+    if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
     try {
         const { sessionToken, dealId, novaColuna } = req.body;
 
-        if (!sessionToken || !dealId || !novaColuna) {
-            console.log('[moveCard] Erro: Faltando parâmetros obrigatórios.');
-            return res.status(400).json({ message: 'Parâmetros inválidos.' });
-        }
+        // 1. Auth
+        const empresas = await prisma.$queryRawUnsafe(`
+            SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+        `, `%${sessionToken}%`);
 
-        // 1. Auth - Verificar Usuário no Bitrix
-        console.log('[moveCard] 1. Verificando token de sessão no Bitrix...');
-        const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-            filter: { '%UF_CRM_1751824225': sessionToken }, 
-            select: ['ID', 'NAME', 'COMPANY_ID'] 
-        });
-
-        console.log('[moveCard] Resposta Bitrix (Contact List):', JSON.stringify(userCheck.data?.result));
-
-        const user = userCheck.data.result ? userCheck.data.result[0] : null;
-        
-        if (!user || !user.COMPANY_ID) {
-            console.log('[moveCard] Erro: Usuário não encontrado ou sem COMPANY_ID vinculado.');
-            return res.status(401).json({ message: 'Sessão inválida ou usuário sem empresa.' });
-        }
-
-        console.log(`[moveCard] Usuário autenticado. Contact ID: ${user.ID}, Company Bitrix ID: ${user.COMPANY_ID}`);
-
-        // Buscar Empresa no Banco Local
-        console.log(`[moveCard] Buscando empresa local com bitrix_company_id: ${user.COMPANY_ID}`);
-        
-        // CORREÇÃO AQUI: Removi ", nome" e deixei apenas "id"
-        const empresas = await prisma.$queryRaw`SELECT id FROM empresas WHERE bitrix_company_id = ${parseInt(user.COMPANY_ID)} LIMIT 1`;
-        
-        console.log('[moveCard] Resultado busca empresa local:', empresas);
-
-        if (!empresas.length) {
-            console.log('[moveCard] Erro: Empresa não encontrada no banco local.');
-            return res.status(403).json({ message: 'Empresa não encontrada.' });
-        }
+        if (empresas.length === 0) return res.status(401).json({ message: 'Sessão inválida.' });
         const empresaId = empresas[0].id;
-        console.log(`[moveCard] Empresa Local ID definida: ${empresaId}`);
 
-        // 2. Verificar Deal no Bitrix
-        console.log(`[moveCard] 2. Buscando detalhes do Deal ID ${dealId} no Bitrix...`);
-        const dealCheck = await axios.post(`${BITRIX24_API_URL}crm.deal.get.json`, { id: dealId });
-        
-        const deal = dealCheck.data.result;
-        
-        if (deal) {
-            const tipoArte = deal['UF_CRM_1761269158'];
-            console.log(`[moveCard] Dados do Deal recuperados. ID: ${deal.ID}, Tipo de Arte (UF_CRM_1761269158): '${tipoArte}'`);
+        // 2. Atualizar Etapa no Pedido
+        // Importante: No seu sistema, a coluna de etapa do Kanban reflete a etapa do pedido
+        await prisma.$executeRawUnsafe(`
+            UPDATE pedidos 
+            SET etapa = $1, updated_at = NOW()
+            WHERE id = $2 AND empresa_id = $3
+        `, novaColuna, parseInt(dealId), empresaId);
 
-            if (tipoArte === 'Setor de Arte' || tipoArte === 'Freelancer') {
-                console.warn(`[moveCard] BLOQUEIO: Tentativa de mover card com tipo '${tipoArte}'.`);
-                return res.status(403).json({ message: 'Pedidos com Freelancer não podem ser movidos manualmente.' });
-            }
-        } else {
-            console.log('[moveCard] Aviso: Deal não retornado pelo Bitrix (pode não existir ou erro na API). Seguindo fluxo...');
-        }
-
-        // 3. Atualizar Banco Local
-        console.log(`[moveCard] 3. Atualizando banco de dados local. Setando coluna = '${novaColuna}'...`);
-        
-        const updateResult = await prisma.$queryRaw`
-            UPDATE painel_arte_cards 
-            SET coluna = ${novaColuna}, updated_at = NOW()
-            WHERE bitrix_deal_id = ${parseInt(dealId)} AND empresa_id = ${empresaId}
-        `;
-
-        console.log('[moveCard] Resultado do Update (DB):', updateResult);
-
-        console.log('[moveCard] Sucesso. Retornando 200.');
         return res.status(200).json({ success: true });
 
     } catch (error) {
-        console.error("--- [moveCard] ERRO EXCEPTION ---");
-        if (error.response) {
-            console.error("Status:", error.response.status);
-            console.error("Data:", JSON.stringify(error.response.data));
-        } else {
-            console.error("Mensagem:", error.message);
-            console.error("Stack:", error.stack);
-        }
-        
+        console.error("Erro moveCard:", error);
         return res.status(500).json({ message: 'Erro ao mover card.' });
     }
 };
