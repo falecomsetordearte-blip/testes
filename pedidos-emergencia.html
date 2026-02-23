@@ -6,20 +6,27 @@
     <title>EMERGÊNCIA - Pedidos</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .container { max-width: 1300px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         h1 { color: #e74c3c; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         .toolbar { display: flex; justify-content: space-between; margin-bottom: 20px; }
         input[type="text"] { padding: 10px; width: 300px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
         button { padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
         button:hover { background: #2980b9; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: middle; }
         th { background-color: #f8f9fa; font-weight: bold; }
         tr:hover { background-color: #f1f5f9; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #eee; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #eee; display: inline-block; margin-top: 4px; }
         .badge-arte { background: #d0bdf4; color: #4a235a; }
         .badge-entrega { background: #aed6f1; color: #154360; }
         
+        /* Estilo do Dropdown de Etapas */
+        .select-etapa { padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-weight: bold; cursor: pointer; background-color: #fff; width: 100%; transition: all 0.3s ease; }
+        .select-etapa:focus { outline: none; border-color: #3498db; }
+        .select-etapa.updating { background-color: #fff3cd; color: #856404; pointer-events: none; }
+        .select-etapa.success { background-color: #d4edda; color: #155724; }
+        .select-etapa.error { background-color: #f8d7da; color: #721c24; }
+
         /* Modal para ver briefing longo */
         dialog { border: none; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); padding: 20px; width: 600px; max-width: 90%; }
         dialog::backdrop { background: rgba(0,0,0,0.5); }
@@ -41,12 +48,12 @@
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Deal Bitrix</th>
                 <th>Cliente / Wpp</th>
                 <th>Título do Pedido</th>
                 <th>Serviço / Arte</th>
                 <th>Entrega</th>
-                <th>Detalhes</th>
+                <th style="width: 200px;">ETAPA (Status)</th>
+                <th>Ações</th>
             </tr>
         </thead>
         <tbody id="tabelaCorpo">
@@ -62,9 +69,19 @@
 </dialog>
 
 <script>
-    // Se a sua API roda em outra URL no desenvolvimento, mude aqui. Deixei o padrão do Vercel.
-    const API_URL = '/api/getPedidosEmergencia'; 
+    const API_GET_URL = '/api/getPedidosEmergencia'; 
+    const API_UPDATE_URL = '/api/updateEtapaEmergencia'; 
     let pedidosCache = [];
+
+    const ETAPAS_DISPONIVEIS = [
+        "ATENDIMENTO",
+        "ARTE",
+        "IMPRESSÃO",
+        "ACABAMENTO",
+        "INSTALAÇÃO EXTERNA",
+        "INSTALAÇÃO NA LOJA",
+        "EXPEDIÇÃO"
+    ];
 
     async function carregarPedidos() {
         const busca = document.getElementById('searchInput').value;
@@ -72,7 +89,7 @@
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Buscando...</td></tr>';
 
         try {
-            const url = busca ? `${API_URL}?busca=${encodeURIComponent(busca)}` : API_URL;
+            const url = busca ? `${API_GET_URL}?busca=${encodeURIComponent(busca)}` : API_GET_URL;
             const response = await fetch(url);
             
             if (!response.ok) throw new Error('Erro na resposta do servidor');
@@ -96,12 +113,19 @@
         pedidos.forEach(pedido => {
             const tr = document.createElement('tr');
             
-            // Formatando o Wpp se existir
             const wpp = pedido.whatsapp_cliente ? `<br><small>📱 ${pedido.whatsapp_cliente}</small>` : '';
             
+            // Monta as opções do select com a etapa atual pré-selecionada
+            // Se a etapa vier vazia do banco, adicionamos uma opção "Selecione"
+            let optionsHTML = !pedido.etapa ? `<option value="" disabled selected>Selecione uma etapa</option>` : '';
+            
+            ETAPAS_DISPONIVEIS.forEach(etapa => {
+                const selected = (pedido.etapa === etapa) ? 'selected' : '';
+                optionsHTML += `<option value="${etapa}" ${selected}>${etapa}</option>`;
+            });
+
             tr.innerHTML = `
-                <td><strong>#${pedido.id}</strong></td>
-                <td>${pedido.bitrix_deal_id || '-'}</td>
+                <td><strong>#${pedido.id}</strong><br><small style="color:#888">${pedido.bitrix_deal_id || ''}</small></td>
                 <td>${pedido.nome_cliente || 'N/A'} ${wpp}</td>
                 <td><strong>${pedido.titulo || '-'}</strong></td>
                 <td>
@@ -109,10 +133,48 @@
                     <span class="badge badge-arte">${pedido.tipo_arte || '-'}</span>
                 </td>
                 <td><span class="badge badge-entrega">${pedido.tipo_entrega || '-'}</span></td>
-                <td><button style="padding: 5px 10px; font-size: 12px;" onclick="verBriefing(${pedido.id})">Ver Briefing</button></td>
+                <td>
+                    <select class="select-etapa" onchange="atualizarEtapa(${pedido.id}, this)">
+                        ${optionsHTML}
+                    </select>
+                </td>
+                <td><button style="padding: 6px 12px; font-size: 12px;" onclick="verBriefing(${pedido.id})">Briefing</button></td>
             `;
             tbody.appendChild(tr);
         });
+    }
+
+    async function atualizarEtapa(pedidoId, selectElement) {
+        const novaEtapa = selectElement.value;
+        
+        // Feedback visual de carregamento (Amarelo)
+        selectElement.classList.remove('success', 'error');
+        selectElement.classList.add('updating');
+
+        try {
+            const response = await fetch(API_UPDATE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: pedidoId, etapa: novaEtapa })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) throw new Error(result.message || 'Erro ao salvar');
+
+            // Feedback de sucesso (Verde)
+            selectElement.classList.remove('updating');
+            selectElement.classList.add('success');
+            
+            // Remove o verde depois de 2 segundos
+            setTimeout(() => selectElement.classList.remove('success'), 2000);
+
+        } catch (error) {
+            alert('Falha ao atualizar a etapa: ' + error.message);
+            // Feedback de Erro (Vermelho)
+            selectElement.classList.remove('updating');
+            selectElement.classList.add('error');
+        }
     }
 
     function verBriefing(id) {
