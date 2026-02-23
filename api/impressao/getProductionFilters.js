@@ -1,20 +1,18 @@
-// /api/getProductionFilters.js
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     
-    // Lista de exemplo baseada no que costuma ter em gráficas
+    // Filtros manuais para não depender do Bitrix bloqueado
     const filters = {
         impressoras: [
-            { id: '1', value: 'ECOSOLVENTE 01' },
-            { id: '2', value: 'ECOSOLVENTE 02' },
-            { id: '3', value: 'UV PLANA' },
-            { id: '4', value: 'RECORTE ELETRÔNICO' }
+            { id: '1', value: 'BANNER 3.20' },
+            { id: '2', value: 'ADESIVO 1.60' },
+            { id: '3', value: 'UV RÍGIDOS' },
+            { id: '4', value: 'RECORTE' }
         ],
         materiais: [
             { id: '10', value: 'Lona 440g' },
-            { id: '11', value: 'Adesivo Brilho' },
-            { id: '12', value: 'Adesivo Fosco' },
-            { id: '13', value: 'PVC 2mm' }
+            { id: '11', value: 'Adesivo Transparente' },
+            { id: '12', value: 'PVC 2mm' }
         ]
     };
 
