@@ -1,45 +1,31 @@
-// /api/instalacao/concluir.js
-const axios = require('axios');
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
-
-// ID da fase de destino CORRIGIDO (Finalizado/Entregue)
-const TARGET_STAGE_ID = 'C17:UC_IKPW6X';
+// /api/instalacao/concluir.js - COMPLETO E ATUALIZADO
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 module.exports = async (req, res) => {
-    if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido.' });
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') return res.status(200).end();
 
     try {
         const { sessionToken, dealId } = req.body;
-        if (!sessionToken || !dealId) return res.status(400).json({ message: 'Dados incompletos.' });
 
-        // 1. Validar Usuário
-        const userSearch = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-            filter: { '%UF_CRM_1751824225': sessionToken },
-            select: ['ID', 'COMPANY_ID']
-        });
-        const user = userSearch.data.result ? userSearch.data.result[0] : null;
-        if (!user || !user.COMPANY_ID) return res.status(401).json({ message: 'Sessão inválida.' });
+        const empresas = await prisma.$queryRawUnsafe(`
+            SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+        `, `%${sessionToken}%`);
 
-        // 2. Validar Pedido
-        const dealCheck = await axios.post(`${BITRIX24_API_URL}crm.deal.get.json`, { id: dealId });
-        const deal = dealCheck.data.result;
-        if (!deal) return res.status(404).json({ message: 'Pedido não encontrado.' });
-        if (deal.COMPANY_ID != user.COMPANY_ID) return res.status(403).json({ message: 'Acesso negado.' });
+        if (empresas.length === 0) return res.status(401).json({ message: 'Sessão inválida.' });
 
-        // 3. Atualizar Fase
-        const updateResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.update.json`, {
-            id: dealId,
-            fields: { 'STAGE_ID': TARGET_STAGE_ID }
-        });
+        // Muda para a etapa de EXPEDIÇÃO (Fim do fluxo)
+        await prisma.$executeRawUnsafe(`
+            UPDATE pedidos 
+            SET etapa = 'EXPEDIÇÃO', updated_at = NOW() 
+            WHERE id = $1
+        `, parseInt(dealId));
 
-        if (updateResponse.data.result) {
-            return res.status(200).json({ success: true, message: 'Instalação externa concluída.' });
-        } else {
-            throw new Error('Falha no Bitrix.');
-        }
-
+        return res.status(200).json({ success: true, message: 'Instalação concluída com sucesso!' });
     } catch (error) {
-        console.error('Erro Instalação Ext:', error);
-        return res.status(500).json({ message: 'Erro ao concluir.' });
+        return res.status(500).json({ message: 'Erro ao concluir: ' + error.message });
     }
 };
