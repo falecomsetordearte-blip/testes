@@ -1,13 +1,16 @@
-const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const { randomBytes } = require('crypto');
-
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 module.exports = async (req, res) => {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Método não permitido' });
-    }
+    // Cabeçalhos de CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido' });
 
     try {
         const { email, senha } = req.body;
@@ -16,66 +19,54 @@ module.exports = async (req, res) => {
             return res.status(400).json({ message: 'E-mail e senha são obrigatórios.' });
         }
 
-        // ETAPA 1: Buscar o usuário pelo CAMPO DE E-MAIL PADRÃO, tipo WORK
-        const searchUserResponse = await axios.post(
-            `${BITRIX24_API_URL}crm.contact.list.json`,
-            {
-                filter: { 
-                    'EMAIL': email,
-                    'EMAIL_VALUE_TYPE': 'WORK'
-                },
-                select: ['ID', 'NAME', 'UF_CRM_1751824202', 'UF_CRM_1751824225']
-            }
-        );
+        // 1. Buscar a empresa direto no banco NEON
+        const empresas = await prisma.$queryRawUnsafe(`
+            SELECT * FROM empresas WHERE email = $1 LIMIT 1
+        `, email);
 
-        const user = searchUserResponse.data.result[0];
-
-        if (!user) {
+        if (empresas.length === 0) {
             return res.status(401).json({ message: 'E-mail ou senha inválidos.' });
         }
 
-        const storedHash = user.UF_CRM_1751824202;
-        if (!storedHash) {
+        const empresa = empresas[0];
+
+        // 2. Lidar com clientes antigos sem senha no Neon
+        if (!empresa.senha) {
             return res.status(401).json({ 
-                message: 'Conta não configurada para login. Por favor, contate o suporte.' 
+                message: 'Sistema atualizado! Por favor, clique em "Esqueceu sua senha?" para criar uma nova senha e recuperar seu acesso.' 
             });
         }
 
-        // ETAPA 2: Comparar a senha enviada com o hash salvo
-        const isMatch = await bcrypt.compare(senha, storedHash);
+        // 3. Comparar a senha digitada com a senha salva no Neon
+        const isMatch = await bcrypt.compare(senha, empresa.senha);
 
         if (!isMatch) {
             return res.status(401).json({ message: 'E-mail ou senha inválidos.' });
         }
 
-        // ETAPA 3: Gerar novo token e adicionar à lista
+        // 4. Gerar e Salvar o Token de Sessão no Neon
         const newSessionToken = randomBytes(32).toString('hex');
-        const existingTokens = user.UF_CRM_1751824225 || '';
+        const existingTokens = empresa.session_tokens || '';
+        
         const updatedTokens = existingTokens
             ? `${existingTokens.trim()},${newSessionToken}`
             : newSessionToken;
 
-        // Atualiza o contato com o novo token
-        await axios.post(`${BITRIX24_API_URL}crm.contact.update.json`, {
-            id: user.ID,
-            fields: {
-                'UF_CRM_1751824225': updatedTokens
-            }
-        });
+        // Atualiza os tokens da empresa
+        await prisma.$executeRawUnsafe(`
+            UPDATE empresas SET session_tokens = $1 WHERE id = $2
+        `, updatedTokens, empresa.id);
 
-        // ETAPA FINAL: Enviar o novo token
+        // 5. Retornar sucesso
         return res.status(200).json({ 
             token: newSessionToken, 
-            userName: user.NAME || email 
+            userName: empresa.nome_fantasia || empresa.responsavel || email 
         });
 
     } catch (error) {
-        console.error(
-            'Erro no processo de login:',
-            error.response ? error.response.data : error.message
-        );
+        console.error('Erro no processo de login:', error);
         return res.status(500).json({ 
-            message: 'Ocorreu um erro interno. Tente novamente mais tarde.' 
+            message: 'Ocorreu um erro interno no servidor.' 
         });
     }
 };
