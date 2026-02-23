@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMERGÊNCIA - Pedidos</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { color: #e74c3c; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .toolbar { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        input[type="text"] { padding: 10px; width: 300px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+        button { padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #2980b9; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; font-weight: bold; }
+        tr:hover { background-color: #f1f5f9; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #eee; }
+        .badge-arte { background: #d0bdf4; color: #4a235a; }
+        .badge-entrega { background: #aed6f1; color: #154360; }
+        
+        /* Modal para ver briefing longo */
+        dialog { border: none; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); padding: 20px; width: 600px; max-width: 90%; }
+        dialog::backdrop { background: rgba(0,0,0,0.5); }
+        .close-btn { float: right; background: #e74c3c; padding: 5px 10px; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 4px; white-space: pre-wrap; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚨 Acesso de Emergência: Pedidos</h1>
+    
+    <div class="toolbar">
+        <input type="text" id="searchInput" placeholder="Buscar por cliente, título ou wpp..." onkeyup="if(event.key === 'Enter') carregarPedidos()">
+        <button onclick="carregarPedidos()">Atualizar / Buscar</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Deal Bitrix</th>
+                <th>Cliente / Wpp</th>
+                <th>Título do Pedido</th>
+                <th>Serviço / Arte</th>
+                <th>Entrega</th>
+                <th>Detalhes</th>
+            </tr>
+        </thead>
+        <tbody id="tabelaCorpo">
+            <tr><td colspan="7" style="text-align:center;">Carregando dados...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<dialog id="modalDetalhes">
+    <button class="close-btn" onclick="document.getElementById('modalDetalhes').close()">Fechar</button>
+    <h2>Briefing Completo</h2>
+    <pre id="textoBriefing"></pre>
+</dialog>
+
+<script>
+    // Se a sua API roda em outra URL no desenvolvimento, mude aqui. Deixei o padrão do Vercel.
+    const API_URL = '/api/getPedidosEmergencia'; 
+    let pedidosCache = [];
+
+    async function carregarPedidos() {
+        const busca = document.getElementById('searchInput').value;
+        const tbody = document.getElementById('tabelaCorpo');
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Buscando...</td></tr>';
+
+        try {
+            const url = busca ? `${API_URL}?busca=${encodeURIComponent(busca)}` : API_URL;
+            const response = await fetch(url);
+            
+            if (!response.ok) throw new Error('Erro na resposta do servidor');
+            
+            pedidosCache = await response.json();
+            renderizarTabela(pedidosCache);
+        } catch (error) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Erro ao carregar: ${error.message}</td></tr>`;
+        }
+    }
+
+    function renderizarTabela(pedidos) {
+        const tbody = document.getElementById('tabelaCorpo');
+        tbody.innerHTML = '';
+
+        if (pedidos.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhum pedido encontrado.</td></tr>';
+            return;
+        }
+
+        pedidos.forEach(pedido => {
+            const tr = document.createElement('tr');
+            
+            // Formatando o Wpp se existir
+            const wpp = pedido.whatsapp_cliente ? `<br><small>📱 ${pedido.whatsapp_cliente}</small>` : '';
+            
+            tr.innerHTML = `
+                <td><strong>#${pedido.id}</strong></td>
+                <td>${pedido.bitrix_deal_id || '-'}</td>
+                <td>${pedido.nome_cliente || 'N/A'} ${wpp}</td>
+                <td><strong>${pedido.titulo || '-'}</strong></td>
+                <td>
+                    ${pedido.servico || '-'} <br>
+                    <span class="badge badge-arte">${pedido.tipo_arte || '-'}</span>
+                </td>
+                <td><span class="badge badge-entrega">${pedido.tipo_entrega || '-'}</span></td>
+                <td><button style="padding: 5px 10px; font-size: 12px;" onclick="verBriefing(${pedido.id})">Ver Briefing</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function verBriefing(id) {
+        const pedido = pedidosCache.find(p => p.id === id);
+        if (pedido) {
+            document.getElementById('textoBriefing').textContent = pedido.briefing_completo || 'Nenhum briefing registrado no banco para este pedido.';
+            document.getElementById('modalDetalhes').showModal();
+        }
+    }
+
+    // Carrega automaticamente ao abrir a página
+    window.onload = carregarPedidos;
+</script>
+
+</body>
+</html>
