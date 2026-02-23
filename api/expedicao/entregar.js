@@ -1,9 +1,6 @@
-// api/expedicao/entregar.js
+// /api/expedicao/entregar.js - COMPLETO E ATUALIZADO
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const axios = require('axios');
-
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,37 +14,24 @@ module.exports = async (req, res) => {
         const { sessionToken, id } = req.body;
         if (!sessionToken || !id) return res.status(400).json({ message: 'Dados incompletos' });
 
-        // 1. SEGURANÇA: Identificar empresa do usuário
-        const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-            filter: { '%UF_CRM_1751824225': sessionToken },
-            select: ['COMPANY_ID']
-        });
+        // 1. Validar Empresa
+        const empresas = await prisma.$queryRawUnsafe(`
+            SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+        `, `%${sessionToken}%`);
 
-        if (!userCheck.data.result || !userCheck.data.result.length) {
-            return res.status(403).json({ message: 'Sessão inválida' });
-        }
-        
-        const bitrixCompanyId = userCheck.data.result[0].COMPANY_ID;
-
-        // Busca ID interno
-        const empresas = await prisma.$queryRawUnsafe(
-            `SELECT id FROM empresas WHERE bitrix_company_id = $1 LIMIT 1`, 
-            parseInt(bitrixCompanyId)
-        );
-
-        if (empresas.length === 0) return res.status(404).json({ message: 'Empresa não encontrada' });
+        if (empresas.length === 0) return res.status(403).json({ message: 'Sessão inválida' });
         const empresaId = empresas[0].id;
 
-        // 2. UPDATE SEGURO: Só atualiza se o pedido pertencer à empresa
-        const resultado = await prisma.$executeRaw`
+        // 2. Atualizar para Entregue e Mover etapa para CONCLUÍDO
+        const resultado = await prisma.$executeRawUnsafe(`
             UPDATE pedidos 
             SET status_expedicao = 'Entregue', 
-                data_entrega = NOW() 
-            WHERE id = ${parseInt(id)} 
-            AND empresa_id = ${empresaId}
-        `;
+                etapa = 'CONCLUÍDO',
+                updated_at = NOW() 
+            WHERE id = $1 
+            AND empresa_id = $2
+        `, parseInt(id), empresaId);
 
-        // Se resultado for 0, significa que o ID não existe OU não pertence a essa empresa
         if (resultado === 0) {
             return res.status(404).json({ message: 'Pedido não encontrado ou acesso negado.' });
         }
