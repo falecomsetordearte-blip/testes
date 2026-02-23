@@ -28,7 +28,6 @@ module.exports = async (req, res) => {
         if (!sessionToken) return res.status(403).json({ message: 'Sessão inválida.' });
 
         // 1. Identificar Usuário e Empresa direto no Neon
-        // Usamos LIKE para verificar se o token existe na lista de tokens
         const empresas = await prisma.$queryRawUnsafe(`
             SELECT * FROM empresas 
             WHERE session_tokens LIKE $1 
@@ -62,8 +61,7 @@ module.exports = async (req, res) => {
         if (linkArquivo) briefingFinal += `\nLink Arquivo: ${linkArquivo}`;
 
         // 4. Inserir Pedido no Neon (SQL PURO)
-        // Definimos a etapa inicial como 'ATENDIMENTO' (ou 'NOVOS')
-        // Usamos RETURNING id para pegar o ID que acabou de ser criado
+        // CORREÇÃO: bitrix_deal_id agora recebe 0 (inteiro) em vez de 'SISTEMA'
         const insertResult = await prisma.$queryRawUnsafe(`
             INSERT INTO pedidos (
                 empresa_id, 
@@ -79,7 +77,7 @@ module.exports = async (req, res) => {
                 created_at,
                 bitrix_deal_id 
             ) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'ATENDIMENTO', NOW(), 'SISTEMA')
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'ATENDIMENTO', NOW(), 0)
             RETURNING id
         `, 
         empresa.id, 
@@ -93,11 +91,10 @@ module.exports = async (req, res) => {
         briefingFinal
         );
 
-        const newPedidoId = insertResult[0].id; // Pega o ID gerado (ex: 3590)
+        const newPedidoId = insertResult[0].id;
 
         // 5. Financeiro: Descontar Saldo e Registrar Histórico
         if (arte === 'Setor de Arte' && custoDesigner > 0) {
-            // Atualiza saldo
             await prisma.$executeRawUnsafe(`
                 UPDATE empresas 
                 SET saldo = saldo - $1, 
@@ -105,7 +102,6 @@ module.exports = async (req, res) => {
                 WHERE id = $2
             `, custoDesigner, empresa.id);
 
-            // Grava histórico
             await prisma.$executeRawUnsafe(`
                 INSERT INTO historico_financeiro (
                     empresa_id, valor, tipo, deal_id, titulo, data
@@ -114,19 +110,19 @@ module.exports = async (req, res) => {
             `, empresa.id, custoDesigner, String(newPedidoId), `Produção: ${formData.titulo || 'Novo Pedido'}`);
         }
 
-        // 6. Atualizar Painel Kanban (Cards)
-        // Se você usa a tabela painel_arte_cards para aquele kanban de arrastar
+        // 6. Atualizar Painel Kanban Interno (se existir)
+        // Aqui salvamos o ID do Neon na coluna bitrix_deal_id para compatibilidade visual temporária
         await prisma.$executeRawUnsafe(`
             INSERT INTO painel_arte_cards (
                 empresa_id, bitrix_deal_id, coluna, posicao, updated_at
             ) 
             VALUES ($1, $2, 'NOVOS', 0, NOW())
-        `, empresa.id, newPedidoId); // Note: Estamos salvando o ID do Neon na coluna bitrix_deal_id por enquanto para não quebrar o front
+        `, empresa.id, newPedidoId);
 
         return res.status(200).json({ success: true, dealId: newPedidoId });
 
     } catch (error) {
         console.error('Erro ao criar Pedido:', error);
-        return res.status(500).json({ message: 'Erro interno ao criar pedido.' });
+        return res.status(500).json({ message: 'Erro interno ao criar pedido: ' + error.message });
     }
 };
