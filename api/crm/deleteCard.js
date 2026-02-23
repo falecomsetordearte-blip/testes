@@ -1,7 +1,5 @@
-const prisma = require('../../lib/prisma');
-const axios = require('axios');
-
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -9,37 +7,24 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
     try {
         const { sessionToken, cardId } = req.body;
 
-        const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-            filter: { '%UF_CRM_1751824225': sessionToken },
-            select: ['COMPANY_ID']
-        });
+        const empresas = await prisma.$queryRawUnsafe(`
+            SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+        `, `%${sessionToken}%`);
 
-        if (!userCheck.data.result || !userCheck.data.result.length) {
-            return res.status(403).json({ message: 'Auth Error' });
-        }
-        
-        const bitrixCompanyId = userCheck.data.result[0].COMPANY_ID;
+        if (empresas.length === 0) return res.status(403).json({ message: 'Auth Error' });
 
-        const empresas = await prisma.$queryRaw`
-            SELECT id FROM empresas WHERE bitrix_company_id = ${parseInt(bitrixCompanyId)} LIMIT 1
-        `;
-
-        if (empresas.length === 0) return res.status(404).json({ message: 'Empresa não encontrada.' });
-
-        await prisma.$queryRaw`
+        await prisma.$executeRawUnsafe(`
             DELETE FROM crm_oportunidades 
-            WHERE id = ${parseInt(cardId)} AND empresa_id = ${empresas[0].id}
-        `;
+            WHERE id = $1 AND empresa_id = $2
+        `, parseInt(cardId), empresas[0].id);
 
         return res.status(200).json({ success: true });
 
     } catch (error) {
-        console.error("Erro deleteCard:", error);
         return res.status(500).json({ message: 'Erro ao deletar' });
     }
 };

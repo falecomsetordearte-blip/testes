@@ -1,10 +1,8 @@
-const prisma = require('../../lib/prisma');
-const axios = require('axios');
-
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 module.exports = async (req, res) => {
-    // Permite CORS (Importante para o front não bloquear)
+    // Permite CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -16,46 +14,30 @@ module.exports = async (req, res) => {
         const { sessionToken } = req.body;
         if (!sessionToken) return res.status(401).json({ message: 'Token não fornecido' });
 
-        // 1. Validar Token no Bitrix e pegar ID da Empresa
-        const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-            filter: { '%UF_CRM_1751824225': sessionToken },
-            select: ['ID', 'COMPANY_ID']
-        });
-
-        if (!userCheck.data.result || userCheck.data.result.length === 0) {
-            return res.status(403).json({ message: 'Sessão inválida' });
-        }
-        
-        const bitrixCompanyId = userCheck.data.result[0].COMPANY_ID;
-
-        // 2. Busca a empresa no Neon usando a NOVA coluna "bitrix_company_id"
-        // --- CORREÇÃO AQUI ---
-        const empresas = await prisma.$queryRaw`
-            SELECT id 
-            FROM empresas 
-            WHERE bitrix_company_id = ${parseInt(bitrixCompanyId)} 
+        // 1. Identificar a Empresa no Neon pelo Token
+        const empresas = await prisma.$queryRawUnsafe(`
+            SELECT id FROM empresas 
+            WHERE session_tokens LIKE $1 
             LIMIT 1
-        `;
+        `, `%${sessionToken}%`);
         
         if (empresas.length === 0) {
-            console.error(`[listCards] Empresa ID ${bitrixCompanyId} não encontrada.`);
-            return res.status(404).json({ message: 'Empresa não encontrada no banco local.' });
+            return res.status(403).json({ message: 'Sessão inválida ou expirada.' });
         }
         
         const empresaId = empresas[0].id;
 
-        // 3. Buscar os cards dessa empresa
-        const cards = await prisma.$queryRaw`
+        // 2. Buscar os cards dessa empresa
+        const cards = await prisma.$queryRawUnsafe(`
             SELECT * FROM crm_oportunidades 
-            WHERE empresa_id = ${empresaId} 
+            WHERE empresa_id = $1 
             ORDER BY posicao ASC, updated_at DESC
-        `;
+        `, empresaId);
 
         // Formata valores numéricos e JSON para o Frontend
         const cardsFormatados = cards.map(c => ({
             ...c,
             valor_orcamento: parseFloat(c.valor_orcamento),
-            // Garante que o JSON seja um objeto, mesmo se o banco retornar string
             briefing_json: typeof c.briefing_json === 'string' ? JSON.parse(c.briefing_json) : c.briefing_json
         }));
 

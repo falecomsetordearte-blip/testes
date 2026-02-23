@@ -1,10 +1,7 @@
-const prisma = require('../../lib/prisma');
-const axios = require('axios');
-
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 module.exports = async (req, res) => {
-    // Headers CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -15,39 +12,18 @@ module.exports = async (req, res) => {
     try {
         const { sessionToken, cardId, novaColuna } = req.body;
 
-        // 1. Autenticação Rápida e Busca da Empresa
-        const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-            filter: { '%UF_CRM_1751824225': sessionToken },
-            select: ['COMPANY_ID']
-        });
+        const empresas = await prisma.$queryRawUnsafe(`
+            SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+        `, `%${sessionToken}%`);
 
-        if (!userCheck.data.result || !userCheck.data.result.length) {
-            return res.status(403).json({ message: 'Auth Error' });
-        }
-        
-        const bitrixCompanyId = userCheck.data.result[0].COMPANY_ID;
-
-        // --- CORREÇÃO AQUI ---
-        // Busca na nova coluna 'bitrix_company_id'
-        const empresas = await prisma.$queryRaw`
-            SELECT id 
-            FROM empresas 
-            WHERE bitrix_company_id = ${parseInt(bitrixCompanyId)} 
-            LIMIT 1
-        `;
-
-        if (empresas.length === 0) {
-            return res.status(404).json({ message: 'Empresa não encontrada.' });
-        }
-        
+        if (empresas.length === 0) return res.status(403).json({ message: 'Auth Error' });
         const empresaId = empresas[0].id;
 
-        // 2. Atualizar Coluna
-        await prisma.$queryRaw`
+        await prisma.$executeRawUnsafe(`
             UPDATE crm_oportunidades 
-            SET coluna = ${novaColuna}, updated_at = NOW()
-            WHERE id = ${parseInt(cardId)} AND empresa_id = ${empresaId}
-        `;
+            SET coluna = $1, updated_at = NOW()
+            WHERE id = $2 AND empresa_id = $3
+        `, novaColuna, parseInt(cardId), empresaId);
 
         return res.status(200).json({ success: true });
 
