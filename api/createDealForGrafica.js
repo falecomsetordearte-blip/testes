@@ -2,25 +2,9 @@
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const axios = require('axios');
-
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
-
-// Constante Única de Destino
-const STAGE_INICIAL = 'C17:NEW'; // Todos os pedidos cairão aqui agora
-
-// IDs de Campos Personalizados do Bitrix
-const FIELD_NOME_CLIENTE = 'UF_CRM_1741273407628';
-const FIELD_WHATSAPP_CLIENTE = 'UF_CRM_1749481565243';
-const FIELD_WHATSAPP_GRAFICA = 'UF_CRM_1760171265'; 
-const FIELD_LOGO_ID = 'UF_CRM_1760171060'; 
-const FIELD_SERVICO = 'UF_CRM_1761123161542';
-const FIELD_ARTE_ORIGEM = 'UF_CRM_1761269158';
-const FIELD_TIPO_ENTREGA = 'UF_CRM_1658492661';
-const FIELD_ARQUIVO_IMPRESSAO = 'UF_CRM_1748277308731'; 
-const FIELD_BRIEFING_COMPLETO = 'UF_CRM_1738249371';
 
 module.exports = async (req, res) => {
+    // Headers de segurança e CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -43,96 +27,106 @@ module.exports = async (req, res) => {
 
         if (!sessionToken) return res.status(403).json({ message: 'Sessão inválida.' });
 
-        // 1. Identificar Usuário e Empresa
-        const userSearch = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-            filter: { '%UF_CRM_1751824225': sessionToken },
-            select: ['ID', 'COMPANY_ID']
-        });
-        const user = userSearch.data.result ? userSearch.data.result[0] : null;
-        if (!user || !user.COMPANY_ID) return res.status(403).json({ message: 'Empresa não identificada.' });
+        // 1. Identificar Usuário e Empresa direto no Neon
+        // Usamos LIKE para verificar se o token existe na lista de tokens
+        const empresas = await prisma.$queryRawUnsafe(`
+            SELECT * FROM empresas 
+            WHERE session_tokens LIKE $1 
+            LIMIT 1
+        `, `%${sessionToken}%`);
 
-        // 2. Validar Saldo (Apenas para Setor de Arte)
-        const empresasLogadas = await prisma.$queryRawUnsafe(
-            `SELECT id, COALESCE(saldo, 0) as saldo FROM empresas WHERE bitrix_company_id = $1 LIMIT 1`,
-            parseInt(user.COMPANY_ID)
-        );
-        if (empresasLogadas.length === 0) return res.status(404).json({ message: 'Empresa não encontrada.' });
-
-        const empresa = empresasLogadas[0];
-        const custoDesigner = parseFloat(valorDesigner || 0);
-
-        if (arte === 'Setor de Arte' && parseFloat(empresa.saldo) < custoDesigner) {
-            return res.status(400).json({ 
-                success: false,
-                message: `Saldo insuficiente. Necessário: R$ ${custoDesigner.toFixed(2)}.` 
-            });
+        if (empresas.length === 0) {
+            return res.status(403).json({ message: 'Empresa não identificada ou sessão expirada.' });
         }
 
-        // 3. Preparar Briefing e Campos
+        const empresa = empresas[0];
+        const custoDesigner = parseFloat(valorDesigner || 0);
+
+        // 2. Validar Saldo (Apenas para Setor de Arte)
+        if (arte === 'Setor de Arte') {
+            const saldoAtual = parseFloat(empresa.saldo || 0);
+            if (saldoAtual < custoDesigner) {
+                return res.status(400).json({ 
+                    success: false,
+                    message: `Saldo insuficiente. Necessário: R$ ${custoDesigner.toFixed(2)}. Saldo atual: R$ ${saldoAtual.toFixed(2)}` 
+                });
+            }
+        }
+
+        // 3. Preparar Briefing
         let briefingFinal = formData.briefingFormatado || '';
         briefingFinal += `\n\n=== DETALHES TÉCNICOS ===`;
         if (formato) briefingFinal += `\nFormato: ${formato}`;
         if (cdrVersao) briefingFinal += `\nVersão Corel: ${cdrVersao}`;
-        if (tipoEntrega) briefingFinal += `\nEntrega: ${tipoEntrega.toUpperCase()}`;
+        if (tipoEntrega) briefingFinal += `\nEntrega: ${tipoEntrega ? tipoEntrega.toUpperCase() : 'NÃO INFORMADO'}`;
+        if (linkArquivo) briefingFinal += `\nLink Arquivo: ${linkArquivo}`;
 
-        let valorOportunidade = 0; 
-
-        let dealFields = {
-            'TITLE': formData.titulo,
-            'STAGE_ID': STAGE_INICIAL, // FORÇADO PARA C17:NEW
-            'CURRENCY_ID': 'BRL',
-            'COMPANY_ID': user.COMPANY_ID,
-            'CATEGORY_ID': 17, 
-            [FIELD_NOME_CLIENTE]: formData.nomeCliente,
-            [FIELD_WHATSAPP_CLIENTE]: formData.wppCliente,
-            [FIELD_ARTE_ORIGEM]: arte,
-            [FIELD_TIPO_ENTREGA]: tipoEntrega,
-            [FIELD_BRIEFING_COMPLETO]: briefingFinal
-        };
-
-        // Lógica Financeira e de Branding (Apenas se for Setor de Arte)
-        if (arte === 'Setor de Arte') {
-            const wppLimpo = supervisaoWpp ? supervisaoWpp.replace(/\D/g, '') : '';
-            if(wppLimpo) {
-                const supervisores = await prisma.$queryRawUnsafe(`SELECT * FROM empresas WHERE whatsapp LIKE $1 LIMIT 1`, `%${wppLimpo}%`);
-                if (supervisores.length > 0) {
-                    dealFields[FIELD_LOGO_ID] = supervisores[0].logo_id || supervisores[0].logo;
-                }
-            }
-            dealFields[FIELD_WHATSAPP_GRAFICA] = supervisaoWpp;
-            dealFields[FIELD_SERVICO] = formData.servico;
-            valorOportunidade = parseFloat((custoDesigner * 0.85).toFixed(2));
-        }
-
-        if (linkArquivo) dealFields[FIELD_ARQUIVO_IMPRESSAO] = linkArquivo;
-        dealFields['OPPORTUNITY'] = valorOportunidade; 
-
-        // 4. Criar no Bitrix
-        const createDealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.add.json`, { fields: dealFields });
-        const newDealId = createDealResponse.data.result;
-
-        // 5. Financeiro e Registros Internos
-        if (newDealId && arte === 'Setor de Arte') {
-            await prisma.$executeRawUnsafe(`UPDATE empresas SET saldo = saldo - $1, saldo_devedor = COALESCE(saldo_devedor, 0) + $1 WHERE id = $2`, custoDesigner, empresa.id);
-            await prisma.$executeRawUnsafe(`INSERT INTO historico_financeiro (empresa_id, valor, tipo, deal_id, titulo, data) VALUES ($1, $2, 'SAIDA', $3, $4, NOW())`, empresa.id, custoDesigner, String(newDealId), `Produção: ${formData.titulo}`);
-        }
-
-        await prisma.$executeRawUnsafe(
-            `INSERT INTO pedidos (empresa_id, bitrix_deal_id, titulo, nome_cliente, whatsapp_cliente, servico, tipo_arte, tipo_entrega, valor_designer, briefing_completo) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-            empresa.id, newDealId, formData.titulo, formData.nomeCliente, formData.wppCliente, formData.servico, arte, tipoEntrega, custoDesigner, briefingFinal
+        // 4. Inserir Pedido no Neon (SQL PURO)
+        // Definimos a etapa inicial como 'ATENDIMENTO' (ou 'NOVOS')
+        // Usamos RETURNING id para pegar o ID que acabou de ser criado
+        const insertResult = await prisma.$queryRawUnsafe(`
+            INSERT INTO pedidos (
+                empresa_id, 
+                titulo, 
+                nome_cliente, 
+                whatsapp_cliente, 
+                servico, 
+                tipo_arte, 
+                tipo_entrega, 
+                valor_designer, 
+                briefing_completo, 
+                etapa,
+                created_at,
+                bitrix_deal_id 
+            ) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'ATENDIMENTO', NOW(), 'SISTEMA')
+            RETURNING id
+        `, 
+        empresa.id, 
+        formData.titulo || 'Pedido sem título', 
+        formData.nomeCliente || 'Cliente', 
+        formData.wppCliente || '', 
+        formData.servico || '', 
+        arte || '', 
+        tipoEntrega || '', 
+        custoDesigner, 
+        briefingFinal
         );
 
-        await prisma.$executeRawUnsafe(
-            `INSERT INTO painel_arte_cards (empresa_id, bitrix_deal_id, coluna, posicao, updated_at) 
-             VALUES ($1, $2, 'NOVOS', 0, NOW())`,
-            empresa.id, newDealId
-        );
+        const newPedidoId = insertResult[0].id; // Pega o ID gerado (ex: 3590)
 
-        return res.status(200).json({ success: true, dealId: newDealId });
+        // 5. Financeiro: Descontar Saldo e Registrar Histórico
+        if (arte === 'Setor de Arte' && custoDesigner > 0) {
+            // Atualiza saldo
+            await prisma.$executeRawUnsafe(`
+                UPDATE empresas 
+                SET saldo = saldo - $1, 
+                    saldo_devedor = COALESCE(saldo_devedor, 0) + $1 
+                WHERE id = $2
+            `, custoDesigner, empresa.id);
+
+            // Grava histórico
+            await prisma.$executeRawUnsafe(`
+                INSERT INTO historico_financeiro (
+                    empresa_id, valor, tipo, deal_id, titulo, data
+                ) 
+                VALUES ($1, $2, 'SAIDA', $3, $4, NOW())
+            `, empresa.id, custoDesigner, String(newPedidoId), `Produção: ${formData.titulo || 'Novo Pedido'}`);
+        }
+
+        // 6. Atualizar Painel Kanban (Cards)
+        // Se você usa a tabela painel_arte_cards para aquele kanban de arrastar
+        await prisma.$executeRawUnsafe(`
+            INSERT INTO painel_arte_cards (
+                empresa_id, bitrix_deal_id, coluna, posicao, updated_at
+            ) 
+            VALUES ($1, $2, 'NOVOS', 0, NOW())
+        `, empresa.id, newPedidoId); // Note: Estamos salvando o ID do Neon na coluna bitrix_deal_id por enquanto para não quebrar o front
+
+        return res.status(200).json({ success: true, dealId: newPedidoId });
 
     } catch (error) {
-        console.error('Erro criar Deal:', error.message);
-        return res.status(500).json({ message: error.message });
+        console.error('Erro ao criar Pedido:', error);
+        return res.status(500).json({ message: 'Erro interno ao criar pedido.' });
     }
 };
