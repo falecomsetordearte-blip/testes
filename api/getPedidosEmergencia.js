@@ -12,28 +12,27 @@ module.exports = async (req, res) => {
         const { busca } = req.query;
         let pedidos;
 
-        // Como seu sistema usa SQL puro em outros arquivos, vamos usar aqui também
-        // para garantir que ele ache a tabela "pedidos" exatamente como está no Neon.
+        // O comentário /* cache bust v2 */ força o PostgreSQL a criar
+        // um novo plano de execução, resolvendo o erro 0A000.
         if (busca) {
             const termoBusca = `%${busca}%`;
             pedidos = await prisma.$queryRawUnsafe(`
-                SELECT * FROM pedidos 
-                WHERE titulo ILIKE $1 
+                SELECT * FROM pedidos /* cache bust v2 */
+                WHERE (titulo ILIKE $1 
                    OR nome_cliente ILIKE $1 
-                   OR whatsapp_cliente ILIKE $1 
+                   OR whatsapp_cliente ILIKE $1)
                 ORDER BY id DESC 
                 LIMIT 200
             `, termoBusca);
         } else {
             pedidos = await prisma.$queryRawUnsafe(`
-                SELECT * FROM pedidos 
+                SELECT * FROM pedidos /* cache bust v2 */
                 ORDER BY id DESC 
                 LIMIT 200
             `);
         }
 
-        // Correção de segurança: SQL puro as vezes retorna IDs como BigInt, 
-        // o que quebra o JSON. Isso converte qualquer BigInt para String.
+        // Correção de segurança para BigInt
         const pedidosFormatados = pedidos.map(pedido => {
             const novoPedido = {};
             for (const key in pedido) {
