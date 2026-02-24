@@ -1,8 +1,10 @@
 // /api/designerLogin.js
 const bcrypt = require('bcryptjs');
-const { randomBytes } = require('crypto');
+const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
+
 const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || 'secreta_super_segura';
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido' });
@@ -10,9 +12,9 @@ module.exports = async (req, res) => {
     try {
         const { email, senha } = req.body;
 
-        // 1. Busca o designer no banco local
+        // 1. Busca o designer pelo email no Neon
         const designers = await prisma.$queryRawUnsafe(`
-            SELECT * FROM designers_financeiro WHERE email = $1 LIMIT 1
+            SELECT designer_id, nome, senha_hash, nivel FROM designers_financeiro WHERE email = $1 LIMIT 1
         `, email);
 
         if (designers.length === 0) {
@@ -21,14 +23,24 @@ module.exports = async (req, res) => {
 
         const designer = designers[0];
 
-        // 2. Compara a senha (usando o campo senha_hash que já existe no seu banco)
+        if (!designer.senha_hash) {
+            return res.status(401).json({ message: 'Sua senha ainda não foi configurada.' });
+        }
+
+        // 2. Compara a senha digitada com a do banco
         const isMatch = await bcrypt.compare(senha, designer.senha_hash);
         if (!isMatch) {
             return res.status(401).json({ message: 'E-mail ou senha incorretos.' });
         }
 
-        // 3. Gera Token de Sessão
-        const newToken = randomBytes(32).toString('hex');
+        // 3. Gera Token JWT
+        const newToken = jwt.sign(
+            { designerId: designer.designer_id },
+            JWT_SECRET,
+            { expiresIn: '7d' } // Expira em 7 dias
+        );
+
+        // Atualiza tokens de sessão (mantendo histórico se quiser)
         const updatedTokens = designer.session_tokens ? `${designer.session_tokens},${newToken}` : newToken;
 
         await prisma.$executeRawUnsafe(`
@@ -39,7 +51,7 @@ module.exports = async (req, res) => {
             token: newToken, 
             designer: {
                 id: designer.designer_id,
-                name: designer.nome || email,
+                name: designer.nome || email.split('@')[0], // Se não tiver nome, usa o prefixo do email
                 nivel: designer.nivel
             }
         });
