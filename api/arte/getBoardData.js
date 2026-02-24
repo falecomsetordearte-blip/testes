@@ -1,19 +1,7 @@
-// api/arte/getBoardData.js - VERSÃO C/ DESIGNER VISÍVEL
+// api/arte/getBoardData.js - VERSÃO FILTRAGEM ESTRITA (SÓ 'ARTE')
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-
-// Mapeamento de Etapas
-const STAGE_NOVOS = ['C17:NEW', 'C17:PREPARATION'];
-const STAGE_ANDAMENTO = ['C17:EXECUTING'];
-const STAGE_AJUSTES = ['C17:UC_2OEE24'];
-const STAGE_AGUARDANDO = ['C17:UC_JQ2693'];
-
-// Mapeamento Neon
-const ETAPA_NEON_MAP = {
-    'ARTE': 'EM_ANDAMENTO', // No Kanban, ARTE = Em Andamento (Designer fazendo)
-    'IMPRESSÃO': 'FINALIZADO' // Não aparece no board de arte
-};
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
@@ -32,8 +20,9 @@ module.exports = async (req, res) => {
         }
         const empresaId = empresas[0].id;
 
-        // 2. Buscar Pedidos no Neon (JOIN com Designer para pegar o nome)
-        // Buscamos apenas os que NÃO estão finalizados (etapa != 'IMPRESSÃO' e != 'FINALIZADO')
+        // 2. Buscar Pedidos no Neon
+        // CORREÇÃO: Agora filtramos EXATAMENTE pela etapa 'ARTE'.
+        // Isso impede que 'ATENDIMENTO', 'ORÇAMENTO' ou qualquer outra coisa apareça aqui.
         const pedidos = await prisma.$queryRawUnsafe(`
             SELECT 
                 p.*,
@@ -41,8 +30,7 @@ module.exports = async (req, res) => {
             FROM pedidos p
             LEFT JOIN designers_financeiro d ON p.designer_id = d.designer_id
             WHERE p.empresa_id = $1 
-            AND p.etapa != 'IMPRESSÃO' 
-            AND p.etapa != 'FINALIZADO'
+            AND p.etapa = 'ARTE' 
             ORDER BY p.created_at DESC
         `, empresaId);
 
@@ -52,27 +40,27 @@ module.exports = async (req, res) => {
 
             // Lógica de Colunas
             if (p.designer_id) {
-                // Se tem designer, já está em andamento
+                // Se tem designer atribuído, vai para 'EM_ANDAMENTO'
                 coluna = 'EM_ANDAMENTO';
             } else {
-                // Se não tem designer, é novo
+                // Se não tem designer, fica em 'NOVOS' esperando alguém pegar
                 coluna = 'NOVOS';
             }
 
-            // Campos customizados para o JS do painel ler igual lia do Bitrix
+            // Campos mapeados para o frontend
             return {
                 ID: p.id,
                 TITLE: p.titulo,
-                STAGE_ID: p.etapa, // Mantém etapa original para controle interno
+                STAGE_ID: p.etapa, 
                 coluna_local: coluna,
                 UF_CRM_1761269158: p.tipo_arte || 'Setor de Arte',
                 UF_CRM_1752712769666: p.link_acompanhar,
-                UF_CRM_1764429361: null, // Link falar designer (gerado dinamicamente se precisar)
-                UF_CRM_1727464924690: '', // Medidas (se tiver coluna no neon, mapear aqui)
+                UF_CRM_1764429361: null,
+                UF_CRM_1727464924690: '', 
                 UF_CRM_1741273407628: p.nome_cliente,
                 UF_CRM_1738249371: p.briefing_completo,
                 UF_CRM_1761123161542: p.servico,
-                DESIGNER_NOME: p.designer_nome || null // <--- CAMPO NOVO
+                DESIGNER_NOME: p.designer_nome || null
             };
         });
 
