@@ -16,15 +16,15 @@ module.exports = async (req, res) => {
         if (designers.length === 0) return res.status(403).json({ message: 'Sessão inválida.' });
         const designer = designers[0];
 
-        // 2. Buscar Pedidos ATIVOS deste Designer (O que ele está trabalhando agora)
+        // 2. Buscar Pedidos ATIVOS (Adicionado briefing_completo)
         const meusPedidos = await prisma.$queryRawUnsafe(`
-            SELECT id, titulo, nome_cliente, valor_designer, link_acompanhar, etapa 
+            SELECT id, titulo, nome_cliente, valor_designer, link_acompanhar, etapa, briefing_completo 
             FROM pedidos 
             WHERE designer_id = $1 AND etapa = 'ARTE'
             ORDER BY id DESC
         `, designer.designer_id);
 
-        // 3. Buscar Pedidos DISPONÍVEIS (Mercado / Logística de Nível)
+        // 3. Buscar Pedidos DISPONÍVEIS (Mercado)
         let delay = 0;
         if (designer.nivel === 2) delay = 15;
         if (designer.nivel === 3) delay = 30;

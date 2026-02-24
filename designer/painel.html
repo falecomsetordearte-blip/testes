@@ -23,8 +23,7 @@
             --danger: #ef4444;
             --border-radius: 16px;
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
             --transition: all 0.3s ease;
         }
 
@@ -43,14 +42,6 @@
         a { text-decoration: none; color: inherit; }
         ul { list-style: none; }
 
-        /* --- LAYOUT --- */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-            width: 100%;
-        }
-
         /* --- HEADER --- */
         .app-header {
             background-color: var(--card-bg);
@@ -68,25 +59,16 @@
             justify-content: space-between;
             align-items: center;
             width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
         }
 
-        .app-logo {
-            height: 50px;
-            width: auto;
-            object-fit: contain;
-        }
+        .app-logo { height: 50px; width: auto; object-fit: contain; }
 
-        .user-menu {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
+        .user-menu { display: flex; align-items: center; gap: 20px; }
 
-        #designer-greeting {
-            font-weight: 600;
-            color: var(--text-main);
-            font-size: 0.95rem;
-        }
+        #designer-greeting { font-weight: 600; color: var(--text-main); font-size: 0.95rem; }
 
         #logout-button {
             background-color: #fee2e2;
@@ -100,19 +82,13 @@
             transition: var(--transition);
             font-size: 0.9rem;
         }
+        #logout-button:hover { background-color: var(--danger); color: white; }
 
-        #logout-button:hover {
-            background-color: var(--danger);
-            color: white;
-        }
+        /* --- MAIN --- */
+        .main-painel { padding: 40px 0; flex: 1; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; width: 100%; }
 
-        /* --- MAIN CONTENT --- */
-        .main-painel {
-            padding: 40px 0;
-            flex: 1;
-        }
-
-        /* --- DASHBOARD CARDS --- */
+        /* --- CARDS --- */
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -125,266 +101,89 @@
             border-radius: var(--border-radius);
             padding: 25px;
             box-shadow: var(--shadow-md);
-            transition: var(--transition);
             border: 1px solid rgba(255,255,255,0.5);
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
         }
 
-        .dash-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 15px;
-        }
-
-        .card-title {
-            font-size: 0.9rem;
-            color: var(--secondary-color);
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .card-icon {
-            font-size: 1.2rem;
-            padding: 10px;
-            border-radius: 12px;
-        }
-
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .card-title { font-size: 0.9rem; color: var(--secondary-color); font-weight: 500; text-transform: uppercase; }
+        .card-icon { font-size: 1.2rem; padding: 10px; border-radius: 12px; }
         .fa-wallet { color: var(--primary-color); background: #e0e7ff; }
         .fa-hourglass-half { color: var(--warning); background: #fef3c7; }
         .fa-tasks { color: var(--success); background: #d1fae5; }
-
-        .card-body { margin-bottom: 20px; }
-
-        .card-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--text-main);
-            display: block;
-        }
-
-        .card-footer {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            padding-top: 15px;
-            border-top: 1px solid #f1f5f9;
-        }
-
+        .card-value { font-size: 2rem; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 20px; }
         .card-button {
-            display: inline-block;
-            background-color: var(--primary-color);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: 500;
-            font-size: 0.85rem;
-            transition: var(--transition);
-            width: 100%;
-            text-align: center;
+            display: inline-block; background-color: var(--primary-color); color: white;
+            padding: 8px 16px; border-radius: 8px; font-weight: 500; font-size: 0.85rem;
+            width: 100%; text-align: center; transition: var(--transition);
         }
-
-        .card-button:hover {
-            background-color: var(--primary-hover);
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-        }
+        .card-button:hover { background-color: var(--primary-hover); }
 
         /* --- TABS --- */
         .tabs-component {
-            background: var(--card-bg);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow-md);
-            overflow: hidden;
+            background: var(--card-bg); border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md); overflow: hidden;
         }
-
-        .tab-buttons {
-            display: flex;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 0 20px;
-            background: #fff;
-        }
-
+        .tab-buttons { display: flex; border-bottom: 1px solid #e2e8f0; padding: 0 20px; background: #fff; }
         .tab-btn {
-            background: none;
-            border: none;
-            padding: 20px 25px;
-            font-family: 'Poppins', sans-serif;
-            font-size: 1rem;
-            font-weight: 500;
-            color: var(--secondary-color);
-            cursor: pointer;
-            transition: var(--transition);
-            position: relative;
+            background: none; border: none; padding: 20px 25px;
+            font-family: 'Poppins', sans-serif; font-size: 1rem; font-weight: 500;
+            color: var(--secondary-color); cursor: pointer; position: relative;
         }
-
-        .tab-btn:hover { color: var(--primary-color); }
-
-        .tab-btn.active {
-            color: var(--primary-color);
-            font-weight: 600;
-        }
-
+        .tab-btn.active { color: var(--primary-color); font-weight: 600; }
         .tab-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background-color: var(--primary-color);
-            border-radius: 3px 3px 0 0;
+            content: ''; position: absolute; bottom: 0; left: 0;
+            width: 100%; height: 3px; background-color: var(--primary-color);
         }
+        .tab-content { padding: 20px; min-height: 300px; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .tab-content {
-            padding: 20px;
-            min-height: 300px;
-        }
-
-        .tab-pane {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .tab-pane.active { display: block; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* --- LISTAS/TABELAS --- */
+        /* --- LISTAS --- */
         .pedidos-list-header {
-            display: grid;
-            background-color: #f8fafc;
-            padding: 15px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            color: var(--secondary-color);
-            margin-bottom: 10px;
+            display: grid; background-color: #f8fafc; padding: 15px;
+            border-radius: 8px; font-weight: 600; font-size: 0.85rem;
+            color: var(--secondary-color); margin-bottom: 10px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
-
-        .pedidos-list-body {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        .pedidos-list-body { display: flex; flex-direction: column; gap: 10px; }
+        .list-item {
+            display: grid; background: #fff; padding: 15px;
+            border-radius: 8px; border: 1px solid #e2e8f0; align-items: center;
         }
-        
-        .list-item { 
-            display: grid;
-            background: #fff;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            align-items: center;
-            transition: var(--transition);
-            font-size: 0.95rem;
-        }
-        
-        .pedidos-list-body > div:not(.loading-pedidos) {
-             display: grid;
-             padding: 15px;
-             border-bottom: 1px solid #f1f5f9;
-             align-items: center;
-        }
-        
-        .pedidos-list-body > div:not(.loading-pedidos):hover {
-            background-color: #f8fafc;
-        }
-
         .col-titulo { font-weight: 600; color: var(--text-main); }
         .col-id { color: var(--secondary-color); font-family: monospace; }
         .col-valor { font-weight: 700; color: var(--success); }
-        
-        .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            display: inline-block;
-            text-align: center;
-            width: fit-content;
-        }
-        
-        .status-pendente { background-color: #fff7ed; color: #c2410c; }
-        .status-concluido { background-color: #ecfdf5; color: #047857; }
-        .status-cancelado { background-color: #fef2f2; color: #b91c1c; }
-
-        .loading-pedidos {
-            display: flex;
-            justify-content: center;
-            padding: 40px;
-            text-align: center;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        .loading-pedidos { text-align: center; padding: 40px; color: var(--secondary-color); }
         
         .btn-action {
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            cursor: pointer;
+            background: var(--primary-color); color: white; border: none;
+            padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 5px;
         }
-
-        /* Responsividade */
+        
+        /* Mobile */
         @media (max-width: 768px) {
             .pedidos-list-header { display: none; }
-            
-            .pedidos-list-body > div:not(.loading-pedidos) {
-                display: flex;
-                flex-direction: column;
-                gap: 5px;
-                align-items: flex-start;
-                padding: 20px;
-                box-shadow: var(--shadow-sm);
-                border: 1px solid #e2e8f0;
-                border-radius: 8px;
-                margin-bottom: 15px;
-            }
-
+            .list-item { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
             .col-id::before { content: "ID: "; font-weight: 600; }
-            .col-status::before { content: "Status: "; font-weight: 600; }
-            .col-valor::before { content: "Valor: "; font-weight: 600; }
+            .col-valor::before { content: "Oferta: "; font-weight: 600; }
         }
     </style>
 </head>
 <body>
     <div class="app-layout">
         <header class="app-header">
-            <div class="container header-content">
+            <div class="header-content">
                  <img src="https://app.setordearte.com.br/images/logo-fundo-claro-100x100.png" alt="Logo Setor de Arte" class="app-logo">
                 <div class="user-menu">
-                    <a href="perfil.html" id="designer-greeting-link" class="user-link">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div style="width: 35px; height: 35px; background: #e0e7ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary-color);">
-                                <i class="fas fa-user"></i>
-                            </div>
-                            <span id="designer-greeting">Olá, Designer</span>
+                    <a href="perfil.html" id="designer-greeting-link" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+                        <div style="width: 35px; height: 35px; background: #e0e7ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary-color);">
+                            <i class="fas fa-user"></i>
                         </div>
+                        <span id="designer-greeting">Olá, Designer</span>
                     </a>
                     <button id="logout-button"><i class="fas fa-sign-out-alt"></i> Sair</button>
                 </div>
@@ -393,10 +192,8 @@
         
         <main class="main-painel">
             <div class="container">
-
                 <div style="margin-bottom: 20px;">
                     <h2 style="font-weight: 600; color: var(--text-main);">Visão Geral</h2>
-                    <p style="color: var(--secondary-color); font-size: 0.9rem;">Acompanhe seus ganhos e tarefas pendentes.</p>
                 </div>
 
                 <div class="dashboard-grid">
@@ -427,7 +224,6 @@
                 </div>
 
                 <div class="tabs-component">
-                    <!-- BOTÕES DAS 3 ABAS -->
                     <div class="tab-buttons">
                         <button class="tab-btn active" data-tab="atendimentos">Meus Atendimentos</button>
                         <button class="tab-btn" data-tab="mercado">Pedidos Disponíveis</button>
@@ -437,62 +233,57 @@
                     <div class="tab-content">
                         <!-- ABA 1: MEUS ATENDIMENTOS -->
                         <div id="atendimentos" class="tab-pane active">
-                            <div class="pedidos-list-header" style="grid-template-columns: 0.5fr 3fr 1.5fr 1fr 1fr;">
-                                <div class="col-id">#ID</div>
-                                <div class="col-titulo">Título do Pedido</div>
-                                <div class="col-status">Status</div>
-                                <div class="col-valor">Comissão</div>
-                                <div class="col-acoes" style="text-align: right;">Ações</div>
+                            <div class="pedidos-list-header" style="grid-template-columns: 0.5fr 3fr 1fr 1fr 1fr;">
+                                <div>#ID</div>
+                                <div>Detalhes do Pedido</div>
+                                <div>Status</div>
+                                <div>OFERTA</div> <!-- Mudado para OFERTA -->
+                                <div style="text-align: right;">Ações</div>
                             </div>
                             <div id="atendimentos-list" class="pedidos-list-body">
-                                <div class="loading-pedidos"><div class="spinner"></div></div>
+                                <div class="loading-pedidos">Carregando...</div>
                             </div>
                         </div>
 
-                        <!-- ABA 2: MERCADO (NOVA) -->
+                        <!-- ABA 2: MERCADO -->
                         <div id="mercado" class="tab-pane">
                             <div class="pedidos-list-header" style="grid-template-columns: 0.5fr 3fr 1fr 1fr;">
-                                <div class="col-id">#ID</div>
-                                <div class="col-titulo">Detalhes do Pedido</div>
-                                <div class="col-valor">Comissão</div>
-                                <div class="col-acoes" style="text-align: right;">Ação</div>
+                                <div>#ID</div>
+                                <div>Detalhes e Briefing</div>
+                                <div>OFERTA</div> <!-- Mudado para OFERTA -->
+                                <div style="text-align: right;">Ação</div>
                             </div>
                             <div id="mercado-list" class="pedidos-list-body">
-                                <div class="loading-pedidos"><div class="spinner"></div></div>
+                                <div class="loading-pedidos">Carregando...</div>
                             </div>
                         </div>
 
-                        <!-- ABA 3: HISTÓRICO DE SAQUES -->
+                        <!-- ABA 3: SAQUES -->
                         <div id="saques" class="tab-pane">
                              <div class="pedidos-list-header" style="grid-template-columns: 0.5fr 3fr 1.5fr 1fr;">
-                                <div class="col-id">#ID</div>
-                                <div class="col-titulo">Data / Descrição</div>
-                                <div class="col-status">Status</div>
-                                <div class="col-valor">Valor Solicitado</div>
+                                <div>#ID</div>
+                                <div>Data / Descrição</div>
+                                <div>Status</div>
+                                <div>Valor</div>
                             </div>
                             <div id="saques-list" class="pedidos-list-body">
-                                 <div class="loading-pedidos" style="color: var(--secondary-color);">Histórico de saques ficará disponível em breve.</div>
+                                 <div class="loading-pedidos">Nenhum saque solicitado ainda.</div>
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
         </main>
     </div>
-    <script src="designer-script.js"></script>
     
-    <!-- Script para alternância das abas -->
+    <script src="designer-script.js"></script>
     <script>
         document.querySelectorAll('.tab-btn').forEach(button => {
             button.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
                 document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
-                
                 button.classList.add('active');
-                
-                const tabId = button.getAttribute('data-tab');
-                document.getElementById(tabId).classList.add('active');
+                document.getElementById(button.getAttribute('data-tab')).classList.add('active');
             });
         });
     </script>
