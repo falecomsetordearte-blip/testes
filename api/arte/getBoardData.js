@@ -1,48 +1,85 @@
+// api/arte/getBoardData.js - VERSÃO C/ DESIGNER VISÍVEL
+
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+// Mapeamento de Etapas
+const STAGE_NOVOS = ['C17:NEW', 'C17:PREPARATION'];
+const STAGE_ANDAMENTO = ['C17:EXECUTING'];
+const STAGE_AJUSTES = ['C17:UC_2OEE24'];
+const STAGE_AGUARDANDO = ['C17:UC_JQ2693'];
+
+// Mapeamento Neon
+const ETAPA_NEON_MAP = {
+    'ARTE': 'EM_ANDAMENTO', // No Kanban, ARTE = Em Andamento (Designer fazendo)
+    'IMPRESSÃO': 'FINALIZADO' // Não aparece no board de arte
+};
+
 module.exports = async (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
 
+    const { sessionToken } = req.body;
+    if (!sessionToken) return res.status(403).json({ message: 'Token ausente' });
+
     try {
-        const { sessionToken } = req.body;
+        // 1. Auth no Neon
         const empresas = await prisma.$queryRawUnsafe(`
             SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
         `, `%${sessionToken}%`);
 
-        if (empresas.length === 0) return res.status(403).json({ message: 'Sessão inválida' });
+        if (empresas.length === 0) {
+            return res.status(403).json({ message: 'Sessão inválida' });
+        }
         const empresaId = empresas[0].id;
 
-        // Selecionamos campos específicos para evitar erro de Cache Bust
-        const pedidosComColuna = await prisma.$queryRawUnsafe(`
+        // 2. Buscar Pedidos no Neon (JOIN com Designer para pegar o nome)
+        // Buscamos apenas os que NÃO estão finalizados (etapa != 'IMPRESSÃO' e != 'FINALIZADO')
+        const pedidos = await prisma.$queryRawUnsafe(`
             SELECT 
-                p.id, p.titulo, p.etapa, p.nome_cliente, p.whatsapp_cliente, 
-                p.tipo_arte, p.servico, p.briefing_completo, p.link_arquivo,
-                COALESCE(c.coluna, 'NOVOS') as coluna_interna
-            FROM pedidos p /* cache-bust-v4 */
-            LEFT JOIN painel_arte_cards c ON p.id = c.bitrix_deal_id AND p.empresa_id = c.empresa_id
+                p.*,
+                d.nome as designer_nome
+            FROM pedidos p
+            LEFT JOIN designers_financeiro d ON p.designer_id = d.designer_id
             WHERE p.empresa_id = $1 
-            AND p.etapa = 'ARTE'
-            ORDER BY p.id DESC
+            AND p.etapa != 'IMPRESSÃO' 
+            AND p.etapa != 'FINALIZADO'
+            ORDER BY p.created_at DESC
         `, empresaId);
 
-        const processedDeals = pedidosComColuna.map(p => ({
-            ID: p.id,
-            TITLE: p.titulo || String(p.id),
-            STAGE_ID: p.etapa, 
-            'UF_CRM_1741273407628': p.nome_cliente,
-            'UF_CRM_1749481565243': p.whatsapp_cliente,
-            'UF_CRM_1761269158': p.tipo_arte,
-            'UF_CRM_1761123161542': p.servico,
-            'UF_CRM_1738249371': p.briefing_completo,
-            coluna_local: p.coluna_interna
-        }));
+        // 3. Formatar para o Frontend
+        const deals = pedidos.map(p => {
+            let coluna = 'NOVOS';
 
-        return res.status(200).json({ deals: processedDeals });
+            // Lógica de Colunas
+            if (p.designer_id) {
+                // Se tem designer, já está em andamento
+                coluna = 'EM_ANDAMENTO';
+            } else {
+                // Se não tem designer, é novo
+                coluna = 'NOVOS';
+            }
+
+            // Campos customizados para o JS do painel ler igual lia do Bitrix
+            return {
+                ID: p.id,
+                TITLE: p.titulo,
+                STAGE_ID: p.etapa, // Mantém etapa original para controle interno
+                coluna_local: coluna,
+                UF_CRM_1761269158: p.tipo_arte || 'Setor de Arte',
+                UF_CRM_1752712769666: p.link_acompanhar,
+                UF_CRM_1764429361: null, // Link falar designer (gerado dinamicamente se precisar)
+                UF_CRM_1727464924690: '', // Medidas (se tiver coluna no neon, mapear aqui)
+                UF_CRM_1741273407628: p.nome_cliente,
+                UF_CRM_1738249371: p.briefing_completo,
+                UF_CRM_1761123161542: p.servico,
+                DESIGNER_NOME: p.designer_nome || null // <--- CAMPO NOVO
+            };
+        });
+
+        res.status(200).json({ deals });
+
     } catch (error) {
-        return res.status(500).json({ message: error.message });
+        console.error("Erro getBoardData:", error);
+        res.status(500).json({ message: 'Erro interno ao carregar painel.' });
     }
 };
