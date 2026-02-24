@@ -16,8 +16,8 @@ module.exports = async (req, res) => {
         if (designers.length === 0) return res.status(403).json({ message: 'Sessão inválida.' });
         const designer = designers[0];
 
-        // 2. Buscar Pedidos ATIVOS (Adicionado briefing_completo)
-        const meusPedidos = await prisma.$queryRawUnsafe(`
+        // 2. Buscar Pedidos ATIVOS (Meus Atendimentos)
+        const meusPedidosRaw = await prisma.$queryRawUnsafe(`
             SELECT id, titulo, nome_cliente, valor_designer, link_acompanhar, etapa, briefing_completo 
             FROM pedidos 
             WHERE designer_id = $1 AND etapa = 'ARTE'
@@ -29,13 +29,23 @@ module.exports = async (req, res) => {
         if (designer.nivel === 2) delay = 15;
         if (designer.nivel === 3) delay = 30;
 
-        const mercado = await prisma.$queryRawUnsafe(`
+        const mercadoRaw = await prisma.$queryRawUnsafe(`
             SELECT id, titulo, servico, valor_designer, created_at, briefing_completo
             FROM pedidos 
             WHERE etapa = 'ARTE' AND designer_id IS NULL
             AND created_at <= (NOW() - INTERVAL '${delay} minutes')
             ORDER BY created_at ASC
         `);
+
+        // --- APLICAÇÃO DA TAXA DE 15% (Visualização) ---
+        // O Designer vê o valor LÍQUIDO (85% do valor original)
+        
+        const aplicarTaxa = (pedidos) => {
+            return pedidos.map(p => ({
+                ...p,
+                valor_designer: parseFloat(p.valor_designer || 0) * 0.85 // Aplica 15% de desconto
+            }));
+        };
 
         return res.status(200).json({
             designer: {
@@ -44,8 +54,8 @@ module.exports = async (req, res) => {
                 pendente: parseFloat(designer.saldo_pendente || 0),
                 nivel: designer.nivel
             },
-            meusPedidos: meusPedidos,
-            mercado: mercado
+            meusPedidos: aplicarTaxa(meusPedidosRaw),
+            mercado: aplicarTaxa(mercadoRaw)
         });
 
     } catch (error) {

@@ -20,8 +20,7 @@ module.exports = async (req, res) => {
         if (designers.length === 0) return res.status(403).json({ message: 'Sessão inválida.' });
         const designerId = designers[0].designer_id;
 
-        // 2. Buscar o pedido para saber o VALOR da oferta
-        // (Só permite finalizar se o pedido for do designer e estiver na etapa ARTE)
+        // 2. Buscar o pedido (Valor Bruto)
         const pedidos = await prisma.$queryRawUnsafe(`
             SELECT id, valor_designer, titulo 
             FROM pedidos 
@@ -33,34 +32,36 @@ module.exports = async (req, res) => {
         }
 
         const pedido = pedidos[0];
-        const valorComissao = parseFloat(pedido.valor_designer || 0);
-
-        // --- TRANSAÇÃO FINANCEIRA (CRÉDITO IMEDIATO) ---
         
-        // A) Creditar no saldo do Designer e aumentar contagem de aprovados
+        // --- CÁLCULO DA COMISSÃO (15%) ---
+        const valorBruto = parseFloat(pedido.valor_designer || 0);
+        const valorLiquido = valorBruto * 0.85; // Designer recebe 85%
+
+        // A) Creditar valor LÍQUIDO no saldo do Designer
         await prisma.$executeRawUnsafe(`
             UPDATE designers_financeiro 
             SET saldo_disponivel = saldo_disponivel + $1,
                 aprovados = aprovados + 1,
-                pontuacao = pontuacao + 10 -- Bônus de pontuação
+                pontuacao = pontuacao + 10 
             WHERE designer_id = $2
-        `, valorComissao, designerId);
+        `, valorLiquido, designerId);
 
-        // B) Atualizar o Pedido: Salvar links, mudar etapa para IMPRESSÃO
-        // Nota: 'link_arquivo' é o link final de impressão, 'link_layout' é a prova visual
+        // B) Atualizar o Pedido
+        // Salvamos em 'valor_designer_pago' o que foi efetivamente transferido (o líquido)
+        // A coluna 'valor_designer' continua com o Bruto para o histórico da empresa
         await prisma.$executeRawUnsafe(`
             UPDATE pedidos 
             SET etapa = 'IMPRESSÃO', 
                 link_arquivo = $1, 
                 link_layout = $2,
-                valor_designer_pago = $3,
+                valor_designer_pago = $3, 
                 updated_at = NOW() 
             WHERE id = $4
-        `, linkImpressao, linkLayout, valorComissao, parseInt(pedidoId));
+        `, linkImpressao, linkLayout, valorLiquido, parseInt(pedidoId));
 
         return res.status(200).json({ 
             success: true, 
-            message: `Sucesso! R$ ${valorComissao.toFixed(2).replace('.', ',')} creditados na sua conta.` 
+            message: `Sucesso! R$ ${valorLiquido.toFixed(2).replace('.', ',')} creditados na sua conta (Já descontada taxa de 15%).` 
         });
 
     } catch (error) {
