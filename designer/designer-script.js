@@ -1,305 +1,152 @@
-// /designer/designer-script.js - VERSÃO CORRIGIDA
+// /designer/designer-script.js - VERSÃO UBER DE DESIGNERS (NEON)
 
 (function() {
-    // Função para exibir feedback nos formulários
-    function showFeedback(containerId, message, isError = true) {
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        container.textContent = message;
-        container.className = `form-feedback ${isError ? 'error' : 'success'}`;
-        container.classList.remove('hidden');
+    const sessionToken = localStorage.getItem('designerToken');
+
+    // Redireciona se não estiver logado
+    if (!sessionToken && !window.location.href.includes('login.html')) {
+        window.location.href = 'login.html';
+        return;
     }
 
-    // --- LÓGICA DA PÁGINA DE LOGIN ---
-    const designerLoginForm = document.getElementById('designer-login-form');
-    if (designerLoginForm) {
-        designerLoginForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const submitButton = designerLoginForm.querySelector('button[type="submit"]');
-            submitButton.disabled = true;
-            submitButton.textContent = 'Entrando...';
+    document.addEventListener('DOMContentLoaded', () => {
+        if (document.querySelector('main.main-painel')) {
+            carregarDashboardDesigner();
+        }
+        configurarFormulariosAuth();
+    });
 
-            try {
-                const response = await fetch('/api/designerLogin', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: document.getElementById('email').value,
-                        senha: document.getElementById('senha').value
-                    })
-                });
-                
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.message || 'Erro desconhecido.');
-                }
-                
-                localStorage.setItem('designerToken', data.token);
-                localStorage.setItem('designerInfo', JSON.stringify(data.designer));
-                
-                window.location.href = 'painel.html';
+    async function carregarDashboardDesigner() {
+        const containerAtendimentos = document.getElementById('atendimentos-list');
+        const containerMercado = document.getElementById('saques-list'); // Vamos usar a aba de "Saques" temporariamente como "Pedidos Disponíveis" ou ajustar o HTML
+        
+        try {
+            const res = await fetch('/api/designer/getDashboard', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: sessionToken })
+            });
 
-            } catch (error) {
-                showFeedback('form-error-feedback', error.message);
-                submitButton.disabled = false;
-                submitButton.textContent = 'Entrar';
-            }
-        });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+
+            // 1. Atualizar Cabeçalho e Saldo
+            document.getElementById('designer-greeting').textContent = `Olá, ${data.designer.nome}!`;
+            document.getElementById('designer-saldo-disponivel').textContent = formatarMoeda(data.designer.saldo);
+            document.getElementById('designer-saldo-pendente').textContent = formatarMoeda(data.designer.pendente);
+            document.getElementById('designer-pedidos-ativos').textContent = data.meusPedidos.length;
+
+            // 2. Renderizar Meus Trabalhos (Pedidos que ele já assumiu)
+            renderizarMeusTrabalhos(data.meusPedidos);
+
+            // 3. Renderizar Mercado (Pedidos disponíveis para o nível dele)
+            // DICA: No seu HTML, mude o texto da segunda aba para "Pedidos Disponíveis"
+            renderizarMercado(data.mercado);
+
+        } catch (error) {
+            console.error(error);
+            showToast("Erro ao carregar dados.", "error");
+        }
     }
 
-    // --- LÓGICA DA PÁGINA DE "ESQUECI A SENHA" ---
-    const esqueciSenhaForm = document.getElementById('designer-esqueci-senha-form');
-    if (esqueciSenhaForm) {
-        const formWrapper = document.getElementById('form-wrapper');
-        esqueciSenhaForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const btn = event.target.querySelector('button');
-            btn.disabled = true;
-            btn.textContent = 'Enviando...';
-
-            try {
-                const response = await fetch('/api/designer/forgotPassword', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: document.getElementById('email').value })
-                });
-                const data = await response.json();
-                if (!response.ok) { throw new Error(data.message); }
-
-                formWrapper.innerHTML = `
-                    <div class="auth-header">
-                        <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte">
-                        <h1>Link Enviado!</h1>
-                        <p>${data.message || 'Se um e-mail correspondente for encontrado, um link para redefinição de senha será enviado.'}</p>
-                    </div>`;
-            } catch (error) {
-                formWrapper.innerHTML = `
-                    <div class="auth-header">
-                        <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte">
-                        <h1>Ocorreu um Erro</h1>
-                        <p>${error.message || 'Não foi possível processar a solicitação. Tente novamente mais tarde.'}</p>
-                    </div>`;
-            }
-        });
-    }
-
-    // --- LÓGICA DA PÁGINA DE REDEFINIR SENHA ---
-    const redefinirSenhaForm = document.getElementById('designer-redefinir-senha-form');
-    if (redefinirSenhaForm) {
-        redefinirSenhaForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const novaSenha = document.getElementById('nova-senha').value;
-            const confirmarSenha = document.getElementById('confirmar-senha').value;
-            const submitButton = redefinirSenhaForm.querySelector('button[type="submit"]');
-            
-            if (novaSenha.length < 6) return showFeedback('form-error-feedback', 'A senha deve ter no mínimo 6 caracteres.');
-            if (novaSenha !== confirmarSenha) return showFeedback('form-error-feedback', 'As senhas não coincidem.');
-
-            submitButton.disabled = true;
-            submitButton.textContent = 'Salvando...';
-
-            const token = new URLSearchParams(window.location.search).get('token');
-            
-            try {
-                const response = await fetch('/api/designer/resetPassword', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token, novaSenha })
-                });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message);
-                
-                alert('Senha redefinida com sucesso! Você já pode fazer o login.');
-                window.location.href = 'login.html';
-            } catch (error) {
-                showFeedback('form-error-feedback', error.message);
-                submitButton.disabled = false;
-                submitButton.textContent = 'Salvar Nova Senha';
-            }
-        });
-    }
-
-    // --- LÓGICA DA PÁGINA DO PAINEL (DASHBOARD) ---
-    if (document.querySelector('main.main-painel')) {
-        const designerToken = localStorage.getItem('designerToken');
-        const designerInfoString = localStorage.getItem('designerInfo');
-
-        if (!designerToken || !designerInfoString) {
-            localStorage.clear();
-            window.location.href = 'login.html';
+    // --- LISTA 1: TRABALHOS ATIVOS ---
+    function renderizarMeusTrabalhos(pedidos) {
+        const container = document.getElementById('atendimentos-list');
+        if (pedidos.length === 0) {
+            container.innerHTML = `<div class="loading-pedidos">Você não tem trabalhos ativos. Pegue um pedido na aba ao lado!</div>`;
             return;
         }
-        
-        const designerInfo = JSON.parse(designerInfoString);
-        
-        document.getElementById('designer-greeting').textContent = `Olá, ${designerInfo.name}!`;
-        document.getElementById('logout-button').addEventListener('click', () => {
-            localStorage.clear();
-            window.location.href = 'login.html';
-        });
 
-        function renderizarCards(data) {
-            document.getElementById('designer-saldo-disponivel').textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.saldoDisponivel || 0);
-            document.getElementById('designer-saldo-pendente').textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.saldoPendente || 0);
-            document.getElementById('designer-pedidos-ativos').textContent = data.pedidosAtivos;
-        }
-
-        // =======================================================
-        // === FUNÇÃO CORRIGIDA PARA RENDERIZAR OS ATENDIMENTOS ===
-        // =======================================================
-        function renderizarListaAtendimentos(pedidos) {
-            const container = document.getElementById('atendimentos-list');
-            if (!pedidos || pedidos.length === 0) {
-                container.innerHTML = `<div class="loading-pedidos" style="padding: 50px 20px;">Nenhum atendimento encontrado.</div>`;
-                return;
-            }
-            let html = "";
-            pedidos.forEach(pedido => {
-                let statusInfo = { texto: 'Desconhecido', classe: '' };
-                const stageId = pedido.STAGE_ID || "";
-
-                if (stageId.includes("NEW")) statusInfo = { texto: 'Aguardando Pagamento', classe: 'status-pagamento' };
-                else if (stageId.includes("LOSE")) statusInfo = { texto: 'Cancelado', classe: 'status-cancelado' };
-                else if (stageId === "C17:UC_2OEE24") statusInfo = { texto: 'Em Análise', classe: 'status-analise' };
-                else if ((stageId.includes("WON") && stageId !== "C17:WON") || stageId === "C17:1") statusInfo = { texto: "Aprovado", classe: "status-aprovado" };
-                else if (stageId === "C17:WON" || stageId.includes("C19")) statusInfo = { texto: "Verificado", classe: "status-verificado" };
-                else statusInfo = { texto: 'Em Andamento', classe: 'status-andamento' };
-
-                const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(pedido.OPPORTUNITY) || 0);
-                
-                // AQUI ESTÁ A CORREÇÃO: cada informação está em sua própria div de coluna
-                html += `
-                    <div class="pedido-item">
-                        <div class="col-id"><strong>#${pedido.ID}</strong></div>
-                        <div class="col-titulo">
-                            <div class="col-content">
-                                <span>${pedido.TITLE}</span>
-                            </div>
-                        </div>
-                        <div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div>
-                        <div class="col-valor">${valorFormatado}</div>
-                        <div class="col-acoes"><a href="../pedido.html?id=${pedido.ID}" class="btn-ver-pedido" target="_blank">Ver Detalhes</a></div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-        }
-
-        function renderizarListaSaques(saques) {
-            const container = document.getElementById('saques-list');
-             if (!saques || saques.length === 0) {
-                container.innerHTML = `<div class="loading-pedidos" style="padding: 50px 20px;">Nenhuma solicitação de saque encontrada.</div>`;
-                return;
-            }
-            let html = "";
-            saques.forEach(saque => {
-                let statusInfo = { texto: 'Em Processamento', classe: 'status-andamento' };
-                const stageId = saque.STAGE_ID || "";
-
-                if (stageId === "C31:NEW") {
-                    statusInfo = { texto: 'Solicitado', classe: 'status-analise' };
-                } else if (stageId === "C31:WON") {
-                    statusInfo = { texto: 'Pago', classe: 'status-aprovado' };
-                }
-                
-                const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(saque.OPPORTUNITY) || 0);
-                
-                // CORREÇÃO APLICADA AQUI TAMBÉM
-                html += `
-                    <div class="pedido-item">
-                        <div class="col-id"><strong>#${saque.ID}</strong></div>
-                        <div class="col-titulo">
-                             <div class="col-content">
-                                <span>${saque.TITLE}</span>
-                            </div>
-                        </div>
-                        <div class="col-status"><span class="status-badge ${statusInfo.classe}">${statusInfo.texto}</span></div>
-                        <div class="col-valor">${valorFormatado}</div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-        }
-
-        async function carregarDashboard() {
-            try {
-                const response = await fetch('/api/getDesignerDashboard', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: designerToken })
-                });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message);
-
-                renderizarCards(data);
-                renderizarListaAtendimentos(data.pedidosArte);
-                renderizarListaSaques(data.solicitacoesSaque);
-
-            } catch (error) {
-                console.error('Erro ao carregar dashboard:', error);
-                document.querySelector('.container').innerHTML = `<h1>Erro ao carregar dados</h1><p>${error.message}</p>`;
-            }
-        }
-
-        function ativarLogicaAbas() {
-            const tabButtons = document.querySelectorAll('.tab-btn');
-            const tabPanes = document.querySelectorAll('.tab-pane');
-
-            tabButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    tabButtons.forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
-                    
-                    const targetTab = button.dataset.tab;
-                    tabPanes.forEach(pane => {
-                        if (pane.id === targetTab) {
-                            pane.classList.add('active');
-                        } else {
-                            pane.classList.remove('active');
-                        }
-                    });
-                });
-            });
-        }
-        
-        const btnSaque = document.getElementById('btn-solicitar-saque');
-        if (btnSaque) {
-            btnSaque.addEventListener('click', async () => {
-                const valor = prompt("Digite o valor que deseja sacar (ex: 50.00):");
-                if (!valor || isNaN(valor) || Number(valor) <= 0) {
-                    alert("Por favor, insira um valor numérico válido.");
-                    return;
-                }
-                
-                btnSaque.disabled = true;
-                btnSaque.textContent = "Processando...";
-                
-                try {
-                    const response = await fetch('/api/solicitarSaqueDesigner', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${designerToken}`,
-                            'x-designer-info': designerInfoString
-                        },
-                        body: JSON.stringify({ valor: Number(valor) })
-                    });
-                    const data = await response.json();
-                    if (!response.ok) throw new Error(data.message);
-                    
-                    alert("Sua solicitação de saque foi enviada com sucesso!");
-                    carregarDashboard();
-
-                } catch (error) {
-                    alert(`Erro: ${error.message}`);
-                } finally {
-                    btnSaque.disabled = false;
-                    btnSaque.textContent = "Solicitar Saque";
-                }
-            });
-        }
-
-        carregarDashboard();
-        ativarLogicaAbas();
+        container.innerHTML = pedidos.map(p => `
+            <div class="list-item" style="grid-template-columns: 0.5fr 2fr 1fr 1fr 1fr;">
+                <div class="col-id">#${p.id}</div>
+                <div class="col-titulo">${p.titulo}</div>
+                <div><span class="status-badge status-andamento">Em Produção</span></div>
+                <div class="col-valor">${formatarMoeda(p.valor_designer)}</div>
+                <div style="text-align: right; display: flex; gap: 5px; justify-content: flex-end;">
+                    <a href="${p.link_acompanhar}" target="_blank" class="btn-action" style="background:#25D366"><i class="fab fa-whatsapp"></i> Chat</a>
+                    <button onclick="prepararFinalizacao(${p.id})" class="btn-action" style="background:#4f46e5"><i class="fas fa-check"></i> Finalizar</button>
+                </div>
+            </div>
+        `).join('');
     }
+
+    // --- LISTA 2: MERCADO (DISPONÍVEIS) ---
+    function renderizarMercado(pedidos) {
+        const container = document.getElementById('saques-list');
+        if (pedidos.length === 0) {
+            container.innerHTML = `<div class="loading-pedidos">Nenhum pedido disponível no momento para o seu nível.</div>`;
+            return;
+        }
+
+        container.innerHTML = pedidos.map(p => `
+            <div class="list-item" style="grid-template-columns: 0.5fr 3fr 1fr 1fr;">
+                <div class="col-id">#${p.id}</div>
+                <div class="col-titulo">
+                    <strong>${p.titulo}</strong><br>
+                    <small style="color:#aaa">${p.servico}</small>
+                </div>
+                <div class="col-valor">${formatarMoeda(p.valor_designer)}</div>
+                <div style="text-align: right;">
+                    <button onclick="assumirPedido(${p.id})" class="btn-action" style="background:#2ecc71; padding: 8px 15px;">ATENDER</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // --- AÇÃO: ASSUMIR PEDIDO ---
+    window.assumirPedido = async (id) => {
+        if (!confirm("Deseja assumir este pedido?")) return;
+
+        try {
+            const res = await fetch('/api/designer/assumirPedido', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: sessionToken, pedidoId: id })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+
+            alert("Pedido assumido! O chat será aberto.");
+            if (data.chatLink) window.open(data.chatLink, '_blank');
+            carregarDashboardDesigner();
+        } catch (e) { alert(e.message); }
+    };
+
+    // --- AÇÃO: FINALIZAR (ABRE PROMPT PARA LINKS) ---
+    window.prepararFinalizacao = async (id) => {
+        const linkLayout = prompt("Cole o link da imagem do LAYOUT (ex: Google Drive, Imgur):");
+        if (!linkLayout) return;
+
+        const linkImpressao = prompt("Cole o link do ARQUIVO FINAL para impressão:");
+        if (!linkImpressao) return;
+
+        try {
+            const res = await fetch('/api/designer/finalizarPedido', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    token: sessionToken, 
+                    pedidoId: id, 
+                    linkLayout, 
+                    linkImpressao 
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+
+            alert("Sucesso! Pedido enviado para impressão e comissão creditada.");
+            carregarDashboardDesigner();
+        } catch (e) { alert(e.message); }
+    };
+
+    // Helpers
+    function formatarMoeda(valor) {
+        return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor || 0);
+    }
+
+    function configurarFormulariosAuth() {
+        // Mantenha aqui sua lógica de login.html e resetPassword.js se necessário
+    }
+
 })();

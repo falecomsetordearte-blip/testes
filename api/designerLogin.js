@@ -1,74 +1,51 @@
-// /api/designerLogin.js - VERSÃO CORRETA E FINAL (USA NEON DB)
-
-const { PrismaClient } = require('@prisma/client');
-const axios = require('axios');
-const jwt = require('jsonwebtoken');
+// /api/designerLogin.js
 const bcrypt = require('bcryptjs');
-
+const { randomBytes } = require('crypto');
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
-const JWT_SECRET = process.env.JWT_SECRET;
 
 module.exports = async (req, res) => {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Método não permitido' });
-    }
+    if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido' });
 
     try {
         const { email, senha } = req.body;
-        if (!email || !senha) {
-            return res.status(400).json({ message: 'E-mail e senha são obrigatórios.' });
+
+        // 1. Busca o designer no banco local
+        const designers = await prisma.$queryRawUnsafe(`
+            SELECT * FROM designers_financeiro WHERE email = $1 LIMIT 1
+        `, email);
+
+        if (designers.length === 0) {
+            return res.status(401).json({ message: 'E-mail ou senha incorretos.' });
         }
 
-        // ETAPA 1: Encontrar o designer no Bitrix24 pelo e-mail para obter o ID
-        const userSearchResponse = await axios.post(`${BITRIX24_API_URL}user.get.json`, {
-            FILTER: { "EMAIL": email }
-        });
+        const designer = designers[0];
 
-        const designerBitrix = userSearchResponse.data.result[0];
-        if (!designerBitrix) {
-            return res.status(401).json({ message: 'E-mail ou senha inválidos.' });
-        }
-        const designerId = parseInt(designerBitrix.ID, 10);
-        
-        // ETAPA 2: Buscar o registro financeiro (e a senha) no nosso banco de dados Neon
-        const designerFinanceiro = await prisma.designerFinanceiro.findUnique({
-            where: { designer_id: designerId },
-        });
-
-        const storedHash = designerFinanceiro?.senha_hash;
-        if (!storedHash) {
-            return res.status(401).json({ message: 'Este usuário não possui uma senha configurada. Por favor, use a opção "Esqueci minha senha".' });
-        }
-
-        // ETAPA 3: Comparar a senha fornecida com o hash armazenado
-        const isMatch = await bcrypt.compare(senha, storedHash);
+        // 2. Compara a senha (usando o campo senha_hash que já existe no seu banco)
+        const isMatch = await bcrypt.compare(senha, designer.senha_hash);
         if (!isMatch) {
-            return res.status(401).json({ message: 'E-mail ou senha inválidos.' });
+            return res.status(401).json({ message: 'E-mail ou senha incorretos.' });
         }
 
-        // ETAPA 4: Se a senha estiver correta, criar o token JWT
-        const designerData = {
-            id: designerBitrix.ID,
-            name: designerBitrix.NAME,
-            lastName: designerBitrix.LAST_NAME,
-            email: designerBitrix.EMAIL,
-            avatar: designerBitrix.PERSONAL_PHOTO
-        };
+        // 3. Gera Token de Sessão
+        const newToken = randomBytes(32).toString('hex');
+        const updatedTokens = designer.session_tokens ? `${designer.session_tokens},${newToken}` : newToken;
 
-        const sessionToken = jwt.sign(
-            { designerId: designerData.id, name: designerData.name },
-            JWT_SECRET, 
-            { expiresIn: '1d' }
-        );
+        await prisma.$executeRawUnsafe(`
+            UPDATE designers_financeiro SET session_tokens = $1 WHERE designer_id = $2
+        `, updatedTokens, designer.designer_id);
 
         return res.status(200).json({ 
-            token: sessionToken,
-            designer: designerData
+            token: newToken, 
+            designer: {
+                id: designer.designer_id,
+                name: designer.nome || email,
+                nivel: designer.nivel
+            }
         });
 
     } catch (error) {
-        console.error('Erro no login do designer:', error.response ? error.response.data : error.message);
-        return res.status(500).json({ message: 'Ocorreu um erro interno. Tente novamente.' });
+        console.error('Erro login designer:', error);
+        return res.status(500).json({ message: 'Erro interno no servidor.' });
     }
 };
