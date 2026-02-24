@@ -27,27 +27,34 @@ module.exports = async (req, res) => {
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
 
-        // 3. Buscar Histórico Financeiro
-        const historico = await prisma.historicoFinanceiro.findMany({
-            where: {
-                empresa_id: empresaLocal.id,
-                data: { gte: start, lte: end }
-            },
-            orderBy: { data: 'desc' }
-        });
+        // 3. Buscar Histórico Financeiro (SQL PURO)
+        const historico = await prisma.$queryRawUnsafe(`
+            SELECT * FROM historico_financeiro 
+            WHERE empresa_id = $1 
+            AND data >= $2 
+            AND data <= $3 
+            ORDER BY data DESC
+        `, empresaLocal.id, start, end);
 
         // 4. Buscar status atual dos pedidos relacionados
+        // Extrair IDs de pedidos (garantindo que sejam números)
         const dealIds = historico
             .map(h => parseInt(h.deal_id))
-            .filter(id => !isNaN(id));
-
-        const pedidosStatus = await prisma.pedido.findMany({
-            where: { id: { in: dealIds } },
-            select: { id: true, etapa: true }
-        });
+            .filter(id => !isNaN(id) && id > 0);
 
         const statusMap = {};
-        pedidosStatus.forEach(p => statusMap[p.id] = p.etapa);
+
+        if (dealIds.length > 0) {
+            // Monta string para o IN (ex: "10, 12, 15")
+            const idsString = dealIds.join(',');
+            
+            // Query segura injetando apenas números inteiros
+            const pedidosStatus = await prisma.$queryRawUnsafe(`
+                SELECT id, etapa FROM pedidos WHERE id IN (${idsString})
+            `);
+
+            pedidosStatus.forEach(p => statusMap[p.id] = p.etapa);
+        }
 
         // 5. Processar e Filtrar
         let extratoFormatado = historico.map(item => {
@@ -74,7 +81,7 @@ module.exports = async (req, res) => {
                 data: item.data,
                 deal_id: item.deal_id || '-',
                 descricao: item.descricao || item.titulo,
-                valor: parseFloat(item.valor),
+                valor: parseFloat(item.valor || 0),
                 tipo: item.tipo, 
                 status: statusItem, 
                 link_atendimento: link || ''
@@ -84,7 +91,9 @@ module.exports = async (req, res) => {
         // 6. Aplicar Filtro
         if (statusFilter && statusFilter !== 'TODOS') {
             extratoFormatado = extratoFormatado.filter(item => {
-                return item.status === statusFilter; 
+                if (statusFilter === 'EM_PRODUCAO') return item.status === 'EM_PRODUCAO';
+                if (statusFilter === 'FINALIZADO') return item.status === 'FINALIZADO';
+                return true;
             });
         }
 

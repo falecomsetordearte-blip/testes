@@ -9,45 +9,42 @@ module.exports = async (req, res) => {
     if (!sessionToken) return res.status(403).json({ message: 'Token ausente' });
 
     try {
-        // 1. AUTENTICAÇÃO NEON (Adeus Bitrix)
-        // Busca empresa que tenha esse token na coluna session_tokens
+        // 1. AUTENTICAÇÃO NEON
         const empresas = await prisma.$queryRawUnsafe(`
             SELECT * FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
         `, `%${sessionToken}%`);
 
         if (empresas.length === 0) {
-            return res.status(403).json({ message: 'Sessão inválida ou expirada.' });
+            return res.status(403).json({ message: 'Sessão inválida.' });
         }
         
         const resultEmpresa = empresas[0];
 
-        // 2. CALCULAR TOTAIS EM TEMPO REAL (Fonte da Verdade: Tabela Pedidos)
+        // 2. CALCULAR TOTAIS VIA SQL (Raw Query)
         
         // A) Saldo Em Produção: Soma dos pedidos na etapa 'ARTE'
-        const emProducaoAgg = await prisma.pedido.aggregate({
-            _sum: { valor_designer: true }, 
-            where: {
-                empresa_id: resultEmpresa.id,
-                etapa: 'ARTE'
-            }
-        });
+        const emProducaoResult = await prisma.$queryRawUnsafe(`
+            SELECT COALESCE(SUM(valor_designer), 0) as total 
+            FROM pedidos 
+            WHERE empresa_id = $1 AND etapa = 'ARTE'
+        `, resultEmpresa.id);
 
         // B) Total Faturado/Gasto: Soma dos pedidos na etapa 'IMPRESSÃO'
-        const totalGastoAgg = await prisma.pedido.aggregate({
-            _sum: { valor_designer: true },
-            where: {
-                empresa_id: resultEmpresa.id,
-                etapa: 'IMPRESSÃO'
-            }
-        });
+        const totalGastoResult = await prisma.$queryRawUnsafe(`
+            SELECT COALESCE(SUM(valor_designer), 0) as total 
+            FROM pedidos 
+            WHERE empresa_id = $1 AND etapa = 'IMPRESSÃO'
+        `, resultEmpresa.id);
 
-        // C) Saldo Disponível (Vem direto da carteira da empresa)
+        // Conversão segura de BigInt/Decimal para Float
+        const emProducao = parseFloat(emProducaoResult[0]?.total || 0);
+        const totalGasto = parseFloat(totalGastoResult[0]?.total || 0);
         const saldoDisponivel = parseFloat(resultEmpresa.saldo || 0);
 
         res.json({
             saldo_disponivel: saldoDisponivel,
-            em_andamento: parseFloat(emProducaoAgg._sum.valor_designer || 0),
-            a_pagar: parseFloat(totalGastoAgg._sum.valor_designer || 0),
+            em_andamento: emProducao,
+            a_pagar: totalGasto,
             credito_aprovado: resultEmpresa.credito_aprovado || false,
             solicitacao_pendente: resultEmpresa.solicitacao_credito_pendente || false
         });
