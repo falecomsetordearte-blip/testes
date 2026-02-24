@@ -1,73 +1,46 @@
-// /api/designer/updateProfile.js
+// /api/designer/updateProfile.js - VERSÃO NEON 100%
 const { PrismaClient } = require('@prisma/client');
-const axios = require('axios');
-const jwt = require('jsonwebtoken');
+const prisma = new PrismaClient();
 const bcrypt = require('bcryptjs');
 
-const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET;
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
-
 module.exports = async (req, res) => {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Método não permitido.' });
-    }
+    if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido.' });
 
     try {
-        const { token, nome, sobrenome, chave_pix, nova_senha } = req.body;
-        if (!token) return res.status(401).json({ message: 'Token não fornecido.' });
+        const { token, nome, chave_pix, nova_senha } = req.body;
 
-        // 1. Validar o token e obter o ID do designer
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const designerId = parseInt(decoded.designerId, 10);
-        if (!designerId) return res.status(401).json({ message: 'Token inválido.' });
+        // 1. Identificar Designer pelo Token de Sessão
+        const designers = await prisma.$queryRawUnsafe(`
+            SELECT designer_id FROM designers_financeiro WHERE session_tokens LIKE $1 LIMIT 1
+        `, `%${token}%`);
 
-        // 2. Preparar os dados para as atualizações
-        const bitrixUpdateData = {};
-        if (nome) bitrixUpdateData.NAME = nome;
-        if (sobrenome) bitrixUpdateData.LAST_NAME = sobrenome;
+        if (designers.length === 0) return res.status(401).json({ message: 'Sessão inválida.' });
+        const designerId = designers[0].designer_id;
 
-        const prismaUpdateData = {};
-        if (chave_pix !== undefined) prismaUpdateData.chave_pix = chave_pix;
+        // 2. Preparar campos para atualização
+        let updateParts = [];
+        let params = [];
+
+        if (nome) { params.push(nome); updateParts.push(`nome = $${params.length}`); }
+        if (chave_pix) { params.push(chave_pix); updateParts.push(`chave_pix = $${params.length}`); }
         
-        // Se uma nova senha foi fornecida, criptografa-a
         if (nova_senha) {
-            prismaUpdateData.senha_hash = await bcrypt.hash(nova_senha, 10);
+            const hash = await bcrypt.hash(nova_senha, 10);
+            params.push(hash);
+            updateParts.push(`senha_hash = $${params.length}`);
         }
 
-        // 3. Executar as atualizações em paralelo
-        const promises = [];
+        if (updateParts.length === 0) return res.status(400).json({ message: 'Nada para atualizar.' });
 
-        // Adiciona a promessa de atualização do Bitrix24 se houver dados a serem atualizados
-        if (Object.keys(bitrixUpdateData).length > 0) {
-            promises.push(
-                axios.post(`${BITRIX24_API_URL}user.update`, {
-                    ID: designerId,
-                    ...bitrixUpdateData
-                })
-            );
-        }
+        params.push(designerId);
+        const query = `UPDATE designers_financeiro SET ${updateParts.join(', ')} WHERE designer_id = $${params.length}`;
 
-        // Adiciona a promessa de atualização do Prisma se houver dados a serem atualizados
-        if (Object.keys(prismaUpdateData).length > 0) {
-            promises.push(
-                prisma.designerFinanceiro.update({
-                    where: { designer_id: designerId },
-                    data: prismaUpdateData
-                })
-            );
-        }
-
-        // Aguarda a conclusão de todas as promessas
-        await Promise.all(promises);
+        await prisma.$executeRawUnsafe(query, ...params);
 
         return res.status(200).json({ message: 'Perfil atualizado com sucesso!' });
 
     } catch (error) {
-        console.error("Erro ao atualizar perfil do designer:", error);
-        if (error.code === 'P2025') {
-             return res.status(404).json({ message: 'Registro financeiro do designer não encontrado para atualização.' });
-        }
-        return res.status(500).json({ message: 'Ocorreu um erro interno ao salvar as alterações.' });
+        console.error("Erro updateProfile:", error);
+        return res.status(500).json({ message: 'Erro ao salvar alterações.' });
     }
 };
