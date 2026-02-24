@@ -1,4 +1,4 @@
-// /api/helpers/chatapp.js - VERSÃO EXPLORATÓRIA DE ENDPOINT
+// /api/helpers/chatapp.js - BASEADO NA DOCUMENTAÇÃO OFICIAL CHATAPP
 
 const axios = require('axios');
 const CHATAPP_API = 'https://api.chatapp.online/v1';
@@ -10,6 +10,7 @@ async function getChatAppToken() {
             password: process.env.CHATAPP_PASSWORD,
             appId: process.env.CHATAPP_APP_ID
         });
+        // Resposta conforme Swagger: data.data.accessToken
         return response.data?.data?.accessToken;
     } catch (error) {
         console.error("[CHATAPP AUTH ERROR]", error.response?.data || error.message);
@@ -18,87 +19,93 @@ async function getChatAppToken() {
 }
 
 async function criarGrupoProducao(titulo, supervisorWpp, briefing) {
-    console.log("--- [CHATAPP AUTOMATION] Iniciando Busca de Endpoint Válido ---");
+    console.log("--- [CHATAPP] Iniciando automação conforme documentação ---");
     
     const token = await getChatAppToken();
     if (!token) return null;
 
+    // Header sem 'Bearer' conforme Quick Start
     const headers = { 'Authorization': token };
 
     try {
-        // 1. Identificar Licença Ativa
+        // 1. DESCOBERTA DA LICENÇA CORRETA
         const resLic = await axios.get(`${CHATAPP_API}/licenses`, { headers });
         const lista = resLic.data?.data || resLic.data || [];
-        const lic = lista.find(l => l.active && l.messenger?.length > 0);
+        
+        // Buscamos a licença que você está usando (59808)
+        const lic = lista.find(l => String(l.licenseId) === "59808" || (l.active && l.messenger?.length > 0));
 
         if (!lic) {
-            console.error("[ERROR] Nenhuma licença ativa encontrada.");
+            console.error("[CHATAPP] Erro: Nenhuma licença ativa encontrada.");
             return null;
         }
 
         const L_ID = lic.licenseId || lic.id;
+        
+        /**
+         * REGRA DA DOCUMENTAÇÃO:
+         * Mesmo que o tipo no JSON venha 'grWhatsApp', na URL do endpoint v1 
+         * deve-se usar 'gr-whatsapp' para contas Business QR Code.
+         */
+        const L_MSG = 'gr-whatsapp'; 
+
+        // 2. CRIAR O GRUPO
+        // Endpoint: /licenses/{licenseId}/messenger/{messengerType}/groups
+        const urlGroups = `${CHATAPP_API}/licenses/${L_ID}/messenger/${L_MSG}/groups`;
+        
+        // Limpa o número: 55 + DDD + Numero
         const foneLimpo = supervisorWpp.replace(/\D/g, '');
+
+        /**
+         * PAYLOAD CONFORME DOCUMENTAÇÃO (Swagger):
+         * O campo correto é "phones" e deve ser um array de strings.
+         */
         const payloadGrupo = {
             name: `ARTE: ${titulo}`,
-            participants: [ { phone: foneLimpo } ] 
+            phones: [ foneLimpo ] 
         };
 
-        // 2. TESTAR VARIAÇÕES DE URL (Uma delas deve funcionar)
-        // Tentaremos os formatos mais comuns para licenças QR Code
-        const rotasParaTestar = [
-            `${CHATAPP_API}/licenses/${L_ID}/messenger/gr-whatsapp/groups`, // Padrão Kebab
-            `${CHATAPP_API}/licenses/${L_ID}/messenger/whatsapp/groups`,    // Padrão Simples
-            `${CHATAPP_API}/licenses/${L_ID}/gr-whatsapp/groups`,           // Sem a palavra 'messenger'
-            `${CHATAPP_API}/licenses/${L_ID}/whatsapp/groups`               // Sem 'messenger' e simples
-        ];
+        console.log(`[CHATAPP] Criando grupo em: ${urlGroups}`);
+        
+        const resGrupo = await axios.post(urlGroups, payloadGrupo, { headers });
 
-        let resGrupo = null;
-        let urlVencedora = null;
-        let messengerTypeUsado = null;
-
-        for (const url of rotasParaTestar) {
-            try {
-                console.log(`[DEBUG] Testando URL: ${url}`);
-                const tentativa = await axios.post(url, payloadGrupo, { headers });
-                
-                if (tentativa.status === 200 || tentativa.status === 201) {
-                    resGrupo = tentativa;
-                    urlVencedora = url;
-                    // Detecta qual messenger type funcionou para usar na mensagem depois
-                    messengerTypeUsado = url.includes('gr-whatsapp') ? 'gr-whatsapp' : 'whatsapp';
-                    console.log(`[DEBUG] >>> SUCESSO na URL: ${url}`);
-                    break;
-                }
-            } catch (err) {
-                console.log(`[DEBUG] Falha na URL (${url}): ${err.response?.status || err.message}`);
-                continue; // Tenta a próxima
-            }
-        }
-
-        if (!resGrupo) {
-            console.error("[ERROR] Todas as tentativas de URL para criação de grupo falharam com 404.");
-            return null;
-        }
-
+        // A API v1 retorna os dados do grupo no objeto 'data'
         const gData = resGrupo.data?.data || resGrupo.data;
         const chatId = gData.id;
         const groupLink = gData.inviteLink;
 
-        // 3. ENVIAR BRIEFING (Usando a estrutura que funcionou acima)
-        // Se a URL do grupo funcionou sem a palavra 'messenger', a mensagem também deve seguir o mesmo padrão
-        let urlMsg = urlVencedora.replace('/groups', '/messages');
+        if (!chatId) {
+            console.error("[CHATAPP] Grupo criado mas não retornou ID. Resposta:", JSON.stringify(resGrupo.data));
+            return null;
+        }
+
+        // 3. ENVIAR BRIEFING PARA O GRUPO
+        // Endpoint: /licenses/{licenseId}/messenger/{messengerType}/messages
+        const urlMsg = `${CHATAPP_API}/licenses/${L_ID}/messenger/${L_MSG}/messages`;
         
-        console.log(`[DEBUG] Enviando briefing para: ${chatId} via ${urlMsg}`);
+        console.log(`[CHATAPP] Enviando briefing para o grupo ID: ${chatId}`);
 
         await axios.post(urlMsg, {
             chatId: chatId,
             text: `🚀 *NOVO PEDIDO DE ARTE*\n\n*Pedido:* ${titulo}\n\n*Briefing:* \n${briefing}\n\n---`
         }, { headers });
 
+        console.log("[CHATAPP] Automação concluída com sucesso!");
         return { chatId, groupLink };
 
     } catch (error) {
-        console.error("--- [CHATAPP FATAL ERROR] ---", error.response?.data || error.message);
+        console.error("--- [CHATAPP FATAL ERROR] ---");
+        if (error.response) {
+            console.error(`Status: ${error.response.status}`);
+            console.error(`Resposta API: ${JSON.stringify(error.response.data)}`);
+            
+            // Tratamento especial para erro de permissão de grupo
+            if (error.response.status === 403) {
+                console.error("[DICA] Algumas licenças QR Code precisam que a opção 'Allow creating groups' esteja ativa no painel do ChatApp.");
+            }
+        } else {
+            console.error(`Erro: ${error.message}`);
+        }
         return null;
     }
 }
