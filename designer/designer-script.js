@@ -1,4 +1,4 @@
-// /designer/designer-script.js - VERSÃO 100% NEON C/ CADASTRO
+// /designer/designer-script.js - VERSÃO 100% NEON C/ CADASTRO E 3 ABAS
 
 (function() {
     const sessionToken = localStorage.getItem('designerToken');
@@ -82,12 +82,12 @@
     function renderizarMeusTrabalhos(pedidos) {
         const container = document.getElementById('atendimentos-list');
         if (pedidos.length === 0) {
-            container.innerHTML = `<div class="loading-pedidos">Você não tem trabalhos ativos. Pegue um pedido na aba ao lado!</div>`;
+            container.innerHTML = `<div class="loading-pedidos">Você não tem trabalhos ativos. Pegue um pedido na aba de Pedidos Disponíveis!</div>`;
             return;
         }
 
         container.innerHTML = pedidos.map(p => `
-            <div class="list-item" style="grid-template-columns: 0.5fr 2fr 1fr 1fr 1fr; display: grid; padding: 15px; border-bottom: 1px solid #eee; align-items: center;">
+            <div class="list-item" style="grid-template-columns: 0.5fr 3fr 1.5fr 1fr 1fr; display: grid; padding: 15px; border-bottom: 1px solid #eee; align-items: center;">
                 <div class="col-id">#${p.id}</div>
                 <div class="col-titulo" style="font-weight:600">${p.titulo}</div>
                 <div><span class="status-badge status-andamento" style="background:#e0e7ff; color:#4338ca; padding:5px 10px; border-radius:15px; font-size:0.8rem;">Em Produção</span></div>
@@ -101,9 +101,10 @@
     }
 
     function renderizarMercado(pedidos) {
-        const container = document.getElementById('saques-list'); 
+        // Agora joga os dados na aba correta (mercado-list)
+        const container = document.getElementById('mercado-list'); 
         if (pedidos.length === 0) {
-            container.innerHTML = `<div class="loading-pedidos">Nenhum pedido disponível no momento para o seu nível.</div>`;
+            container.innerHTML = `<div class="loading-pedidos" style="color: var(--secondary-color);">Nenhum pedido disponível no momento para o seu nível.</div>`;
             return;
         }
 
@@ -111,12 +112,14 @@
             <div class="list-item" style="grid-template-columns: 0.5fr 3fr 1fr 1fr; display: grid; padding: 15px; border-bottom: 1px solid #eee; align-items: center;">
                 <div class="col-id">#${p.id}</div>
                 <div class="col-titulo">
-                    <strong>${p.titulo}</strong><br>
-                    <small style="color:#94a3b8">${p.servico}</small>
+                    <strong style="font-size: 1.05rem; color: var(--text-main);">${p.titulo}</strong><br>
+                    <small style="color: var(--secondary-color);"><i class="fas fa-tag"></i> ${p.servico || 'Arte'}</small>
                 </div>
-                <div class="col-valor" style="color:#10b981; font-weight:700">${formatarMoeda(p.valor_designer)}</div>
+                <div class="col-valor" style="color:#10b981; font-weight:700; font-size: 1.1rem;">${formatarMoeda(p.valor_designer)}</div>
                 <div style="text-align: right;">
-                    <button onclick="assumirPedido(${p.id})" style="background:#2ecc71; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600;">ATENDER</button>
+                    <button onclick="assumirPedido(${p.id})" style="background:#2ecc71; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; transition: 0.3s; box-shadow: 0 4px 6px rgba(46, 204, 113, 0.2);">
+                        <i class="fas fa-hand-paper"></i> ATENDER
+                    </button>
                 </div>
             </div>
         `).join('');
