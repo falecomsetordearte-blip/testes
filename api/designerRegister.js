@@ -30,17 +30,25 @@ module.exports = async (req, res) => {
         // 2. Cria o Hash da senha
         const senhaHash = await bcrypt.hash(senha, 10);
 
-        // 3. Descobre o próximo ID disponível (MAX + 1)
+        // 3. Descobre o próximo ID disponível
         const maxIdResult = await prisma.$queryRawUnsafe(`
             SELECT MAX(designer_id) as max_id FROM designers_financeiro
         `);
         const nextId = (maxIdResult[0].max_id || 0) + 1;
 
-        // 4. Insere o novo designer no banco (Nível 3 padrão para novatos)
+        // 4. Insere o novo designer no banco (Incluindo atualizado_em, criado_em e aprovados para evitar erro NOT NULL)
         await prisma.$executeRawUnsafe(`
             INSERT INTO designers_financeiro 
-            (designer_id, nome, email, senha_hash, nivel, saldo_disponivel, saldo_pendente, pontuacao) 
-            VALUES ($1, $2, $3, $4, 3, 0.00, 0.00, 0)
+            (
+                designer_id, nome, email, senha_hash, nivel, 
+                saldo_disponivel, saldo_pendente, pontuacao, aprovados, 
+                criado_em, atualizado_em
+            ) 
+            VALUES (
+                $1, $2, $3, $4, 3, 
+                0.00, 0.00, 0, 0.00, 
+                NOW(), NOW()
+            )
         `, nextId, nome.trim(), emailLimpo, senhaHash);
 
         // 5. Gera o Token JWT para login automático
