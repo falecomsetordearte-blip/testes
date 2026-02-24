@@ -1,4 +1,4 @@
-// /designer/designer-script.js - VERSÃO INTEGRADA 100% NEON
+// /designer/designer-script.js - VERSÃO 100% NEON C/ CADASTRO
 
 (function() {
     const sessionToken = localStorage.getItem('designerToken');
@@ -7,28 +7,28 @@
     // --- 1. CONTROLE DE ACESSO (REDIRECIONAMENTO) ---
     const paginasPublicas = [
         'login.html',
+        'cadastro.html',
         'esqueci-senha.html',
         'redefinir-senha.html'
     ];
 
     const ehPaginaPublica = paginasPublicas.some(pg => path.includes(pg));
 
-    // Se não está logado e tenta acessar área restrita, vai para login
     if (!sessionToken && !ehPaginaPublica) {
         window.location.href = 'login.html';
         return;
     }
 
-    // Se já está logado e tenta acessar login, vai para o painel
-    if (sessionToken && path.includes('login.html')) {
+    if (sessionToken && (path.includes('login.html') || path.includes('cadastro.html'))) {
         window.location.href = 'painel.html';
         return;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Identifica qual página o script está rodando e ativa a lógica correspondente
         if (document.getElementById('designer-login-form')) {
             configurarLogin();
+        } else if (document.getElementById('designer-cadastro-form')) {
+            configurarCadastro();
         } else if (document.getElementById('designer-esqueci-senha-form')) {
             configurarEsqueciSenha();
         } else if (document.getElementById('designer-redefinir-senha-form')) {
@@ -38,14 +38,13 @@
         }
     });
 
-    // --- 2. LÓGICA DE DASHBOARD (ÁREA DO TRABALHO) ---
+    // --- 2. LÓGICA DE DASHBOARD ---
     async function carregarDashboardDesigner() {
         const designerInfoString = localStorage.getItem('designerInfo');
         if (!designerInfoString) return;
 
         const designerInfo = JSON.parse(designerInfoString);
         
-        // Saudação e Logout
         const greetingEl = document.getElementById('designer-greeting');
         if (greetingEl) greetingEl.textContent = `Olá, ${designerInfo.name}!`;
 
@@ -67,12 +66,10 @@
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            // Atualizar Cards de Saldo
             document.getElementById('designer-saldo-disponivel').textContent = formatarMoeda(data.designer.saldo);
             document.getElementById('designer-saldo-pendente').textContent = formatarMoeda(data.designer.pendente);
             document.getElementById('designer-pedidos-ativos').textContent = data.meusPedidos.length;
 
-            // Renderizar Listas
             renderizarMeusTrabalhos(data.meusPedidos);
             renderizarMercado(data.mercado);
 
@@ -104,7 +101,7 @@
     }
 
     function renderizarMercado(pedidos) {
-        const container = document.getElementById('saques-list'); // Usando a aba de saques para "Pedidos Disponíveis"
+        const container = document.getElementById('saques-list'); 
         if (pedidos.length === 0) {
             container.innerHTML = `<div class="loading-pedidos">Nenhum pedido disponível no momento para o seu nível.</div>`;
             return;
@@ -125,7 +122,7 @@
         `).join('');
     }
 
-    // --- 3. AÇÕES DO DESIGNER ---
+    // --- 3. AÇÕES ---
     window.assumirPedido = async (id) => {
         if (!confirm("Deseja assumir este pedido para produção?")) return;
 
@@ -165,7 +162,7 @@
         } catch (e) { alert(e.message); }
     };
 
-    // --- 4. LÓGICA DE AUTENTICAÇÃO ---
+    // --- 4. AUTENTICAÇÃO ---
     function configurarLogin() {
         const form = document.getElementById('designer-login-form');
         form.addEventListener('submit', async (e) => {
@@ -191,6 +188,46 @@
             } catch (err) {
                 showFeedback('form-error-feedback', err.message);
                 btn.disabled = false; btn.textContent = 'Entrar';
+            }
+        });
+    }
+
+    function configurarCadastro() {
+        const form = document.getElementById('designer-cadastro-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = form.querySelector('button');
+            const nome = document.getElementById('nome').value;
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+            const confirmarSenha = document.getElementById('confirmar-senha').value;
+
+            if (senha !== confirmarSenha) {
+                return showFeedback('form-error-feedback', 'As senhas não coincidem!');
+            }
+
+            btn.disabled = true; 
+            btn.textContent = 'Criando conta...';
+
+            try {
+                const res = await fetch('/api/designerRegister', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, email, senha })
+                });
+                
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+
+                localStorage.setItem('designerToken', data.token);
+                localStorage.setItem('designerInfo', JSON.stringify(data.designer));
+                window.location.href = 'painel.html';
+                
+            } catch (err) {
+                showFeedback('form-error-feedback', err.message);
+                btn.disabled = false; 
+                btn.textContent = 'Cadastrar e Entrar';
             }
         });
     }

@@ -7,15 +7,23 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'secreta_super_segura';
 
 module.exports = async (req, res) => {
-    if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido' });
+    if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido.' });
 
     try {
         const { email, senha } = req.body;
 
-        // 1. Busca o designer pelo email no Neon
+        if (!email || !senha) {
+            return res.status(400).json({ message: 'E-mail e senha são obrigatórios.' });
+        }
+
+        const emailLimpo = email.trim().toLowerCase();
+
+        // 1. Busca o designer pelo email no Neon (ignorando maiúsculas)
         const designers = await prisma.$queryRawUnsafe(`
-            SELECT designer_id, nome, senha_hash, nivel FROM designers_financeiro WHERE email = $1 LIMIT 1
-        `, email);
+            SELECT designer_id, nome, senha_hash, nivel 
+            FROM designers_financeiro 
+            WHERE LOWER(email) = $1 LIMIT 1
+        `, emailLimpo);
 
         if (designers.length === 0) {
             return res.status(401).json({ message: 'E-mail ou senha incorretos.' });
@@ -24,10 +32,10 @@ module.exports = async (req, res) => {
         const designer = designers[0];
 
         if (!designer.senha_hash) {
-            return res.status(401).json({ message: 'Sua senha ainda não foi configurada.' });
+            return res.status(401).json({ message: 'Sua senha não foi configurada. Crie uma nova conta com este e-mail.' });
         }
 
-        // 2. Compara a senha digitada com a do banco
+        // 2. Compara a senha
         const isMatch = await bcrypt.compare(senha, designer.senha_hash);
         if (!isMatch) {
             return res.status(401).json({ message: 'E-mail ou senha incorretos.' });
@@ -37,10 +45,9 @@ module.exports = async (req, res) => {
         const newToken = jwt.sign(
             { designerId: designer.designer_id },
             JWT_SECRET,
-            { expiresIn: '7d' } // Expira em 7 dias
+            { expiresIn: '7d' }
         );
 
-        // Atualiza tokens de sessão (mantendo histórico se quiser)
         const updatedTokens = designer.session_tokens ? `${designer.session_tokens},${newToken}` : newToken;
 
         await prisma.$executeRawUnsafe(`
@@ -51,13 +58,13 @@ module.exports = async (req, res) => {
             token: newToken, 
             designer: {
                 id: designer.designer_id,
-                name: designer.nome || email.split('@')[0], // Se não tiver nome, usa o prefixo do email
+                name: designer.nome || emailLimpo.split('@')[0],
                 nivel: designer.nivel
             }
         });
 
     } catch (error) {
-        console.error('Erro login designer:', error);
+        console.error('[LOGIN ERROR] Erro interno no servidor:', error);
         return res.status(500).json({ message: 'Erro interno no servidor.' });
     }
 };

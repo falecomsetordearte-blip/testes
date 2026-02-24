@@ -9,6 +9,7 @@ module.exports = async (req, res) => {
     try {
         const { token, nome, sobrenome, chave_pix, nova_senha } = req.body;
 
+        // 1. Identificar Designer pelo Token de Sessão
         const designers = await prisma.$queryRawUnsafe(`
             SELECT designer_id FROM designers_financeiro WHERE session_tokens LIKE $1 LIMIT 1
         `, `%${token}%`);
@@ -16,14 +17,17 @@ module.exports = async (req, res) => {
         if (designers.length === 0) return res.status(401).json({ message: 'Sessão inválida.' });
         const designerId = designers[0].designer_id;
 
+        // 2. Preparar campos para atualização
         let updateParts = [];
         let params = [];
 
-        // Junta Nome e Sobrenome para salvar na coluna 'nome'
-        if (nome || sobrenome) { 
+        // Junta Nome e Sobrenome para salvar na coluna 'nome' no Neon
+        if (nome !== undefined || sobrenome !== undefined) {
             const nomeCompleto = `${nome || ''} ${sobrenome || ''}`.trim();
-            params.push(nomeCompleto); 
-            updateParts.push(`nome = $${params.length}`); 
+            if (nomeCompleto) {
+                params.push(nomeCompleto);
+                updateParts.push(`nome = $${params.length}`);
+            }
         }
 
         if (chave_pix !== undefined) { 
@@ -40,10 +44,9 @@ module.exports = async (req, res) => {
         if (updateParts.length === 0) return res.status(400).json({ message: 'Nada para atualizar.' });
 
         params.push(designerId);
-        await prisma.$executeRawUnsafe(
-            `UPDATE designers_financeiro SET ${updateParts.join(', ')} WHERE designer_id = $${params.length}`, 
-            ...params
-        );
+        const query = `UPDATE designers_financeiro SET ${updateParts.join(', ')} WHERE designer_id = $${params.length}`;
+
+        await prisma.$executeRawUnsafe(query, ...params);
 
         return res.status(200).json({ message: 'Perfil atualizado com sucesso!' });
 
