@@ -1,46 +1,30 @@
+// /api/helpers/chatapp.js - CORREÇÃO DE ENDPOINT 404
+
 const axios = require('axios');
 
 const CHATAPP_API = 'https://api.chatapp.online/v1';
 
 async function getChatAppToken() {
-    console.log("--- [CHATAPP AUTH] Iniciando obtenção de token ---");
-    
-    const email = process.env.CHATAPP_EMAIL;
-    const pass = process.env.CHATAPP_PASSWORD;
-    const appId = process.env.CHATAPP_APP_ID;
-
-    if (!email || !pass || !appId) {
-        console.error("[CHATAPP AUTH] Erro: Variáveis de ambiente não configuradas.");
-        return null;
-    }
-
+    console.log("--- [CHATAPP AUTH] Obtendo token ---");
     try {
         const response = await axios.post(`${CHATAPP_API}/tokens`, {
-            email: email,
-            password: pass,
-            appId: appId
+            email: process.env.CHATAPP_EMAIL,
+            password: process.env.CHATAPP_PASSWORD,
+            appId: process.env.CHATAPP_APP_ID
         });
 
-        // CORREÇÃO AQUI: A API retorna { data: { accessToken: '...' } }
-        // O Axios coloca isso dentro de response.data, então fica response.data.data.accessToken
         if (response.data && response.data.data && response.data.data.accessToken) {
-            console.log("[CHATAPP AUTH] Token obtido com sucesso!");
             return response.data.data.accessToken;
-        } else {
-            console.error("[CHATAPP AUTH] Resposta inesperada:", JSON.stringify(response.data));
-            return null;
         }
+        return null;
     } catch (error) {
-        console.error("--- [CHATAPP AUTH ERROR] ---");
-        if (error.response) {
-            console.error("Dados do Erro:", JSON.stringify(error.response.data));
-        }
+        console.error("[CHATAPP AUTH ERROR]", error.response?.data || error.message);
         return null;
     }
 }
 
 async function criarGrupoProducao(titulo, supervisorWpp, briefing) {
-    console.log("--- [CHATAPP GROUP] Iniciando criação de grupo ---");
+    console.log("--- [CHATAPP GROUP] Iniciando criação ---");
     
     const token = await getChatAppToken();
     if (!token) return null;
@@ -48,44 +32,59 @@ async function criarGrupoProducao(titulo, supervisorWpp, briefing) {
     const licencaId = process.env.CHATAPP_LICENSE_ID;
     const foneLimpo = supervisorWpp.replace(/\D/g, '');
 
+    // AJUSTE: Trocamos 'gr-whatsapp' por 'whatsapp' que é o padrão para licenças via QR Code
+    // Se o erro 404 persistir, verifique se o ID da Licença na Vercel está correto.
+    const urlCriarGrupo = `${CHATAPP_API}/licenses/${licencaId}/messenger/whatsapp/groups`;
+    
+    console.log(`[DEBUG] URL Chamada: ${urlCriarGrupo}`);
+    console.log(`[DEBUG] Licença ID usada: ${licencaId}`);
+
     try {
-        console.log(`[CHATAPP GROUP] Criando grupo: "ARTE: ${titulo}"`);
-        
-        const resGrupo = await axios.post(`${CHATAPP_API}/licenses/${licencaId}/messenger/gr-whatsapp/groups`, {
+        // 1. Criar o Grupo
+        const resGrupo = await axios.post(urlCriarGrupo, {
             name: `ARTE: ${titulo}`,
             participants: [ { phone: foneLimpo } ] 
         }, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        // O ChatApp costuma retornar o ID do grupo dentro de data.id ou direto no result
-        console.log("[CHATAPP GROUP] Grupo criado:", JSON.stringify(resGrupo.data));
+        console.log("[CHATAPP GROUP] Resposta Raw:", JSON.stringify(resGrupo.data));
         
-        // Ajuste preventivo para pegar o ID do grupo (dependendo da versão da API deles)
-        const chatId = resGrupo.data.data ? resGrupo.data.data.id : resGrupo.data.id;
-        const groupLink = resGrupo.data.data ? resGrupo.data.data.inviteLink : resGrupo.data.inviteLink;
+        // A API pode retornar em data.id ou direto em id
+        const resultData = resGrupo.data.data || resGrupo.data;
+        const chatId = resultData.id;
+        const groupLink = resultData.inviteLink;
 
         if (!chatId) {
-            console.error("[CHATAPP GROUP] Falha ao capturar ChatID da resposta.");
+            console.error("[CHATAPP GROUP] Erro: Resposta sem chatId.");
             return null;
         }
 
-        // Enviar Briefing inicial
-        console.log(`[CHATAPP GROUP] Enviando briefing para: ${chatId}`);
-        await axios.post(`${CHATAPP_API}/licenses/${licencaId}/messenger/gr-whatsapp/messages`, {
+        // 2. Enviar Briefing
+        const urlMensagem = `${CHATAPP_API}/licenses/${licencaId}/messenger/whatsapp/messages`;
+        console.log(`[CHATAPP GROUP] Enviando briefing para chat: ${chatId}`);
+
+        await axios.post(urlMensagem, {
             chatId: chatId,
             text: `🚀 *NOVO PEDIDO DE ARTE*\n\n*Pedido:* ${titulo}\n\n*Briefing:* \n${briefing}\n\n---`
         }, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
+        console.log("[CHATAPP GROUP] Processo finalizado com sucesso.");
         return { chatId, groupLink };
 
     } catch (error) {
         console.error("--- [CHATAPP GROUP ERROR] ---");
         if (error.response) {
-            console.error("Status:", error.response.status);
-            console.error("Resposta API:", JSON.stringify(error.response.data));
+            console.error(`Status: ${error.response.status}`);
+            console.error(`Dados: ${JSON.stringify(error.response.data)}`);
+            
+            if (error.response.status === 404) {
+                console.error("[ALERTA 404] A API não encontrou este caminho. Verifique se o CHATAPP_LICENSE_ID na Vercel é exatamente o número da sua licença no painel do ChatApp.");
+            }
+        } else {
+            console.error(`Erro: ${error.message}`);
         }
         return null;
     }
