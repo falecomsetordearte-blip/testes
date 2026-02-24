@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
-        /* --- VARIÁVEIS & RESET --- */
         :root {
             --primary-color: #4f46e5;
             --primary-hover: #4338ca;
@@ -23,89 +22,29 @@
             --danger: #ef4444;
             --border-radius: 16px;
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
             --transition: all 0.3s ease;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            line-height: 1.6;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
         a { text-decoration: none; color: inherit; }
-        ul { list-style: none; }
-
-        /* --- HEADER --- */
-        .app-header {
-            background-color: var(--card-bg);
-            box-shadow: var(--shadow-sm);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            height: 80px;
-            display: flex;
-            align-items: center;
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
+        
+        .app-header { background-color: var(--card-bg); box-shadow: var(--shadow-sm); position: sticky; top: 0; z-index: 100; height: 80px; display: flex; align-items: center; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
         .app-logo { height: 50px; width: auto; object-fit: contain; }
-
         .user-menu { display: flex; align-items: center; gap: 20px; }
-
         #designer-greeting { font-weight: 600; color: var(--text-main); font-size: 0.95rem; }
 
-        #logout-button {
-            background-color: #fee2e2;
-            color: var(--danger);
-            border: none;
-            padding: 8px 20px;
-            border-radius: 50px;
-            font-weight: 600;
-            font-family: 'Poppins', sans-serif;
-            cursor: pointer;
-            transition: var(--transition);
-            font-size: 0.9rem;
-        }
+        #logout-button { background-color: #fee2e2; color: var(--danger); border: none; padding: 8px 20px; border-radius: 50px; font-weight: 600; font-family: 'Poppins', sans-serif; cursor: pointer; transition: var(--transition); font-size: 0.9rem; }
         #logout-button:hover { background-color: var(--danger); color: white; }
 
-        /* --- MAIN --- */
         .main-painel { padding: 40px 0; flex: 1; }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; width: 100%; }
 
-        /* --- CARDS --- */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
-        }
-
-        .dash-card {
-            background: var(--card-bg);
-            border-radius: var(--border-radius);
-            padding: 25px;
-            box-shadow: var(--shadow-md);
-            border: 1px solid rgba(255,255,255,0.5);
-            display: flex;
-            flex-direction: column;
-        }
-
+        /* --- CARDS TOTAIS --- */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin-bottom: 40px; }
+        .dash-card { background: var(--card-bg); border-radius: var(--border-radius); padding: 25px; box-shadow: var(--shadow-md); border: 1px solid rgba(255,255,255,0.5); display: flex; flex-direction: column; }
         .card-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
         .card-title { font-size: 0.9rem; color: var(--secondary-color); font-weight: 500; text-transform: uppercase; }
         .card-icon { font-size: 1.2rem; padding: 10px; border-radius: 12px; }
@@ -113,63 +52,48 @@
         .fa-hourglass-half { color: var(--warning); background: #fef3c7; }
         .fa-tasks { color: var(--success); background: #d1fae5; }
         .card-value { font-size: 2rem; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 20px; }
-        .card-button {
-            display: inline-block; background-color: var(--primary-color); color: white;
-            padding: 8px 16px; border-radius: 8px; font-weight: 500; font-size: 0.85rem;
-            width: 100%; text-align: center; transition: var(--transition);
-        }
+        .card-button { display: inline-block; background-color: var(--primary-color); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 500; font-size: 0.85rem; width: 100%; text-align: center; transition: var(--transition); }
         .card-button:hover { background-color: var(--primary-hover); }
 
+        /* --- STATS BADGES (Nível e Pontos) --- */
+        .user-stats-bar { display: flex; gap: 10px; align-items: center; margin-left: 15px; }
+        .stat-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; letter-spacing: 0.5px; }
+        .lvl-1 { background: #fef08a; color: #b45309; border: 1px solid #fde047; } /* Ouro */
+        .lvl-2 { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; } /* Prata */
+        .lvl-3 { background: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; } /* Bronze */
+        .score-badge { background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; }
+
+        /* --- TAB BADGES (Bolinhas) --- */
+        .badge-tab { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 0.75rem; font-weight: 700; margin-left: 8px; color: white; }
+        .bg-yellow { background-color: #f59e0b; box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3); }
+        .bg-green { background-color: #10b981; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3); }
+
         /* --- TABS --- */
-        .tabs-component {
-            background: var(--card-bg); border-radius: var(--border-radius);
-            box-shadow: var(--shadow-md); overflow: hidden;
-        }
+        .tabs-component { background: var(--card-bg); border-radius: var(--border-radius); box-shadow: var(--shadow-md); overflow: hidden; }
         .tab-buttons { display: flex; border-bottom: 1px solid #e2e8f0; padding: 0 20px; background: #fff; }
-        .tab-btn {
-            background: none; border: none; padding: 20px 25px;
-            font-family: 'Poppins', sans-serif; font-size: 1rem; font-weight: 500;
-            color: var(--secondary-color); cursor: pointer; position: relative;
-        }
+        .tab-btn { background: none; border: none; padding: 20px 25px; font-family: 'Poppins', sans-serif; font-size: 1rem; font-weight: 500; color: var(--secondary-color); cursor: pointer; position: relative; display: flex; align-items: center; }
         .tab-btn.active { color: var(--primary-color); font-weight: 600; }
-        .tab-btn.active::after {
-            content: ''; position: absolute; bottom: 0; left: 0;
-            width: 100%; height: 3px; background-color: var(--primary-color);
-        }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background-color: var(--primary-color); }
         .tab-content { padding: 20px; min-height: 300px; }
         .tab-pane { display: none; }
         .tab-pane.active { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* --- LISTAS --- */
-        .pedidos-list-header {
-            display: grid; background-color: #f8fafc; padding: 15px;
-            border-radius: 8px; font-weight: 600; font-size: 0.85rem;
-            color: var(--secondary-color); margin-bottom: 10px;
-            text-transform: uppercase;
-        }
+        .pedidos-list-header { display: grid; background-color: #f8fafc; padding: 15px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; color: var(--secondary-color); margin-bottom: 10px; text-transform: uppercase; }
         .pedidos-list-body { display: flex; flex-direction: column; gap: 10px; }
-        .list-item {
-            display: grid; background: #fff; padding: 15px;
-            border-radius: 8px; border: 1px solid #e2e8f0; align-items: center;
-        }
+        .list-item { display: grid; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; align-items: center; }
         .col-titulo { font-weight: 600; color: var(--text-main); }
         .col-id { color: var(--secondary-color); font-family: monospace; }
         .col-valor { font-weight: 700; color: var(--success); }
         .loading-pedidos { text-align: center; padding: 40px; color: var(--secondary-color); }
-        
-        .btn-action {
-            background: var(--primary-color); color: white; border: none;
-            padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer;
-            display: inline-flex; align-items: center; gap: 5px;
-        }
+        .btn-action { background: var(--primary-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
         
         /* Mobile */
         @media (max-width: 768px) {
             .pedidos-list-header { display: none; }
             .list-item { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
-            .col-id::before { content: "ID: "; font-weight: 600; }
-            .col-valor::before { content: "Oferta: "; font-weight: 600; }
+            .user-stats-bar { display: none; } /* Esconde tags no mobile para não quebrar layout do título */
         }
     </style>
 </head>
@@ -192,41 +116,46 @@
         
         <main class="main-painel">
             <div class="container">
+                
+                <!-- TÍTULO COM BADGES DE NÍVEL E PONTOS -->
                 <div style="margin-bottom: 20px;">
-                    <h2 style="font-weight: 600; color: var(--text-main);">Visão Geral</h2>
+                    <h2 style="font-weight: 600; color: var(--text-main); display: flex; align-items: center;">
+                        Visão Geral
+                        <div class="user-stats-bar">
+                            <span id="badge-nivel" class="stat-badge lvl-3"><i class="fas fa-medal"></i> Nível Bronze</span>
+                            <span class="stat-badge score-badge"><i class="fas fa-star"></i> <span id="val-pontos">0</span> pts</span>
+                        </div>
+                    </h2>
+                    <p style="color: var(--secondary-color); font-size: 0.9rem;">Acompanhe seus ganhos e tarefas pendentes.</p>
                 </div>
 
                 <div class="dashboard-grid">
                     <div class="dash-card">
-                        <div class="card-header">
-                            <span class="card-title">Saldo Disponível</span>
-                            <i class="fas fa-wallet card-icon"></i>
-                        </div>
+                        <div class="card-header"><span class="card-title">Saldo Disponível</span><i class="fas fa-wallet card-icon"></i></div>
                         <div class="card-body"><span id="designer-saldo-disponivel" class="card-value">R$ 0,00</span></div>
                         <div class="card-footer"><a href="solicitar-saque.html" class="card-button">Solicitar Saque</a></div>
                     </div>
                     <div class="dash-card">
-                        <div class="card-header">
-                            <span class="card-title">Aguardando Depósito</span>
-                            <i class="fas fa-hourglass-half card-icon"></i>
-                        </div>
+                        <div class="card-header"><span class="card-title">Aguardando Depósito</span><i class="fas fa-hourglass-half card-icon"></i></div>
                         <div class="card-body"><span id="designer-saldo-pendente" class="card-value">R$ 0,00</span></div>
                         <div class="card-footer"><span>Total em saques solicitados</span></div>
                     </div>
                     <div class="dash-card">
-                        <div class="card-header">
-                            <span class="card-title">Pedidos Ativos</span>
-                            <i class="fas fa-tasks card-icon"></i>
-                        </div>
+                        <div class="card-header"><span class="card-title">Pedidos Ativos</span><i class="fas fa-tasks card-icon"></i></div>
                         <div class="card-body"><span id="designer-pedidos-ativos" class="card-value">0</span></div>
                         <div class="card-footer"><span>Trabalhos em andamento</span></div>
                     </div>
                 </div>
 
                 <div class="tabs-component">
+                    <!-- BOTÕES COM AS BOLINHAS DE CONTADOR -->
                     <div class="tab-buttons">
-                        <button class="tab-btn active" data-tab="atendimentos">Meus Atendimentos</button>
-                        <button class="tab-btn" data-tab="mercado">Pedidos Disponíveis</button>
+                        <button class="tab-btn active" data-tab="atendimentos">
+                            Meus Atendimentos <span id="count-meus" class="badge-tab bg-yellow">0</span>
+                        </button>
+                        <button class="tab-btn" data-tab="mercado">
+                            Pedidos Disponíveis <span id="count-mercado" class="badge-tab bg-green">0</span>
+                        </button>
                         <button class="tab-btn" data-tab="saques">Histórico de Saques</button>
                     </div>
                     
@@ -234,41 +163,25 @@
                         <!-- ABA 1: MEUS ATENDIMENTOS -->
                         <div id="atendimentos" class="tab-pane active">
                             <div class="pedidos-list-header" style="grid-template-columns: 0.5fr 3fr 1fr 1fr 1fr;">
-                                <div>#ID</div>
-                                <div>Detalhes do Pedido</div>
-                                <div>Status</div>
-                                <div>OFERTA</div> <!-- Mudado para OFERTA -->
-                                <div style="text-align: right;">Ações</div>
+                                <div>#ID</div><div>Detalhes do Pedido</div><div>Status</div><div>OFERTA</div><div style="text-align: right;">Ações</div>
                             </div>
-                            <div id="atendimentos-list" class="pedidos-list-body">
-                                <div class="loading-pedidos">Carregando...</div>
-                            </div>
+                            <div id="atendimentos-list" class="pedidos-list-body"><div class="loading-pedidos">Carregando...</div></div>
                         </div>
 
                         <!-- ABA 2: MERCADO -->
                         <div id="mercado" class="tab-pane">
                             <div class="pedidos-list-header" style="grid-template-columns: 0.5fr 3fr 1fr 1fr;">
-                                <div>#ID</div>
-                                <div>Detalhes e Briefing</div>
-                                <div>OFERTA</div> <!-- Mudado para OFERTA -->
-                                <div style="text-align: right;">Ação</div>
+                                <div>#ID</div><div>Detalhes e Briefing</div><div>OFERTA</div><div style="text-align: right;">Ação</div>
                             </div>
-                            <div id="mercado-list" class="pedidos-list-body">
-                                <div class="loading-pedidos">Carregando...</div>
-                            </div>
+                            <div id="mercado-list" class="pedidos-list-body"><div class="loading-pedidos">Carregando...</div></div>
                         </div>
 
                         <!-- ABA 3: SAQUES -->
                         <div id="saques" class="tab-pane">
                              <div class="pedidos-list-header" style="grid-template-columns: 0.5fr 3fr 1.5fr 1fr;">
-                                <div>#ID</div>
-                                <div>Data / Descrição</div>
-                                <div>Status</div>
-                                <div>Valor</div>
+                                <div>#ID</div><div>Data / Descrição</div><div>Status</div><div>Valor</div>
                             </div>
-                            <div id="saques-list" class="pedidos-list-body">
-                                 <div class="loading-pedidos">Nenhum saque solicitado ainda.</div>
-                            </div>
+                            <div id="saques-list" class="pedidos-list-body"><div class="loading-pedidos">Histórico ficará disponível em breve.</div></div>
                         </div>
                     </div>
                 </div>

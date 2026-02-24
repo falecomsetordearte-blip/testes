@@ -1,10 +1,9 @@
-// /designer/designer-script.js - VERSÃO C/ BRIEFING E CORREÇÃO DE VALORES
+// /designer/designer-script.js - VERSÃO COM GAMEFICAÇÃO (NÍVEL, PONTOS E BOLINHAS)
 
 (function() {
     const sessionToken = localStorage.getItem('designerToken');
     const path = window.location.pathname;
 
-    // --- CONTROLE DE ACESSO ---
     const paginasPublicas = ['login.html', 'cadastro.html', 'esqueci-senha.html', 'redefinir-senha.html'];
     const ehPaginaPublica = paginasPublicas.some(pg => path.includes(pg));
 
@@ -19,7 +18,6 @@
         else if (document.querySelector('main.main-painel')) carregarDashboardDesigner();
     });
 
-    // --- DASHBOARD ---
     async function carregarDashboardDesigner() {
         const designerInfo = JSON.parse(localStorage.getItem('designerInfo'));
         if (designerInfo) {
@@ -39,17 +37,43 @@
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
+            // 1. Atualizar Cards Financeiros
             document.getElementById('designer-saldo-disponivel').textContent = formatarMoeda(data.designer.saldo);
             document.getElementById('designer-saldo-pendente').textContent = formatarMoeda(data.designer.pendente);
             document.getElementById('designer-pedidos-ativos').textContent = data.meusPedidos.length;
 
+            // 2. Atualizar Contadores (Bolinhas das Abas)
+            const countMeus = document.getElementById('count-meus');
+            const countMercado = document.getElementById('count-mercado');
+            if (countMeus) countMeus.textContent = data.meusPedidos.length;
+            if (countMercado) countMercado.textContent = data.mercado.length;
+
+            // 3. Atualizar Badges de Nível e Pontos
+            const badgeNivel = document.getElementById('badge-nivel');
+            const valPontos = document.getElementById('val-pontos');
+            
+            if (badgeNivel) {
+                const niveisInfo = {
+                    1: { text: 'Nível 1 (Ouro)', class: 'lvl-1' },
+                    2: { text: 'Nível 2 (Prata)', class: 'lvl-2' },
+                    3: { text: 'Nível 3 (Bronze)', class: 'lvl-3' }
+                };
+                const n = niveisInfo[data.designer.nivel] || niveisInfo[3];
+                badgeNivel.innerHTML = `<i class="fas fa-medal"></i> ${n.text}`;
+                badgeNivel.className = `stat-badge ${n.class}`;
+            }
+
+            if (valPontos) {
+                valPontos.textContent = data.designer.pontuacao;
+            }
+
+            // 4. Renderizar Listas
             renderizarMeusTrabalhos(data.meusPedidos);
             renderizarMercado(data.mercado);
 
         } catch (error) { console.error(error); alert("Erro ao carregar painel: " + error.message); }
     }
 
-    // --- RENDERIZAR ATENDIMENTOS (MEUS PEDIDOS) ---
     function renderizarMeusTrabalhos(pedidos) {
         const container = document.getElementById('atendimentos-list');
         if (pedidos.length === 0) {
@@ -67,7 +91,7 @@
                     📄 Ver Briefing
                     </button>
                 </div>
-                <div><span class="status-badge status-pendente">Em Produção</span></div>
+                <div><span class="status-badge" style="background:#fef3c7; color:#b45309; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:600;">Em Produção</span></div>
                 <div class="col-valor" style="color:#10b981;">${formatarMoeda(p.valor_designer || 0)}</div>
                 <div style="text-align: right; display: flex; gap: 5px; justify-content: flex-end; flex-wrap: wrap;">
                     <a href="${p.link_acompanhar}" target="_blank" class="btn-action" style="background:#25D366;"><i class="fab fa-whatsapp"></i> Chat</a>
@@ -77,7 +101,6 @@
         `).join('');
     }
 
-    // --- RENDERIZAR MERCADO (DISPONÍVEIS) ---
     function renderizarMercado(pedidos) {
         const container = document.getElementById('mercado-list'); 
         if (pedidos.length === 0) {
@@ -93,12 +116,12 @@
                     <small style="color: var(--secondary-color);"><i class="fas fa-tag"></i> ${p.servico || 'Arte'}</small><br>
                     <button onclick="verBriefing('${b64EncodeUnicode(p.briefing_completo || 'Sem briefing descrito.')}')" 
                         style="background:#f1f5f9; border:1px solid #cbd5e1; color:#475569; padding:4px 8px; border-radius:4px; font-size:0.75rem; cursor:pointer; margin-top:5px;">
-                        📄 Ler Briefing Completo
+                        📄 Ler Briefing
                     </button>
                 </div>
                 <div class="col-valor" style="color:#10b981; font-size: 1.1rem;">${formatarMoeda(p.valor_designer || 0)}</div>
                 <div style="text-align: right;">
-                    <button onclick="assumirPedido(${p.id})" style="background:#2ecc71; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600;">
+                    <button onclick="assumirPedido(${p.id})" style="background:#10b981; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600;">
                         ATENDER
                     </button>
                 </div>
@@ -106,17 +129,10 @@
         `).join('');
     }
 
-    // --- HELPERS (Base64 para passar string no onclick sem quebrar as aspas) ---
-    window.b64EncodeUnicode = (str) => {
-        return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
-            return String.fromCharCode('0x' + p1);
-        }));
-    }
+    window.b64EncodeUnicode = (str) => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1)));
     
     window.verBriefing = (b64) => {
-        const texto = decodeURIComponent(Array.prototype.map.call(atob(b64), function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
+        const texto = decodeURIComponent(Array.prototype.map.call(atob(b64), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
         alert("📝 BRIEFING DO PEDIDO:\n\n" + texto);
     }
 
@@ -156,7 +172,6 @@
         return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor || 0);
     }
 
-    // --- LOGIN/CADASTRO ---
     function configurarLogin() {
         const form = document.getElementById('designer-login-form');
         form.addEventListener('submit', async (e) => {
