@@ -1,13 +1,10 @@
 // api/carteira/solicitarCredito.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const axios = require('axios');
-const nodemailer = require('nodemailer'); // Instale: npm install nodemailer
+const nodemailer = require('nodemailer'); 
 
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
-// Configuração de email (Adicione no .env se for usar)
-const EMAIL_USER = process.env.EMAIL_USER; // falarsetordearte@gmail.com
-const EMAIL_PASS = process.env.EMAIL_PASS; // Senha de App do Gmail
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS; 
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).end();
@@ -15,30 +12,30 @@ module.exports = async (req, res) => {
     const { sessionToken, formData } = req.body;
 
     try {
-        // 1. Auth Bitrix
-        const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-            filter: { '%UF_CRM_1751824225': sessionToken },
-            select: ['ID', 'COMPANY_ID', 'NAME', 'LAST_NAME']
-        });
+        // 1. AUTENTICAÇÃO NEON
+        const empresas = await prisma.$queryRawUnsafe(`
+            SELECT * FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+        `, `%${sessionToken}%`);
 
-        if (!userCheck.data.result || !userCheck.data.result.length) {
-            return res.status(403).json({ message: 'Sessão inválida' });
+        if (empresas.length === 0) {
+            return res.status(403).json({ message: 'Sessão inválida.' });
         }
         
-        const contact = userCheck.data.result[0];
-        const bitrixCompanyId = contact.COMPANY_ID;
-        const nomeUsuario = `${contact.NAME} ${contact.LAST_NAME}`;
+        const empresa = empresas[0];
+        const nomeUsuario = empresa.nome_fantasia || "Cliente Neon";
 
         // 2. Atualizar Banco de Dados (Status Pendente)
-        await prisma.empresa.updateMany({
-            where: { bitrix_company_id: parseInt(bitrixCompanyId) },
+        await prisma.empresa.update({
+            where: { id: empresa.id },
             data: {
                 solicitacao_credito_pendente: true,
-                dados_analise_credito: formData // Salva o JSON com os dados
+                // Opcional: Se quiser salvar o JSON em uma coluna, crie 'dados_analise_credito' no prisma schema
+                // Se não tiver a coluna, comente a linha abaixo:
+                // dados_analise_credito: JSON.stringify(formData) 
             }
         });
 
-        // 3. Enviar Email (Opcional - Falha silenciosa se não configurado)
+        // 3. Enviar Email
         if (EMAIL_USER && EMAIL_PASS) {
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
@@ -47,14 +44,14 @@ module.exports = async (req, res) => {
 
             const htmlContent = `
                 <h3>Nova Solicitação de Análise de Crédito</h3>
-                <p><strong>Cliente:</strong> ${nomeUsuario} (Bitrix ID: ${bitrixCompanyId})</p>
+                <p><strong>Cliente:</strong> ${nomeUsuario} (ID Neon: ${empresa.id})</p>
                 <hr/>
                 <p><strong>Razão Social:</strong> ${formData.razaoSocial}</p>
                 <p><strong>CNPJ:</strong> ${formData.cnpj}</p>
-                <p><strong>Faturamento Mensal:</strong> ${formData.faturamento}</p>
-                <p><strong>Tempo de Atividade:</strong> ${formData.tempoAtividade}</p>
+                <p><strong>Faturamento:</strong> ${formData.faturamento}</p>
+                <p><strong>Tempo Atividade:</strong> ${formData.tempoAtividade}</p>
                 <p><strong>Contador:</strong> ${formData.contador}</p>
-                <p><strong>Observações:</strong> ${formData.obs}</p>
+                <p><strong>Obs:</strong> ${formData.obs}</p>
             `;
 
             await transporter.sendMail({

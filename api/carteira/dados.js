@@ -1,8 +1,6 @@
 // api/carteira/dados.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const axios = require('axios');
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).end();
@@ -11,37 +9,30 @@ module.exports = async (req, res) => {
     if (!sessionToken) return res.status(403).json({ message: 'Token ausente' });
 
     try {
-        // 1. Validar Usuário no Bitrix
-        const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-            filter: { '%UF_CRM_1751824225': sessionToken }, 
-            select: ['ID', 'COMPANY_ID']
-        });
+        // 1. AUTENTICAÇÃO NEON (Adeus Bitrix)
+        // Busca empresa que tenha esse token na coluna session_tokens
+        const empresas = await prisma.$queryRawUnsafe(`
+            SELECT * FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+        `, `%${sessionToken}%`);
 
-        if (!userCheck.data.result || !userCheck.data.result.length) {
-            return res.status(403).json({ message: 'Sessão inválida' });
+        if (empresas.length === 0) {
+            return res.status(403).json({ message: 'Sessão inválida ou expirada.' });
         }
         
-        const bitrixCompanyId = userCheck.data.result[0].COMPANY_ID;
+        const resultEmpresa = empresas[0];
 
-        // 2. Buscar dados da Empresa
-        const resultEmpresa = await prisma.empresa.findFirst({
-            where: { bitrix_company_id: parseInt(bitrixCompanyId) }
-        });
-
-        if (!resultEmpresa) return res.status(404).json({ message: 'Empresa não encontrada' });
-
-        // 3. CALCULAR TOTAIS EM TEMPO REAL (Fonte da Verdade: Tabela Pedidos)
+        // 2. CALCULAR TOTAIS EM TEMPO REAL (Fonte da Verdade: Tabela Pedidos)
         
         // A) Saldo Em Produção: Soma dos pedidos na etapa 'ARTE'
         const emProducaoAgg = await prisma.pedido.aggregate({
-            _sum: { valor_designer: true }, // ou valor_cobrado se for diferente
+            _sum: { valor_designer: true }, 
             where: {
                 empresa_id: resultEmpresa.id,
                 etapa: 'ARTE'
             }
         });
 
-        // B) Total Faturado/Gasto: Soma dos pedidos na etapa 'IMPRESSÃO' (Finalizados)
+        // B) Total Faturado/Gasto: Soma dos pedidos na etapa 'IMPRESSÃO'
         const totalGastoAgg = await prisma.pedido.aggregate({
             _sum: { valor_designer: true },
             where: {
@@ -56,7 +47,7 @@ module.exports = async (req, res) => {
         res.json({
             saldo_disponivel: saldoDisponivel,
             em_andamento: parseFloat(emProducaoAgg._sum.valor_designer || 0),
-            a_pagar: parseFloat(totalGastoAgg._sum.valor_designer || 0), // Total Faturado
+            a_pagar: parseFloat(totalGastoAgg._sum.valor_designer || 0),
             credito_aprovado: resultEmpresa.credito_aprovado || false,
             solicitacao_pendente: resultEmpresa.solicitacao_credito_pendente || false
         });

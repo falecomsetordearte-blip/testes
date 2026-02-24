@@ -1,34 +1,25 @@
 // api/carteira/extrato.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const axios = require('axios');
-
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
 
-    const { sessionToken, dataInicio, dataFim, statusFilter } = req.body; // statusFilter: 'TODOS', 'EM_PRODUCAO', 'FINALIZADO'
+    const { sessionToken, dataInicio, dataFim, statusFilter } = req.body; 
 
     if (!sessionToken) return res.status(403).json({ message: 'Token ausente' });
 
     try {
-        // 1. Auth
-        const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-            filter: { '%UF_CRM_1751824225': sessionToken }, 
-            select: ['ID', 'COMPANY_ID']
-        });
+        // 1. AUTENTICAÇÃO NEON
+        const empresas = await prisma.$queryRawUnsafe(`
+            SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+        `, `%${sessionToken}%`);
 
-        if (!userCheck.data.result || !userCheck.data.result.length) {
-            return res.status(403).json({ message: 'Sessão inválida' });
+        if (empresas.length === 0) {
+            return res.status(403).json({ message: 'Sessão inválida.' });
         }
         
-        const bitrixCompanyId = userCheck.data.result[0].COMPANY_ID;
-        const empresaLocal = await prisma.empresa.findFirst({
-            where: { bitrix_company_id: parseInt(bitrixCompanyId) }
-        });
-
-        if (!empresaLocal) return res.status(404).json({ message: 'Empresa não encontrada' });
+        const empresaLocal = empresas[0];
 
         // 2. Datas
         let start = dataInicio ? new Date(dataInicio) : new Date(new Date().setDate(new Date().getDate() - 30));
@@ -46,7 +37,6 @@ module.exports = async (req, res) => {
         });
 
         // 4. Buscar status atual dos pedidos relacionados
-        // Extrair IDs de pedidos do histórico para buscar status atual
         const dealIds = historico
             .map(h => parseInt(h.deal_id))
             .filter(id => !isNaN(id));
@@ -56,7 +46,6 @@ module.exports = async (req, res) => {
             select: { id: true, etapa: true }
         });
 
-        // Mapa rápido para consulta: { 1050: 'ARTE', 1051: 'IMPRESSÃO' }
         const statusMap = {};
         pedidosStatus.forEach(p => statusMap[p.id] = p.etapa);
 
@@ -65,15 +54,13 @@ module.exports = async (req, res) => {
             const dealId = parseInt(item.deal_id);
             const etapaAtual = statusMap[dealId] || null;
             
-            // Determina status visual
-            let statusItem = 'CONCLUIDO'; // Padrão para Entradas/Recargas
+            let statusItem = 'CONCLUIDO'; 
             if (item.tipo === 'SAIDA') {
                 if (etapaAtual === 'ARTE') statusItem = 'EM_PRODUCAO';
                 else if (etapaAtual === 'IMPRESSÃO') statusItem = 'FINALIZADO';
-                else statusItem = 'FINALIZADO'; // Assumir finalizado se não achar ou outra etapa
+                else statusItem = 'FINALIZADO'; 
             }
 
-            // Tratamento de metadados antigos
             let link = null;
             if (item.metadados) {
                 try {
@@ -88,19 +75,15 @@ module.exports = async (req, res) => {
                 deal_id: item.deal_id || '-',
                 descricao: item.descricao || item.titulo,
                 valor: parseFloat(item.valor),
-                tipo: item.tipo, // 'ENTRADA' ou 'SAIDA'
-                status: statusItem, // 'EM_PRODUCAO', 'FINALIZADO', 'CONCLUIDO'(entrada)
+                tipo: item.tipo, 
+                status: statusItem, 
                 link_atendimento: link || ''
             };
         });
 
-        // 6. Aplicar Filtro do Usuário
+        // 6. Aplicar Filtro
         if (statusFilter && statusFilter !== 'TODOS') {
             extratoFormatado = extratoFormatado.filter(item => {
-                // Se o usuário filtrar por "EM_PRODUCAO", mostra itens com esse status
-                // Se filtrar por "FINALIZADO", mostra itens finalizados
-                // Entradas de saldo geralmente aparecem em TODOS ou FINALIZADO dependendo da regra, 
-                // aqui vamos deixar Entradas visiveis apenas em TODOS ou se criar filtro especifico.
                 return item.status === statusFilter; 
             });
         }
