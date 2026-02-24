@@ -1,5 +1,4 @@
 // api/carteira/extrato.js
-
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const axios = require('axios');
@@ -9,12 +8,12 @@ const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
 
-    const { sessionToken, dataInicio, dataFim } = req.body;
+    const { sessionToken, dataInicio, dataFim, statusFilter } = req.body; // statusFilter: 'TODOS', 'EM_PRODUCAO', 'FINALIZADO'
 
     if (!sessionToken) return res.status(403).json({ message: 'Token ausente' });
 
     try {
-        // 1. Validar Usuário no Bitrix
+        // 1. Auth
         const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken }, 
             select: ['ID', 'COMPANY_ID']
@@ -25,77 +24,91 @@ module.exports = async (req, res) => {
         }
         
         const bitrixCompanyId = userCheck.data.result[0].COMPANY_ID;
-
-        // 2. Buscar ID Local da Empresa
         const empresaLocal = await prisma.empresa.findFirst({
             where: { bitrix_company_id: parseInt(bitrixCompanyId) }
         });
 
         if (!empresaLocal) return res.status(404).json({ message: 'Empresa não encontrada' });
 
-        // 3. Configurar Filtro de Datas
-        // Se não vier data, pega últimos 30 dias por padrão
+        // 2. Datas
         let start = dataInicio ? new Date(dataInicio) : new Date(new Date().setDate(new Date().getDate() - 30));
         let end = dataFim ? new Date(dataFim) : new Date();
-        
-        // Garante o intervalo completo do dia (00:00 até 23:59)
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
 
-        // 4. Buscar Histórico no Banco
+        // 3. Buscar Histórico Financeiro
         const historico = await prisma.historicoFinanceiro.findMany({
             where: {
                 empresa_id: empresaLocal.id,
-                data: {
-                    gte: start,
-                    lte: end
-                }
+                data: { gte: start, lte: end }
             },
             orderBy: { data: 'desc' }
         });
 
-        // 5. Formatar Resposta para o Frontend
-        const extratoFormatado = historico.map(item => {
-            let link = null;
-            let dealId = item.deal_id || null; // Tenta pegar da coluna deal_id se existir no schema antigo
+        // 4. Buscar status atual dos pedidos relacionados
+        // Extrair IDs de pedidos do histórico para buscar status atual
+        const dealIds = historico
+            .map(h => parseInt(h.deal_id))
+            .filter(id => !isNaN(id));
 
-            // Tenta extrair dados do JSON de metadados (onde o webhook novo salva)
+        const pedidosStatus = await prisma.pedido.findMany({
+            where: { id: { in: dealIds } },
+            select: { id: true, etapa: true }
+        });
+
+        // Mapa rápido para consulta: { 1050: 'ARTE', 1051: 'IMPRESSÃO' }
+        const statusMap = {};
+        pedidosStatus.forEach(p => statusMap[p.id] = p.etapa);
+
+        // 5. Processar e Filtrar
+        let extratoFormatado = historico.map(item => {
+            const dealId = parseInt(item.deal_id);
+            const etapaAtual = statusMap[dealId] || null;
+            
+            // Determina status visual
+            let statusItem = 'CONCLUIDO'; // Padrão para Entradas/Recargas
+            if (item.tipo === 'SAIDA') {
+                if (etapaAtual === 'ARTE') statusItem = 'EM_PRODUCAO';
+                else if (etapaAtual === 'IMPRESSÃO') statusItem = 'FINALIZADO';
+                else statusItem = 'FINALIZADO'; // Assumir finalizado se não achar ou outra etapa
+            }
+
+            // Tratamento de metadados antigos
+            let link = null;
             if (item.metadados) {
                 try {
                     const meta = typeof item.metadados === 'string' ? JSON.parse(item.metadados) : item.metadados;
-                    link = meta.link_atendimento || null;
-                    if (!dealId && meta.deal_id) dealId = meta.deal_id;
-                } catch (e) {
-                    // Ignora erro de parse se for string velha
-                }
+                    link = meta.link_atendimento;
+                } catch(e) {}
             }
-
-            // Fallback: Tenta achar ID no título via Regex (para registros antigos)
-            // Exemplo de título: "Produção: 3429 (#64449)" -> extrai 64449
-            if (!dealId && item.titulo) {
-                const match = item.titulo.match(/#(\d+)/);
-                if (match) dealId = match[1];
-            }
-
-            // Define se é SAIDA (Gasto) ou ENTRADA (Recarga)
-            const isSaida = item.tipo === 'SAIDA' || item.valor < 0;
 
             return {
                 id: item.id,
                 data: item.data,
-                deal_id: dealId || '-', // Garante que nunca vai null para a tabela
-                titulo: item.titulo,
+                deal_id: item.deal_id || '-',
                 descricao: item.descricao || item.titulo,
                 valor: parseFloat(item.valor),
-                tipo: isSaida ? 'SAIDA' : 'ENTRADA',
+                tipo: item.tipo, // 'ENTRADA' ou 'SAIDA'
+                status: statusItem, // 'EM_PRODUCAO', 'FINALIZADO', 'CONCLUIDO'(entrada)
                 link_atendimento: link || ''
             };
         });
+
+        // 6. Aplicar Filtro do Usuário
+        if (statusFilter && statusFilter !== 'TODOS') {
+            extratoFormatado = extratoFormatado.filter(item => {
+                // Se o usuário filtrar por "EM_PRODUCAO", mostra itens com esse status
+                // Se filtrar por "FINALIZADO", mostra itens finalizados
+                // Entradas de saldo geralmente aparecem em TODOS ou FINALIZADO dependendo da regra, 
+                // aqui vamos deixar Entradas visiveis apenas em TODOS ou se criar filtro especifico.
+                return item.status === statusFilter; 
+            });
+        }
 
         res.status(200).json({ extrato: extratoFormatado });
 
     } catch (error) {
         console.error("Erro API Extrato:", error);
-        res.status(500).json({ message: 'Erro interno ao buscar extrato' });
+        res.status(500).json({ message: 'Erro interno' });
     }
 };

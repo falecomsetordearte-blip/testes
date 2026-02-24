@@ -1,5 +1,4 @@
 // api/carteira/dados.js
-
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const axios = require('axios');
@@ -12,6 +11,7 @@ module.exports = async (req, res) => {
     if (!sessionToken) return res.status(403).json({ message: 'Token ausente' });
 
     try {
+        // 1. Validar Usuário no Bitrix
         const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
             filter: { '%UF_CRM_1751824225': sessionToken }, 
             select: ['ID', 'COMPANY_ID']
@@ -23,43 +23,42 @@ module.exports = async (req, res) => {
         
         const bitrixCompanyId = userCheck.data.result[0].COMPANY_ID;
 
-        const resultEmpresa = await prisma.$queryRawUnsafe(
-            `SELECT id, 
-                    COALESCE(saldo, 0) as saldo, 
-                    COALESCE(saldo_devedor, 0) as saldo_devedor, 
-                    COALESCE(aprovados, 0) as aprovados,
-                    credito_aprovado, 
-                    solicitacao_credito_pendente 
-             FROM empresas 
-             WHERE bitrix_company_id = $1 LIMIT 1`,
-            parseInt(bitrixCompanyId)
-        );
-
-        if (resultEmpresa.length === 0) return res.status(404).json({ message: 'Empresa não encontrada' });
-
-        const empresa = resultEmpresa[0];
-
-        const historico = await prisma.historicoFinanceiro.findMany({
-            where: {
-                empresa_id: empresa.id,
-                data: { gte: new Date(new Date().setDate(new Date().getDate() - 30)) }
-            },
-            orderBy: { data: 'desc' }
+        // 2. Buscar dados da Empresa
+        const resultEmpresa = await prisma.empresa.findFirst({
+            where: { bitrix_company_id: parseInt(bitrixCompanyId) }
         });
 
-        // Mapeia titulo -> descricao para o frontend
-        const historicoFormatado = historico.map(h => ({
-            ...h,
-            descricao: h.titulo || h.descricao // Garante que o frontend receba algo no campo 'descricao'
-        }));
+        if (!resultEmpresa) return res.status(404).json({ message: 'Empresa não encontrada' });
+
+        // 3. CALCULAR TOTAIS EM TEMPO REAL (Fonte da Verdade: Tabela Pedidos)
+        
+        // A) Saldo Em Produção: Soma dos pedidos na etapa 'ARTE'
+        const emProducaoAgg = await prisma.pedido.aggregate({
+            _sum: { valor_designer: true }, // ou valor_cobrado se for diferente
+            where: {
+                empresa_id: resultEmpresa.id,
+                etapa: 'ARTE'
+            }
+        });
+
+        // B) Total Faturado/Gasto: Soma dos pedidos na etapa 'IMPRESSÃO' (Finalizados)
+        const totalGastoAgg = await prisma.pedido.aggregate({
+            _sum: { valor_designer: true },
+            where: {
+                empresa_id: resultEmpresa.id,
+                etapa: 'IMPRESSÃO'
+            }
+        });
+
+        // C) Saldo Disponível (Vem direto da carteira da empresa)
+        const saldoDisponivel = parseFloat(resultEmpresa.saldo || 0);
 
         res.json({
-            saldo_disponivel: parseFloat(empresa.saldo),
-            em_andamento: parseFloat(empresa.saldo_devedor),
-            a_pagar: parseFloat(empresa.aprovados),
-            credito_aprovado: empresa.credito_aprovado || false,
-            solicitacao_pendente: empresa.solicitacao_credito_pendente || false,
-            historico_recente: historicoFormatado
+            saldo_disponivel: saldoDisponivel,
+            em_andamento: parseFloat(emProducaoAgg._sum.valor_designer || 0),
+            a_pagar: parseFloat(totalGastoAgg._sum.valor_designer || 0), // Total Faturado
+            credito_aprovado: resultEmpresa.credito_aprovado || false,
+            solicitacao_pendente: resultEmpresa.solicitacao_credito_pendente || false
         });
 
     } catch (error) {
