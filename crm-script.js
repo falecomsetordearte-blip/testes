@@ -441,19 +441,37 @@ async function fetchSaldoCRM() {
 
 // --- SISTEMA DE METAS ---
 async function carregarMetasCRM() {
+    const container = document.getElementById('metas-widget-container');
+    
     try {
         const res = await fetch('/api/crm/getMetas', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') })
         });
+        
+        // Se a API não existir ainda (erro 404), tratamos o erro
+        if (!res.ok) throw new Error("API não encontrada ou com erro");
+        
         globalMetasData = await res.json();
         
+        container.style.display = 'flex'; // Garante que fique visível
+        
         if(globalMetasData && globalMetasData.metas) {
-            document.getElementById('metas-widget-container').style.display = 'flex';
             renderizarVisualizacaoMeta();
+        } else {
+            // SE NÃO TIVER METAS SALVAS NO MÊS: MOSTRA AVISO
+            document.getElementById('meta-text-left').innerHTML = `<span style="color:#e74c3c;"><i class="fas fa-exclamation-triangle"></i> Metas deste mês não configuradas.</span>`;
+            document.getElementById('meta-text-right').innerHTML = `<a href="/admin-metas.html" style="color:#3498db; font-weight:bold; text-decoration:underline;">⚙️ Configurar Metas</a>`;
+            document.getElementById('meta-progress-bar').style.width = '0%';
+            document.getElementById('filtro-metas').disabled = true; // Desabilita o filtro
         }
-    } catch(e) { console.error("Erro ao carregar metas:", e); }
+    } catch(e) { 
+        console.error("Erro ao carregar metas:", e); 
+        container.style.display = 'flex';
+        document.getElementById('meta-text-left').innerHTML = `<span style="color:#e74c3c;"><i class="fas fa-times-circle"></i> Erro de conexão com as metas.</span>`;
+        document.getElementById('meta-text-right').innerHTML = `-- / --`;
+    }
 }
 
 window.renderizarVisualizacaoMeta = function() {
