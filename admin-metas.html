@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Metas do CRM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background: #f4f7f6; display: flex; justify-content: center; padding: 40px 20px; }
+        .admin-box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); width: 100%; max-width: 600px; }
+        h2 { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 5px; font-weight: 600; }
+        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        .week-box { background: #f9fbfd; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .btn-save { background: #27ae60; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-save:hover { background: #219653; }
+        #status-msg { text-align: center; margin-top: 15px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="admin-box">
+        <h2>Configurar Metas do Mês</h2>
+        <div class="form-group">
+            <label>Mês de Referência (YYYY-MM)</label>
+            <input type="text" id="mes_ano" readonly>
+        </div>
+        <div class="form-group">
+            <label>META MENSAL TOTAL (R$)</label>
+            <input type="number" id="meta_mensal" step="0.01" placeholder="Ex: 50000.00">
+        </div>
+
+        <div class="week-box">
+            <label>Meta Semana 1 (R$)</label><input type="number" id="m1" step="0.01" class="form-group">
+            <label>Prêmio Semana 1</label><input type="text" id="p1" placeholder="Ex: Rodízio de Pizza">
+        </div>
+        <div class="week-box">
+            <label>Meta Semana 2 (R$)</label><input type="number" id="m2" step="0.01" class="form-group">
+            <label>Prêmio Semana 2</label><input type="text" id="p2" placeholder="Ex: Folga na Sexta">
+        </div>
+        <div class="week-box">
+            <label>Meta Semana 3 (R$)</label><input type="number" id="m3" step="0.01" class="form-group">
+            <label>Prêmio Semana 3</label><input type="text" id="p3">
+        </div>
+        <div class="week-box">
+            <label>Meta Semana 4 (R$)</label><input type="number" id="m4" step="0.01" class="form-group">
+            <label>Prêmio Semana 4</label><input type="text" id="p4">
+        </div>
+
+        <button class="btn-save" onclick="salvarMetas()">SALVAR METAS</button>
+        <div id="status-msg"></div>
+    </div>
+
+    <script>
+        const hoje = new Date();
+        const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+        document.getElementById('mes_ano').value = mesAtual;
+
+        async function carregarMetas() {
+            const token = localStorage.getItem('sessionToken');
+            if(!token) return alert('Você precisa estar logado no sistema principal.');
+            const res = await fetch('/api/crm/getMetas', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ sessionToken: token }) });
+            const data = await res.json();
+            if(data.metas) {
+                document.getElementById('meta_mensal').value = data.metas.meta_mensal;
+                document.getElementById('m1').value = data.metas.meta_sem_1; document.getElementById('p1').value = data.metas.premio_sem_1;
+                document.getElementById('m2').value = data.metas.meta_sem_2; document.getElementById('p2').value = data.metas.premio_sem_2;
+                document.getElementById('m3').value = data.metas.meta_sem_3; document.getElementById('p3').value = data.metas.premio_sem_3;
+                document.getElementById('m4').value = data.metas.meta_sem_4; document.getElementById('p4').value = data.metas.premio_sem_4;
+            }
+        }
+
+        async function salvarMetas() {
+            const payload = {
+                sessionToken: localStorage.getItem('sessionToken'),
+                mes_ano: document.getElementById('mes_ano').value,
+                meta_mensal: document.getElementById('meta_mensal').value,
+                meta_sem_1: document.getElementById('m1').value, premio_sem_1: document.getElementById('p1').value,
+                meta_sem_2: document.getElementById('m2').value, premio_sem_2: document.getElementById('p2').value,
+                meta_sem_3: document.getElementById('m3').value, premio_sem_3: document.getElementById('p3').value,
+                meta_sem_4: document.getElementById('m4').value, premio_sem_4: document.getElementById('p4').value,
+            };
+            const btn = document.querySelector('.btn-save'); btn.innerText = "Salvando...";
+            const res = await fetch('/api/crm/saveMetas', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            if(res.ok) {
+                document.getElementById('status-msg').innerText = "Metas atualizadas com sucesso!";
+                document.getElementById('status-msg').style.color = "green";
+            } else {
+                document.getElementById('status-msg').innerText = "Erro ao salvar.";
+                document.getElementById('status-msg').style.color = "red";
+            }
+            btn.innerText = "SALVAR METAS";
+        }
+        carregarMetas();
+    </script>
+</body>
+</html>

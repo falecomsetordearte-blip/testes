@@ -1,8 +1,9 @@
-// crm-script.js - VERSÃO FINAL INTEGRADA E SEM OMISSÕES
+// crm-script.js - VERSÃO FINAL COM METAS INTEGRADAS
 
 let currentStep = 1;
 const totalSteps = 3;
 let allCardsCache = [];
+let globalMetasData = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     const sessionToken = localStorage.getItem('sessionToken');
@@ -12,7 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     createToastContainer();
     configurarMascaras();
     carregarKanban();
-    configurarBuscaCliente(); // Lógica de busca isolada
+    carregarMetasCRM(); // Chamada inicial das metas
+    configurarBuscaCliente(); 
     configurarFormularioVisual();
     configurarDragScroll();
     setupModalCreditos();
@@ -264,7 +266,7 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
     
     try {
         const res = await fetch('/api/crm/saveCard', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-        if(res.ok) { fecharPanel(); carregarKanban(); showToast('Salvo no CRM!', 'success'); } 
+        if(res.ok) { fecharPanel(); carregarKanban(); carregarMetasCRM(); showToast('Salvo no CRM!', 'success'); } 
         else { showToast('Erro ao salvar.', 'error'); }
     } catch(err) { showToast('Erro de conexão.', 'error'); }
     finally { btn.innerText = originalText; btn.disabled = false; }
@@ -435,4 +437,97 @@ function setupModalCreditos() { /* Modal de compra de créditos */ }
 async function fetchSaldoCRM() {
     const display = document.getElementById('crm-saldo-display'); if(!display) return;
     try { const res = await fetch('/api/crm/getBalance', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') }) }); const data = await res.json(); display.innerText = parseFloat(data.saldo || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); } catch(e) {}
+}
+
+// --- SISTEMA DE METAS ---
+async function carregarMetasCRM() {
+    try {
+        const res = await fetch('/api/crm/getMetas', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') })
+        });
+        globalMetasData = await res.json();
+        
+        if(globalMetasData && globalMetasData.metas) {
+            document.getElementById('metas-widget-container').style.display = 'flex';
+            renderizarVisualizacaoMeta();
+        }
+    } catch(e) { console.error("Erro ao carregar metas:", e); }
+}
+
+window.renderizarVisualizacaoMeta = function() {
+    if(!globalMetasData || !globalMetasData.metas) return;
+
+    const filtro = document.getElementById('filtro-metas').value;
+    const { metas, total_mes, total_hoje } = globalMetasData;
+    
+    let metaAlvo = 0;
+    let atual = 0;
+    let textoEsq = "";
+    let premio = "";
+
+    // FORMATADOR DE MOEDA
+    const fmt = (val) => Number(val).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+
+    if (filtro === 'diaria') {
+        // Lógica da Meta Diária Dinâmica
+        const hoje = new Date();
+        const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+        const diasRestantes = (ultimoDiaMes - hoje.getDate()) + 1; // +1 inclui o dia de hoje
+        
+        let faltaParaOMes = Number(metas.meta_mensal) - total_mes;
+        if(faltaParaOMes < 0) faltaParaOMes = 0;
+        
+        metaAlvo = faltaParaOMes / diasRestantes;
+        atual = total_hoje;
+        textoEsq = `Vendido Hoje: ${fmt(atual)}`;
+
+    } else if (filtro === 'mensal') {
+        metaAlvo = Number(metas.meta_mensal);
+        atual = total_mes;
+        textoEsq = `Vendido no Mês: ${fmt(atual)}`;
+
+    } else {
+        // Semanas
+        atual = total_mes; // Progresso das semanas é baseado no faturamento do mês até atingir o marco
+        textoEsq = `Vendido no Mês: ${fmt(atual)}`;
+        
+        if(filtro === 'sem1') { metaAlvo = Number(metas.meta_sem_1); premio = metas.premio_sem_1; }
+        if(filtro === 'sem2') { metaAlvo = Number(metas.meta_sem_2); premio = metas.premio_sem_2; }
+        if(filtro === 'sem3') { metaAlvo = Number(metas.meta_sem_3); premio = metas.premio_sem_3; }
+        if(filtro === 'sem4') { metaAlvo = Number(metas.meta_sem_4); premio = metas.premio_sem_4; }
+    }
+
+    // Cálculos de Porcentagem
+    let porcentagem = metaAlvo > 0 ? (atual / metaAlvo) * 100 : 100;
+    if(porcentagem > 100) porcentagem = 100;
+
+    // Atualização da UI
+    document.getElementById('meta-text-left').innerText = textoEsq;
+    document.getElementById('meta-text-right').innerText = `Alvo: ${fmt(metaAlvo)} (${porcentagem.toFixed(1)}%)`;
+    
+    const barra = document.getElementById('meta-progress-bar');
+    barra.style.width = `${porcentagem}%`;
+    
+    // Cor da barra diária (se vendeu pouco, vermelho)
+    if(filtro === 'diaria' && porcentagem < 50) barra.classList.add('danger');
+    else barra.classList.remove('danger');
+
+    // Prêmio
+    const premioSpan = document.getElementById('meta-premio');
+    if(premio && premio.trim() !== '') {
+        document.getElementById('meta-premio-text').innerText = premio;
+        premioSpan.classList.add('active');
+        // Se bateu a meta da semana, muda a cor do prêmio
+        if(atual >= metaAlvo) {
+            premioSpan.style.background = '#d4edda';
+            premioSpan.style.color = '#155724';
+        } else {
+            premioSpan.style.background = '#fdf2e9';
+            premioSpan.style.color = '#f39c12';
+        }
+    } else {
+        premioSpan.classList.remove('active');
+    }
 }
