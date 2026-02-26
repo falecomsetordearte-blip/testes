@@ -3,54 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Metas do CRM</title>
+    <title>Admin - Metas e Ajustes</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Poppins', sans-serif; background: #f4f7f6; display: flex; justify-content: center; padding: 40px 20px; }
-        .admin-box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); width: 100%; max-width: 800px; }
+        .admin-box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); width: 100%; max-width: 900px; }
         h2 { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
         .form-group { margin-bottom: 15px; }
         label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 5px; font-weight: 600; }
         input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-family: 'Poppins'; }
-        .mensal-box { background: #e0f7fa; border: 1px solid #b2ebf2; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        .week-box { background: #f9fbfd; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; position: relative; }
+        
+        .mensal-box { background: #e0f7fa; border: 1px solid #b2ebf2; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
+        .ajuste-input { background: #fffde7; border-color: #fbc02d; font-weight: bold; color: #f57f17; }
+        
+        .week-box { background: #f9fbfd; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 20px; position: relative; }
         .week-badge { position: absolute; top: -10px; left: 15px; background: #3498db; color: white; padding: 2px 10px; font-size: 0.75rem; border-radius: 10px; font-weight: bold; }
-        .date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .btn-save { background: #27ae60; color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.2s; margin-top: 20px; }
-        .btn-save:hover { background: #219653; }
+        
+        .date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #eee; }
+        .btn-save { background: #27ae60; color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.2s; margin-top: 20px; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3); }
+        .btn-save:hover { background: #219653; transform: translateY(-2px); }
         #status-msg { text-align: center; margin-top: 15px; font-weight: 600; }
     </style>
 </head>
 <body>
     <div class="admin-box">
-        <h2>Painel de Metas <span>⚙️</span></h2>
+        <h2>Configuração de Metas e Lançamentos <span>🚀</span></h2>
         
-        <div class="form-group">
+        <div class="form-group" style="max-width: 200px;">
             <label>Mês de Referência</label>
-            <input type="text" id="mes_ano" readonly style="background:#eee; font-weight:bold; color: #666;">
+            <input type="text" id="mes_ano" readonly style="background:#f1f1f1; font-weight:bold; text-align: center;">
         </div>
         
-        <!-- Bloco Principal Mensal -->
+        <!-- BLOCO MENSAL -->
         <div class="mensal-box">
-            <div class="grid-2">
+            <div class="grid-3">
                 <div class="form-group">
-                    <label>🎯 ALVO MENSAL TOTAL (R$)</label>
-                    <input type="number" id="meta_mensal" step="0.01" placeholder="Ex: 100000.00">
+                    <label>🎯 ALVO MENSAL (Meta)</label>
+                    <input type="number" id="meta_mensal" step="0.01" placeholder="R$ 0,00">
                 </div>
                 <div class="form-group">
                     <label>🏆 PRÊMIO MENSAL</label>
-                    <input type="text" id="premio_mensal" placeholder="Ex: Bônus Geral de R$ 1000">
+                    <input type="text" id="premio_mensal" placeholder="Ex: Bônus R$ 1.000">
+                </div>
+                <div class="form-group">
+                    <label>➕ AJUSTE / VENDA MANUAL</label>
+                    <input type="number" id="ajuste_mes" class="ajuste-input" step="0.01" value="0.00">
                 </div>
             </div>
-            <small style="color:#00838f; font-style: italic;">As semanas abaixo serão sugeridas em 20%, 30%, 30% e 20% automaticamente.</small>
         </div>
 
         <div id="semanas-container">
-            <!-- Gerado via JavaScript -->
+            <!-- Gerado via JS -->
         </div>
 
-        <button class="btn-save" onclick="salvarMetas()">SALVAR CONFIGURAÇÕES</button>
+        <button class="btn-save" onclick="salvarMetas()">SALVAR TODAS AS CONFIGURAÇÕES</button>
         <div id="status-msg"></div>
     </div>
 
@@ -61,59 +68,55 @@
         document.getElementById('mes_ano').value = `${ano}-${String(mes + 1).padStart(2, '0')}`;
 
         const fmtDt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-        // Cálculo sugerido de datas (Semanas aproximadas de 7 dias)
-        const ultimoDiaMes = new Date(ano, mes + 1, 0).getDate();
-        const datasSugeridas = [
+        const ultimoDia = new Date(ano, mes + 1, 0).getDate();
+        
+        const datasPadrao = [
             { in: new Date(ano, mes, 1), out: new Date(ano, mes, 7) },
             { in: new Date(ano, mes, 8), out: new Date(ano, mes, 14) },
             { in: new Date(ano, mes, 15), out: new Date(ano, mes, 21) },
-            { in: new Date(ano, mes, 22), out: new Date(ano, mes, ultimoDiaMes) }
+            { in: new Date(ano, mes, 22), out: new Date(ano, mes, ultimoDia) }
         ];
 
-        // Renderiza os 4 blocos de semanas
         const container = document.getElementById('semanas-container');
         for(let i=1; i<=4; i++) {
             container.innerHTML += `
                 <div class="week-box">
                     <div class="week-badge">Semana ${i}</div>
                     <div class="date-grid">
-                        <div><label>Data Início</label><input type="date" id="s${i}_in" value="${fmtDt(datasSugeridas[i-1].in)}"></div>
-                        <div><label>Data Fim</label><input type="date" id="s${i}_out" value="${fmtDt(datasSugeridas[i-1].out)}"></div>
+                        <div><label>Início do Ciclo</label><input type="date" id="s${i}_in" value="${fmtDt(datasPadrao[i-1].in)}"></div>
+                        <div><label>Fim do Ciclo</label><input type="date" id="s${i}_out" value="${fmtDt(datasPadrao[i-1].out)}"></div>
                     </div>
-                    <div class="grid-2">
+                    <div class="grid-3">
                         <div><label>Meta da Semana (R$)</label><input type="number" id="m${i}" step="0.01"></div>
-                        <div><label>Prêmio da Semana</label><input type="text" id="p${i}" placeholder="Ex: Jantar Pago"></div>
+                        <div><label>Prêmio da Semana</label><input type="text" id="p${i}"></div>
+                        <div><label>Ajuste Manual (R$)</label><input type="number" id="a${i}" class="ajuste-input" step="0.01" value="0.00"></div>
                     </div>
                 </div>
             `;
         }
 
-        // Distribuição Automática: 20-30-30-20
+        // Auto-distribuição 20-30-30-20
         document.getElementById('meta_mensal').addEventListener('input', (e) => {
-            const total = parseFloat(e.target.value) || 0;
-            document.getElementById('m1').value = (total * 0.20).toFixed(2);
-            document.getElementById('m2').value = (total * 0.30).toFixed(2);
-            document.getElementById('m3').value = (total * 0.30).toFixed(2);
-            document.getElementById('m4').value = (total * 0.20).toFixed(2);
+            const val = parseFloat(e.target.value) || 0;
+            document.getElementById('m1').value = (val * 0.2).toFixed(2);
+            document.getElementById('m2').value = (val * 0.3).toFixed(2);
+            document.getElementById('m3').value = (val * 0.3).toFixed(2);
+            document.getElementById('m4').value = (val * 0.2).toFixed(2);
         });
 
-        async function carregarMetasAtuais() {
+        async function carregar() {
             const token = localStorage.getItem('sessionToken');
-            if(!token) return;
-            const res = await fetch('/api/crm/getMetas', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ sessionToken: token }) 
-            });
+            const res = await fetch('/api/crm/getMetas', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ sessionToken: token }) });
             const data = await res.json();
             if(data.metas) {
                 const m = data.metas;
                 document.getElementById('meta_mensal').value = m.meta_mensal;
                 document.getElementById('premio_mensal').value = m.premio_mensal;
+                document.getElementById('ajuste_mes').value = m.ajuste_mes || 0;
                 for(let i=1; i<=4; i++) {
                     document.getElementById(`m${i}`).value = m[`meta_sem_${i}`];
                     document.getElementById(`p${i}`).value = m[`premio_sem_${i}`];
+                    document.getElementById(`a${i}`).value = m[`ajuste_sem_${i}`] || 0;
                     if(m[`sem_${i}_inicio`]) document.getElementById(`s${i}_in`).value = m[`sem_${i}_inicio`].split('T')[0];
                     if(m[`sem_${i}_fim`]) document.getElementById(`s${i}_out`).value = m[`sem_${i}_fim`].split('T')[0];
                 }
@@ -122,44 +125,34 @@
 
         async function salvarMetas() {
             const btn = document.querySelector('.btn-save');
-            const originalText = btn.innerText;
-            btn.innerText = "Salvando...";
-            btn.disabled = true;
+            btn.innerText = "Gravando no Banco..."; btn.disabled = true;
 
             const payload = {
                 sessionToken: localStorage.getItem('sessionToken'),
                 mes_ano: document.getElementById('mes_ano').value,
                 meta_mensal: document.getElementById('meta_mensal').value,
                 premio_mensal: document.getElementById('premio_mensal').value,
+                ajuste_mes: document.getElementById('ajuste_mes').value
             };
 
             for(let i=1; i<=4; i++) {
                 payload[`meta_sem_${i}`] = document.getElementById(`m${i}`).value;
                 payload[`premio_sem_${i}`] = document.getElementById(`p${i}`).value;
+                payload[`ajuste_sem_${i}`] = document.getElementById(`a${i}`).value;
                 payload[`sem_${i}_inicio`] = document.getElementById(`s${i}_in`).value;
                 payload[`sem_${i}_fim`] = document.getElementById(`s${i}_out`).value;
             }
 
-            try {
-                const res = await fetch('/api/crm/saveMetas', { 
-                    method: 'POST', 
-                    headers: {'Content-Type': 'application/json'}, 
-                    body: JSON.stringify(payload) 
-                });
-                if(res.ok) {
-                    document.getElementById('status-msg').innerHTML = "<span style='color: #27ae60'>✅ Metas salvas e períodos definidos!</span>";
-                } else {
-                    document.getElementById('status-msg').innerHTML = "<span style='color: #e74c3c'>❌ Erro ao salvar metas.</span>";
-                }
-            } catch (e) {
-                document.getElementById('status-msg').innerHTML = "<span style='color: #e74c3c'>❌ Erro de conexão.</span>";
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
+            const res = await fetch('/api/crm/saveMetas', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            if(res.ok) {
+                document.getElementById('status-msg').innerHTML = "<span style='color:green'>✅ Configurações salvas com sucesso!</span>";
+            } else {
+                document.getElementById('status-msg').innerHTML = "<span style='color:red'>❌ Erro ao salvar dados.</span>";
             }
+            btn.innerText = "SALVAR TODAS AS CONFIGURAÇÕES"; btn.disabled = false;
         }
 
-        carregarMetasAtuais();
+        carregar();
     </script>
 </body>
 </html>
