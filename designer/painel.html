@@ -29,7 +29,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
         
-        /* HEADER */
         .app-header { background-color: var(--card-bg); box-shadow: var(--shadow-sm); position: sticky; top: 0; z-index: 100; height: 80px; display: flex; align-items: center; }
         .header-content { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
         .app-logo { height: 50px; width: auto; }
@@ -41,7 +40,6 @@
         .main-painel { padding: 40px 0; flex: 1; }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; width: 100%; }
 
-        /* DASHBOARD CARDS */
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin-bottom: 40px; }
         .dash-card { background: var(--card-bg); border-radius: var(--border-radius); padding: 25px; box-shadow: var(--shadow-md); border: 1px solid rgba(255,255,255,0.5); }
         .card-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
@@ -54,7 +52,6 @@
         .card-button { display: block; background-color: var(--primary-color); color: white; padding: 10px; border-radius: 8px; font-weight: 500; text-align: center; transition: var(--transition); text-decoration: none; }
         .card-button:hover { background-color: var(--primary-hover); }
 
-        /* BADGES */
         .user-stats-bar { display: flex; gap: 10px; align-items: center; margin-left: 15px; }
         .stat-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
         .lvl-1 { background: #fef08a; color: #b45309; border: 1px solid #fde047; }
@@ -62,7 +59,6 @@
         .lvl-3 { background: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
         .score-badge { background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; }
 
-        /* TABS */
         .tabs-component { background: var(--card-bg); border-radius: var(--border-radius); box-shadow: var(--shadow-md); overflow: hidden; }
         .tab-buttons { display: flex; border-bottom: 1px solid #e2e8f0; padding: 0 20px; background: #fff; }
         .tab-btn { background: none; border: none; padding: 20px 25px; font-family: 'Poppins', sans-serif; font-size: 0.95rem; font-weight: 500; color: var(--secondary-color); cursor: pointer; position: relative; display: flex; align-items: center; }
@@ -72,33 +68,28 @@
         .bg-yellow { background-color: var(--warning); }
         .bg-green { background-color: var(--success); }
 
-        /* LISTS */
         .tab-content { padding: 20px; min-height: 300px; }
         .tab-pane { display: none; }
         .tab-pane.active { display: block; }
         .list-header { display: grid; background-color: #f8fafc; padding: 15px; border-radius: 8px; font-weight: 600; font-size: 0.8rem; color: var(--secondary-color); margin-bottom: 10px; text-transform: uppercase; }
-        .list-item { display: grid; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; align-items: center; margin-bottom: 8px; transition: 0.2s; }
-        .list-item:hover { border-color: var(--primary-color); background-color: #fcfcff; }
+        .list-item { display: grid; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; align-items: center; margin-bottom: 8px; }
         .btn-action { background: var(--primary-color); color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
-        .btn-outline-sm { background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; margin-top: 5px; font-weight: 500; }
+        .btn-outline-sm { background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; margin-top: 5px; font-weight: 600; }
 
-        /* GAVETA (DRAWER) - ESTILO EXPEDIÇÃO */
         .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9998; opacity: 0; visibility: hidden; transition: var(--transition); backdrop-filter: blur(2px); }
         .drawer-overlay.active { opacity: 1; visibility: visible; }
         .drawer-panel { position: fixed; top: 0; right: -100%; width: 100%; max-width: 480px; height: 100%; background: white; z-index: 9999; transition: var(--transition); display: flex; flex-direction: column; box-shadow: -5px 0 25px rgba(0,0,0,0.15); }
         .drawer-panel.active { right: 0; }
-        .drawer-header { padding: 25px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #fcfcfd; }
+        .drawer-header { padding: 25px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
         .drawer-body { padding: 25px; flex: 1; overflow-y: auto; }
         .drawer-footer { padding: 20px 25px; border-top: 1px solid #f1f5f9; display: flex; flex-direction: column; gap: 10px; }
         
-        /* ELEMENTOS DENTRO DA GAVETA */
         .drawer-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--secondary-color); display: block; margin-bottom: 8px; margin-top: 15px; letter-spacing: 0.5px; }
         .briefing-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 18px; border-radius: 12px; font-size: 0.95rem; line-height: 1.6; color: var(--text-main); white-space: pre-wrap; }
-        .drawer-input { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-family: 'Poppins', sans-serif; font-size: 0.9rem; margin-bottom: 10px; transition: 0.2s; }
-        .drawer-input:focus { outline: none; border-color: var(--primary-color); ring: 2px solid #e0e7ff; }
+        .drawer-input { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-family: 'Poppins', sans-serif; font-size: 0.9rem; margin-bottom: 10px; }
         .btn-full { width: 100%; padding: 16px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; font-family: 'Poppins', sans-serif; transition: 0.2s; font-size: 0.95rem; }
         .btn-primary { background: var(--primary-color); color: white; }
-        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-primary:hover { background: var(--primary-hover); }
         .btn-secondary { background: #f1f5f9; color: var(--secondary-color); }
 
         @media (max-width: 768px) {
@@ -115,12 +106,12 @@
         <div class="header-content">
             <img src="https://app.setordearte.com.br/images/logo-fundo-claro-100x100.png" alt="Logo" class="app-logo">
             <div class="user-menu">
-                <a href="perfil.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+                <div style="display: flex; align-items: center; gap: 10px;">
                     <div style="width: 35px; height: 35px; background: #e0e7ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary-color);">
                         <i class="fas fa-user"></i>
                     </div>
                     <span id="designer-greeting">Olá, Designer</span>
-                </a>
+                </div>
                 <button id="logout-button">Sair</button>
             </div>
         </div>
@@ -128,7 +119,6 @@
     
     <main class="main-painel">
         <div class="container">
-            
             <div style="margin-bottom: 30px;">
                 <h2 style="font-weight: 700; color: var(--text-main); display: flex; align-items: center;">
                     Visão Geral
@@ -137,7 +127,6 @@
                         <span class="stat-badge score-badge"><i class="fas fa-star"></i> <span id="val-pontos">0</span> pts</span>
                     </div>
                 </h2>
-                <p style="color: var(--secondary-color); font-size: 0.9rem;">Gerencie seus projetos e acompanhe seus rendimentos.</p>
             </div>
 
             <div class="dashboard-grid">
@@ -149,12 +138,10 @@
                 <div class="dash-card">
                     <div class="card-header"><span class="card-title">Aguardando Depósito</span><i class="fas fa-hourglass-half card-icon"></i></div>
                     <span id="designer-saldo-pendente" class="card-value">R$ 0,00</span>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">Total em saques solicitados</p>
                 </div>
                 <div class="dash-card">
                     <div class="card-header"><span class="card-title">Pedidos Ativos</span><i class="fas fa-tasks card-icon"></i></div>
                     <span id="designer-pedidos-ativos" class="card-value">0</span>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">Trabalhos em produção</p>
                 </div>
             </div>
 
@@ -172,23 +159,20 @@
                 <div class="tab-content">
                     <div id="atendimentos" class="tab-pane active">
                         <div class="list-header" style="grid-template-columns: 0.5fr 3fr 1fr 1fr 1.2fr;">
-                            <div>ID</div><div>Pedido / Briefing</div><div>Status</div><div>Oferta</div><div style="text-align: right;">Ações</div>
+                            <div>ID</div><div>Pedido</div><div>Status</div><div>Oferta</div><div style="text-align: right;">Ações</div>
                         </div>
                         <div id="atendimentos-list"></div>
                     </div>
 
                     <div id="mercado" class="tab-pane">
                         <div class="list-header" style="grid-template-columns: 0.5fr 3fr 1fr 1fr;">
-                            <div>ID</div><div>Descrição do Trabalho</div><div>Oferta</div><div style="text-align: right;">Ação</div>
+                            <div>ID</div><div>Descrição</div><div>Oferta</div><div style="text-align: right;">Ação</div>
                         </div>
                         <div id="mercado-list"></div>
                     </div>
 
                     <div id="saques" class="tab-pane">
-                         <div class="list-header" style="grid-template-columns: 1fr 2fr 1.5fr 1fr;">
-                            <div>Data</div><div>Descrição</div><div>Status</div><div>Valor</div>
-                        </div>
-                        <div id="saques-list"><p style="text-align:center; padding:20px; color:var(--text-muted);">Nenhum registro encontrado.</p></div>
+                        <div id="saques-list"><p style="text-align:center; padding:20px; color:var(--text-muted);">Carregando...</p></div>
                     </div>
                 </div>
             </div>
@@ -199,20 +183,16 @@
     <div class="drawer-overlay" id="drawer-overlay" onclick="fecharGaveta()"></div>
     <div class="drawer-panel" id="drawer-panel">
         <div class="drawer-header">
-            <h3 id="drawer-title" style="margin:0; font-weight: 600; color: var(--text-main);">Detalhes</h3>
-            <button onclick="fecharGaveta()" style="border:none; background:none; font-size:1.8rem; cursor:pointer; color: var(--secondary-color); line-height:1;">&times;</button>
+            <h3 id="drawer-title" style="margin:0; font-weight: 600;">Detalhes</h3>
+            <button onclick="fecharGaveta()" style="border:none; background:none; font-size:1.8rem; cursor:pointer;">&times;</button>
         </div>
-        <div class="drawer-body" id="drawer-content">
-            <!-- Conteúdo Dinâmico -->
-        </div>
-        <div class="drawer-footer" id="drawer-footer">
-            <!-- Botões Dinâmicos -->
-        </div>
+        <div class="drawer-body" id="drawer-content"></div>
+        <div class="drawer-footer" id="drawer-footer"></div>
     </div>
 
-    <script src="designer-script.js"></script>
+    <!-- ADICIONADO TIMESTAMP PARA EVITAR CACHE -->
+    <script src="designer-script.js?v=2.0"></script>
     <script>
-        // Lógica simples de troca de abas
         document.querySelectorAll('.tab-btn').forEach(button => {
             button.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));

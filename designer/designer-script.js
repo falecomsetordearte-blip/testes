@@ -1,4 +1,4 @@
-// /designer/designer-script.js - VERSÃO COM GAMEFICAÇÃO (NÍVEL, PONTOS E BOLINHAS)
+// /designer/designer-script.js - VERSÃO 100% SEM ALERTAS
 
 (function() {
     const sessionToken = localStorage.getItem('designerToken');
@@ -8,25 +8,40 @@
     const ehPaginaPublica = paginasPublicas.some(pg => path.includes(pg));
 
     if (!sessionToken && !ehPaginaPublica) { window.location.href = 'login.html'; return; }
-    if (sessionToken && (path.includes('login.html') || path.includes('cadastro.html'))) { window.location.href = 'painel.html'; return; }
 
     document.addEventListener('DOMContentLoaded', () => {
-        if (document.getElementById('designer-login-form')) configurarLogin();
-        else if (document.getElementById('designer-cadastro-form')) configurarCadastro();
-        else if (document.getElementById('designer-esqueci-senha-form')) configurarEsqueciSenha();
-        else if (document.getElementById('designer-redefinir-senha-form')) configurarRedefinirSenha();
-        else if (document.querySelector('main.main-painel')) carregarDashboardDesigner();
+        if (document.querySelector('main.main-painel')) carregarDashboardDesigner();
+        
+        const logoutBtn = document.getElementById('logout-button');
+        if (logoutBtn) logoutBtn.addEventListener('click', () => { localStorage.clear(); window.location.href = 'login.html'; });
     });
+
+    // --- FUNÇÕES DA GAVETA ---
+    window.fecharGaveta = () => {
+        document.getElementById('drawer-overlay').classList.remove('active');
+        document.getElementById('drawer-panel').classList.remove('active');
+    };
+
+    window.abrirGaveta = (titulo, htmlCorpo, htmlRodape = '') => {
+        document.getElementById('drawer-title').innerText = titulo;
+        document.getElementById('drawer-content').innerHTML = htmlCorpo;
+        document.getElementById('drawer-footer').innerHTML = htmlRodape;
+        document.getElementById('drawer-overlay').classList.add('active');
+        document.getElementById('drawer-panel').classList.add('active');
+    };
+
+    // FUNÇÃO PARA SUBSTITUIR O ALERT EM CASOS DE ERRO
+    window.mostrarErro = (mensagem) => {
+        const corpo = `<div style="color: #e11d48; background: #fff1f2; padding: 15px; border-radius: 8px; border: 1px solid #fda4af;">
+            <i class="fas fa-exclamation-circle"></i> <strong>Erro:</strong> ${mensagem}
+        </div>`;
+        const rodape = `<button onclick="fecharGaveta()" class="btn-full btn-secondary">Entendi</button>`;
+        window.abrirGaveta("Ops! Algo deu errado", corpo, rodape);
+    };
 
     async function carregarDashboardDesigner() {
         const designerInfo = JSON.parse(localStorage.getItem('designerInfo'));
-        if (designerInfo) {
-            const greetingEl = document.getElementById('designer-greeting');
-            if (greetingEl) greetingEl.textContent = `Olá, ${designerInfo.name}!`;
-        }
-
-        const logoutBtn = document.getElementById('logout-button');
-        if (logoutBtn) logoutBtn.addEventListener('click', () => { localStorage.clear(); window.location.href = 'login.html'; });
+        if (designerInfo) document.getElementById('designer-greeting').textContent = `Olá, ${designerInfo.name}!`;
 
         try {
             const res = await fetch('/api/designer/getDashboard', {
@@ -37,65 +52,43 @@
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            // 1. Atualizar Cards Financeiros
             document.getElementById('designer-saldo-disponivel').textContent = formatarMoeda(data.designer.saldo);
             document.getElementById('designer-saldo-pendente').textContent = formatarMoeda(data.designer.pendente);
             document.getElementById('designer-pedidos-ativos').textContent = data.meusPedidos.length;
+            document.getElementById('count-meus').textContent = data.meusPedidos.length;
+            document.getElementById('count-mercado').textContent = data.mercado.length;
 
-            // 2. Atualizar Contadores (Bolinhas das Abas)
-            const countMeus = document.getElementById('count-meus');
-            const countMercado = document.getElementById('count-mercado');
-            if (countMeus) countMeus.textContent = data.meusPedidos.length;
-            if (countMercado) countMercado.textContent = data.mercado.length;
-
-            // 3. Atualizar Badges de Nível e Pontos
             const badgeNivel = document.getElementById('badge-nivel');
-            const valPontos = document.getElementById('val-pontos');
-            
-            if (badgeNivel) {
-                const niveisInfo = {
-                    1: { text: 'Nível 1 (Ouro)', class: 'lvl-1' },
-                    2: { text: 'Nível 2 (Prata)', class: 'lvl-2' },
-                    3: { text: 'Nível 3 (Bronze)', class: 'lvl-3' }
-                };
-                const n = niveisInfo[data.designer.nivel] || niveisInfo[3];
-                badgeNivel.innerHTML = `<i class="fas fa-medal"></i> ${n.text}`;
-                badgeNivel.className = `stat-badge ${n.class}`;
-            }
+            const niveis = { 1: { t: 'Ouro', c: 'lvl-1' }, 2: { t: 'Prata', c: 'lvl-2' }, 3: { t: 'Bronze', c: 'lvl-3' } };
+            const n = niveis[data.designer.nivel] || niveis[3];
+            badgeNivel.innerHTML = `<i class="fas fa-medal"></i> Nível ${n.t}`;
+            badgeNivel.className = `stat-badge ${n.c}`;
+            document.getElementById('val-pontos').textContent = data.designer.pontuacao;
 
-            if (valPontos) {
-                valPontos.textContent = data.designer.pontuacao;
-            }
-
-            // 4. Renderizar Listas
             renderizarMeusTrabalhos(data.meusPedidos);
             renderizarMercado(data.mercado);
 
-        } catch (error) { console.error(error); alert("Erro ao carregar painel: " + error.message); }
+        } catch (error) { console.error(error); }
     }
 
     function renderizarMeusTrabalhos(pedidos) {
         const container = document.getElementById('atendimentos-list');
         if (pedidos.length === 0) {
-            container.innerHTML = `<div class="loading-pedidos">Você não tem trabalhos ativos.</div>`;
+            container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhum atendimento ativo.</p>`;
             return;
         }
-
         container.innerHTML = pedidos.map(p => `
-            <div class="list-item" style="grid-template-columns: 0.5fr 3fr 1fr 1fr 1fr;">
-                <div class="col-id">#${p.id}</div>
-                <div class="col-titulo">
-                    ${p.titulo}<br>
-                    <button onclick="verBriefing('${b64EncodeUnicode(p.briefing_completo || 'Sem briefing')}')" 
-                    style="background:#f1f5f9; border:1px solid #cbd5e1; color:#475569; padding:2px 8px; border-radius:4px; font-size:0.75rem; cursor:pointer; margin-top:5px;">
-                    📄 Ver Briefing
-                    </button>
+            <div class="list-item" style="grid-template-columns: 0.5fr 3fr 1fr 1fr 1.2fr;">
+                <div style="color:var(--secondary-color);">#${p.id}</div>
+                <div>
+                    <div style="font-weight:600;">${p.titulo}</div>
+                    <button onclick="verBriefing('${b64EncodeUnicode(p.briefing_completo || 'Sem detalhes.')}')" class="btn-outline-sm">LER BRIEFING</button>
                 </div>
-                <div><span class="status-badge" style="background:#fef3c7; color:#b45309; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:600;">Em Produção</span></div>
-                <div class="col-valor" style="color:#10b981;">${formatarMoeda(p.valor_designer || 0)}</div>
-                <div style="text-align: right; display: flex; gap: 5px; justify-content: flex-end; flex-wrap: wrap;">
+                <div><span style="background:#fef3c7; color:#b45309; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">PRODUÇÃO</span></div>
+                <div style="font-weight:700; color:var(--success);">${formatarMoeda(p.valor_designer)}</div>
+                <div style="text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
                     <a href="${p.link_acompanhar}" target="_blank" class="btn-action" style="background:#25D366;"><i class="fab fa-whatsapp"></i> Chat</a>
-                    <button onclick="prepararFinalizacao(${p.id})" class="btn-action"><i class="fas fa-check"></i> Finalizar</button>
+                    <button onclick="prepararFinalizacao(${p.id})" class="btn-action">Finalizar</button>
                 </div>
             </div>
         `).join('');
@@ -104,154 +97,88 @@
     function renderizarMercado(pedidos) {
         const container = document.getElementById('mercado-list'); 
         if (pedidos.length === 0) {
-            container.innerHTML = `<div class="loading-pedidos">Nenhum pedido disponível.</div>`;
+            container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhum pedido disponível.</p>`;
             return;
         }
-
         container.innerHTML = pedidos.map(p => `
             <div class="list-item" style="grid-template-columns: 0.5fr 3fr 1fr 1fr;">
-                <div class="col-id">#${p.id}</div>
-                <div class="col-titulo">
-                    <span style="font-size: 1.05rem;">${p.titulo}</span><br>
-                    <small style="color: var(--secondary-color);"><i class="fas fa-tag"></i> ${p.servico || 'Arte'}</small><br>
-                    <button onclick="verBriefing('${b64EncodeUnicode(p.briefing_completo || 'Sem briefing descrito.')}')" 
-                        style="background:#f1f5f9; border:1px solid #cbd5e1; color:#475569; padding:4px 8px; border-radius:4px; font-size:0.75rem; cursor:pointer; margin-top:5px;">
-                        📄 Ler Briefing
-                    </button>
+                <div style="color:var(--secondary-color);">#${p.id}</div>
+                <div>
+                    <div style="font-weight:600;">${p.titulo}</div>
+                    <button onclick="verBriefing('${b64EncodeUnicode(p.briefing_completo || 'Sem detalhes.')}')" class="btn-outline-sm">LER BRIEFING</button>
                 </div>
-                <div class="col-valor" style="color:#10b981; font-size: 1.1rem;">${formatarMoeda(p.valor_designer || 0)}</div>
+                <div style="font-weight:700; color:var(--success); font-size:1.1rem;">${formatarMoeda(p.valor_designer)}</div>
                 <div style="text-align: right;">
-                    <button onclick="assumirPedido(${p.id})" style="background:#10b981; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600;">
-                        ATENDER
-                    </button>
+                    <button onclick="confirmarAssumir(${p.id})" class="btn-action" style="padding:10px 20px;">ATENDER</button>
                 </div>
             </div>
         `).join('');
     }
 
-    window.b64EncodeUnicode = (str) => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1)));
-    
     window.verBriefing = (b64) => {
         const texto = decodeURIComponent(Array.prototype.map.call(atob(b64), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-        alert("📝 BRIEFING DO PEDIDO:\n\n" + texto);
-    }
-
-    window.assumirPedido = async (id) => {
-        if (!confirm("Deseja assumir este pedido?")) return;
-        try {
-            const res = await fetch('/api/designer/assumirPedido', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: sessionToken, pedidoId: id })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message);
-            alert("Sucesso! Pedido assumido.");
-            if (data.chatLink) window.open(data.chatLink, '_blank');
-            carregarDashboardDesigner();
-        } catch (e) { alert(e.message); }
+        const corpo = `
+            <span class="drawer-label">Instruções e Detalhes</span>
+            <div class="briefing-box">${texto}</div>
+        `;
+        const rodape = `<button onclick="fecharGaveta()" class="btn-full btn-secondary">Fechar</button>`;
+        window.abrirGaveta("Briefing do Pedido", corpo, rodape);
     };
 
-    window.prepararFinalizacao = async (id) => {
-        const linkLayout = prompt("Cole o link do LAYOUT (ex: Drive/Imgur):");
-        if (!linkLayout) return;
-        const linkImpressao = prompt("Cole o link do ARQUIVO DE IMPRESSÃO:");
-        if (!linkImpressao) return;
-        try {
-            const res = await fetch('/api/designer/finalizarPedido', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: sessionToken, pedidoId: id, linkLayout, linkImpressao })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message);
-            alert("Pedido finalizado e valor creditado!");
-            carregarDashboardDesigner();
-        } catch (e) { alert(e.message); }
-    };
-
-    function formatarMoeda(valor) {
-        return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor || 0);
-    }
-
-    function configurarLogin() {
-        const form = document.getElementById('designer-login-form');
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = form.querySelector('button');
-            btn.disabled = true; btn.textContent = 'Entrando...';
+    window.confirmarAssumir = (id) => {
+        const corpo = `<p style="font-size:1rem; color:var(--secondary-color);">Deseja assumir o atendimento deste pedido agora?</p>`;
+        const rodape = `
+            <button id="btn-exec-assumir" class="btn-full btn-primary">SIM, ATENDER PEDIDO</button>
+            <button onclick="fecharGaveta()" class="btn-full btn-secondary">Cancelar</button>
+        `;
+        window.abrirGaveta("Confirmar Atendimento", corpo, rodape);
+        
+        document.getElementById('btn-exec-assumir').onclick = async () => {
             try {
-                const res = await fetch('/api/designerLogin', {
+                const res = await fetch('/api/designer/assumirPedido', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: document.getElementById('email').value, senha: document.getElementById('senha').value })
+                    body: JSON.stringify({ token: sessionToken, pedidoId: id })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message);
-                localStorage.setItem('designerToken', data.token);
-                localStorage.setItem('designerInfo', JSON.stringify(data.designer));
-                window.location.href = 'painel.html';
-            } catch (err) {
-                document.getElementById('form-error-feedback').textContent = err.message;
-                document.getElementById('form-error-feedback').classList.remove('hidden');
-                btn.disabled = false; btn.textContent = 'Entrar';
-            }
-        });
-    }
+                fecharGaveta();
+                if (data.chatLink) window.open(data.chatLink, '_blank');
+                carregarDashboardDesigner();
+            } catch (e) { mostrarErro(e.message); }
+        };
+    };
 
-    function configurarCadastro() {
-        const form = document.getElementById('designer-cadastro-form');
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = form.querySelector('button');
-            const senha = document.getElementById('senha').value;
-            if (senha !== document.getElementById('confirmar-senha').value) {
-                alert('As senhas não coincidem!'); return;
-            }
-            btn.disabled = true; btn.textContent = 'Criando conta...';
-            try {
-                const res = await fetch('/api/designerRegister', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nome: document.getElementById('nome').value, email: document.getElementById('email').value, senha: senha })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message);
-                localStorage.setItem('designerToken', data.token);
-                localStorage.setItem('designerInfo', JSON.stringify(data.designer));
-                window.location.href = 'painel.html';
-            } catch (err) {
-                document.getElementById('form-error-feedback').textContent = err.message;
-                document.getElementById('form-error-feedback').classList.remove('hidden');
-                btn.disabled = false; btn.textContent = 'Cadastrar';
-            }
-        });
-    }
+    window.prepararFinalizacao = (id) => {
+        const corpo = `
+            <span class="drawer-label">Link do Layout (JPG/PNG)</span>
+            <input type="url" id="f-layout" class="drawer-input" placeholder="Cole o link do layout aqui...">
+            <span class="drawer-label">Link para Impressão (PDF/AI/CDR)</span>
+            <input type="url" id="f-impressao" class="drawer-input" placeholder="Cole o link do arquivo final aqui...">
+        `;
+        const rodape = `
+            <button id="btn-exec-finalizar" class="btn-full btn-primary">FINALIZAR E RECEBER</button>
+            <button onclick="fecharGaveta()" class="btn-full btn-secondary">Voltar</button>
+        `;
+        window.abrirGaveta("Entregar Trabalho", corpo, rodape);
 
-    function configurarEsqueciSenha() {
-        document.getElementById('designer-esqueci-senha-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            try {
-                const res = await fetch('/api/designer/forgotPassword', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: document.getElementById('email').value })
-                });
-                const data = await res.json();
-                document.getElementById('form-wrapper').innerHTML = `<h1>Enviado!</h1><p>${data.message}</p><a href="login.html">Voltar</a>`;
-            } catch (err) { alert("Erro ao enviar."); }
-        });
-    }
+        document.getElementById('btn-exec-finalizar').onclick = async () => {
+            const linkLayout = document.getElementById('f-layout').value;
+            const linkImpressao = document.getElementById('f-impressao').value;
+            if(!linkLayout || !linkImpressao) return;
 
-    function configurarRedefinirSenha() {
-        const token = new URLSearchParams(window.location.search).get('token');
-        if (!token) { window.location.href = 'login.html'; return; }
-        document.getElementById('designer-redefinir-senha-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const senha = document.getElementById('nova-senha').value;
-            if (senha !== document.getElementById('confirmar-senha').value) { alert("Senhas não batem"); return; }
             try {
-                const res = await fetch('/api/designer/resetPassword', {
+                const res = await fetch('/api/designer/finalizarPedido', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token, novaSenha: senha })
+                    body: JSON.stringify({ token: sessionToken, pedidoId: id, linkLayout, linkImpressao })
                 });
-                if (res.ok) { alert("Senha alterada!"); window.location.href = 'login.html'; }
-            } catch (err) { alert("Erro ao alterar."); }
-        });
-    }
+                if (!res.ok) throw new Error("Não foi possível finalizar.");
+                fecharGaveta();
+                carregarDashboardDesigner();
+            } catch (e) { mostrarErro(e.message); }
+        };
+    };
+
+    function formatarMoeda(valor) { return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor || 0); }
+    window.b64EncodeUnicode = (str) => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1)));
+
 })();
