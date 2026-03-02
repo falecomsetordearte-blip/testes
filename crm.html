@@ -14,7 +14,7 @@
     <style>
         .app-content .container { max-width: 100% !important; padding-right: 20px; }
         
-        /* KANBAN */
+        /* KANBAN LAYOUT */
         .kanban-board { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 20px; height: calc(100vh - 180px); align-items: flex-start; cursor: grab; user-select: none; }
         .kanban-board.active { cursor: grabbing; }
         .kanban-column { min-width: 300px; width: 300px; display: inline-flex; flex-direction: column; max-height: 100%; vertical-align: top; }
@@ -28,7 +28,7 @@
 
         .kanban-items { overflow-y: auto; flex-grow: 1; padding-right: 5px; scrollbar-width: thin; display: flex; flex-direction: column; gap: 12px; min-height: 150px; }
         
-        /* CARD */
+        /* CARDS */
         .kanban-card { background: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: transform 0.2s; border-left: 5px solid #ccc; cursor: pointer; position: relative; display: flex; flex-direction: column; gap: 8px; }
         .kanban-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
         .col-novos .kanban-card { border-left-color: #3498db; }
@@ -62,7 +62,7 @@
         .btn-card-produzir:hover { transform: scale(1.05); }
         .btn-card-produzir.confirm-state { background: #e74c3c; animation: pulse 0.5s; }
 
-        /* DRAWER */
+        /* DRAWER (SLIDE PANEL) */
         .slide-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(3px); z-index: 9990; opacity: 0; visibility: hidden; transition: opacity 0.3s; }
         .slide-overlay.active { opacity: 1; visibility: visible; }
         .slide-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 700px; background: #fff; z-index: 9999; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; }
@@ -71,7 +71,7 @@
         .panel-body { padding: 0; background: #f9fbfd; flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
         .close-panel-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #aaa; }
 
-        /* STEPPER */
+        /* STEPPER WIZARD */
         .stepper-container { padding: 15px 30px; background: #fff; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
         .step-indicator { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #ccc; font-weight: 600; }
         .step-indicator.active { color: #3498db; }
@@ -83,7 +83,7 @@
         .step-content { display: none; padding: 30px; animation: fadeIn 0.4s ease; }
         .step-content.active { display: block; }
 
-        /* SELECTIONS */
+        /* SELECTIONS & FORMS */
         .selection-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .selection-card { background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px 10px; text-align: center; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .selection-card:hover { border-color: #b0c4de; transform: translateY(-2px); }
@@ -91,13 +91,12 @@
         .selection-card i { font-size: 1.8rem; color: #94a3b8; }
         .selection-card img { width: 35px; height: 35px; border-radius: 50%; object-fit: contain; }
 
-        /* FORMS */
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.85rem; color: #475569; }
         .form-control { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; }
         .hidden { display: none; }
         
-        /* BUSCA CLIENTE */
+        /* AUTOCOMPLETE */
         .autocomplete-wrapper { position: relative; }
         .search-group { display: flex; gap: 5px; position: relative; z-index: 10; }
         .btn-search-trigger { background: #3498db; color: white; border: none; border-radius: 8px; padding: 0 15px; cursor: pointer; transition: background 0.2s; }
@@ -105,6 +104,7 @@
         #search-results-list li { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
         #search-results-list li:hover { background-color: #f0f7ff; color: #3498db; }
 
+        /* MATERIAL ITEMS */
         .material-item { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px; position: relative; padding-right: 40px; }
         .btn-remove-material { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: #fee2e2; border: none; color: #ef4444; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
@@ -113,12 +113,13 @@
         .btn-prev { background: #f1f5f9; color: #64748b; }
         .btn-next { background: #3498db; color: white; display: flex; align-items: center; gap: 8px; }
 
+        /* TOASTS */
         .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10010; display: flex; flex-direction: column; gap: 10px; }
         .toast { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); border-left: 5px solid #ccc; min-width: 300px; animation: slideIn 0.3s forwards; display: flex; align-items: center; gap: 10px; }
         .toast.success { border-left-color: #2ecc71; }
         .toast.error { border-left-color: #e74c3c; }
 
-        /* --- COMPONENTE DE METAS ATUALIZADO (BARRA GROSSA) --- */
+        /* --- COMPONENTE DE METAS ATUALIZADO (BARRA GROSSA 24px) --- */
         .metas-widget {
             background: #fff; border-radius: 12px; padding: 15px 25px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.07); margin-bottom: 25px;
@@ -127,28 +128,12 @@
         }
         .metas-controls { display: flex; align-items: center; gap: 10px; min-width: 250px; }
         .metas-controls select { padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: 600; color: #334155; outline: none; cursor: pointer; width: 100%; font-size: 0.85rem; }
-        
         .metas-progress-wrapper { flex-grow: 1; display: flex; flex-direction: column; gap: 8px; }
         .metas-info { display: flex; justify-content: space-between; align-items: flex-end; font-size: 0.9rem; font-weight: 700; color: #334155; }
         .metas-premio { color: #f39c12; font-size: 0.75rem; background: #fdf2e9; padding: 3px 10px; border-radius: 6px; display: none; }
         .metas-premio.active { display: inline-block; }
-        
-        .progress-bg { 
-            width: 100%; 
-            height: 24px; /* BARRA GROSSA (DOBRO DO ANTERIOR) */
-            background: #f1f5f9; 
-            border-radius: 12px; 
-            overflow: hidden; 
-            position: relative; 
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.08); 
-        }
-        .progress-fill { 
-            height: 100%; 
-            background: linear-gradient(90deg, #3498db, #2ecc71); 
-            width: 0%; 
-            transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); 
-            border-radius: 12px; 
-        }
+        .progress-bg { width: 100%; height: 24px; background: #f1f5f9; border-radius: 12px; overflow: hidden; position: relative; box-shadow: inset 0 2px 4px rgba(0,0,0,0.08); }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #3498db, #2ecc71); width: 0%; transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); border-radius: 12px; }
         .progress-fill.danger { background: linear-gradient(90deg, #e74c3c, #c0392b); }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -176,7 +161,7 @@
                         <div class="metas-controls">
                             <i class="fas fa-bullseye" style="color:#e74c3c; font-size:1.4rem;"></i>
                             <select id="filtro-metas" onchange="renderizarVisualizacaoMeta()">
-                                <option value="diaria">⚡ Meta Diária (Foco Mês)</option>
+                                <option value="diaria">⚡ Meta Diária (Para Bater o Mês)</option>
                                 <option value="mensal">🏆 Meta Mensal Total</option>
                                 <option value="sem1">📌 Semana 1</option>
                                 <option value="sem2">📌 Semana 2</option>
@@ -197,12 +182,28 @@
                         </div>
                     </div>
 
+                    <!-- KANBAN BOARD -->
                     <div class="kanban-board">
-                        <div class="kanban-column col-novos" data-status="Novos"><div class="column-header">Novos</div><div class="kanban-items" id="col-novos-list"></div></div>
-                        <div class="kanban-column col-visita" data-status="Visita Técnica"><div class="column-header">Visita Técnica</div><div class="kanban-items" id="col-visita-list"></div></div>
-                        <div class="kanban-column col-orcamento" data-status="Aguardando Orçamento"><div class="column-header">Aguard. Orçamento</div><div class="kanban-items" id="col-orcamento-list"></div></div>
-                        <div class="kanban-column col-pagamento" data-status="Aguardando Pagamento"><div class="column-header">Aguard. Pagamento</div><div class="kanban-items" id="col-pagamento-list"></div></div>
-                        <div class="kanban-column col-abrir" data-status="Abrir Pedido"><div class="column-header">Abrir Pedido</div><div class="kanban-items" id="col-abrir-list"></div></div>
+                        <div class="kanban-column col-novos" data-status="Novos">
+                            <div class="column-header">Novos</div>
+                            <div class="kanban-items" id="col-novos-list"></div>
+                        </div>
+                        <div class="kanban-column col-visita" data-status="Visita Técnica">
+                            <div class="column-header">Visita Técnica</div>
+                            <div class="kanban-items" id="col-visita-list"></div>
+                        </div>
+                        <div class="kanban-column col-orcamento" data-status="Aguardando Orçamento">
+                            <div class="column-header">Aguard. Orçamento</div>
+                            <div class="kanban-items" id="col-orcamento-list"></div>
+                        </div>
+                        <div class="kanban-column col-pagamento" data-status="Aguardando Pagamento">
+                            <div class="column-header">Aguard. Pagamento</div>
+                            <div class="kanban-items" id="col-pagamento-list"></div>
+                        </div>
+                        <div class="kanban-column col-abrir" data-status="Abrir Pedido">
+                            <div class="column-header">Abrir Pedido</div>
+                            <div class="kanban-items" id="col-abrir-list"></div>
+                        </div>
                     </div>
 
                 </div>
@@ -210,7 +211,7 @@
         </div>
     </div>
 
-    <!-- DRAWER / PANEL -->
+    <!-- DRAWER / PANEL PARA NOVA OPORTUNIDADE -->
     <div id="slide-overlay" class="slide-overlay" onclick="window.fecharPanel()"></div>
     <div id="slide-panel" class="slide-panel">
         <div class="panel-header">
@@ -221,6 +222,7 @@
             <button class="close-panel-btn" onclick="window.fecharPanel()">×</button>
         </div>
 
+        <!-- INDICADOR DE PASSOS -->
         <div class="stepper-container">
             <div class="step-indicator active" id="indicator-1"><div class="step-number">1</div> Cliente</div>
             <div class="step-line"></div>
@@ -236,7 +238,7 @@
                 <input type="hidden" id="pedido-arte-hidden">
                 <input type="hidden" id="pedido-entrega-hidden">
 
-                <!-- STEP 1 -->
+                <!-- PASSO 1: SERVIÇO E CLIENTE -->
                 <div id="step-1" class="step-content active">
                     <h4 style="color:#64748b; margin-bottom:15px;">1. O que vamos fazer?</h4>
                     <div class="selection-grid" id="servico-grid">
@@ -264,7 +266,7 @@
                     </div>
                 </div>
 
-                <!-- STEP 2 -->
+                <!-- PASSO 2: ARTE E ENTREGA -->
                 <div id="step-2" class="step-content">
                     <h4 style="color:#64748b; margin-bottom:15px;">3. Quem fará a arte?</h4>
                     <div class="selection-grid" id="arte-grid">
@@ -280,10 +282,7 @@
                     <div id="setor-arte-fields" class="hidden" style="background:#f8f9fa; padding:15px; border-radius:8px;">
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                             <div class="form-group"><label>Supervisão (Wpp)</label><input type="tel" id="pedido-supervisao" class="form-control"></div>
-                            <div class="form-group">
-                                <label>Designer (R$)</label>
-                                <input type="number" id="valor-designer" class="form-control" step="0.01">
-                            </div>
+                            <div class="form-group"><label>Designer (R$)</label><input type="number" id="valor-designer" class="form-control" step="0.01"></div>
                         </div>
                         <div class="form-group">
                             <label>Formato</label>
@@ -305,11 +304,11 @@
                     </div>
                 </div>
 
-                <!-- STEP 3 -->
+                <!-- PASSO 3: ITENS E FINANCEIRO -->
                 <div id="step-3" class="step-content">
-                    <h4 style="color:#64748b; margin-bottom:15px;">5. Itens</h4>
+                    <h4 style="color:#64748b; margin-bottom:15px;">5. Materiais/Itens</h4>
                     <div id="materiais-container"></div>
-                    <button type="button" id="btn-add-material" style="width:100%; padding:10px; border:1px dashed #ccc; background:none; cursor:pointer; margin-bottom:20px;">+ Adicionar Item</button>
+                    <button type="button" id="btn-add-material" style="width:100%; padding:10px; border:1px dashed #ccc; background:none; cursor:pointer; margin-bottom:20px; border-radius:8px;">+ Adicionar Item</button>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
                         <div class="form-group" style="margin-bottom:0;">
@@ -328,7 +327,7 @@
                     </div>
                 </div>
 
-                <!-- FOOTER -->
+                <!-- RODAPÉ DO DRAWER -->
                 <div class="panel-footer">
                     <button type="button" id="btn-prev" class="btn-nav btn-prev" onclick="mudarPasso(-1)">Voltar</button>
                     <button type="button" id="btn-next" class="btn-nav btn-next" onclick="mudarPasso(1)">Próximo</button>
@@ -340,6 +339,9 @@
             </form>
         </div>
     </div>
+
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container"></div>
 
     <script src="/layout.js"></script>
     <script src="https://unpkg.com/imask"></script>
