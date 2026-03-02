@@ -1,5 +1,5 @@
-// crm-script.js - VERSÃO INTEGRAL, REVISADA E SEM OMISSÕES
-// Inclui: Kanban, Wizard, Busca de Clientes, Cálculo de Saldo e Meta Real (Run Rate)
+// crm-script.js - LÓGICA DE META DIÁRIA AJUSTADA
+// Fórmula aplicada: (Meta Mensal - Total Vendido Mês) / Dias Restantes
 
 let currentStep = 1;
 const totalSteps = 3;
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Carga de Dados Inicial
     carregarKanban();
-    carregarMetasCRM(); // Inicializa o sistema de metas com lógica de Run Rate
+    carregarMetasCRM(); // Carrega metas e aplica a fórmula
     
     // Configurações de Eventos de Busca e Formulário
     configurarBuscaCliente();
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// --- 1. LÓGICA DE METAS DINÂMICAS (RUN RATE / META REAIS) ---
+// --- 1. LÓGICA DE METAS DINÂMICAS (FÓRMULA REQUISITADA) ---
 
 async function carregarMetasCRM() {
     const container = document.getElementById('metas-widget-container');
@@ -87,18 +87,20 @@ function atualizarLabelsDoSelect(m) {
     if (m.sem_4_inicio) sel.options[5].text = `📌 Semana 4 (${format(m.sem_4_inicio)} a ${format(m.sem_4_fim)})`;
 }
 
-// Lógica de Dias Restantes no Mês (Calendário Corrido - Incluindo Hoje)
+// CALCULA DIAS RESTANTES (INCLUINDO HOJE)
 function contarDiasRestantesNoMes() {
     const hoje = new Date();
     const ano = hoje.getFullYear();
     const mes = hoje.getMonth();
-    // Último dia do mês atual (ex: 30 ou 31)
-    const ultimoDia = new Date(ano, mes + 1, 0).getDate();
-    const diaAtual = hoje.getDate();
     
-    // Cálculo simples: Total de dias - Dia Atual + 1 (pois hoje ainda conta para venda)
-    // Ex: Mês de 30 dias. Hoje dia 2. (30 - 2) + 1 = 29 dias para vender.
-    const restantes = ultimoDia - diaAtual + 1;
+    // Pega o último dia do mês (ex: 30 ou 31)
+    const ultimoDiaDoMes = new Date(ano, mes + 1, 0).getDate();
+    const diaHoje = hoje.getDate();
+    
+    // Cálculo: TotalDias - DiaHoje + 1 (O '+1' garante que hoje conte como dia útil de venda)
+    // Ex: Se o mês tem 30 dias e hoje é dia 11. Restam 11, 12...30 (20 dias).
+    // 30 - 11 + 1 = 20.
+    const restantes = ultimoDiaDoMes - diaHoje + 1;
     
     return restantes > 0 ? restantes : 0;
 }
@@ -118,17 +120,22 @@ window.renderizarVisualizacaoMeta = function() {
     const fmt = (val) => Number(val).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 
     if (filtro === 'diaria') {
-        // LÓGICA DE META REAIS (RUN RATE)
-        // (Meta Mensal - Acumulado do Mês) / Dias restantes totais
-        const metaMensal = Number(metas.meta_mensal) || 0;
-        const acumuladoMes = Number(total_mes) || 0;
-        const faltaParaMes = metaMensal - acumuladoMes;
-        const diasRestantes = contarDiasRestantesNoMes();
+        // --- AQUI ESTÁ A FÓRMULA SOLICITADA ---
+        // META DO DIA = (META MENSAL - TOTAL VENDIDO) / DIAS RESTANTES
         
-        // Se falta valor e temos dias, divide. Se já bateu a meta, alvo é 0.
-        metaAlvo = (faltaParaMes > 0 && diasRestantes > 0) ? (faltaParaMes / diasRestantes) : 0;
+        const metaMensal = Number(metas.meta_mensal) || 0;    // Ex: 100
+        const totalVendidoMes = Number(total_mes) || 0;       // Ex: 50
+        const saldoFaltante = metaMensal - totalVendidoMes;   // Ex: 50
+        const diasRestantes = contarDiasRestantesNoMes();     // Ex: 20
         
-        atual = total_hoje; // O que vendeu HOJE
+        // Aplicação da Divisão
+        if (diasRestantes > 0 && saldoFaltante > 0) {
+            metaAlvo = saldoFaltante / diasRestantes; // Ex: 50 / 20 = 2.5
+        } else {
+            metaAlvo = 0; // Se já bateu a meta ou acabou o mês
+        }
+
+        atual = total_hoje; // Compara com o que vendeu HOJE
         
         textoEsq = `Vendido Hoje: ${fmt(atual)}`;
         textoDir = `Alvo diário para bater o mês: ${fmt(metaAlvo)}`;
@@ -150,7 +157,7 @@ window.renderizarVisualizacaoMeta = function() {
         textoDir = `Alvo: ${fmt(metaAlvo)}`;
     }
 
-    // Cálculo da porcentagem da barra
+    // Cálculo visual da barra de progresso
     let porcentagem = metaAlvo > 0 ? (atual / metaAlvo) * 100 : (atual > 0 ? 100 : 0);
     const porcentagemBarra = porcentagem > 100 ? 100 : porcentagem;
 
@@ -160,10 +167,11 @@ window.renderizarVisualizacaoMeta = function() {
     const barra = document.getElementById('meta-progress-bar');
     barra.style.width = `${porcentagemBarra}%`;
     
-    // Alerta visual se a meta diária estiver longe de ser batida (< 50%)
+    // Cor vermelha se estiver abaixo de 50% da meta do dia
     if (filtro === 'diaria' && porcentagem < 50 && metaAlvo > 0) barra.classList.add('danger');
     else barra.classList.remove('danger');
 
+    // Exibição do Prêmio (se houver)
     const premioSpan = document.getElementById('meta-premio');
     if (premio && premio.trim() !== '') {
         document.getElementById('meta-premio-text').innerText = premio;
