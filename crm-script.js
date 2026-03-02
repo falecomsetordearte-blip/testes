@@ -1,5 +1,5 @@
 // crm-script.js - LÓGICA DE META DIÁRIA AJUSTADA
-// Fórmula aplicada: (Meta Mensal - Total Vendido Mês) / Dias Restantes
+// Fórmula aplicada: (Meta Mensal - Total Vendido (Real + Ajustes)) / Dias Restantes
 
 let currentStep = 1;
 const totalSteps = 3;
@@ -98,8 +98,7 @@ function contarDiasRestantesNoMes() {
     const diaHoje = hoje.getDate();
     
     // Cálculo: TotalDias - DiaHoje + 1 (O '+1' garante que hoje conte como dia útil de venda)
-    // Ex: Se o mês tem 30 dias e hoje é dia 11. Restam 11, 12...30 (20 dias).
-    // 30 - 11 + 1 = 20.
+    // Ex: Se hoje é dia 20 e o mês tem 30 dias -> 30 - 20 + 1 = 11 dias para vender.
     const restantes = ultimoDiaDoMes - diaHoje + 1;
     
     return restantes > 0 ? restantes : 0;
@@ -120,29 +119,33 @@ window.renderizarVisualizacaoMeta = function() {
     const fmt = (val) => Number(val).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 
     if (filtro === 'diaria') {
-        // --- AQUI ESTÁ A FÓRMULA SOLICITADA ---
-        // META DO DIA = (META MENSAL - TOTAL VENDIDO) / DIAS RESTANTES
+        // --- AQUI ESTÁ A LÓGICA FINAL DA META DIÁRIA ---
         
-        const metaMensal = Number(metas.meta_mensal) || 0;    // Ex: 100
-        const totalVendidoMes = Number(total_mes) || 0;       // Ex: 50
-        const saldoFaltante = metaMensal - totalVendidoMes;   // Ex: 50
-        const diasRestantes = contarDiasRestantesNoMes();     // Ex: 20
+        const metaMensal = Number(metas.meta_mensal) || 0;    
+        // total_mes já vem do backend SOMADO com todos os ajustes manuais
+        const totalVendidoMes = Number(total_mes) || 0;       
         
-        // Aplicação da Divisão
+        // Quanto falta para bater o mês?
+        const saldoFaltante = metaMensal - totalVendidoMes;
+        
+        // Quantos dias temos?
+        const diasRestantes = contarDiasRestantesNoMes();
+        
+        // Cálculo: (Meta Mensal - Total Vendido Real e Ajustes) / Dias Restantes
         if (diasRestantes > 0 && saldoFaltante > 0) {
-            metaAlvo = saldoFaltante / diasRestantes; // Ex: 50 / 20 = 2.5
+            metaAlvo = saldoFaltante / diasRestantes; 
         } else {
             metaAlvo = 0; // Se já bateu a meta ou acabou o mês
         }
 
-        atual = total_hoje; // Compara com o que vendeu HOJE
+        atual = total_hoje; // Compara com o que vendeu HOJE (Real do dia)
         
         textoEsq = `Vendido Hoje: ${fmt(atual)}`;
         textoDir = `Alvo diário para bater o mês: ${fmt(metaAlvo)}`;
 
     } else if (filtro === 'mensal') {
         metaAlvo = Number(metas.meta_mensal);
-        atual = total_mes;
+        atual = total_mes; // Total somado (Real + Ajustes)
         textoEsq = `Acumulado Mês: ${fmt(atual)}`;
         textoDir = `Meta: ${fmt(metaAlvo)}`;
         premio = metas.premio_mensal;
