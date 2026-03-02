@@ -73,17 +73,15 @@ function atualizarLabelsDoSelect(m) {
     if(m.sem_4_inicio) sel.options[5].text = `📌 Semana 4 (${format(m.sem_4_inicio)} a ${format(m.sem_4_fim)})`;
 }
 
-// Lógica de Dias Úteis (Segunda a Sexta)
 function contarDiasUteis(dataInicio, dataFim) {
     let count = 0;
     let dataAtual = new Date(dataInicio.getTime());
     dataAtual.setHours(0,0,0,0);
     let dataLimite = new Date(dataFim.getTime());
     dataLimite.setHours(23,59,59,999);
-
     while (dataAtual <= dataLimite) {
         const diaSemana = dataAtual.getDay();
-        if (diaSemana !== 0 && diaSemana !== 6) count++; // Pula Domingo(0) e Sábado(6)
+        if (diaSemana !== 0 && diaSemana !== 6) count++;
         dataAtual.setDate(dataAtual.getDate() + 1);
     }
     return count;
@@ -91,40 +89,28 @@ function contarDiasUteis(dataInicio, dataFim) {
 
 window.renderizarVisualizacaoMeta = function() {
     if(!globalMetasData || !globalMetasData.metas) return;
-
     const filtro = document.getElementById('filtro-metas').value;
     const { metas, total_mes, total_hoje, vendas_semanas } = globalMetasData;
-    
-    let metaAlvo = 0;
-    let atual = 0;
-    let textoEsq = "";
-    let textoDir = "";
-    let premio = "";
-
+    let metaAlvo = 0; let atual = 0; let textoEsq = ""; let textoDir = ""; let premio = "";
     const fmt = (val) => Number(val).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 
     if (filtro === 'diaria') {
         const hoje = new Date();
         const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
         const diasUteisRestantes = contarDiasUteis(hoje, ultimoDiaMes);
-        
         let faltaParaOMes = Number(metas.meta_mensal) - total_mes;
         if(faltaParaOMes < 0) faltaParaOMes = 0;
-        
         metaAlvo = diasUteisRestantes > 0 ? (faltaParaOMes / diasUteisRestantes) : 0;
         atual = total_hoje;
         textoEsq = `Vendido Hoje: ${fmt(atual)}`;
         textoDir = `Alvo do Dia: ${fmt(metaAlvo)}`;
-
     } else if (filtro === 'mensal') {
         metaAlvo = Number(metas.meta_mensal);
         atual = total_mes;
         textoEsq = `Acumulado Mês: ${fmt(atual)}`;
         textoDir = `Meta: ${fmt(metaAlvo)}`;
         premio = metas.premio_mensal;
-
     } else {
-        // Semanas Isoladas
         if(filtro === 'sem1') { atual = vendas_semanas.sem1; metaAlvo = Number(metas.meta_sem_1); premio = metas.premio_sem_1; }
         if(filtro === 'sem2') { atual = vendas_semanas.sem2; metaAlvo = Number(metas.meta_sem_2); premio = metas.premio_sem_2; }
         if(filtro === 'sem3') { atual = vendas_semanas.sem3; metaAlvo = Number(metas.meta_sem_3); premio = metas.premio_sem_3; }
@@ -135,139 +121,86 @@ window.renderizarVisualizacaoMeta = function() {
 
     let porcentagem = metaAlvo > 0 ? (atual / metaAlvo) * 100 : (atual > 0 ? 100 : 0);
     const porcentagemBarra = porcentagem > 100 ? 100 : porcentagem;
-
     document.getElementById('meta-text-left').innerText = textoEsq;
     document.getElementById('meta-text-right').innerText = `${textoDir} (${porcentagem.toFixed(1)}%)`;
-    
     const barra = document.getElementById('meta-progress-bar');
     barra.style.width = `${porcentagemBarra}%`;
-    
     if(filtro === 'diaria' && porcentagem < 50 && metaAlvo > 0) barra.classList.add('danger');
     else barra.classList.remove('danger');
-
     const premioSpan = document.getElementById('meta-premio');
     if(premio && premio.trim() !== '') {
         document.getElementById('meta-premio-text').innerText = premio;
         premioSpan.classList.add('active');
-        if(atual >= metaAlvo) {
-            premioSpan.style.background = '#d4edda'; premioSpan.style.color = '#155724';
-        } else {
-            premioSpan.style.background = '#fdf2e9'; premioSpan.style.color = '#f39c12';
-        }
-    } else {
-        premioSpan.classList.remove('active');
-    }
+        if(atual >= metaAlvo) { premioSpan.style.background = '#d4edda'; premioSpan.style.color = '#155724'; }
+        else { premioSpan.style.background = '#fdf2e9'; premioSpan.style.color = '#f39c12'; }
+    } else { premioSpan.classList.remove('active'); }
 }
 
-// --- LÓGICA FINANCEIRA DO FORMULÁRIO ---
+// --- LÓGICA FINANCEIRA ---
 function calcularSaldoRestante() {
     const total = parseFloat(document.getElementById('crm-valor').value) || 0;
     const pago = parseFloat(document.getElementById('crm-valor-pago').value) || 0;
     const restante = total - pago;
-    
     const inputRestante = document.getElementById('crm-valor-restante');
     inputRestante.value = restante.toFixed(2);
-
-    if (restante > 0) {
-        inputRestante.style.color = '#e74c3c';
-        inputRestante.style.backgroundColor = '#fff1f0';
-    } else {
-        inputRestante.style.color = '#27ae60';
-        inputRestante.style.backgroundColor = '#f6ffed';
-    }
+    if (restante > 0) { inputRestante.style.color = '#e74c3c'; inputRestante.style.backgroundColor = '#fff1f0'; }
+    else { inputRestante.style.color = '#27ae60'; inputRestante.style.backgroundColor = '#f6ffed'; }
 }
 
-// --- BUSCA CLIENTE (AUTOCOMPLETE) ---
+// --- BUSCA CLIENTE ---
 function configurarBuscaCliente() {
     const input = document.getElementById('crm-nome');
     const btnBuscar = document.getElementById('btn-buscar-cliente');
     const list = document.getElementById('search-results-list');
-    
     const performSearch = async (e) => {
         if(e) { e.preventDefault(); e.stopPropagation(); }
         const term = input.value;
         if(term.length < 2) { showToast("Digite pelo menos 2 caracteres.", "error"); return; }
         btnBuscar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         try {
-            const res = await fetch('/api/crm/searchClients', {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), query: term })
-            });
+            const res = await fetch('/api/crm/searchClients', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), query: term }) });
             const clientes = await res.json();
             list.innerHTML = '';
             if(clientes.length > 0) {
                 clientes.forEach(c => {
                     const li = document.createElement('li');
                     li.innerHTML = `<span>${c.nome}</span> <small style="color:#aaa">${c.whatsapp}</small>`;
-                    li.onclick = (event) => {
-                        event.stopPropagation();
-                        input.value = c.nome;
-                        document.getElementById('crm-wpp').value = c.whatsapp;
-                        list.style.display = 'none';
-                    };
+                    li.onclick = (event) => { event.stopPropagation(); input.value = c.nome; document.getElementById('crm-wpp').value = c.whatsapp; list.style.display = 'none'; };
                     list.appendChild(li);
                 });
                 list.style.display = 'block';
-            } else {
-                showToast("Nenhum cliente encontrado.", "error");
-                list.style.display = 'none';
-            }
-        } catch(e) {
-            showToast("Erro ao buscar clientes.", "error");
-        } finally {
-            btnBuscar.innerHTML = '<i class="fas fa-search"></i>';
-        }
+            } else { showToast("Nenhum cliente encontrado.", "error"); list.style.display = 'none'; }
+        } catch(e) { showToast("Erro ao buscar clientes.", "error"); }
+        finally { btnBuscar.innerHTML = '<i class="fas fa-search"></i>'; }
     };
-
     if(btnBuscar) btnBuscar.addEventListener('click', performSearch);
     if(input) {
         input.addEventListener('keypress', (e) => { if(e.key === 'Enter') performSearch(e); });
         input.addEventListener('input', () => { if(input.value === '') list.style.display = 'none'; });
     }
-    document.addEventListener('click', (e) => {
-        if(!e.target.closest('.autocomplete-wrapper')) list.style.display = 'none';
-    });
+    document.addEventListener('click', (e) => { if(!e.target.closest('.autocomplete-wrapper')) list.style.display = 'none'; });
 }
 
-// --- PRODUÇÃO DIRETA DO CARD ---
+// --- PRODUÇÃO DIRETA ---
 window.produzirCardDireto = function(cardId, btnElement) {
     event.stopPropagation(); 
     if (btnElement.dataset.confirming === "true") {
         const card = allCardsCache.find(c => c.id == cardId);
         if(!card) return showToast("Erro: Card não encontrado.", "error");
-
         let extras = {};
         try { if(card.briefing_json) extras = (typeof card.briefing_json === 'string') ? JSON.parse(card.briefing_json) : card.briefing_json; } catch(e){}
-        
         let txt = ""; 
         if(extras.materiais) extras.materiais.forEach((d, i) => { txt += `--- Item ${i+1} ---\nMaterial: ${d.descricao}\nDetalhes: ${d.detalhes}\n\n`; });
-
         const payload = {
-            sessionToken: localStorage.getItem('sessionToken'),
-            titulo: card.titulo_automatico,
-            servico: card.servico_tipo,
-            arte: card.arte_origem,
-            nomeCliente: card.nome_cliente,
-            wppCliente: card.wpp_cliente,
-            tipoEntrega: extras.tipo_entrega,
-            briefingFormatado: txt,
-            linkArquivo: extras.link_arquivo,
-            supervisaoWpp: extras.supervisao_wpp,
-            valorDesigner: extras.valor_designer,
-            formato: extras.formato,
-            cdrVersao: extras.cdr_versao
+            sessionToken: localStorage.getItem('sessionToken'), titulo: card.titulo_automatico, servico: card.servico_tipo, arte: card.arte_origem, nomeCliente: card.nome_cliente, wppCliente: card.wpp_cliente,
+            tipoEntrega: extras.tipo_entrega, briefingFormatado: txt, linkArquivo: extras.link_arquivo, supervisaoWpp: extras.supervisao_wpp, valorDesigner: extras.valor_designer, formato: extras.formato, cdrVersao: extras.cdr_versao
         };
         enviarProducaoAPI(payload, cardId, btnElement);
     } else {
         btnElement.dataset.confirming = "true";
         btnElement.innerHTML = '<i class="fas fa-exclamation"></i> Confirmar?';
         btnElement.classList.add('confirm-state');
-        setTimeout(() => {
-            btnElement.dataset.confirming = "false";
-            btnElement.innerHTML = '<i class="fas fa-rocket"></i> PRODUZIR';
-            btnElement.classList.remove('confirm-state');
-        }, 3000);
+        setTimeout(() => { btnElement.dataset.confirming = "false"; btnElement.innerHTML = '<i class="fas fa-rocket"></i> PRODUZIR'; btnElement.classList.remove('confirm-state'); }, 3000);
     }
 }
 
@@ -282,10 +215,7 @@ async function enviarProducaoAPI(payload, cardId, btnElement) {
         fecharPanel(); carregarKanban(); carregarMetasCRM();
     } catch(err) {
         showToast(err.message, 'error', 10000);
-        if(btnElement) {
-            btnElement.innerHTML = '<i class="fas fa-rocket"></i> Tentar Novamente';
-            btnElement.style.pointerEvents = 'auto'; btnElement.dataset.confirming = "false"; btnElement.classList.remove('confirm-state');
-        }
+        if(btnElement) { btnElement.innerHTML = '<i class="fas fa-rocket"></i> Tentar Novamente'; btnElement.style.pointerEvents = 'auto'; btnElement.dataset.confirming = "false"; btnElement.classList.remove('confirm-state'); }
     }
 }
 
@@ -295,8 +225,7 @@ window.confirmarExclusaoCard = async function(cardId, event) {
     if (confirm("Deseja realmente excluir este card permanentemente?")) {
         try {
             const res = await fetch('/api/crm/deleteCard', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: cardId }) });
-            if (res.ok) { showToast("Card excluído!", "success"); carregarKanban(); } 
-            else { showToast("Erro ao excluir.", "error"); }
+            if (res.ok) { showToast("Card excluído!", "success"); carregarKanban(); } else { showToast("Erro ao excluir.", "error"); }
         } catch (err) { showToast("Erro de conexão.", "error"); }
     }
 };
@@ -307,39 +236,20 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
     const btn = document.getElementById('btn-salvar-rascunho');
     const originalText = btn.innerText;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...'; btn.disabled = true;
-    
     const mats = [];
     document.querySelectorAll('.material-item').forEach(d => { 
-        const desc = d.querySelector('.mat-desc').value; 
-        if(desc) mats.push({ descricao: desc, detalhes: d.querySelector('.mat-det').value }); 
+        const desc = d.querySelector('.mat-desc').value; if(desc) mats.push({ descricao: desc, detalhes: d.querySelector('.mat-det').value }); 
     });
-    
     const payload = {
-        sessionToken: localStorage.getItem('sessionToken'),
-        id: document.getElementById('card-id-db').value,
-        titulo_manual: document.getElementById('crm-titulo-manual').value,
-        nome_cliente: document.getElementById('crm-nome').value,
-        wpp_cliente: document.getElementById('crm-wpp').value,
-        servico_tipo: document.getElementById('pedido-servico-hidden').value, 
-        arte_origem: document.getElementById('pedido-arte-hidden').value,     
-        valor_orcamento: document.getElementById('crm-valor').value,
-        valor_pago: document.getElementById('crm-valor-pago').value,
-        valor_restante: document.getElementById('crm-valor-restante').value,
-        briefing_json: JSON.stringify({
-            tipo_entrega: document.getElementById('pedido-entrega-hidden').value, 
-            materiais: mats,
-            link_arquivo: document.getElementById('link-arquivo').value,
-            supervisao_wpp: document.getElementById('pedido-supervisao').value,
-            valor_designer: document.getElementById('valor-designer').value,
-            formato: document.getElementById('pedido-formato').value,
-            cdr_versao: document.getElementById('cdr-versao').value
-        })
+        sessionToken: localStorage.getItem('sessionToken'), id: document.getElementById('card-id-db').value, titulo_manual: document.getElementById('crm-titulo-manual').value,
+        nome_cliente: document.getElementById('crm-nome').value, wpp_cliente: document.getElementById('crm-wpp').value,
+        servico_tipo: document.getElementById('pedido-servico-hidden').value, arte_origem: document.getElementById('pedido-arte-hidden').value,
+        valor_orcamento: document.getElementById('crm-valor').value, valor_pago: document.getElementById('crm-valor-pago').value, valor_restante: document.getElementById('crm-valor-restante').value,
+        briefing_json: JSON.stringify({ tipo_entrega: document.getElementById('pedido-entrega-hidden').value, materiais: mats, link_arquivo: document.getElementById('link-arquivo').value, supervisao_wpp: document.getElementById('pedido-supervisao').value, valor_designer: document.getElementById('valor-designer').value, formato: document.getElementById('pedido-formato').value, cdr_versao: document.getElementById('cdr-versao').value })
     };
-    
     try {
         const res = await fetch('/api/crm/saveCard', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-        if(res.ok) { fecharPanel(); carregarKanban(); carregarMetasCRM(); showToast('Salvo no CRM!', 'success'); } 
-        else { showToast('Erro ao salvar.', 'error'); }
+        if(res.ok) { fecharPanel(); carregarKanban(); carregarMetasCRM(); showToast('Salvo no CRM!', 'success'); } else { showToast('Erro ao salvar.', 'error'); }
     } catch(err) { showToast('Erro de conexão.', 'error'); }
     finally { btn.innerText = originalText; btn.disabled = false; }
 });
@@ -356,37 +266,31 @@ window.abrirPanelEdicao = function(card) {
     document.getElementById('crm-valor').value = card.valor_orcamento || 0;
     document.getElementById('crm-valor-pago').value = card.valor_pago || 0;
     calcularSaldoRestante();
-
     if(card.servico_tipo) { const el = document.querySelector(`#servico-grid .selection-card[onclick*="'${card.servico_tipo}'"]`); if(el) selectCard('servico', card.servico_tipo, el); }
     if(card.arte_origem) { const el = document.querySelector(`#arte-grid .selection-card[onclick*="'${card.arte_origem}'"]`); if(el) selectCard('arte', card.arte_origem, el); }
-
     let extras = {};
     try { if (card.briefing_json) extras = (typeof card.briefing_json === 'string') ? JSON.parse(card.briefing_json) : card.briefing_json; } catch(e){}
-    
     if(extras.tipo_entrega) { const el = document.querySelector(`#entrega-grid .selection-card[onclick*="'${extras.tipo_entrega}'"]`); if(el) selectCard('entrega', extras.tipo_entrega, el); }
     if(extras.link_arquivo) document.getElementById('link-arquivo').value = extras.link_arquivo;
     if(extras.supervisao_wpp) document.getElementById('pedido-supervisao').value = extras.supervisao_wpp;
     if(extras.valor_designer) document.getElementById('valor-designer').value = extras.valor_designer;
     if(extras.formato) document.getElementById('pedido-formato').value = extras.formato;
     if(extras.cdr_versao) document.getElementById('cdr-versao').value = extras.cdr_versao;
-
     const matContainer = document.getElementById('materiais-container');
     matContainer.innerHTML = '';
     if(extras.materiais && extras.materiais.length > 0) extras.materiais.forEach(m => adicionarMaterialNoForm(m.descricao, m.detalhes));
     else adicionarMaterialNoForm();
-
     currentStep = 1; renderizarPasso();
     document.getElementById('slide-overlay').classList.add('active');
     document.getElementById('slide-panel').classList.add('active');
 };
 
-// --- CONTROLE DO WIZARD ---
+// --- CONTROLE WIZARD ---
 window.mudarPasso = function(direction) {
     if (direction === 1 && !validarPassoAtual()) return;
     currentStep += direction;
     renderizarPasso();
 };
-
 function renderizarPasso() {
     document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
     document.getElementById(`step-${currentStep}`).classList.add('active');
@@ -396,27 +300,18 @@ function renderizarPasso() {
         if (i+1 === currentStep) ind.classList.add('active');
     });
     document.getElementById('btn-prev').style.display = currentStep === 1 ? 'none' : 'block';
-    if (currentStep === totalSteps) {
-        document.getElementById('btn-next').style.display = 'none';
-        document.getElementById('final-buttons').style.display = 'flex';
-    } else {
-        document.getElementById('btn-next').style.display = 'flex';
-        document.getElementById('final-buttons').style.display = 'none';
-    }
+    if (currentStep === totalSteps) { document.getElementById('btn-next').style.display = 'none'; document.getElementById('final-buttons').style.display = 'flex'; }
+    else { document.getElementById('btn-next').style.display = 'flex'; document.getElementById('final-buttons').style.display = 'none'; }
 }
-
 function validarPassoAtual() {
     if (currentStep === 1) {
         if (!document.getElementById('pedido-servico-hidden').value) { showToast("Selecione o serviço.", "error"); return false; }
         if (document.getElementById('crm-nome').value.length < 2) { showToast("Selecione ou busque um cliente.", "error"); return false; }
     }
-    if (currentStep === 2) {
-        if (!document.getElementById('pedido-arte-hidden').value) { showToast("Defina a origem da arte.", "error"); return false; }
-    }
+    if (currentStep === 2) { if (!document.getElementById('pedido-arte-hidden').value) { showToast("Defina a origem da arte.", "error"); return false; } }
     return true;
 }
 
-// --- SELEÇÕES VISUAIS ---
 window.selectCard = function(group, value, element) {
     document.getElementById(`pedido-${group}-hidden`).value = value;
     element.parentElement.querySelectorAll('.selection-card').forEach(c => c.classList.remove('selected'));
@@ -424,32 +319,18 @@ window.selectCard = function(group, value, element) {
     if (group === 'arte') {
         document.getElementById('arquivo-cliente-fields').classList.toggle('hidden', value !== 'Arquivo do Cliente');
         document.getElementById('setor-arte-fields').classList.toggle('hidden', value !== 'Setor de Arte');
-        if(value === 'Setor de Arte') fetchSaldoCRM();
     }
 };
 
-window.abrirPanelNovo = function() {
-    resetarForm();
-    document.getElementById('panel-titulo').innerText = 'Nova Oportunidade';
-    currentStep = 1; renderizarPasso(); adicionarMaterialNoForm();
-    document.getElementById('slide-overlay').classList.add('active');
-    document.getElementById('slide-panel').classList.add('active');
-};
-
-window.fecharPanel = function() {
-    document.getElementById('slide-overlay').classList.remove('active');
-    document.getElementById('slide-panel').classList.remove('active');
-};
+window.abrirPanelNovo = function() { resetarForm(); document.getElementById('panel-titulo').innerText = 'Nova Oportunidade'; currentStep = 1; renderizarPasso(); adicionarMaterialNoForm(); document.getElementById('slide-overlay').classList.add('active'); document.getElementById('slide-panel').classList.add('active'); };
+window.fecharPanel = function() { document.getElementById('slide-overlay').classList.remove('active'); document.getElementById('slide-panel').classList.remove('active'); };
 
 function resetarForm() {
-    document.getElementById('form-crm').reset();
-    document.getElementById('card-id-db').value = '';
+    document.getElementById('form-crm').reset(); document.getElementById('card-id-db').value = '';
     document.querySelectorAll('.selection-card').forEach(c => c.classList.remove('selected'));
     ['pedido-servico-hidden', 'pedido-arte-hidden', 'pedido-entrega-hidden'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('crm-valor-restante').value = '0.00';
-    document.getElementById('materiais-container').innerHTML = '';
+    document.getElementById('crm-valor-restante').value = '0.00'; document.getElementById('materiais-container').innerHTML = '';
 }
-
 function adicionarMaterialNoForm(desc = '', det = '') {
     const container = document.getElementById('materiais-container');
     const div = document.createElement('div');
@@ -458,7 +339,7 @@ function adicionarMaterialNoForm(desc = '', det = '') {
     container.appendChild(div);
 }
 
-// --- KANBAN ---
+// --- KANBAN CORE ---
 async function carregarKanban() {
     try {
         const res = await fetch('/api/crm/listCards', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') }) });
@@ -469,19 +350,15 @@ async function carregarKanban() {
         inicializarDragAndDrop();
     } catch(err) { console.error(err); }
 }
-
 function criarCardHTML(card) {
     const map = { 'Novos': 'col-novos-list', 'Visita Técnica': 'col-visita-list', 'Aguardando Orçamento': 'col-orcamento-list', 'Aguardando Pagamento': 'col-pagamento-list', 'Abrir Pedido': 'col-abrir-list' };
-    const container = document.getElementById(map[card.coluna]);
-    if(!container) return;
-    const div = document.createElement('div');
-    div.className = 'kanban-card'; div.dataset.id = card.id; 
+    const container = document.getElementById(map[card.coluna]); if(!container) return;
+    const div = document.createElement('div'); div.className = 'kanban-card'; div.dataset.id = card.id; 
     div.onclick = (e) => { if(!e.target.closest('button')) abrirPanelEdicao(card); };
     const valor = parseFloat(card.valor_orcamento||0).toLocaleString('pt-BR', {minimumFractionDigits:2});
     div.innerHTML = `<button class="btn-card-delete" onclick="window.confirmarExclusaoCard(${card.id}, event)"><i class="fas fa-trash-alt"></i></button><div class="card-header-row"><span class="card-id">${card.titulo_automatico}</span></div><div class="card-title">${card.nome_cliente}</div><div class="card-footer-row"><span class="card-price">R$ ${valor}</span><button class="btn-card-produzir" onclick="window.produzirCardDireto(${card.id}, this)"><i class="fas fa-rocket"></i> PRODUZIR</button></div>`;
     container.appendChild(div);
 }
-
 function inicializarDragAndDrop() {
     document.querySelectorAll('.kanban-items').forEach(col => {
         if(col.getAttribute('init') === 'true') return;
@@ -500,7 +377,3 @@ function configurarMascaras() { if (typeof IMask !== 'undefined') { ['crm-wpp', 
 function configurarFormularioVisual() { }
 function configurarDragScroll() { }
 function setupModalCreditos() { }
-async function fetchSaldoCRM() {
-    const display = document.getElementById('crm-saldo-display'); if(!display) return;
-    try { const res = await fetch('/api/crm/getBalance', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') }) }); const data = await res.json(); display.innerText = parseFloat(data.saldo || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); } catch(e) {}
-}
