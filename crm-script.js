@@ -87,21 +87,20 @@ function atualizarLabelsDoSelect(m) {
     if (m.sem_4_inicio) sel.options[5].text = `📌 Semana 4 (${format(m.sem_4_inicio)} a ${format(m.sem_4_fim)})`;
 }
 
-// Lógica de Dias Úteis Reais (Segunda a Sexta) - Crucial para Meta do Dia
-function contarDiasUteisRestantesNoMes() {
+// Lógica de Dias Restantes no Mês (Calendário Corrido - Incluindo Hoje)
+function contarDiasRestantesNoMes() {
     const hoje = new Date();
     const ano = hoje.getFullYear();
     const mes = hoje.getMonth();
+    // Último dia do mês atual (ex: 30 ou 31)
     const ultimoDia = new Date(ano, mes + 1, 0).getDate();
+    const diaAtual = hoje.getDate();
     
-    let uteis = 0;
-    // Conta de HOJE até o fim do mês
-    for (let i = hoje.getDate(); i <= ultimoDia; i++) {
-        const d = new Date(ano, mes, i);
-        const diaSemana = d.getDay();
-        if (diaSemana !== 0 && diaSemana !== 6) uteis++; // Ignora Sábado(6) e Domingo(0)
-    }
-    return uteis;
+    // Cálculo simples: Total de dias - Dia Atual + 1 (pois hoje ainda conta para venda)
+    // Ex: Mês de 30 dias. Hoje dia 2. (30 - 2) + 1 = 29 dias para vender.
+    const restantes = ultimoDia - diaAtual + 1;
+    
+    return restantes > 0 ? restantes : 0;
 }
 
 window.renderizarVisualizacaoMeta = function() {
@@ -120,16 +119,17 @@ window.renderizarVisualizacaoMeta = function() {
 
     if (filtro === 'diaria') {
         // LÓGICA DE META REAIS (RUN RATE)
-        // (Meta Mensal - Acumulado do Mês) / Dias úteis restantes
+        // (Meta Mensal - Acumulado do Mês) / Dias restantes totais
         const metaMensal = Number(metas.meta_mensal) || 0;
         const acumuladoMes = Number(total_mes) || 0;
         const faltaParaMes = metaMensal - acumuladoMes;
-        const diasUteis = contarDiasUteisRestantesNoMes();
+        const diasRestantes = contarDiasRestantesNoMes();
         
-        metaAlvo = diasUteis > 0 ? (faltaParaMes / diasUteis) : 0;
-        if (metaAlvo < 0) metaAlvo = 0; // Meta já batida
-
-        atual = total_hoje;
+        // Se falta valor e temos dias, divide. Se já bateu a meta, alvo é 0.
+        metaAlvo = (faltaParaMes > 0 && diasRestantes > 0) ? (faltaParaMes / diasRestantes) : 0;
+        
+        atual = total_hoje; // O que vendeu HOJE
+        
         textoEsq = `Vendido Hoje: ${fmt(atual)}`;
         textoDir = `Alvo diário para bater o mês: ${fmt(metaAlvo)}`;
 
@@ -150,6 +150,7 @@ window.renderizarVisualizacaoMeta = function() {
         textoDir = `Alvo: ${fmt(metaAlvo)}`;
     }
 
+    // Cálculo da porcentagem da barra
     let porcentagem = metaAlvo > 0 ? (atual / metaAlvo) * 100 : (atual > 0 ? 100 : 0);
     const porcentagemBarra = porcentagem > 100 ? 100 : porcentagem;
 
@@ -159,7 +160,7 @@ window.renderizarVisualizacaoMeta = function() {
     const barra = document.getElementById('meta-progress-bar');
     barra.style.width = `${porcentagemBarra}%`;
     
-    // Alerta se a meta diária estiver longe de ser batida
+    // Alerta visual se a meta diária estiver longe de ser batida (< 50%)
     if (filtro === 'diaria' && porcentagem < 50 && metaAlvo > 0) barra.classList.add('danger');
     else barra.classList.remove('danger');
 
