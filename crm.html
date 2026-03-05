@@ -120,15 +120,23 @@
         .toast.success { border-left-color: #2ecc71; }
         .toast.error { border-left-color: #e74c3c; }
 
-        /* --- COMPONENTE DE METAS ATUALIZADO (BARRA GROSSA 24px) --- */
+        /* --- COMPONENTE DE METAS --- */
         .metas-widget {
             background: #fff; border-radius: 12px; padding: 15px 25px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.07); margin-bottom: 25px;
             display: flex; align-items: center; gap: 20px;
             border: 1px solid #e2e8f0;
         }
-        .metas-controls { display: flex; align-items: center; gap: 10px; min-width: 250px; }
+        .metas-controls { display: flex; align-items: center; gap: 10px; min-width: 250px; flex-wrap: wrap; }
         .metas-controls select { padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: 600; color: #334155; outline: none; cursor: pointer; width: 100%; font-size: 0.85rem; }
+        
+        /* NOVO: LANÇAMENTO RÁPIDO CSS */
+        .quick-sale-wrapper { display: flex; align-items: center; gap: 5px; border-left: 2px solid #e2e8f0; padding-left: 15px; margin-left: 5px; }
+        .quick-sale-wrapper input { width: 90px; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem; outline: none; transition: 0.2s; }
+        .quick-sale-wrapper input:focus { border-color: #3498db; }
+        .quick-sale-wrapper button { background: #27ae60; color: white; border: none; border-radius: 6px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+        .quick-sale-wrapper button:hover { background: #219653; transform: scale(1.05); }
+
         .metas-progress-wrapper { flex-grow: 1; display: flex; flex-direction: column; gap: 8px; }
         .metas-info { display: flex; justify-content: space-between; align-items: flex-end; font-size: 0.9rem; font-weight: 700; color: #334155; }
         .metas-premio { color: #f39c12; font-size: 0.75rem; background: #fdf2e9; padding: 3px 10px; border-radius: 6px; display: none; }
@@ -169,6 +177,12 @@
                                 <option value="sem3">📌 Semana 3</option>
                                 <option value="sem4">📌 Semana 4</option>
                             </select>
+
+                            <!-- NOVO: LANÇAMENTO RÁPIDO DE VENDAS -->
+                            <div class="quick-sale-wrapper" title="Somar venda no dia de hoje">
+                                <input type="number" id="quick-venda-valor" placeholder="R$ Lançar" step="0.01">
+                                <button id="btn-quick-venda" onclick="window.lancarVendaRapida()"><i class="fas fa-plus"></i></button>
+                            </div>
                         </div>
                         
                         <div class="metas-progress-wrapper">

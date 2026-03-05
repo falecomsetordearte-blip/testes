@@ -1,5 +1,4 @@
-// crm-script.js - LÓGICA DE META DIÁRIA AJUSTADA
-// Fórmula aplicada: (Meta Mensal - Total Vendido (Real + Ajustes)) / Dias Restantes
+// crm-script.js - LÓGICA DE META DIÁRIA AJUSTADA E LANÇAMENTO RÁPIDO
 
 let currentStep = 1;
 const totalSteps = 3;
@@ -10,25 +9,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const sessionToken = localStorage.getItem('sessionToken');
     if (!sessionToken) { window.location.href = '/login.html'; return; }
 
-    // Inicialização da Interface
     injectCleanStyles();
     createToastContainer();
     configurarMascaras();
     
-    // Carga de Dados Inicial
     carregarKanban();
-    carregarMetasCRM(); // Carrega metas e aplica a fórmula
+    carregarMetasCRM();
     
-    // Configurações de Eventos de Busca e Formulário
     configurarBuscaCliente();
     
-    // Listeners para Cálculo Automático de Saldo (Passo 3)
     const valTotalInput = document.getElementById('crm-valor');
     const valPagoInput = document.getElementById('crm-valor-pago');
     if (valTotalInput) valTotalInput.addEventListener('input', calcularSaldoRestante);
     if (valPagoInput) valPagoInput.addEventListener('input', calcularSaldoRestante);
 
-    // Listener para o formato de arquivo (Mostrar/Esconder versão do Corel)
     const formatoSelect = document.getElementById('pedido-formato');
     if (formatoSelect) {
         formatoSelect.addEventListener('change', (e) => {
@@ -39,14 +33,53 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Listener para o botão de Adicionar Material no formulário
     const btnAddMat = document.getElementById('btn-add-material');
     if (btnAddMat) {
         btnAddMat.addEventListener('click', () => adicionarMaterialNoForm());
     }
 });
 
-// --- 1. LÓGICA DE METAS DINÂMICAS (FÓRMULA REQUISITADA) ---
+// --- 1. LÓGICA DE METAS E LANÇAMENTO RÁPIDO ---
+
+window.lancarVendaRapida = async function() {
+    const input = document.getElementById('quick-venda-valor');
+    const btn = document.getElementById('btn-quick-venda');
+    const valor = parseFloat(input.value);
+
+    if (isNaN(valor) || valor <= 0) {
+        showToast("Digite um valor válido maior que zero.", "error");
+        return;
+    }
+
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+
+    try {
+        const res = await fetch('/api/crm/addVendaHoje', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                sessionToken: localStorage.getItem('sessionToken'),
+                valor: valor
+            })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            input.value = ''; // Limpa o campo
+            showToast(`+ R$ ${valor.toFixed(2)} somados a hoje!`, "success");
+            await carregarMetasCRM(); // Recarrega a barra de progresso
+        } else {
+            showToast(data.error || "Erro ao lançar venda", "error");
+        }
+    } catch (err) {
+        showToast("Erro de conexão.", "error");
+    } finally {
+        btn.innerHTML = '<i class="fas fa-plus"></i>';
+        btn.disabled = false;
+    }
+};
 
 async function carregarMetasCRM() {
     const container = document.getElementById('metas-widget-container');
@@ -87,20 +120,13 @@ function atualizarLabelsDoSelect(m) {
     if (m.sem_4_inicio) sel.options[5].text = `📌 Semana 4 (${format(m.sem_4_inicio)} a ${format(m.sem_4_fim)})`;
 }
 
-// CALCULA DIAS RESTANTES (INCLUINDO HOJE)
 function contarDiasRestantesNoMes() {
     const hoje = new Date();
     const ano = hoje.getFullYear();
     const mes = hoje.getMonth();
-    
-    // Pega o último dia do mês (ex: 30 ou 31)
     const ultimoDiaDoMes = new Date(ano, mes + 1, 0).getDate();
     const diaHoje = hoje.getDate();
-    
-    // Cálculo: TotalDias - DiaHoje + 1 (O '+1' garante que hoje conte como dia útil de venda)
-    // Ex: Se hoje é dia 20 e o mês tem 30 dias -> 30 - 20 + 1 = 11 dias para vender.
     const restantes = ultimoDiaDoMes - diaHoje + 1;
-    
     return restantes > 0 ? restantes : 0;
 }
 
@@ -119,39 +145,30 @@ window.renderizarVisualizacaoMeta = function() {
     const fmt = (val) => Number(val).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 
     if (filtro === 'diaria') {
-        // --- AQUI ESTÁ A LÓGICA FINAL DA META DIÁRIA ---
-        
         const metaMensal = Number(metas.meta_mensal) || 0;    
-        // total_mes já vem do backend SOMADO com todos os ajustes manuais
         const totalVendidoMes = Number(total_mes) || 0;       
-        
-        // Quanto falta para bater o mês?
         const saldoFaltante = metaMensal - totalVendidoMes;
-        
-        // Quantos dias temos?
         const diasRestantes = contarDiasRestantesNoMes();
         
-        // Cálculo: (Meta Mensal - Total Vendido Real e Ajustes) / Dias Restantes
         if (diasRestantes > 0 && saldoFaltante > 0) {
             metaAlvo = saldoFaltante / diasRestantes; 
         } else {
-            metaAlvo = 0; // Se já bateu a meta ou acabou o mês
+            metaAlvo = 0;
         }
 
-        atual = total_hoje; // Compara com o que vendeu HOJE (Real do dia)
+        atual = total_hoje; 
         
         textoEsq = `Vendido Hoje: ${fmt(atual)}`;
         textoDir = `Alvo diário para bater o mês: ${fmt(metaAlvo)}`;
 
     } else if (filtro === 'mensal') {
         metaAlvo = Number(metas.meta_mensal);
-        atual = total_mes; // Total somado (Real + Ajustes)
+        atual = total_mes;
         textoEsq = `Acumulado Mês: ${fmt(atual)}`;
         textoDir = `Meta: ${fmt(metaAlvo)}`;
         premio = metas.premio_mensal;
 
     } else {
-        // Semanas Isoladas
         if(filtro === 'sem1') { atual = vendas_semanas.sem1; metaAlvo = Number(metas.meta_sem_1); premio = metas.premio_sem_1; }
         if(filtro === 'sem2') { atual = vendas_semanas.sem2; metaAlvo = Number(metas.meta_sem_2); premio = metas.premio_sem_2; }
         if(filtro === 'sem3') { atual = vendas_semanas.sem3; metaAlvo = Number(metas.meta_sem_3); premio = metas.premio_sem_3; }
@@ -160,7 +177,6 @@ window.renderizarVisualizacaoMeta = function() {
         textoDir = `Alvo: ${fmt(metaAlvo)}`;
     }
 
-    // Cálculo visual da barra de progresso
     let porcentagem = metaAlvo > 0 ? (atual / metaAlvo) * 100 : (atual > 0 ? 100 : 0);
     const porcentagemBarra = porcentagem > 100 ? 100 : porcentagem;
 
@@ -170,11 +186,9 @@ window.renderizarVisualizacaoMeta = function() {
     const barra = document.getElementById('meta-progress-bar');
     barra.style.width = `${porcentagemBarra}%`;
     
-    // Cor vermelha se estiver abaixo de 50% da meta do dia
     if (filtro === 'diaria' && porcentagem < 50 && metaAlvo > 0) barra.classList.add('danger');
     else barra.classList.remove('danger');
 
-    // Exibição do Prêmio (se houver)
     const premioSpan = document.getElementById('meta-premio');
     if (premio && premio.trim() !== '') {
         document.getElementById('meta-premio-text').innerText = premio;
@@ -653,8 +667,3 @@ function configurarMascaras() {
         });
     }
 }
-
-// Funções reservadas para expansões futuras
-function configurarFormularioVisual() { }
-function configurarDragScroll() { }
-function setupModalCreditos() { }
