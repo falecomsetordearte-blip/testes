@@ -1,16 +1,22 @@
+// /api/solicitarSaqueDesigner.js
+
 const { PrismaClient } = require('@prisma/client');
 const jwt = require('jsonwebtoken');
-const axios = require('axios');
 const { Decimal } = require('@prisma/client/runtime/library');
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET;
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
-
-// ID do campo customizado para a data de emissão
-const FIELD_DATA_EMISSAO = 'UF_CRM_1760392935167';
+const JWT_SECRET = process.env.JWT_SECRET || 'secreta_super_segura';
 
 module.exports = async (req, res) => {
+    // Adicionando suporte a CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-designer-info');
+    
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Método não permitido.' });
     }
@@ -27,66 +33,51 @@ module.exports = async (req, res) => {
         if (!dataEmissao) {
             return res.status(400).json({ message: 'A Data de Emissão da NF é obrigatória.' });
         }
+        
         const valorSaque = new Decimal(valor);
 
+        // Decodifica o Token
         const decoded = jwt.verify(token, JWT_SECRET);
         const designerId = parseInt(decoded.designerId, 10);
-        const designerInfo = JSON.parse(req.headers['x-designer-info'] || '{}');
-        const designerName = designerInfo.name || 'Designer';
 
+        // Busca os dados financeiros do designer no banco Neon
         const financeiro = await prisma.designerFinanceiro.findUnique({
             where: { designer_id: designerId },
         });
 
         if (!financeiro || financeiro.saldo_disponivel.lt(valorSaque)) {
-            return res.status(402).json({ message: 'Saldo insuficiente.' });
-        }
-        
-        // <<< INÍCIO DA ALTERAÇÃO >>>
-        // Nova regra: Valida se o dia da semana é sexta-feira no fuso horário de Brasília.
-        const hoje = new Date();
-        const options = { timeZone: 'America/Sao_Paulo', weekday: 'long' };
-        // Usamos 'en-US' para obter o nome do dia em inglês ("Friday"), o que simplifica a comparação.
-        const diaDaSemanaEmBrasilia = new Intl.DateTimeFormat('en-US', options).format(hoje);
-
-        if (diaDaSemanaEmBrasilia !== 'Friday') {
-            return res.status(403).json({ message: 'Saques são permitidos apenas às sextas-feiras.' });
+            return res.status(402).json({ message: 'Saldo insuficiente para este saque.' });
         }
 
-        /*
-            // Bloco de código antigo removido:
-            if (financeiro.ultimo_saque_em) {
-                const seteDiasAtras = new Date();
-                seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
-                if (new Date(financeiro.ultimo_saque_em) > seteDiasAtras) {
-                    return res.status(429).json({ message: 'Você só pode solicitar um saque a cada 7 dias.' });
-                }
-            }
-        */
-        // <<< FIM DA ALTERAÇÃO >>>
-
+        // 1. Atualiza os saldos no banco de dados (Neon)
+        // Desconta do 'saldo_disponivel' e adiciona no 'saldo_pendente'
         await prisma.designerFinanceiro.update({
             where: { designer_id: designerId },
             data: {
                 saldo_disponivel: { decrement: valorSaque },
                 saldo_pendente: { increment: valorSaque },
-                ultimo_saque_em: new Date(), // Continuamos atualizando a data do último saque para registro
+                ultimo_saque_em: new Date(), 
             },
         });
-        
-        await axios.post(`${BITRIX24_API_URL}crm.deal.add.json`, {
-            fields: {
-                'TITLE': `Solicitação de Saque - ${designerName}`,
-                'OPPORTUNITY': valor,
-                'CATEGORY_ID': 31,
-                'ASSIGNED_BY_ID': designerId,
-                'UF_CRM_1760392935167': dataEmissao, // Enviando a data para o Bitrix24
-            }
+
+        // 2. Salva o registro do saque na nova tabela para controle do Admin
+        await prisma.$executeRawUnsafe(`
+            INSERT INTO saques_designers (designer_id, valor, data_emissao_nf, status, created_at, updated_at) 
+            VALUES ($1, $2, $3, 'PENDENTE', NOW(), NOW())
+        `, designerId, parseFloat(valor), dataEmissao);
+
+        return res.status(200).json({ 
+            success: true, 
+            message: 'Solicitação de saque enviada com sucesso! O valor está pendente de pagamento.' 
         });
 
-        res.status(200).json({ success: true, message: 'Solicitação de saque enviada com sucesso!' });
     } catch (error) {
         console.error("Erro ao solicitar saque:", error);
-        res.status(500).json({ message: 'Erro ao processar a solicitação.' });
+        
+        if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+            return res.status(401).json({ message: 'Sessão inválida ou expirada. Faça login novamente.' });
+        }
+        
+        return res.status(500).json({ message: 'Erro interno ao processar a solicitação de saque.' });
     }
 };
