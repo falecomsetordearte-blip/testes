@@ -61,9 +61,10 @@ module.exports = async (req, res) => {
         });
 
         // 2. Salva o registro do saque na nova tabela para controle do Admin
+        // Correção feita aqui: CAST($3 AS DATE) para converter o texto em data
         await prisma.$executeRawUnsafe(`
             INSERT INTO saques_designers (designer_id, valor, data_emissao_nf, status, created_at, updated_at) 
-            VALUES ($1, $2, $3, 'PENDENTE', NOW(), NOW())
+            VALUES ($1, $2, CAST($3 AS DATE), 'PENDENTE', NOW(), NOW())
         `, designerId, parseFloat(valor), dataEmissao);
 
         return res.status(200).json({ 
