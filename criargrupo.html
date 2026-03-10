@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Grupo WhatsApp</title>
+    <style>
+        /* Um CSS básico só para não ficar feio */
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 400px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 10px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; }
+        button { width: 100%; padding: 10px; background-color: #25D366; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #128C7E; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Criar Grupo no WhatsApp</h2>
+    <form id="groupForm">
+        <label>Nome do Grupo:</label>
+        <input type="text" id="groupName" placeholder="Ex: Equipe de Vendas" required>
+
+        <label>Número do Participante:</label>
+        <input type="text" id="participant" placeholder="Ex: 5511999999999" required>
+
+        <button type="submit">Criar Grupo</button>
+    </form>
+    <p id="statusMensagem"></p>
+</div>
+
+<script>
+    // Intercepta o clique do botão "Criar Grupo"
+    document.getElementById('groupForm').addEventListener('submit', async function(event) {
+        event.preventDefault(); // Evita que a página recarregue
+        
+        const statusMsg = document.getElementById('statusMensagem');
+        statusMsg.innerText = "⏳ Criando grupo, aguarde...";
+        statusMsg.style.color = "blue";
+
+        const nome = document.getElementById('groupName').value;
+        const numero = document.getElementById('participant').value;
+
+        try {
+            // Aqui é a mágica: Ele chama a SUA função Serverless na Vercel (pasta /api)
+            const response = await fetch('/api/create-group', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    groupName: nome, 
+                    participants: [numero] 
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                statusMsg.innerText = "✅ Grupo criado com sucesso!";
+                statusMsg.style.color = "green";
+                console.log("Sucesso:", data);
+            } else {
+                statusMsg.innerText = "❌ Erro ao criar grupo. Veja o painel/console.";
+                statusMsg.style.color = "red";
+                console.error("Erro da API:", data);
+            }
+        } catch (error) {
+            statusMsg.innerText = "❌ Falha na comunicação com o servidor.";
+            statusMsg.style.color = "red";
+            console.error(error);
+        }
+    });
+</script>
+
+</body>
+</html>
