@@ -57,19 +57,24 @@ module.exports = async (req, res) => {
         const newPedidoId = insertResult[0].id;
         console.log(`[DEBUG] Pedido gravado com Sucesso! ID: ${newPedidoId}`);
 
-        // --- 4. BLOCO DE AUTOMAÇÃO CHATAPP ---
+       // --- 4. BLOCO DE AUTOMAÇÃO CHATAPP ---
         if (arte === 'Setor de Arte') {
-            if (supervisaoWpp) {
-                try {
-                    const automacao = await criarGrupoProducao(formData.titulo, supervisaoWpp, briefingFinal);
-                    if (automacao && automacao.chatId) {
-                        await prisma.$executeRawUnsafe(`
-                            UPDATE pedidos SET chatapp_chat_id = $1, link_acompanhar = $2 WHERE id = $3
-                        `, automacao.chatId, automacao.groupLink, newPedidoId);
-                    }
-                } catch (errAuto) {
-                    console.error(">>> [AUTOMAÇÃO] ERRO:", errAuto.message);
+            try {
+                // Modificado: Agora estamos enviando também o formData.wppCliente
+                const automacao = await criarGrupoProducao(
+                    formData.titulo, 
+                    formData.wppCliente, // Número do Cliente
+                    supervisaoWpp,       // Número do Supervisor
+                    briefingFinal
+                );
+                
+                if (automacao && automacao.chatId) {
+                    await prisma.$executeRawUnsafe(`
+                        UPDATE pedidos SET chatapp_chat_id = $1, link_acompanhar = $2 WHERE id = $3
+                    `, automacao.chatId, automacao.groupLink, newPedidoId);
                 }
+            } catch (errAuto) {
+                console.error(">>> [AUTOMAÇÃO] ERRO:", errAuto.message);
             }
         }
 
