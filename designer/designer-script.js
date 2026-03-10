@@ -102,13 +102,11 @@
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.message || 'Erro ao criar conta.');
                     
-                    // Se a API de cadastro já retornar o token, faz o login automático
                     if (data.token) {
                         localStorage.setItem('designerToken', data.token);
                         localStorage.setItem('designerInfo', JSON.stringify({ name: data.nome, nivel: data.nivel }));
                         window.location.href = 'painel.html';
                     } else {
-                        // Se não retornar token, avisa e manda pro login
                         const corpo = `<p style="color:var(--success); font-weight:600; text-align:center;">Conta criada com sucesso!</p>`;
                         window.abrirGaveta("Sucesso!", corpo, `<button onclick="window.location.href='login.html'" class="btn-full btn-primary">Fazer Login</button>`);
                     }
@@ -142,7 +140,6 @@
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.message || 'Erro ao processar solicitação.');
                     
-                    // Mostra o sucesso usando a gaveta (substituindo o alert)
                     const corpo = `<p style="color:var(--success); font-weight:600; text-align:center;">${data.message}</p>`;
                     window.abrirGaveta("E-mail Enviado!", corpo, `<button onclick="window.location.href='login.html'" class="btn-full btn-primary">Voltar ao Login</button>`);
                 } catch (error) {
@@ -171,7 +168,6 @@
                     return;
                 }
 
-                // Captura o token da URL (ex: ?token=abc123xyz)
                 const urlParams = new URLSearchParams(window.location.search);
                 const token = urlParams.get('token');
 
@@ -226,7 +222,6 @@
         document.getElementById('drawer-panel').classList.add('active');
     };
 
-    // FUNÇÃO PARA SUBSTITUIR O ALERT EM CASOS DE ERRO
     window.mostrarErro = (mensagem) => {
         const corpo = `<div style="color: #e11d48; background: #fff1f2; padding: 15px; border-radius: 8px; border: 1px solid #fda4af;">
             <i class="fas fa-exclamation-circle"></i> <strong>Erro:</strong> ${mensagem}
@@ -254,7 +249,6 @@
             const data = await res.json();
             
             if (!res.ok) {
-                // Se a sessão for inválida, limpa o storage e desloga
                 if (res.status === 401 || res.status === 403) {
                     localStorage.clear();
                     window.location.href = 'login.html';
@@ -263,16 +257,12 @@
                 throw new Error(data.message);
             }
 
-            // Atualiza os cards estatísticos
             document.getElementById('designer-saldo-disponivel').textContent = formatarMoeda(data.designer.saldo);
             document.getElementById('designer-saldo-pendente').textContent = formatarMoeda(data.designer.pendente);
             document.getElementById('designer-pedidos-ativos').textContent = data.meusPedidos.length;
-            
-            // Atualiza os contadores das abas
             document.getElementById('count-meus').textContent = data.meusPedidos.length;
             document.getElementById('count-mercado').textContent = data.mercado.length;
 
-            // Atualiza a barra de Nível e Pontos no cabeçalho
             const badgeNivel = document.getElementById('badge-nivel');
             const niveis = { 1: { t: 'Ouro', c: 'lvl-1' }, 2: { t: 'Prata', c: 'lvl-2' }, 3: { t: 'Bronze', c: 'lvl-3' } };
             const n = niveis[data.designer.nivel] || niveis[3];
@@ -283,11 +273,8 @@
             }
             
             const valPontos = document.getElementById('val-pontos');
-            if (valPontos) {
-                valPontos.textContent = data.designer.pontuacao;
-            }
+            if (valPontos) valPontos.textContent = data.designer.pontuacao;
 
-            // Renderiza as listas
             renderizarMeusTrabalhos(data.meusPedidos);
             renderizarMercado(data.mercado);
 
@@ -316,7 +303,7 @@
                 <div><span style="background:#fef3c7; color:#b45309; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">PRODUÇÃO</span></div>
                 <div style="font-weight:700; color:var(--success);">${formatarMoeda(p.valor_designer)}</div>
                 <div style="text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
-                    <button onclick="abrirChatEmbutido(${p.id})" class="btn-action" style="background:#25D366;"><i class="fab fa-whatsapp"></i> Chat Grupo</button>
+                    <button onclick="abrirChatEmbutido(${p.id}, '${p.titulo}')" class="btn-action" style="background:#25D366;"><i class="fab fa-whatsapp"></i> Chat Grupo</button>
                     <button onclick="prepararFinalizacao(${p.id})" class="btn-action">Finalizar</button>
                 </div>
             </div>
@@ -362,9 +349,9 @@
     };
 
     window.confirmarAssumir = (id) => {
-        const corpo = `<p style="font-size:1rem; color:var(--text-main); line-height:1.5;">Deseja assumir o atendimento deste pedido agora? Você será responsável pela comunicação e entrega da arte.</p>`;
+        const corpo = `<p style="font-size:1rem; color:var(--text-main); line-height:1.5;">Deseja assumir este pedido? Você será responsável pela comunicação e entrega da arte.</p>`;
         const rodape = `
-            <button id="btn-exec-assumir" class="btn-full btn-primary">SIM, ATENDER PEDIDO</button>
+            <button id="btn-exec-assumir" class="btn-full btn-primary">SIM, ATENDER</button>
             <button onclick="fecharGaveta()" class="btn-full btn-secondary">Cancelar</button>
         `;
         window.abrirGaveta("Confirmar Atendimento", corpo, rodape);
@@ -380,11 +367,9 @@
                     body: JSON.stringify({ token: sessionToken, pedidoId: id })
                 });
                 const data = await res.json();
-                
                 if (!res.ok) throw new Error(data.message);
                 
                 fecharGaveta();
-                if (data.chatLink) window.open(data.chatLink, '_blank');
                 carregarDashboardDesigner();
                 
             } catch (e) { 
@@ -397,10 +382,9 @@
     window.prepararFinalizacao = (id) => {
         const corpo = `
             <span class="drawer-label">Link do Layout Aprovado (JPG/PNG)</span>
-            <input type="url" id="f-layout" class="drawer-input" placeholder="Cole o link do layout aqui..." required>
-            
+            <input type="url" id="f-layout" class="drawer-input" placeholder="Cole o link do layout..." required>
             <span class="drawer-label">Link para Impressão (PDF/AI/CDR)</span>
-            <input type="url" id="f-impressao" class="drawer-input" placeholder="Cole o link do arquivo final aqui..." required>
+            <input type="url" id="f-impressao" class="drawer-input" placeholder="Cole o link do arquivo final..." required>
         `;
         const rodape = `
             <button id="btn-exec-finalizar" class="btn-full btn-primary">FINALIZAR E RECEBER</button>
@@ -413,7 +397,7 @@
             const linkImpressao = document.getElementById('f-impressao').value.trim();
             
             if(!linkLayout || !linkImpressao) {
-                alert("Por favor, preencha os dois links para finalizar.");
+                alert("Por favor, preencha os dois links.");
                 return;
             }
 
@@ -426,13 +410,10 @@
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: sessionToken, pedidoId: id, linkLayout, linkImpressao })
                 });
-                
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message || "Não foi possível finalizar.");
                 
                 fecharGaveta();
-                
-                // Mensagem de sucesso personalizada
                 setTimeout(() => {
                     const corpoSucesso = `<p style="color:var(--success); font-weight:600; font-size: 1.1rem; text-align:center;">${data.message}</p>`;
                     window.abrirGaveta("Sucesso!", corpoSucesso, `<button onclick="fecharGaveta()" class="btn-full btn-primary">Excelente!</button>`);
@@ -447,57 +428,64 @@
     };
 
     // =========================================================
-        // UTILITÁRIOS
-        // =========================================================
+    // UTILITÁRIOS & MINI CHAT
+    // =========================================================
 
-        function formatarMoeda(valor) { 
-            return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor || 0); 
-        }
-        
-        window.b64EncodeUnicode = (str) => {
-            return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1)));
-        };
+    function formatarMoeda(valor) { 
+        return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor || 0); 
+    }
+    
+    window.b64EncodeUnicode = (str) => {
+        return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1)));
+    };
 
-        // --- AQUI COMEÇA O MINI WHATSAPP WEB NA GAVETA ---
-        const chatStyle = document.createElement('style');
-        chatStyle.textContent = `
-            .chat-container { flex: 1; overflow-y: auto; padding: 15px; background: #efeae2; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; height: 60vh; scroll-behavior: smooth; }
-            .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; position: relative; word-wrap: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-            .chat-in { background: #ffffff; align-self: flex-start; border-top-left-radius: 0; }
-            .chat-out { background: #dcf8c6; align-self: flex-end; border-top-right-radius: 0; }
-            .chat-sender { font-size: 0.7rem; font-weight: 700; color: #075e54; margin-bottom: 4px; display: block; }
-            .chat-time { font-size: 0.65rem; color: #999; text-align: right; display: block; margin-top: 5px; }
-            .chat-input-row { display: flex; gap: 10px; margin-top: 15px; align-items: center; }
+    const chatStyle = document.createElement('style');
+    chatStyle.textContent = `
+        .chat-container { flex: 1; overflow-y: auto; padding: 15px; background: #efeae2; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; height: 60vh; scroll-behavior: smooth; }
+        .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; position: relative; word-wrap: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .chat-in { background: #ffffff; align-self: flex-start; border-top-left-radius: 0; }
+        .chat-out { background: #dcf8c6; align-self: flex-end; border-top-right-radius: 0; }
+        .chat-sender { font-size: 0.7rem; font-weight: 700; color: #075e54; margin-bottom: 4px; display: block; }
+        .chat-time { font-size: 0.65rem; color: #999; text-align: right; display: block; margin-top: 5px; }
+        .chat-input-row { display: flex; gap: 10px; margin-top: 15px; align-items: center; }
+    `;
+    document.head.appendChild(chatStyle);
+
+    window.chatInterval = null;
+    const fecharGavetaOriginal = window.fecharGaveta;
+    window.fecharGaveta = () => {
+        if (window.chatInterval) clearInterval(window.chatInterval);
+        fecharGavetaOriginal();
+    };
+
+    window.abrirChatEmbutido = async (pedidoId, pedidoTitulo) => {
+        const corpo = `
+            <div class="chat-container" id="chat-msgs-container">
+                <p style="text-align:center; color:#888; margin-top: 20px;"><i class="fas fa-spinner fa-spin"></i> Conectando...</p>
+            </div>
+            <div class="chat-input-row">
+                <input type="text" id="chat-texto-input" class="drawer-input" style="margin:0; flex:1;" placeholder="Escreva..." autocomplete="off">
+                <button id="btn-enviar-chat" class="btn-action" style="padding: 14px 20px; font-size: 1.2rem; border-radius: 8px;"><i class="fas fa-paper-plane"></i></button>
+            </div>
         `;
-        document.head.appendChild(chatStyle);
+        window.abrirGaveta(`Atendimento: ${pedidoTitulo}`, corpo, "");
 
-        window.chatInterval = null;
-        const fecharGavetaOriginal = window.fecharGaveta;
-        window.fecharGaveta = () => {
-            if (window.chatInterval) clearInterval(window.chatInterval);
-            fecharGavetaOriginal();
-        };
+        const container = document.getElementById('chat-msgs-container');
+        const input = document.getElementById('chat-texto-input');
+        const btnEnviar = document.getElementById('btn-enviar-chat');
+        let totalMensagensCache = 0;
 
-        window.abrirChatEmbutido = async (pedidoId) => {
-            const corpo = `
-                <div class="chat-container" id="chat-msgs-container">
-                    <p style="text-align:center; color:#888; margin-top: 20px;"><i class="fas fa-spinner fa-spin"></i> Conectando...</p>
-                </div>
-                <div class="chat-input-row">
-                    <input type="text" id="chat-texto-input" class="drawer-input" style="margin:0; flex:1;" placeholder="Escreva..." autocomplete="off">
-                    <button id="btn-enviar-chat" class="btn-action" style="padding: 14px 20px; font-size: 1.2rem; border-radius: 8px;"><i class="fas fa-paper-plane"></i></button>
-                </div>
-            `;
-            window.abrirGaveta("Atendimento (Pedido #" + pedidoId + ")", corpo, "");
-
-            const container = document.getElementById('chat-msgs-container');
-            const input = document.getElementById('chat-texto-input');
-            const btnEnviar = document.getElementById('btn-enviar-chat');
-
-            const carregarMensagens = async () => {
-                const res = await fetch('/api/designer/getChat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pedidoId }) });
+        const carregarMensagens = async () => {
+            try {
+                const res = await fetch('/api/designer/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'get', pedidoId: pedidoId })
+                });
                 const data = await res.json();
-                if (data.success) {
+                
+                if (res.ok && data.mensagens.length !== totalMensagensCache) {
+                    totalMensagensCache = data.mensagens.length;
                     container.innerHTML = data.mensagens.map(m => `
                         <div class="chat-bubble ${m.lado === 'in' ? 'chat-in' : 'chat-out'}">
                             <span class="chat-sender">${m.remetente}</span>
@@ -506,20 +494,43 @@
                         </div>
                     `).join('');
                     container.scrollTop = container.scrollHeight;
+                } else if (!res.ok) {
+                    clearInterval(window.chatInterval);
+                    container.innerHTML = `<p style="text-align:center; color:#c0392b;">${data.message || 'Erro ao carregar chat.'}</p>`;
                 }
-            };
-
-            btnEnviar.onclick = async () => {
-                const texto = input.value;
-                if (!texto) return;
-                await fetch('/api/designer/sendChat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pedidoId, texto }) });
-                input.value = '';
-                carregarMensagens();
-            };
-
-            await carregarMensagens();
-            window.chatInterval = setInterval(carregarMensagens, 5000);
+            } catch (err) {
+                clearInterval(window.chatInterval);
+                container.innerHTML = `<p style="text-align:center; color:#c0392b;">Erro de conexão.</p>`;
+            }
         };
-        // --- FIM DO MINI WHATSAPP WEB ---
 
-    })(); // <--- O parêntese que fecha a função que você já tinha na linha 462
+        const enviarMensagem = async () => {
+            const texto = input.value;
+            if (!texto.trim()) return;
+
+            btnEnviar.disabled = true; input.disabled = true;
+            try {
+                await fetch('/api/designer/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'send', pedidoId: pedidoId, texto: texto })
+                });
+                input.value = '';
+                await carregarMensagens();
+            } catch (err) {
+                alert('Não foi possível enviar a mensagem.');
+            } finally {
+                btnEnviar.disabled = false; input.disabled = false; input.focus();
+            }
+        };
+
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') enviarMensagem();
+        });
+        btnEnviar.onclick = enviarMensagem;
+
+        await carregarMensagens();
+        window.chatInterval = setInterval(carregarMensagens, 5000);
+    };
+
+})();
