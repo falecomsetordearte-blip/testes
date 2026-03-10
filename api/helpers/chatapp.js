@@ -100,13 +100,12 @@ async function criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing) {
         console.log(`[CHATAPP] Grupo Criado com Sucesso! ID do Chat: ${chatId}`);
 
         // 3. ENVIAR BRIEFING AUTOMÁTICO DENTRO DO NOVO GRUPO
-        // Endpoint oficial de mensagens
-        const urlMsg = `${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/messages`;
+        // Novo Endpoint oficial de mensagens de texto
+        const urlMsg = `${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/messages/text`;
         
-        console.log(`[CHATAPP] Enviando mensagem de Briefing para o grupo recém-criado...`);
+        console.log(`[CHATAPP] Enviando mensagem de Briefing para o grupo recém-criado na URL: ${urlMsg}`);
 
         await axios.post(urlMsg, {
-            chatId: chatId,
             text: `🚀 *NOVO PEDIDO INICIADO*\n\n*Serviço:* ${titulo}\n\n*Briefing de Arte:* \n${briefing}\n\n---`
         }, { headers });
 
