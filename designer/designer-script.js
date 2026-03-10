@@ -316,7 +316,7 @@
                 <div><span style="background:#fef3c7; color:#b45309; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">PRODUÇÃO</span></div>
                 <div style="font-weight:700; color:var(--success);">${formatarMoeda(p.valor_designer)}</div>
                 <div style="text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
-                    <a href="${p.link_acompanhar}" target="_blank" class="btn-action" style="background:#25D366;"><i class="fab fa-whatsapp"></i> Chat</a>
+                    <button onclick="abrirChatEmbutido(${p.id})" class="btn-action" style="background:#25D366;"><i class="fab fa-whatsapp"></i> Chat Grupo</button>
                     <button onclick="prepararFinalizacao(${p.id})" class="btn-action">Finalizar</button>
                 </div>
             </div>
@@ -447,16 +447,79 @@
     };
 
     // =========================================================
-    // UTILITÁRIOS
-    // =========================================================
+        // UTILITÁRIOS
+        // =========================================================
 
-    function formatarMoeda(valor) { 
-        return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor || 0); 
-    }
-    
-    // Decodifica strings em Base64 lidando com caracteres especiais/acentos do Javascript
-    window.b64EncodeUnicode = (str) => {
-        return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1)));
-    };
+        function formatarMoeda(valor) { 
+            return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor || 0); 
+        }
+        
+        window.b64EncodeUnicode = (str) => {
+            return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1)));
+        };
 
-})();
+        // --- AQUI COMEÇA O MINI WHATSAPP WEB NA GAVETA ---
+        const chatStyle = document.createElement('style');
+        chatStyle.textContent = `
+            .chat-container { flex: 1; overflow-y: auto; padding: 15px; background: #efeae2; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; height: 60vh; scroll-behavior: smooth; }
+            .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; position: relative; word-wrap: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+            .chat-in { background: #ffffff; align-self: flex-start; border-top-left-radius: 0; }
+            .chat-out { background: #dcf8c6; align-self: flex-end; border-top-right-radius: 0; }
+            .chat-sender { font-size: 0.7rem; font-weight: 700; color: #075e54; margin-bottom: 4px; display: block; }
+            .chat-time { font-size: 0.65rem; color: #999; text-align: right; display: block; margin-top: 5px; }
+            .chat-input-row { display: flex; gap: 10px; margin-top: 15px; align-items: center; }
+        `;
+        document.head.appendChild(chatStyle);
+
+        window.chatInterval = null;
+        const fecharGavetaOriginal = window.fecharGaveta;
+        window.fecharGaveta = () => {
+            if (window.chatInterval) clearInterval(window.chatInterval);
+            fecharGavetaOriginal();
+        };
+
+        window.abrirChatEmbutido = async (pedidoId) => {
+            const corpo = `
+                <div class="chat-container" id="chat-msgs-container">
+                    <p style="text-align:center; color:#888; margin-top: 20px;"><i class="fas fa-spinner fa-spin"></i> Conectando...</p>
+                </div>
+                <div class="chat-input-row">
+                    <input type="text" id="chat-texto-input" class="drawer-input" style="margin:0; flex:1;" placeholder="Escreva..." autocomplete="off">
+                    <button id="btn-enviar-chat" class="btn-action" style="padding: 14px 20px; font-size: 1.2rem; border-radius: 8px;"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            `;
+            window.abrirGaveta("Atendimento (Pedido #" + pedidoId + ")", corpo, "");
+
+            const container = document.getElementById('chat-msgs-container');
+            const input = document.getElementById('chat-texto-input');
+            const btnEnviar = document.getElementById('btn-enviar-chat');
+
+            const carregarMensagens = async () => {
+                const res = await fetch('/api/designer/getChat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pedidoId }) });
+                const data = await res.json();
+                if (data.success) {
+                    container.innerHTML = data.mensagens.map(m => `
+                        <div class="chat-bubble ${m.lado === 'in' ? 'chat-in' : 'chat-out'}">
+                            <span class="chat-sender">${m.remetente}</span>
+                            ${m.texto}
+                            <span class="chat-time">${new Date(m.hora * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                    `).join('');
+                    container.scrollTop = container.scrollHeight;
+                }
+            };
+
+            btnEnviar.onclick = async () => {
+                const texto = input.value;
+                if (!texto) return;
+                await fetch('/api/designer/sendChat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pedidoId, texto }) });
+                input.value = '';
+                carregarMensagens();
+            };
+
+            await carregarMensagens();
+            window.chatInterval = setInterval(carregarMensagens, 5000);
+        };
+        // --- FIM DO MINI WHATSAPP WEB ---
+
+    })(); // <--- O parêntese que fecha a função que você já tinha na linha 462
