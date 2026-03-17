@@ -57,7 +57,7 @@ module.exports = async (req, res) => {
             await prisma.$executeRawUnsafe(`
                 UPDATE pedidos 
                 SET etapa = 'IMPRESSÃO', 
-                    link_arquivo = $1,
+                    link_arquivo_impressao = $1,
                     updated_at = NOW()
                 WHERE id = $2 AND empresa_id = $3
             `, linkArquivo, idPedido, empresaId);
