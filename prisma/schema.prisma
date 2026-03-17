@@ -141,3 +141,51 @@ model ProdutoPrecoFaixa {
 
   @@map("produto_preco_faixas")
 }
+
+// ---------------------------------------------------------
+// MODELOS DE ACESSO E CONFIGURAÇÕES (NOVO)
+// ---------------------------------------------------------
+
+model Funcao {
+  id             Int       @id @default(autoincrement())
+  empresa_id     Int
+  nome           String    // Ex: "Administrador", "Impressor", "Acabamento"
+  permissoes     Json      // Ex: ["admin", "impressao", "arte", "acabamento"]
+  ativo          Boolean   @default(true)
+  criado_em      DateTime  @default(now())
+  
+  usuarios       Usuario[]
+  empresa        Empresa   @relation(fields: [empresa_id], references: [id])
+
+  @@unique([empresa_id, nome])
+  @@map("funcoes")
+}
+
+model Usuario {
+  id             Int      @id @default(autoincrement())
+  empresa_id     Int
+  funcao_id      Int
+  nome           String
+  email          String   @unique
+  senha_hash     String
+  session_tokens String?  @db.Text
+  ativo          Boolean  @default(true)
+  criado_em      DateTime @default(now())
+  
+  funcao         Funcao   @relation(fields: [funcao_id], references: [id])
+  empresa        Empresa  @relation(fields: [empresa_id], references: [id])
+  
+  @@map("usuarios")
+}
+
+model ConfiguracaoSistema {
+  id                      Int      @id @default(autoincrement())
+  empresa_id              Int      @unique
+  prazo_padrao_impressao  Int      @default(24) // Horas
+  prazo_padrao_acabamento Int      @default(24) // Horas
+  atualizado_em           DateTime @updatedAt
+  
+  empresa                 Empresa  @relation(fields: [empresa_id], references: [id])
+  
+  @@map("configuracoes_sistema")
+}
