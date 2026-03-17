@@ -26,19 +26,19 @@ module.exports = async (req, res) => {
 
         const permissoesJson = JSON.stringify(permissoes || []);
 
-        if (id) {
-            // Update
-            await prisma.$executeRawUnsafe(`
-                UPDATE painel_funcoes SET nome = $1, permissoes = $2 
-                WHERE id = $3 AND empresa_id = $4
-            `, nome, permissoesJson, parseInt(id), empresaId);
-        } else {
-            // Create
-            await prisma.$executeRawUnsafe(`
-                INSERT INTO painel_funcoes (empresa_id, nome, permissoes, ativo, criado_em)
-                VALUES ($1, $2, $3, true, NOW())
-            `, empresaId, nome, permissoesJson);
-        }
+            if (id) {
+                // Update
+                await prisma.$executeRawUnsafe(`
+                    UPDATE painel_funcoes SET nome = $1, permissoes = $2::jsonb
+                    WHERE id = $3 AND empresa_id = $4
+                `, nome, permissoesJson, parseInt(id), empresaId);
+            } else {
+                // Create
+                await prisma.$executeRawUnsafe(`
+                    INSERT INTO painel_funcoes (empresa_id, nome, permissoes, ativo, criado_em)
+                    VALUES ($1, $2, $3::jsonb, true, NOW())
+                `, empresaId, nome, permissoesJson);
+            }
 
         return res.status(200).json({ success: true });
 
