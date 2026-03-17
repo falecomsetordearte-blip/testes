@@ -85,14 +85,15 @@
 
         .form-group { margin-bottom: 1.2rem; }
         .form-group label { display: block; margin-bottom: 0.5rem; color: #475569; font-weight: 500; }
-        .form-group input, .form-group select {
+        .form-group input[type="text"], .form-group input[type="email"], .form-group input[type="password"], .form-group select {
             width: 100%; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;
             font-family: inherit; transition: 0.2s;
         }
         .form-group input:focus, .form-group select:focus { border-color: #3498db; outline: none; box-shadow: 0 0 0 3px rgba(52,152,219,0.1); }
 
-        .permissions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #475569; }
+        .permissions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+        .checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #475569; font-size: 0.95rem; }
+        .checkbox-label input[type="checkbox"] { width: 18px; height: 18px; margin: 0; cursor: pointer; accent-color: #3498db; flex-shrink: 0; }
 
     </style>
 </head>
@@ -221,10 +222,15 @@
                     <div class="form-group">
                         <label>Permissões de Acesso</label>
                         <div class="permissions-grid">
-                            <label class="checkbox-label"><input type="checkbox" name="perm" value="admin"> Acesso Administrador</label>
-                            <label class="checkbox-label"><input type="checkbox" name="perm" value="arte"> Acesso Setor de Arte</label>
-                            <label class="checkbox-label"><input type="checkbox" name="perm" value="impressao"> Acesso Setor Impressão</label>
-                            <label class="checkbox-label"><input type="checkbox" name="perm" value="acabamento"> Acesso Acabamento</label>
+                            <label class="checkbox-label"><input type="checkbox" name="perm" value="carteira"> Carteira</label>
+                            <label class="checkbox-label"><input type="checkbox" name="perm" value="crm"> CRM (Atendimento)</label>
+                            <label class="checkbox-label"><input type="checkbox" name="perm" value="arte"> Arte e Design</label>
+                            <label class="checkbox-label"><input type="checkbox" name="perm" value="impressao"> Setor de Impressão</label>
+                            <label class="checkbox-label"><input type="checkbox" name="perm" value="acabamento"> Acabamento</label>
+                            <label class="checkbox-label"><input type="checkbox" name="perm" value="instalacao_loja"> Instalação Loja</label>
+                            <label class="checkbox-label"><input type="checkbox" name="perm" value="instalacao_ext"> Instalação Externa</label>
+                            <label class="checkbox-label"><input type="checkbox" name="perm" value="expedicao"> Expedição</label>
+                            <label class="checkbox-label"><input type="checkbox" name="perm" value="admin"> Equipe & Acessos (Admin)</label>
                         </div>
                     </div>
                 </form>
