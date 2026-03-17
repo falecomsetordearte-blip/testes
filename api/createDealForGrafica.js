@@ -1,4 +1,4 @@
-// /api/createDealForGrafica.js - CORRIGIDO: GRAVANDO VALOR_DESIGNER
+// /api/createDealForGrafica.js
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
@@ -31,16 +31,16 @@ module.exports = async (req, res) => {
         // Tratamento do valor para garantir que seja número (evita salvar NULL se vier vazio)
         const valorParaSalvar = parseFloat(valorDesigner || 0);
 
-        // 3. Inserir o Pedido no Neon (CORREÇÃO AQUI: ADICIONADO valor_designer)
+        // 3. Inserir o Pedido no Neon (CORREÇÃO AQUI: ADICIONADO link_arquivo_impressao)
         console.log(`[DEBUG] Gravando pedido. Valor Designer: R$ ${valorParaSalvar}`);
         
         const insertResult = await prisma.$queryRawUnsafe(`
             INSERT INTO pedidos (
                 empresa_id, titulo, nome_cliente, whatsapp_cliente, 
                 servico, tipo_arte, briefing_completo, etapa, 
-                valor_designer, created_at, bitrix_deal_id
+                valor_designer, link_arquivo_impressao, created_at, bitrix_deal_id
             ) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), 0)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), 0)
             RETURNING id
         `, 
         empresa.id, 
@@ -51,7 +51,8 @@ module.exports = async (req, res) => {
         arte, 
         briefingFinal, 
         etapaDestino,
-        valorParaSalvar // <--- $9: Agora estamos salvando o valor!
+        valorParaSalvar,
+        formData.linkArquivo || null // <--- $10: Agora salvamos o link de impressão correto
         );
 
         const newPedidoId = insertResult[0].id;
@@ -60,7 +61,6 @@ module.exports = async (req, res) => {
        // --- 4. BLOCO DE AUTOMAÇÃO CHATAPP ---
         if (arte === 'Setor de Arte') {
             try {
-                // Modificado: Agora estamos enviando também o formData.wppCliente
                 const automacao = await criarGrupoProducao(
                     formData.titulo, 
                     formData.wppCliente, // Número do Cliente
