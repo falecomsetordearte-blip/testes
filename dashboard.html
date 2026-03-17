@@ -171,6 +171,76 @@
             align-items: center;
         }
 
+        /* 5. Bloco de Atualizações (System Updates) */
+        .updates-panel {
+            background: linear-gradient(to bottom right, #f8f9fa, #ffffff);
+            border: 1px solid #e0e6ed;
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .updates-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: #9b59b6; /* Cor roxa para destacar */
+        }
+
+        .updates-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .updates-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: #2c3e50;
+        }
+
+        .version-badge {
+            background: #f3e5f5;
+            color: #8e44ad;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .updates-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .updates-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 0.8rem;
+            font-size: 0.95rem;
+            color: #555;
+            line-height: 1.4;
+        }
+
+        .updates-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        .update-icon {
+            font-size: 1rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
         .panel-header h2 {
             margin: 0;
             font-size: 1.25rem;
@@ -282,6 +352,28 @@
                             </div>
                             <i class="fa-solid fa-layer-group kpi-icon"></i>
                         </div>
+                    </section>
+
+                    <!-- Bloco de Atualizações -->
+                    <section class="updates-panel">
+                        <div class="updates-header">
+                            <h2><i class="fa-solid fa-bullhorn" style="color:#8e44ad;"></i> Novidades do Sistema</h2>
+                            <span class="version-badge">v1.0.1</span>
+                        </div>
+                        <ul class="updates-list">
+                            <li>
+                                <span class="update-icon">✨</span>
+                                <div><strong>Melhoria:</strong> Padronização do salvamento de links de arquivos aprovados.</div>
+                            </li>
+                            <li>
+                                <span class="update-icon">🚀</span>
+                                <div><strong>Novo:</strong> Adicionamos o painel de novidades na tela inicial.</div>
+                            </li>
+                            <li>
+                                <span class="update-icon">🔧</span>
+                                <div><strong>Correção:</strong> Ajustes internos de estabilidade no Kanban.</div>
+                            </li>
+                        </ul>
                     </section>
 
                     <!-- IMPORTANTE: Elementos ocultos para evitar erro no Javascript (Legacy Support) -->
