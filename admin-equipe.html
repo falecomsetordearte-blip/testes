@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipe e Acessos - Administrador</title>
+    
+    <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
+    <link rel="stylesheet" href="/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        .app-content .container { max-width: 100% !important; padding: 0 2rem; box-sizing: border-box; }
+        
+        /* Modern Header */
+        .dashboard-header {
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: #fff; padding: 1.5rem 2rem; border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-bottom: 2rem;
+        }
+        .welcome-message h1 { font-size: 1.8rem; color: #2c3e50; margin-bottom: 0.5rem; font-weight: 700; }
+        .welcome-message p { color: #7f8c8d; font-size: 1rem; margin: 0; }
+
+        /* Tabs */
+        .tabs-header {
+            display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;
+        }
+        .tab-btn {
+            background: none; border: none; padding: 1rem 1.5rem; font-size: 1rem; font-weight: 600;
+            color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s;
+        }
+        .tab-btn:hover { color: #3498db; }
+        .tab-btn.active { color: #3498db; border-bottom-color: #3498db; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Panels & Tables */
+        .admin-panel {
+            background: #fff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 2rem;
+        }
+        
+        .panel-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9); color: white; border: none;
+            padding: 0.8rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(52,152,219,0.3); }
+
+        .btn-danger {
+            background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;
+        }
+        .btn-outline { background: transparent; border: 1px solid #cbd5e1; color: #475569; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #f1f5f9; }
+        th { font-weight: 600; color: #64748b; background: #f8fafc; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; }
+        td { color: #334155; }
+        
+        .badge { background: #e0f2fe; color: #0284c7; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+        .badge-legacy { background: #fef08a; color: #854d0e; }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5);
+            display: flex; justify-content: center; align-items: center; z-index: 1000;
+            opacity: 0; pointer-events: none; transition: 0.3s;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-card {
+            background: #fff; width: 500px; max-width: 90%; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transform: translateY(20px); transition: 0.3s;
+        }
+        .modal-overlay.active .modal-card { transform: translateY(0); }
+        .modal-header { padding: 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h2 { margin: 0; font-size: 1.2rem; color: #1e293b; }
+        .modal-close { background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer; }
+        .modal-body { padding: 1.5rem; }
+        .modal-footer { padding: 1.5rem; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 1rem; }
+
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: #475569; font-weight: 500; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;
+            font-family: inherit; transition: 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus { border-color: #3498db; outline: none; box-shadow: 0 0 0 3px rgba(52,152,219,0.1); }
+
+        .permissions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #475569; }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-layout-grid">
+        <div id="sidebar-placeholder"></div>
+
+        <div class="app-content-wrapper">
+            <div id="header-placeholder"></div>
+
+            <main class="app-content">
+                <div class="container">
+                    
+                    <section class="dashboard-header">
+                        <div class="welcome-message">
+                            <h1>Gerenciamento de Equipe</h1>
+                            <p>Controle os usuários, cargos e permissões de acesso ao sistema.</p>
+                        </div>
+                    </section>
+
+                    <div class="tabs-header">
+                        <button class="tab-btn active" data-tab="usuarios"><i class="fa-solid fa-users"></i> Usuários</button>
+                        <button class="tab-btn" data-tab="cargos"><i class="fa-solid fa-user-shield"></i> Cargos e Permissões</button>
+                    </div>
+
+                    <!-- TAB: USUÁRIOS -->
+                    <div id="tab-usuarios" class="tab-content active admin-panel">
+                        <div class="panel-toolbar">
+                            <h3><i class="fa-solid fa-list"></i> Lista de Usuários</h3>
+                            <button class="btn-primary" onclick="abrirModalUsuario()"><i class="fa-solid fa-plus"></i> Novo Usuário</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Email</th>
+                                    <th>Cargo</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usuarios-tbody">
+                                <!-- Dinâmico -->
+                                <tr><td colspan="5" style="text-align: center;">Carregando usuários...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- TAB: CARGOS -->
+                    <div id="tab-cargos" class="tab-content admin-panel">
+                        <div class="panel-toolbar">
+                            <h3><i class="fa-solid fa-user-tag"></i> Lista de Cargos</h3>
+                            <button class="btn-primary" onclick="abrirModalCargo()"><i class="fa-solid fa-plus"></i> Novo Cargo</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome do Cargo</th>
+                                    <th>Permissões</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cargos-tbody">
+                                <!-- Dinâmico -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- MODAL DE USUÁRIOS -->
+    <div id="modal-usuario" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="modal-user-title">Novo Usuário</h2>
+                <button class="modal-close" onclick="fecharModal('modal-usuario')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-usuario">
+                    <input type="hidden" id="user_id">
+                    <div class="form-group">
+                        <label>Nome Completo</label>
+                        <input type="text" id="user_nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label>E-mail (Login)</label>
+                        <input type="email" id="user_email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Senha</label>
+                        <input type="password" id="user_senha" placeholder="Deixe em branco para não alterar">
+                    </div>
+                    <div class="form-group">
+                        <label>Cargo (Função)</label>
+                        <select id="user_cargo" required>
+                            <option value="">Selecione um cargo...</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-outline" onclick="fecharModal('modal-usuario')">Cancelar</button>
+                <button class="btn-primary" onclick="salvarUsuario()">Salvar Usuário</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CARGOS -->
+    <div id="modal-cargo" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="modal-role-title">Novo Cargo</h2>
+                <button class="modal-close" onclick="fecharModal('modal-cargo')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-cargo">
+                    <input type="hidden" id="role_id">
+                    <div class="form-group">
+                        <label>Nome do Cargo (Ex: Impressor, Designer)</label>
+                        <input type="text" id="role_nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Permissões de Acesso</label>
+                        <div class="permissions-grid">
+                            <label class="checkbox-label"><input type="checkbox" name="perm" value="admin"> Acesso Administrador</label>
+                            <label class="checkbox-label"><input type="checkbox" name="perm" value="arte"> Acesso Setor de Arte</label>
+                            <label class="checkbox-label"><input type="checkbox" name="perm" value="impressao"> Acesso Setor Impressão</label>
+                            <label class="checkbox-label"><input type="checkbox" name="perm" value="acabamento"> Acesso Acabamento</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-outline" onclick="fecharModal('modal-cargo')">Cancelar</button>
+                <button class="btn-primary" onclick="salvarCargo()">Salvar Cargo</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/layout.js"></script>
+    <script src="/admin-equipe.js"></script>
+
+</body>
+</html>
