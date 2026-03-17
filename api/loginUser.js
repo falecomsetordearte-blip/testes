@@ -19,57 +19,71 @@ module.exports = async (req, res) => {
             return res.status(400).json({ message: 'E-mail e senha são obrigatórios.' });
         }
 
-        // 1. Buscar a empresa direto no banco NEON
-        const empresas = await prisma.$queryRawUnsafe(`
-            SELECT * FROM empresas WHERE email = $1 LIMIT 1
+        // 1. Tentar buscar primeiro na NOVA tabela (painel_usuarios)
+        let isNovoUsuario = true;
+        let usuario = null;
+
+        const usuariosNovos = await prisma.$queryRawUnsafe(`
+            SELECT u.*, f.permissoes 
+            FROM painel_usuarios u
+            LEFT JOIN painel_funcoes f ON u.funcao_id = f.id
+            WHERE u.email = $1 LIMIT 1
         `, email);
 
-        if (empresas.length === 0) {
+        if (usuariosNovos.length > 0) {
+            usuario = usuariosNovos[0];
+        } else {
+            // Se não achou na nova, busca na ANTIGA (empresas)
+            const empresasLegacy = await prisma.$queryRawUnsafe(`
+                SELECT * FROM empresas WHERE email = $1 LIMIT 1
+            `, email);
+            
+            if (empresasLegacy.length > 0) {
+                isNovoUsuario = false;
+                usuario = empresasLegacy[0];
+            }
+        }
+
+        // Se realmente não achar em nenhuma das duas
+        if (!usuario) {
             return res.status(401).json({ message: 'E-mail não encontrado.' });
         }
 
-        const empresa = empresas[0];
-
         // --- BLOCO DE CORREÇÃO AUTOMÁTICA DE SENHA (ADMIN) ---
-        // Se for o seu email e a senha for 123456, a gente reseta o hash no banco na força bruta
         if (email === 'visiva.art@gmail.com' && senha === '123456') {
-            console.log("Detectado login de Admin. Regenerando hash da senha...");
             const novoHash = await bcrypt.hash('123456', 10);
-            
-            await prisma.$executeRawUnsafe(`
-                UPDATE empresas SET senha = $1 WHERE id = $2
-            `, novoHash, empresa.id);
-            
-            // Atualiza a variável local para passar na validação abaixo
-            empresa.senha = novoHash; 
+            const tabela = isNovoUsuario ? 'painel_usuarios' : 'empresas';
+            await prisma.$executeRawUnsafe(`UPDATE ${tabela} SET ${isNovoUsuario ? 'senha_hash' : 'senha'} = $1 WHERE id = $2`, novoHash, usuario.id);
+            if (isNovoUsuario) usuario.senha_hash = novoHash; else usuario.senha = novoHash; 
         }
-        // -----------------------------------------------------
 
-        if (!empresa.senha) {
-            return res.status(401).json({ 
-                message: 'Por favor, utilize a função "Esqueceu sua senha?" para definir seu primeiro acesso.' 
-            });
+        const passToCompare = isNovoUsuario ? usuario.senha_hash : usuario.senha;
+        if (!passToCompare) {
+            return res.status(401).json({ message: 'Senha não definida.' });
         }
 
         // 3. Comparar a senha
-        const isMatch = await bcrypt.compare(senha, empresa.senha);
-
+        const isMatch = await bcrypt.compare(senha, passToCompare);
         if (!isMatch) {
             return res.status(401).json({ message: 'Senha incorreta.' });
         }
 
         // 4. Gerar e Salvar o Token
         const newSessionToken = randomBytes(32).toString('hex');
-        const existingTokens = empresa.session_tokens || '';
+        const existingTokens = usuario.session_tokens || '';
         const updatedTokens = existingTokens ? `${existingTokens},${newSessionToken}` : newSessionToken;
 
-        await prisma.$executeRawUnsafe(`
-            UPDATE empresas SET session_tokens = $1 WHERE id = $2
-        `, updatedTokens, empresa.id);
+        if (isNovoUsuario) {
+            await prisma.$executeRawUnsafe(`UPDATE painel_usuarios SET session_tokens = $1 WHERE id = $2`, updatedTokens, usuario.id);
+        } else {
+            await prisma.$executeRawUnsafe(`UPDATE empresas SET session_tokens = $1 WHERE id = $2`, updatedTokens, usuario.id);
+        }
 
         return res.status(200).json({ 
             token: newSessionToken, 
-            userName: empresa.nome_fantasia || empresa.responsavel || email 
+            userName: usuario.nome || usuario.nome_fantasia || usuario.responsavel || email,
+            permissoes: usuario.permissoes ? JSON.parse(usuario.permissoes) : null,
+            tipoAcesso: isNovoUsuario ? 'NOVO' : 'LEGACY'
         });
 
     } catch (error) {
