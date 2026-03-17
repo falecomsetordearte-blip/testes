@@ -1,4 +1,4 @@
-// crm-script.js - LÓGICA DE META DIÁRIA AJUSTADA E LANÇAMENTO RÁPIDO
+// crm-script.js - LÓGICA DE META DIÁRIA AJUSTADA E LANÇAMENTO RÁPIDO COM VALIDAÇÕES EXTRAS
 
 let currentStep = 1;
 const totalSteps = 3;
@@ -12,16 +12,29 @@ document.addEventListener('DOMContentLoaded', () => {
     injectCleanStyles();
     createToastContainer();
     configurarMascaras();
-    
+
     carregarKanban();
     carregarMetasCRM();
-    
+
     configurarBuscaCliente();
-    
+
+    // Configurações de UX dos Valores (Calcula saldo e apaga o 0 automaticamente)
     const valTotalInput = document.getElementById('crm-valor');
     const valPagoInput = document.getElementById('crm-valor-pago');
-    if (valTotalInput) valTotalInput.addEventListener('input', calcularSaldoRestante);
-    if (valPagoInput) valPagoInput.addEventListener('input', calcularSaldoRestante);
+
+    const clearZero = function (e) { if (Number(e.target.value) === 0) e.target.value = ''; };
+    const restoreZero = function (e) { if (e.target.value.trim() === '') e.target.value = '0'; calcularSaldoRestante(); };
+
+    if (valTotalInput) {
+        valTotalInput.addEventListener('input', calcularSaldoRestante);
+        valTotalInput.addEventListener('focus', clearZero);
+        valTotalInput.addEventListener('blur', restoreZero);
+    }
+    if (valPagoInput) {
+        valPagoInput.addEventListener('input', calcularSaldoRestante);
+        valPagoInput.addEventListener('focus', clearZero);
+        valPagoInput.addEventListener('blur', restoreZero);
+    }
 
     const formatoSelect = document.getElementById('pedido-formato');
     if (formatoSelect) {
@@ -41,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- 1. LÓGICA DE METAS E LANÇAMENTO RÁPIDO ---
 
-window.lancarVendaRapida = async function() {
+window.lancarVendaRapida = async function () {
     const input = document.getElementById('quick-venda-valor');
     const btn = document.getElementById('btn-quick-venda');
     const valor = parseFloat(input.value);
@@ -86,12 +99,12 @@ async function carregarMetasCRM() {
     try {
         const res = await fetch('/api/crm/getMetas', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') })
         });
-        
+
         globalMetasData = await res.json();
-        
+
         if (globalMetasData && globalMetasData.metas) {
             container.style.display = 'flex';
             atualizarLabelsDoSelect(globalMetasData.metas);
@@ -107,10 +120,10 @@ async function carregarMetasCRM() {
 }
 
 function atualizarLabelsDoSelect(m) {
-    const format = (dStr) => { 
-        if (!dStr) return ''; 
-        const d = new Date(dStr); 
-        return `${String(d.getUTCDate()).padStart(2,'0')}/${String(d.getUTCMonth()+1).padStart(2,'0')}`; 
+    const format = (dStr) => {
+        if (!dStr) return '';
+        const d = new Date(dStr);
+        return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
     };
     const sel = document.getElementById('filtro-metas');
     if (!sel) return;
@@ -130,34 +143,34 @@ function contarDiasRestantesNoMes() {
     return restantes > 0 ? restantes : 0;
 }
 
-window.renderizarVisualizacaoMeta = function() {
+window.renderizarVisualizacaoMeta = function () {
     if (!globalMetasData || !globalMetasData.metas) return;
 
     const filtro = document.getElementById('filtro-metas').value;
     const { metas, total_mes, total_hoje, vendas_semanas } = globalMetasData;
-    
+
     let metaAlvo = 0;
     let atual = 0;
     let textoEsq = "";
     let textoDir = "";
     let premio = "";
 
-    const fmt = (val) => Number(val).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+    const fmt = (val) => Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     if (filtro === 'diaria') {
-        const metaMensal = Number(metas.meta_mensal) || 0;    
-        const totalVendidoMes = Number(total_mes) || 0;       
+        const metaMensal = Number(metas.meta_mensal) || 0;
+        const totalVendidoMes = Number(total_mes) || 0;
         const saldoFaltante = metaMensal - totalVendidoMes;
         const diasRestantes = contarDiasRestantesNoMes();
-        
+
         if (diasRestantes > 0 && saldoFaltante > 0) {
-            metaAlvo = saldoFaltante / diasRestantes; 
+            metaAlvo = saldoFaltante / diasRestantes;
         } else {
             metaAlvo = 0;
         }
 
-        atual = total_hoje; 
-        
+        atual = total_hoje;
+
         textoEsq = `Vendido Hoje: ${fmt(atual)}`;
         textoDir = `Alvo diário para bater o mês: ${fmt(metaAlvo)}`;
 
@@ -169,10 +182,10 @@ window.renderizarVisualizacaoMeta = function() {
         premio = metas.premio_mensal;
 
     } else {
-        if(filtro === 'sem1') { atual = vendas_semanas.sem1; metaAlvo = Number(metas.meta_sem_1); premio = metas.premio_sem_1; }
-        if(filtro === 'sem2') { atual = vendas_semanas.sem2; metaAlvo = Number(metas.meta_sem_2); premio = metas.premio_sem_2; }
-        if(filtro === 'sem3') { atual = vendas_semanas.sem3; metaAlvo = Number(metas.meta_sem_3); premio = metas.premio_sem_3; }
-        if(filtro === 'sem4') { atual = vendas_semanas.sem4; metaAlvo = Number(metas.meta_sem_4); premio = metas.premio_sem_4; }
+        if (filtro === 'sem1') { atual = vendas_semanas.sem1; metaAlvo = Number(metas.meta_sem_1); premio = metas.premio_sem_1; }
+        if (filtro === 'sem2') { atual = vendas_semanas.sem2; metaAlvo = Number(metas.meta_sem_2); premio = metas.premio_sem_2; }
+        if (filtro === 'sem3') { atual = vendas_semanas.sem3; metaAlvo = Number(metas.meta_sem_3); premio = metas.premio_sem_3; }
+        if (filtro === 'sem4') { atual = vendas_semanas.sem4; metaAlvo = Number(metas.meta_sem_4); premio = metas.premio_sem_4; }
         textoEsq = `Vendas na Semana: ${fmt(atual)}`;
         textoDir = `Alvo: ${fmt(metaAlvo)}`;
     }
@@ -182,10 +195,10 @@ window.renderizarVisualizacaoMeta = function() {
 
     document.getElementById('meta-text-left').innerText = textoEsq;
     document.getElementById('meta-text-right').innerText = `${textoDir} (${porcentagem.toFixed(1)}%)`;
-    
+
     const barra = document.getElementById('meta-progress-bar');
     barra.style.width = `${porcentagemBarra}%`;
-    
+
     if (filtro === 'diaria' && porcentagem < 50 && metaAlvo > 0) barra.classList.add('danger');
     else barra.classList.remove('danger');
 
@@ -209,19 +222,19 @@ function configurarBuscaCliente() {
     const input = document.getElementById('crm-nome');
     const btnBuscar = document.getElementById('btn-buscar-cliente');
     const list = document.getElementById('search-results-list');
-    
+
     if (!input || !list) return;
 
     const performSearch = async (e) => {
         if (e) { e.preventDefault(); e.stopPropagation(); }
         const term = input.value;
         if (term.length < 2) { showToast("Digite pelo menos 2 caracteres.", "error"); return; }
-        
+
         btnBuscar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         try {
             const res = await fetch('/api/crm/searchClients', {
                 method: 'POST',
-                headers: {'Content-Type':'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), query: term })
             });
             const clientes = await res.json();
@@ -253,7 +266,7 @@ function configurarBuscaCliente() {
     if (btnBuscar) btnBuscar.addEventListener('click', performSearch);
     input.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(e); });
     input.addEventListener('input', () => { if (input.value === '') list.style.display = 'none'; });
-    
+
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.autocomplete-wrapper')) list.style.display = 'none';
     });
@@ -261,7 +274,7 @@ function configurarBuscaCliente() {
 
 // --- 3. WIZARD DE VENDAS (PASSOS E VALIDAÇÕES) ---
 
-window.mudarPasso = function(direction) {
+window.mudarPasso = function (direction) {
     if (direction === 1 && !validarPassoAtual()) return;
     currentStep += direction;
     renderizarPasso();
@@ -270,11 +283,11 @@ window.mudarPasso = function(direction) {
 function renderizarPasso() {
     document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
     document.getElementById(`step-${currentStep}`).classList.add('active');
-    
+
     document.querySelectorAll('.step-indicator').forEach((ind, i) => {
         ind.classList.remove('active', 'completed');
-        if (i+1 < currentStep) ind.classList.add('completed');
-        if (i+1 === currentStep) ind.classList.add('active');
+        if (i + 1 < currentStep) ind.classList.add('completed');
+        if (i + 1 === currentStep) ind.classList.add('active');
     });
 
     document.getElementById('btn-prev').style.display = currentStep === 1 ? 'none' : 'block';
@@ -291,18 +304,44 @@ function validarPassoAtual() {
     if (currentStep === 1) {
         if (!document.getElementById('pedido-servico-hidden').value) { showToast("Selecione o tipo de serviço.", "error"); return false; }
         if (document.getElementById('crm-nome').value.length < 2) { showToast("Informe o nome do cliente.", "error"); return false; }
+        const titulo = document.getElementById('crm-titulo-manual').value;
+        if (titulo.length > 30) { showToast("O Nome do Pedido não pode ter mais de 30 caracteres.", "error"); return false; }
     }
+
     if (currentStep === 2) {
-        if (!document.getElementById('pedido-arte-hidden').value) { showToast("Informe a origem da arte.", "error"); return false; }
+        const arteOrigem = document.getElementById('pedido-arte-hidden').value;
+        if (!arteOrigem) { showToast("Informe quem fará a arte.", "error"); return false; }
+
+        // Regra Ouro: Se Setor de Arte, Supervisão e Designer são obrigatórios
+        if (arteOrigem === 'Setor de Arte') {
+            const supWpp = document.getElementById('pedido-supervisao').value;
+            const designerValor = document.getElementById('valor-designer').value;
+            const formato = document.getElementById('pedido-formato').value;
+
+            if (!supWpp || supWpp.length < 14) { showToast("Informe o WhatsApp da Supervisão completo.", "error"); return false; }
+            if (!designerValor || parseFloat(designerValor) <= 0) { showToast("Informe o valor (maior que 0) para o Designer.", "error"); return false; }
+            if (!formato) { showToast("Selecione o formato do arquivo (PDF, JPG, CDR).", "error"); return false; }
+        }
+
+        // Regra Ouro: Se Arquivo do cliente, o link é obrigatório
+        if (arteOrigem === 'Arquivo do Cliente') {
+            const linkArquivo = document.getElementById('link-arquivo').value;
+            if (!linkArquivo || linkArquivo.trim() === '') { showToast("Cole o Link do Arquivo recebido do cliente.", "error"); return false; }
+        }
+
+        // Regra Ouro: Entrega / Instalação obrigatória
+        const entrega = document.getElementById('pedido-entrega-hidden').value;
+        if (!entrega) { showToast("Selecione como será a Entrega/Instalação.", "error"); return false; }
     }
+
     return true;
 }
 
-window.selectCard = function(group, value, element) {
+window.selectCard = function (group, value, element) {
     document.getElementById(`pedido-${group}-hidden`).value = value;
     element.parentElement.querySelectorAll('.selection-card').forEach(c => c.classList.remove('selected'));
     element.classList.add('selected');
-    
+
     if (group === 'arte') {
         const fileFields = document.getElementById('arquivo-cliente-fields');
         const setorFields = document.getElementById('setor-arte-fields');
@@ -315,10 +354,10 @@ window.selectCard = function(group, value, element) {
 
 async function carregarKanban() {
     try {
-        const res = await fetch('/api/crm/listCards', { 
-            method: 'POST', 
-            headers: {'Content-Type': 'application/json'}, 
-            body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') }) 
+        const res = await fetch('/api/crm/listCards', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') })
         });
         const cards = await res.json();
         allCardsCache = cards;
@@ -329,23 +368,23 @@ async function carregarKanban() {
 }
 
 function criarCardHTML(card) {
-    const map = { 
-        'Novos': 'col-novos-list', 
-        'Visita Técnica': 'col-visita-list', 
-        'Aguardando Orçamento': 'col-orcamento-list', 
-        'Aguardando Pagamento': 'col-pagamento-list', 
-        'Abrir Pedido': 'col-abrir-list' 
+    const map = {
+        'Novos': 'col-novos-list',
+        'Visita Técnica': 'col-visita-list',
+        'Aguardando Orçamento': 'col-orcamento-list',
+        'Aguardando Pagamento': 'col-pagamento-list',
+        'Abrir Pedido': 'col-abrir-list'
     };
     const container = document.getElementById(map[card.coluna]);
     if (!container) return;
 
     const div = document.createElement('div');
     div.className = 'kanban-card';
-    div.dataset.id = card.id; 
+    div.dataset.id = card.id;
     div.onclick = (e) => { if (!e.target.closest('button')) abrirPanelEdicao(card); };
-    
+
     const valor = parseFloat(card.valor_orcamento || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-    
+
     div.innerHTML = `
         <button class="btn-card-delete" onclick="window.confirmarExclusaoCard(${card.id}, event)"><i class="fas fa-trash-alt"></i></button>
         <div class="card-header-row"><span class="card-id">${card.titulo_automatico}</span></div>
@@ -361,18 +400,18 @@ function criarCardHTML(card) {
 function inicializarDragAndDrop() {
     document.querySelectorAll('.kanban-items').forEach(col => {
         if (col.getAttribute('init') === 'true') return;
-        new Sortable(col, { 
-            group: 'crm', 
-            animation: 150, 
-            onEnd: function(evt) {
-                fetch('/api/crm/moveCard', { 
-                    method: 'POST', 
-                    headers: {'Content-Type': 'application/json'}, 
-                    body: JSON.stringify({ 
-                        sessionToken: localStorage.getItem('sessionToken'), 
-                        cardId: evt.item.dataset.id, 
-                        novaColuna: evt.to.parentElement.dataset.status 
-                    }) 
+        new Sortable(col, {
+            group: 'crm',
+            animation: 150,
+            onEnd: function (evt) {
+                fetch('/api/crm/moveCard', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionToken: localStorage.getItem('sessionToken'),
+                        cardId: evt.item.dataset.id,
+                        novaColuna: evt.to.parentElement.dataset.status
+                    })
                 }).then(() => carregarMetasCRM());
             }
         });
@@ -382,17 +421,17 @@ function inicializarDragAndDrop() {
 
 // --- 5. PRODUÇÃO E EXCLUSÃO ---
 
-window.produzirCardDireto = function(cardId, btnElement) {
-    event.stopPropagation(); 
+window.produzirCardDireto = function (cardId, btnElement) {
+    event.stopPropagation();
     if (btnElement.dataset.confirming === "true") {
         const card = allCardsCache.find(c => c.id == cardId);
         if (!card) return showToast("Erro: Card não encontrado.", "error");
 
         let extras = {};
-        try { if(card.briefing_json) extras = (typeof card.briefing_json === 'string') ? JSON.parse(card.briefing_json) : card.briefing_json; } catch(e){}
-        
-        let txt = ""; 
-        if (extras.materiais) extras.materiais.forEach((d, i) => { txt += `--- Item ${i+1} ---\nMaterial: ${d.descricao}\nDetalhes: ${d.detalhes}\n\n`; });
+        try { if (card.briefing_json) extras = (typeof card.briefing_json === 'string') ? JSON.parse(card.briefing_json) : card.briefing_json; } catch (e) { }
+
+        let txt = "";
+        if (extras.materiais) extras.materiais.forEach((d, i) => { txt += `--- Item ${i + 1} ---\nMaterial: ${d.descricao}\nDetalhes: ${d.detalhes}\n\n`; });
 
         const payload = {
             sessionToken: localStorage.getItem('sessionToken'),
@@ -409,36 +448,36 @@ window.produzirCardDireto = function(cardId, btnElement) {
             formato: extras.formato,
             cdrVersao: extras.cdr_versao
         };
-        
+
         btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         btnElement.style.pointerEvents = 'none';
 
-        fetch('/api/createDealForGrafica', { 
-            method: 'POST', 
-            headers: {'Content-Type':'application/json'}, 
-            body: JSON.stringify(payload) 
+        fetch('/api/createDealForGrafica', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         })
-        .then(res => res.json())
-        .then(data => {
-            if (data.dealId || data.success) {
-                return fetch('/api/crm/deleteCard', { 
-                    method: 'POST', 
-                    headers: {'Content-Type':'application/json'}, 
-                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: cardId }) 
-                });
-            } else { throw new Error(data.message || "Erro na produção"); }
-        })
-        .then(() => {
-            showToast('Enviado para Produção!', 'success');
-            fecharPanel(); carregarKanban(); carregarMetasCRM();
-        })
-        .catch(err => {
-            showToast(err.message, 'error');
-            btnElement.innerHTML = '<i class="fas fa-rocket"></i> PRODUZIR';
-            btnElement.style.pointerEvents = 'auto';
-            btnElement.dataset.confirming = "false";
-            btnElement.classList.remove('confirm-state');
-        });
+            .then(res => res.json())
+            .then(data => {
+                if (data.dealId || data.success) {
+                    return fetch('/api/crm/deleteCard', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: cardId })
+                    });
+                } else { throw new Error(data.message || "Erro na produção"); }
+            })
+            .then(() => {
+                showToast('Enviado para Produção!', 'success');
+                fecharPanel(); carregarKanban(); carregarMetasCRM();
+            })
+            .catch(err => {
+                showToast(err.message, 'error');
+                btnElement.innerHTML = '<i class="fas fa-rocket"></i> PRODUZIR';
+                btnElement.style.pointerEvents = 'auto';
+                btnElement.dataset.confirming = "false";
+                btnElement.classList.remove('confirm-state');
+            });
 
     } else {
         btnElement.dataset.confirming = "true";
@@ -452,16 +491,16 @@ window.produzirCardDireto = function(cardId, btnElement) {
     }
 };
 
-window.confirmarExclusaoCard = async function(cardId, event) {
-    event.stopPropagation(); 
+window.confirmarExclusaoCard = async function (cardId, event) {
+    event.stopPropagation();
     if (confirm("Deseja realmente excluir este card permanentemente?")) {
         try {
-            const res = await fetch('/api/crm/deleteCard', { 
-                method: 'POST', 
-                headers: {'Content-Type':'application/json'}, 
-                body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: cardId }) 
+            const res = await fetch('/api/crm/deleteCard', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: cardId })
             });
-            if (res.ok) { showToast("Card excluído!", "success"); carregarKanban(); carregarMetasCRM(); } 
+            if (res.ok) { showToast("Card excluído!", "success"); carregarKanban(); carregarMetasCRM(); }
             else { showToast("Erro ao excluir.", "error"); }
         } catch (err) { showToast("Erro de conexão.", "error"); }
     }
@@ -471,30 +510,46 @@ window.confirmarExclusaoCard = async function(cardId, event) {
 
 document.getElementById('form-crm').addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    // Regra Ouro: Valor Total é obrigatório e deve ser > 0
+    const valorTotal = parseFloat(document.getElementById('crm-valor').value) || 0;
+    if (valorTotal <= 0) {
+        showToast("O Valor Total do pedido não pode ser zero.", "error");
+        return;
+    }
+
+    // Regra Ouro: Título automático caso fique em branco
+    let tituloInput = document.getElementById('crm-titulo-manual');
+    if (tituloInput.value.trim() === '') {
+        const codigoAleatorio = Math.floor(1000 + Math.random() * 9000);
+        tituloInput.value = `PED-${codigoAleatorio}`;
+        showToast(`Título vazio. Gerado código automático: ${tituloInput.value}`, 'success');
+    }
+
     const btn = document.getElementById('btn-salvar-rascunho');
     const originalText = btn.innerText;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...'; 
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
     btn.disabled = true;
-    
+
     const mats = [];
-    document.querySelectorAll('.material-item').forEach(d => { 
-        const desc = d.querySelector('.mat-desc').value; 
-        if (desc) mats.push({ descricao: desc, detalhes: d.querySelector('.mat-det').value }); 
+    document.querySelectorAll('.material-item').forEach(d => {
+        const desc = d.querySelector('.mat-desc').value;
+        if (desc) mats.push({ descricao: desc, detalhes: d.querySelector('.mat-det').value });
     });
-    
+
     const payload = {
         sessionToken: localStorage.getItem('sessionToken'),
         id: document.getElementById('card-id-db').value,
-        titulo_manual: document.getElementById('crm-titulo-manual').value,
+        titulo_manual: tituloInput.value,
         nome_cliente: document.getElementById('crm-nome').value,
         wpp_cliente: document.getElementById('crm-wpp').value,
-        servico_tipo: document.getElementById('pedido-servico-hidden').value, 
-        arte_origem: document.getElementById('pedido-arte-hidden').value,     
+        servico_tipo: document.getElementById('pedido-servico-hidden').value,
+        arte_origem: document.getElementById('pedido-arte-hidden').value,
         valor_orcamento: document.getElementById('crm-valor').value,
         valor_pago: document.getElementById('crm-valor-pago').value,
         valor_restante: document.getElementById('crm-valor-restante').value,
         briefing_json: JSON.stringify({
-            tipo_entrega: document.getElementById('pedido-entrega-hidden').value, 
+            tipo_entrega: document.getElementById('pedido-entrega-hidden').value,
             materiais: mats,
             link_arquivo: document.getElementById('link-arquivo').value,
             supervisao_wpp: document.getElementById('pedido-supervisao').value,
@@ -503,22 +558,22 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
             cdr_versao: document.getElementById('cdr-versao').value
         })
     };
-    
+
     try {
-        const res = await fetch('/api/crm/saveCard', { 
-            method: 'POST', 
-            headers: {'Content-Type':'application/json'}, 
-            body: JSON.stringify(payload) 
+        const res = await fetch('/api/crm/saveCard', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
-        if (res.ok) { 
-            fecharPanel(); carregarKanban(); carregarMetasCRM(); 
-            showToast('Salvo com sucesso!', 'success'); 
+        if (res.ok) {
+            fecharPanel(); carregarKanban(); carregarMetasCRM();
+            showToast('Salvo com sucesso!', 'success');
         } else { showToast('Erro ao salvar.', 'error'); }
     } catch (err) { showToast('Erro de conexão.', 'error'); }
     finally { btn.innerText = originalText; btn.disabled = false; }
 });
 
-window.abrirPanelEdicao = function(card) {
+window.abrirPanelEdicao = function (card) {
     resetarForm();
     document.getElementById('panel-titulo').innerText = 'Editar Oportunidade';
     document.getElementById('display-id-automatico').innerText = card.titulo_automatico || '';
@@ -540,8 +595,8 @@ window.abrirPanelEdicao = function(card) {
     }
 
     let extras = {};
-    try { if (card.briefing_json) extras = (typeof card.briefing_json === 'string') ? JSON.parse(card.briefing_json) : card.briefing_json; } catch(e){}
-    
+    try { if (card.briefing_json) extras = (typeof card.briefing_json === 'string') ? JSON.parse(card.briefing_json) : card.briefing_json; } catch (e) { }
+
     if (extras.tipo_entrega) {
         const el = document.querySelector(`#entrega-grid .selection-card[onclick*="'${extras.tipo_entrega}'"]`);
         if (el) selectCard('entrega', extras.tipo_entrega, el);
@@ -558,24 +613,24 @@ window.abrirPanelEdicao = function(card) {
         extras.materiais.forEach(m => adicionarMaterialNoForm(m.descricao, m.detalhes));
     } else { adicionarMaterialNoForm(); }
 
-    currentStep = 1; 
+    currentStep = 1;
     renderizarPasso();
     document.getElementById('slide-overlay').classList.add('active');
     document.getElementById('slide-panel').classList.add('active');
 };
 
-window.abrirPanelNovo = function() {
+window.abrirPanelNovo = function () {
     resetarForm();
     document.getElementById('panel-titulo').innerText = 'Nova Oportunidade';
     document.getElementById('display-id-automatico').innerText = '# NOVO';
-    currentStep = 1; 
-    renderizarPasso(); 
+    currentStep = 1;
+    renderizarPasso();
     adicionarMaterialNoForm();
     document.getElementById('slide-overlay').classList.add('active');
     document.getElementById('slide-panel').classList.add('active');
 };
 
-window.fecharPanel = function() {
+window.fecharPanel = function () {
     document.getElementById('slide-overlay').classList.remove('active');
     document.getElementById('slide-panel').classList.remove('active');
 };
@@ -588,6 +643,8 @@ function resetarForm() {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
+    document.getElementById('crm-valor').value = '0';
+    document.getElementById('crm-valor-pago').value = '0';
     document.getElementById('crm-valor-restante').value = '0.00';
     document.getElementById('materiais-container').innerHTML = '';
     document.getElementById('arquivo-cliente-fields').classList.add('hidden');
@@ -616,10 +673,10 @@ function calcularSaldoRestante() {
     const total = parseFloat(document.getElementById('crm-valor').value) || 0;
     const pago = parseFloat(document.getElementById('crm-valor-pago').value) || 0;
     const restante = total - pago;
-    
+
     const inputRestante = document.getElementById('crm-valor-restante');
     if (!inputRestante) return;
-    
+
     inputRestante.value = restante.toFixed(2);
     if (restante > 0) {
         inputRestante.style.color = '#e74c3c';
