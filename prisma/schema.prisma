@@ -53,6 +53,11 @@ model Empresa {
   // Relacionamentos
   historico_financeiro         HistoricoFinanceiro[]
   produtos                     Produto[] // <--- ADICIONADO: Relação com produtos
+  
+  // Relações do Painel de Controle de Acesso
+  funcoes                      Funcao[]
+  usuarios                     Usuario[]
+  configuracao_sistema         ConfiguracaoSistema?
 
   @@map("empresas")
 }
@@ -158,7 +163,7 @@ model Funcao {
   empresa        Empresa   @relation(fields: [empresa_id], references: [id])
 
   @@unique([empresa_id, nome])
-  @@map("funcoes")
+  @@map("painel_funcoes")
 }
 
 model Usuario {
@@ -175,7 +180,7 @@ model Usuario {
   funcao         Funcao   @relation(fields: [funcao_id], references: [id])
   empresa        Empresa  @relation(fields: [empresa_id], references: [id])
   
-  @@map("usuarios")
+  @@map("painel_usuarios")
 }
 
 model ConfiguracaoSistema {
@@ -187,5 +192,5 @@ model ConfiguracaoSistema {
   
   empresa                 Empresa  @relation(fields: [empresa_id], references: [id])
   
-  @@map("configuracoes_sistema")
+  @@map("painel_configuracoes_sistema")
 }

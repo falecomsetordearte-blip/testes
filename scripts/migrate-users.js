@@ -19,14 +19,14 @@ async function runMigration() {
         }
 
         let funcaoMigradaId;
-        const fnMigrada = await prisma.$queryRawUnsafe(`SELECT id FROM funcoes WHERE nome = 'Acesso Migrado' AND empresa_id = $1 LIMIT 1`, empresaUnicaId);
+        const fnMigrada = await prisma.$queryRawUnsafe(`SELECT id FROM painel_funcoes WHERE nome = 'Acesso Migrado' AND empresa_id = $1 LIMIT 1`, empresaUnicaId);
         
         if (fnMigrada.length > 0) {
             funcaoMigradaId = fnMigrada[0].id;
             console.log("Função 'Acesso Migrado' já existe. ID:", funcaoMigradaId);
         } else {
             const insercaoFuncao = await prisma.$queryRawUnsafe(`
-                INSERT INTO funcoes (empresa_id, nome, permissoes, ativo, criado_em)
+                INSERT INTO painel_funcoes (empresa_id, nome, permissoes, ativo, criado_em)
                 VALUES ($1, 'Acesso Migrado', '["acesso_total_legacy"]', true, NOW())
                 RETURNING id
             `, empresaUnicaId);
@@ -46,7 +46,7 @@ async function runMigration() {
 
         for (const emp of empresasLegacy) {
             // Verificar se usuário já existe
-            const exists = await prisma.$queryRawUnsafe(`SELECT id FROM usuarios WHERE email = $1 LIMIT 1`, emp.email);
+            const exists = await prisma.$queryRawUnsafe(`SELECT id FROM painel_usuarios WHERE email = $1 LIMIT 1`, emp.email);
             if (exists.length > 0) {
                 console.log(`Usuário ${emp.email} já migrado. Pulo.`);
                 continue;
@@ -55,7 +55,7 @@ async function runMigration() {
             console.log(`Migrando usuário: ${emp.email}...`);
             // Inserir ele como usuario "funcionário" do sistema, portando seu hash e seus tokens antigos.
             await prisma.$queryRawUnsafe(`
-                INSERT INTO usuarios (empresa_id, funcao_id, nome, email, senha_hash, session_tokens, ativo, criado_em)
+                INSERT INTO painel_usuarios (empresa_id, funcao_id, nome, email, senha_hash, session_tokens, ativo, criado_em)
                 VALUES ($1, $2, $3, $4, $5, $6, true, NOW())
             `, emp.id, funcaoMigradaId, emp.nome_fantasia || 'Usuario Migrado', emp.email, emp.senha, emp.session_tokens);
             console.log(`> Migrado com sucesso: ${emp.email}`);
