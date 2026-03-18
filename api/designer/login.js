@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
 
         // 1. Busca o usuário no Neon
         const users = await prisma.$queryRawUnsafe(`
-            SELECT designer_id, nome, senha_hash, nivel 
+            SELECT designer_id, nome, senha_hash, nivel, assinatura_status 
             FROM designers_financeiro 
             WHERE email = $1 LIMIT 1
         `, email);
@@ -57,7 +57,8 @@ module.exports = async (req, res) => {
             message: 'Login realizado com sucesso!',
             token: token,
             nome: user.nome,
-            nivel: user.nivel || 3
+            nivel: user.nivel || 3,
+            assinaturaStatus: user.assinatura_status || 'INATIVO'
         });
 
     } catch (error) {

@@ -25,6 +25,11 @@ model DesignerFinanceiro {
   chave_pix           String?
   pontuacao           Int       @default(0)
 
+  // Asaas
+  asaas_customer_id     String?
+  asaas_subscription_id String?
+  assinatura_status     String?   @default("INATIVO")
+
   @@map("designers_financeiro")
 }
 
@@ -49,6 +54,11 @@ model Empresa {
   credito_aprovado             Boolean  @default(false)
   solicitacao_credito_pendente Boolean  @default(false)
   dados_analise_credito        Json?    // Salva o formulário de solicitação
+
+  // Asaas
+  asaas_customer_id            String?
+  asaas_subscription_id        String?
+  assinatura_status            String?  @default("INATIVO")
 
   // Relacionamentos
   historico_financeiro         HistoricoFinanceiro[]

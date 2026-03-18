@@ -312,44 +312,31 @@
                 <div class="container">
 
                     <div style="margin-bottom: 1.5rem;">
-                        <h2 style="margin:0; color: #2d3748;"><i class="fa-solid fa-wallet"
-                                style="color: #3498db; margin-right: 8px;"></i> Minha Carteira</h2>
-                    </div>
-
-                    <div id="credit-status-box" class="credit-status status-prepaid">
-                        <div>
-                            <strong><i class="fas fa-info-circle"></i> Status da Conta: <span
-                                    id="lbl-tipo-conta">Pré-paga</span></strong>
-                            <p style="margin: 5px 0 0 0; font-size: 0.9rem;"><span id="msg-credito">Necessário pagamento
-                                    antecipado.</span></p>
-                        </div>
-                        <button id="btn-solicitar-credito" class="btn-credito">Solicitar Análise de Crédito</button>
+                        <h2 style="margin:0; color: #2d3748;"><i class="fa-solid fa-hand-holding-dollar"
+                                style="color: #3498db; margin-right: 8px;"></i> Acerto de Contas (SaaS)</h2>
                     </div>
 
                     <div class="wallet-grid">
-                        <div class="wallet-card card-saldo">
-                            <div>
-                                <h3>Saldo Disponível</h3>
-                                <div class="wallet-value" id="val-saldo">R$ ...</div>
-                                <div style="font-size: 0.85rem; color: #64748b;">Para uso imediato</div>
-                            </div>
-                            <button class="btn-add-mini" onclick="abrirModalRecarga()"><i
-                                    class="fas fa-plus-circle"></i> Adicionar Saldo</button><i
-                                class="fas fa-coins wallet-icon"></i>
-                        </div>
                         <div class="wallet-card card-andamento">
                             <div>
-                                <h3>Em Produção</h3>
+                                <h3>Total Pendente (No Prazo)</h3>
                                 <div class="wallet-value" id="val-andamento">R$ 0,00</div>
-                                <div style="font-size: 0.85rem; color: #64748b;">Serviços sendo executados</div>
-                            </div><i class="fas fa-cog wallet-icon"></i>
+                                <div style="font-size: 0.85rem; color: #64748b;">Aguardando vencimento</div>
+                            </div><i class="fas fa-clock wallet-icon"></i>
                         </div>
                         <div class="wallet-card card-pagar">
                             <div>
-                                <h3>Total Faturado/Gasto</h3>
+                                <h3>Total em Atraso</h3>
                                 <div class="wallet-value" id="val-pagar" style="color: #e74c3c;">R$ 0,00</div>
-                                <div style="font-size: 0.85rem; color: #64748b;">Histórico acumulado</div>
-                            </div><i class="fas fa-file-invoice-dollar wallet-icon"></i>
+                                <div style="font-size: 0.85rem; color: #64748b;">Vencido - Necessário PIX</div>
+                            </div><i class="fas fa-exclamation-triangle wallet-icon"></i>
+                        </div>
+                        <div class="wallet-card card-saldo">
+                            <div>
+                                <h3>Pago este Mês</h3>
+                                <div class="wallet-value" id="val-saldo">R$ 0,00</div>
+                                <div style="font-size: 0.85rem; color: #64748b;">Transferências confirmadas</div>
+                            </div><i class="fas fa-check-circle wallet-icon"></i>
                         </div>
                     </div>
 
@@ -357,38 +344,30 @@
                         style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.04);">
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-                            <h4 style="margin:0; color: #4a5568;">Extrato Financeiro</h4>
+                            <h4 style="margin:0; color: #4a5568;">Histórico de Acertos e Dívidas</h4>
                             <div class="filter-bar">
-                                <select id="filtro-status" class="filter-input">
-                                    <option value="TODOS">Todos os Status</option>
-                                    <option value="EM_PRODUCAO">Em Produção</option>
-                                    <option value="FINALIZADO">Finalizados</option>
-                                </select>
                                 <input type="date" id="filtro-inicio" class="filter-input">
                                 <span style="color: #aaa; font-size: 0.9rem;">até</span>
                                 <input type="date" id="filtro-fim" class="filter-input">
-                                <button onclick="carregarExtrato()" class="btn-action-sm"
+                                <button onclick="carregarAcertosGrafica()" class="btn-action-sm"
                                     style="background: #2c3e50; padding: 9px 15px; color:white; border:none; border-radius:6px; cursor:pointer;"><i
                                         class="fas fa-filter"></i> Filtrar</button>
-                                <button onclick="exportarCSV()" class="btn-action-sm"
-                                    style="background: #27ae60; padding: 9px 15px; color:white; border:none; border-radius:6px; cursor:pointer;"><i
-                                        class="fas fa-file-csv"></i> Baixar CSV</button>
                             </div>
                         </div>
 
                         <div
-                            style="display: grid; grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr; gap: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-weight: 600; color: #64748b; font-size: 0.9rem; margin-bottom: 10px;">
-                            <div>Descrição / Pedido</div>
-                            <div>Data</div>
-                            <div>Status</div>
+                            style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-weight: 600; color: #64748b; font-size: 0.9rem; margin-bottom: 10px;">
+                            <div>Arte / Pedido</div>
+                            <div>Designer / PIX</div>
+                            <div>Status / Venc.</div>
                             <div style="text-align: right;">Valor</div>
-                            <div style="text-align: center;">Link</div>
+                            <div style="text-align: center;">Ações</div>
                         </div>
 
                         <ul class="history-list" id="lista-historico" style="list-style:none; padding:0;">
-                            <li style="text-align:center; padding:20px; color:#94a3b8;">Carregando extrato...</li>
+                            <li style="text-align:center; padding:20px; color:#94a3b8;">Carregando acertos...</li>
                         </ul>
-                    </div>
+                    </div>        </div>
                 </div>
             </main>
         </div>

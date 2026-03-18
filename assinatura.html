@@ -1,15 +1,111 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
     <meta charset="UTF-8">
-    <title>Findalizar Assinatura</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assinatura - Setor de Arte</title>
+    
+    <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
+    <link rel="stylesheet" href="/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        .subscription-container { max-width: 800px; margin: 0 auto; text-align: center; padding: 40px 20px; }
+        .pricing-card { background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); padding: 40px; margin-top: 30px; border: 2px solid transparent; transition: all 0.3s; position: relative; overflow: hidden; }
+        .pricing-card.active-sub { border-color: #27ae60; }
+        .pricing-header { margin-bottom: 30px; }
+        .pricing-title { color: #2c3e50; font-size: 1.5rem; font-weight: 700; margin-bottom: 10px; }
+        .pricing-price { font-size: 3.5rem; font-weight: 800; color: #2980b9; display: flex; align-items: center; justify-content: center; }
+        .pricing-price span.currency { font-size: 1.5rem; font-weight: 600; margin-top: -15px; margin-right: 5px; }
+        .pricing-price span.period { font-size: 1rem; color: #7f8c8d; font-weight: 500; margin-left: 5px; align-self: flex-end; margin-bottom: 15px; }
+        .pricing-features { text-align: left; margin: 30px 0; padding: 0; list-style: none; }
+        .pricing-features li { padding: 12px 0; color: #4a5568; font-size: 1rem; display: flex; align-items: center; border-bottom: 1px solid #f1f5f9; }
+        .pricing-features li i { color: #27ae60; margin-right: 15px; font-size: 1.1rem; }
+        .btn-subscribe { background: linear-gradient(135deg, #3498db, #2980b9); color: white; border: none; padding: 16px 30px; font-size: 1.1rem; font-weight: 600; border-radius: 50px; width: 100%; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3); }
+        .btn-subscribe:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4); }
+        .btn-subscribe:disabled { background: #bdc3c7; cursor: not-allowed; }
+        .status-badge { display: inline-block; padding: 8px 16px; border-radius: 50px; font-size: 0.9rem; font-weight: 600; margin-bottom: 20px; }
+        .status-active { background: #d1fae5; color: #065f46; }
+        .status-inactive { background: #fee2e2; color: #991b1b; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .ribbon { position: absolute; top: 25px; right: -35px; background: #27ae60; color: white; padding: 5px 40px; font-size: 0.8rem; font-weight: 700; transform: rotate(45deg); display: none; }
+        .pricing-card.active-sub .ribbon { display: block; }
+        #div-payment-area { display: none; margin-top: 30px; padding: 25px; background: #f8fafc; border-radius: 12px; border: 1px dashed #cbd5e1; }
+        #asaas-qrcode { max-width: 250px; margin: 20px auto; display: block; border-radius: 8px; }
+        .pix-copy-area { background: white; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; }
+        .pix-code { font-family: monospace; color: #64748b; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%; }
+    </style>
 </head>
-
 <body>
-    <h1>Página de Assinatura</h1>
-    <p>Em breve, o formulário de pagamento estará aqui.</p>
-    <a href="login.html">Voltar para o Login</a>
-</body>
+    <div class="app-layout-grid">
+        <div id="sidebar-placeholder"></div>
+        <div class="app-content-wrapper">
+            <div id="header-placeholder"></div>
+            <main class="app-content">
+                <div class="subscription-container">
+                    <h1 style="color: #2c3e50; font-weight: 800; font-size: 2rem;">Assinatura Mensal</h1>
+                    <p style="color: #7f8c8d;">Acesse todos os recursos da plataforma mediante pagamento de mensalidade, sem comissões por pedido.</p>
+                    <div class="pricing-card" id="card-assinatura">
+                        <div class="ribbon">ATIVA</div>
+                        <div id="status-container"><span class="status-badge status-inactive" id="badge-status">Inativa</span></div>
+                        <div class="pricing-header">
+                            <h2 class="pricing-title">Plano Profissional</h2>
+                            <div class="pricing-price"><span class="currency">R$</span><span id="valor-mensalidade">49,90</span><span class="period">/mês</span></div>
+                        </div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i> Sem taxas ou comissões adicionais</li>
+                            <li><i class="fas fa-check"></i> Acesso ilimitado à plataforma</li>
+                            <li><i class="fas fa-check"></i> Pagamentos diretos via PIX</li>
+                        </ul>
+                        <button class="btn-subscribe" id="btn-assinar" onclick="iniciarAssinatura()">Ativar Assinatura via PIX</button>
+                    </div>
+                    <div id="div-payment-area">
+                        <h3>Escaneie o QR Code</h3><img id="asaas-qrcode" src="" alt="QR Code PIX">
+                        <div class="pix-copy-area"><span class="pix-code" id="asaas-pix-copia-cola">Carregando...</span><button onclick="copiarPix()" style="background:none; border:none; color:#3498db; cursor:pointer;">Copiar</button></div>
+                        <p style="margin-top:20px;"><i class="fas fa-spinner fa-spin"></i> Aguardando confirmação...</p>
+                    </div>
+                </div>
+            </main>
+            <div id="footer-placeholder"></div>
+        </div>
+    </div>
+    <script src="/layout.js"></script><script src="/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', carregarStatusAssinatura);
+        async function carregarStatusAssinatura() {
+            const token = localStorage.getItem('sessionToken') || localStorage.getItem('designerToken');
+            const tipoUsuario = localStorage.getItem('userType') || (localStorage.getItem('designerToken') ? 'designer' : 'empresa');
+            const valorSpan = document.getElementById('valor-mensalidade');
+            valorSpan.innerText = tipoUsuario === 'designer' ? '29,90' : '49,90';
 
+            try {
+                const res = await fetch('/api/asaas/status', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token, tipo: tipoUsuario }) });
+                const data = await res.json();
+                const badge = document.getElementById('badge-status');
+                const btn = document.getElementById('btn-assinar');
+                const card = document.getElementById('card-assinatura');
+
+                if (data.status === 'ACTIVE') { card.classList.add('active-sub'); badge.className = 'status-badge status-active'; badge.innerText = 'Ativa'; btn.style.display = 'none'; }
+                else if (data.status === 'PENDING') { badge.className = 'status-badge status-pending'; badge.innerText = 'Pagamento Pendente'; }
+            } catch(e) {}
+        }
+        async function iniciarAssinatura() {
+            const token = localStorage.getItem('sessionToken') || localStorage.getItem('designerToken');
+            const tipoUsuario = localStorage.getItem('userType') || (localStorage.getItem('designerToken') ? 'designer' : 'empresa');
+            const btn = document.getElementById('btn-assinar');
+            btn.disabled = true; btn.innerText = 'Gerando...';
+            try {
+                const res = await fetch('/api/asaas/subscribe', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token, tipo: tipoUsuario }) });
+                const data = await res.json();
+                if(!res.ok) throw new Error(data.message);
+                document.getElementById('div-payment-area').style.display = 'block';
+                document.getElementById('asaas-qrcode').src = `data:image/png;base64,${data.pixUrl}`;
+                document.getElementById('asaas-pix-copia-cola').innerText = data.pixCode;
+                btn.style.display = 'none';
+            } catch(e) { alert(e.message); btn.disabled = false; btn.innerText = 'Ativar Assinatura via PIX'; }
+        }
+        function copiarPix() { navigator.clipboard.writeText(document.getElementById('asaas-pix-copia-cola').innerText); alert('Copiado!'); }
+    </script>
+</body>
 </html>

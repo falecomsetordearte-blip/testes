@@ -20,33 +20,22 @@ module.exports = async (req, res) => {
 
         const resultEmpresa = empresas[0];
 
-        // 2. CALCULAR TOTAIS VIA SQL (Raw Query)
-
-        // A) Saldo Em Produção: Soma dos pedidos na etapa 'ARTE'
-        const emProducaoResult = await prisma.$queryRawUnsafe(`
-            SELECT COALESCE(SUM(valor_designer), 0) as total 
-            FROM pedidos 
-            WHERE empresa_id = $1 AND etapa = 'ARTE'
+        // 2. CALCULAR TOTAIS NOVO MODELO (Acertos)
+        const totais = await prisma.$queryRawUnsafe(`
+            SELECT 
+                COALESCE(SUM(CASE WHEN status = 'PENDENTE' THEN valor ELSE 0 END), 0) as pendente,
+                COALESCE(SUM(CASE WHEN status = 'ATRASADO' THEN valor ELSE 0 END), 0) as atrasado,
+                COALESCE(SUM(CASE WHEN status = 'PAGO' AND EXTRACT(MONTH FROM pago_em) = EXTRACT(MONTH FROM NOW()) THEN valor ELSE 0 END), 0) as pago_mes
+            FROM acertos_contas 
+            WHERE empresa_id = $1
         `, resultEmpresa.id);
-
-        // B) Total Faturado/Gasto: Soma dos pedidos na etapa 'IMPRESSÃO'
-        const totalGastoResult = await prisma.$queryRawUnsafe(`
-            SELECT COALESCE(SUM(valor_designer), 0) as total 
-            FROM pedidos 
-            WHERE empresa_id = $1 AND etapa = 'IMPRESSÃO'
-        `, resultEmpresa.id);
-
-        // Conversão segura de BigInt/Decimal para Float
-        const emProducao = parseFloat(emProducaoResult[0]?.total || 0);
-        const totalGasto = parseFloat(totalGastoResult[0]?.total || 0);
-        const saldoDisponivel = parseFloat(resultEmpresa.saldo || 0);
 
         res.json({
-            saldo_disponivel: saldoDisponivel,
-            em_andamento: emProducao,
-            a_pagar: totalGasto,
+            saldo_pendente: parseFloat(totais[0].pendente || 0),
+            saldo_atrasado: parseFloat(totais[0].atrasado || 0),
+            pago_mes: parseFloat(totais[0].pago_mes || 0),
             credito_aprovado: resultEmpresa.credito_aprovado || false,
-            solicitacao_pendente: resultEmpresa.solicitacao_credito_pendente || false
+            assinatura_status: resultEmpresa.assinatura_status || 'INATIVO'
         });
 
     } catch (error) {

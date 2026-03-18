@@ -20,9 +20,9 @@ module.exports = async (req, res) => {
         if (designers.length === 0) return res.status(403).json({ message: 'Sessão inválida.' });
         const designerId = designers[0].designer_id;
 
-        // 2. Buscar o pedido (Valor Bruto)
+        // 2. Buscar o pedido
         const pedidos = await prisma.$queryRawUnsafe(`
-            SELECT id, valor_designer, titulo 
+            SELECT id, valor_designer, titulo, empresa_id 
             FROM pedidos 
             WHERE id = $1 AND designer_id = $2 AND etapa = 'ARTE'
         `, parseInt(pedidoId), designerId);
@@ -33,35 +33,34 @@ module.exports = async (req, res) => {
 
         const pedido = pedidos[0];
 
-        // --- CÁLCULO DA COMISSÃO (15%) ---
-        const valorBruto = parseFloat(pedido.valor_designer || 0);
-        const valorLiquido = valorBruto * 0.85; // Designer recebe 85%
+        const valorCobrado = parseFloat(pedido.valor_designer || 0);
 
-        // A) Creditar valor LÍQUIDO no saldo do Designer
+        // A) Gerar Acerto de Contas (Dívida da Gráfica)
+        await prisma.$executeRawUnsafe(`
+            INSERT INTO acertos_contas (empresa_id, designer_id, pedido_id, valor, status, criado_em)
+            VALUES ($1, $2, $3, $4, 'PENDENTE', NOW())
+        `, pedido.empresa_id, designerId, pedido.id, valorCobrado);
+
+        // B) Pontuação do Designer
         await prisma.$executeRawUnsafe(`
             UPDATE designers_financeiro 
-            SET saldo_disponivel = saldo_disponivel + $1,
-                aprovados = aprovados + 1,
-                pontuacao = pontuacao + 10 
-            WHERE designer_id = $2
-        `, valorLiquido, designerId);
+            SET pontuacao = pontuacao + 10 
+            WHERE designer_id = $1
+        `, designerId);
 
-        // B) Atualizar o Pedido
-        // Salvamos em 'valor_designer_pago' o que foi efetivamente transferido (o líquido)
-        // A coluna 'valor_designer' continua com o Bruto para o histórico da empresa
+        // C) Atualizar o Pedido
         await prisma.$executeRawUnsafe(`
             UPDATE pedidos 
             SET etapa = 'IMPRESSÃO', 
                 link_arquivo = $1, 
                 link_layout = $2,
-                valor_designer_pago = $3, 
                 updated_at = NOW() 
-            WHERE id = $4
-        `, linkImpressao, linkLayout, valorLiquido, parseInt(pedidoId));
+            WHERE id = $3
+        `, linkImpressao, linkLayout, parseInt(pedidoId));
 
         return res.status(200).json({
             success: true,
-            message: `Sucesso! R$ ${valorLiquido.toFixed(2).replace('.', ',')} creditados na sua conta (Já descontada taxa de 15%).`
+            message: `Sucesso! Arte entregue. O valor de R$ ${valorCobrado.toFixed(2).replace('.', ',')} foi registrado no seu Acerto de Contas.`
         });
 
     } catch (error) {

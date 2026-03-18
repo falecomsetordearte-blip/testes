@@ -24,9 +24,10 @@ module.exports = async (req, res) => {
         let usuario = null;
 
         const usuariosNovos = await prisma.$queryRawUnsafe(`
-            SELECT u.*, f.permissoes 
+            SELECT u.*, f.permissoes, df.assinatura_status 
             FROM painel_usuarios u
             LEFT JOIN painel_funcoes f ON u.funcao_id = f.id
+            LEFT JOIN designers_financeiro df ON df.designer_id = u.id
             WHERE u.email = $1 LIMIT 1
         `, email);
 
@@ -35,7 +36,7 @@ module.exports = async (req, res) => {
         } else {
             // Se não achou na nova, busca na ANTIGA (empresas)
             const empresasLegacy = await prisma.$queryRawUnsafe(`
-                SELECT * FROM empresas WHERE email = $1 LIMIT 1
+                SELECT *, assinatura_status FROM empresas WHERE email = $1 LIMIT 1
             `, email);
 
             if (empresasLegacy.length > 0) {
@@ -90,7 +91,8 @@ module.exports = async (req, res) => {
             token: newSessionToken,
             userName: usuario.nome || usuario.nome_fantasia || usuario.responsavel || email,
             permissoes: permissoesFinal,
-            tipoAcesso: isNovoUsuario ? 'NOVO' : 'LEGACY'
+            tipoAcesso: isNovoUsuario ? 'NOVO' : 'LEGACY',
+            assinaturaStatus: usuario.assinatura_status || 'INATIVO'
         });
 
     } catch (error) {

@@ -257,8 +257,8 @@
                 throw new Error(data.message);
             }
 
-            document.getElementById('designer-saldo-disponivel').textContent = formatarMoeda(data.designer.saldo);
-            document.getElementById('designer-saldo-pendente').textContent = formatarMoeda(data.designer.pendente);
+            document.getElementById('designer-faturamento-mes').textContent = formatarMoeda(data.designer.faturamento_mes);
+            document.getElementById('designer-acertos-pendentes').textContent = formatarMoeda(data.designer.acertos_pendentes);
             document.getElementById('designer-pedidos-ativos').textContent = data.meusPedidos.length;
             document.getElementById('count-meus').textContent = data.meusPedidos.length;
             document.getElementById('count-mercado').textContent = data.mercado.length;

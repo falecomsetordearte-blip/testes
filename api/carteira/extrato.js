@@ -27,75 +27,33 @@ module.exports = async (req, res) => {
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
 
-        // 3. Buscar Histórico Financeiro (SQL PURO)
-        const historico = await prisma.$queryRawUnsafe(`
-            SELECT * FROM historico_financeiro 
-            WHERE empresa_id = $1 
-            AND data >= $2 
-            AND data <= $3 
-            ORDER BY data DESC
+        // 3. Buscar Acertos (SQL)
+        // Precisamos do título da arte e chave pix do designer
+        const acertos = await prisma.$queryRawUnsafe(`
+            SELECT 
+                a.*, 
+                p.titulo as arte_titulo,
+                u.nome as designer_nome,
+                df.chave_pix as designer_pix
+            FROM acertos_contas a
+            JOIN pedidos p ON a.pedido_id = p.id
+            JOIN painel_usuarios u ON a.designer_id = u.id
+            JOIN designers_financeiro df ON df.designer_id = u.id
+            WHERE a.empresa_id = $1
+            AND a.criado_em >= $2 AND a.criado_em <= $3
+            ORDER BY a.criado_em DESC
         `, empresaLocal.id, start, end);
 
-        // 4. Buscar status atual dos pedidos relacionados
-        // Extrair IDs de pedidos (garantindo que sejam números)
-        const dealIds = historico
-            .map(h => parseInt(h.deal_id))
-            .filter(id => !isNaN(id) && id > 0);
-
-        const statusMap = {};
-
-        if (dealIds.length > 0) {
-            // Monta string para o IN (ex: "10, 12, 15")
-            const idsString = dealIds.join(',');
-
-            // Query segura injetando apenas números inteiros
-            const pedidosStatus = await prisma.$queryRawUnsafe(`
-                SELECT id, etapa FROM pedidos WHERE id IN (${idsString})
-            `);
-
-            pedidosStatus.forEach(p => statusMap[p.id] = p.etapa);
-        }
-
-        // 5. Processar e Filtrar
-        let extratoFormatado = historico.map(item => {
-            const dealId = parseInt(item.deal_id);
-            const etapaAtual = statusMap[dealId] || null;
-
-            let statusItem = 'CONCLUIDO';
-            if (item.tipo === 'SAIDA') {
-                if (etapaAtual === 'ARTE') statusItem = 'EM_PRODUCAO';
-                else if (etapaAtual === 'IMPRESSÃO') statusItem = 'FINALIZADO';
-                else statusItem = 'FINALIZADO';
-            }
-
-            let link = null;
-            if (item.metadados) {
-                try {
-                    const meta = typeof item.metadados === 'string' ? JSON.parse(item.metadados) : item.metadados;
-                    link = meta.link_atendimento;
-                } catch (e) { }
-            }
-
-            return {
-                id: item.id,
-                data: item.data,
-                deal_id: item.deal_id || '-',
-                descricao: item.descricao || item.titulo,
-                valor: parseFloat(item.valor || 0),
-                tipo: item.tipo,
-                status: statusItem,
-                link_atendimento: link || ''
-            };
-        });
-
-        // 6. Aplicar Filtro
-        if (statusFilter && statusFilter !== 'TODOS') {
-            extratoFormatado = extratoFormatado.filter(item => {
-                if (statusFilter === 'EM_PRODUCAO') return item.status === 'EM_PRODUCAO';
-                if (statusFilter === 'FINALIZADO') return item.status === 'FINALIZADO';
-                return true;
-            });
-        }
+        const extratoFormatado = acertos.map(a => ({
+            id: a.id,
+            data: a.criado_em,
+            descricao: a.arte_titulo || '-',
+            valor: parseFloat(a.valor || 0),
+            status: a.status,
+            designer: a.designer_nome,
+            pix: a.designer_pix,
+            pago_em: a.pago_em
+        }));
 
         res.status(200).json({ extrato: extratoFormatado });
 
