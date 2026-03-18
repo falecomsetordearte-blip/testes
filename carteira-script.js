@@ -133,7 +133,12 @@ window.toggleDetalhes = (id) => {
     }
 }
 
+window.abrirModal = (id) => document.getElementById(id).classList.add('active');
+window.fecharModal = (id) => document.getElementById(id).classList.remove('active');
+
 window.abrirModalPagamento = (ids, designer, pix, valor) => {
+    document.getElementById('modal-pag-titulo').innerText = `Anexar Comprovante - ${designer}`;
+    
     const corpo = `
         <div style="text-align:center; padding: 10px;">
             <p style="margin-bottom:15px; color:#444;">Transfira via <strong>PIX</strong> direto para o designer abaixo:</p>
@@ -153,11 +158,10 @@ window.abrirModalPagamento = (ids, designer, pix, valor) => {
     `;
     const rodape = `<button onclick="confirmarPagamentoMultiplo('${ids}')" id="btn-confirmar-pag" class="btn-submit btn-pay">MARCAR COMO PAGO</button>`;
     
-    if(window.abrirGaveta) {
-        window.abrirGaveta("Pagamento Direto", corpo, rodape);
-    } else {
-        alert(`Pague PIX para ${designer}: ${pix}\nValor: ${fmtMoeda(valor)}`);
-    }
+    document.getElementById('modal-pag-corpo').innerHTML = corpo;
+    document.getElementById('modal-pag-rodape').innerHTML = rodape;
+    
+    abrirModal('modal-pagamento');
 }
 
 async function confirmarPagamentoMultiplo(ids) {
