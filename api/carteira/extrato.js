@@ -10,16 +10,22 @@ module.exports = async (req, res) => {
     if (!sessionToken) return res.status(403).json({ message: 'Token ausente' });
 
     try {
-        // 1. AUTENTICAÇÃO NEON
-        const empresas = await prisma.$queryRawUnsafe(`
-            SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+        // 1. AUTENTICAÇÃO DUPLA (Empresa ou Provedor)
+        let empresas = await prisma.$queryRawUnsafe(`
+            SELECT empresa_id as id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1
         `, `%${sessionToken}%`);
+
+        if (empresas.length === 0) {
+            empresas = await prisma.$queryRawUnsafe(`
+                SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+            `, `%${sessionToken}%`);
+        }
 
         if (empresas.length === 0) {
             return res.status(403).json({ message: 'Sessão inválida.' });
         }
 
-        const empresaLocal = empresas[0];
+        const empresaId = empresas[0].id;
 
         // 2. Datas
         let start = dataInicio ? new Date(dataInicio) : new Date(new Date().setDate(new Date().getDate() - 30));
@@ -27,30 +33,30 @@ module.exports = async (req, res) => {
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
 
-        // 3. Buscar Acertos (SQL)
-        // Precisamos do título da arte e chave pix do designer
+        // 3. Buscar Acertos (SQL) - JOINs mais leves para não sumir dados
         const acertos = await prisma.$queryRawUnsafe(`
             SELECT 
                 a.*, 
                 p.titulo as arte_titulo,
-                u.nome as designer_nome,
+                df.nome as designer_nome_legacy,
+                u.nome as designer_nome_novo,
                 df.chave_pix as designer_pix
             FROM acertos_contas a
-            JOIN pedidos p ON a.pedido_id = p.id
-            JOIN painel_usuarios u ON a.designer_id = u.id
-            JOIN designers_financeiro df ON df.designer_id = u.id
+            LEFT JOIN pedidos p ON a.pedido_id = p.id
+            LEFT JOIN designers_financeiro df ON a.designer_id = df.designer_id
+            LEFT JOIN painel_usuarios u ON a.designer_id = u.id
             WHERE a.empresa_id = $1
             AND a.criado_em >= $2 AND a.criado_em <= $3
             ORDER BY a.criado_em DESC
-        `, empresaLocal.id, start, end);
+        `, empresaId, start, end);
 
         const extratoFormatado = acertos.map(a => ({
             id: a.id,
             data: a.criado_em,
-            descricao: a.arte_titulo || '-',
+            descricao: a.arte_titulo || 'Pedido #' + a.pedido_id,
             valor: parseFloat(a.valor || 0),
             status: a.status,
-            designer: a.designer_nome,
+            designer: a.designer_nome_novo || a.designer_nome_legacy || 'Designer #' + a.designer_id,
             pix: a.designer_pix,
             pago_em: a.pago_em
         }));
