@@ -14,6 +14,9 @@ module.exports = async (req, res) => {
         if (!sessionToken) return res.status(401).json({ message: 'Sessão inválida' });
 
         // 1. Identificar Empresa e validar se tem acesso ADMIN
+        let empresaId = null;
+        let isAdmin = false;
+
         const users = await prisma.$queryRawUnsafe(`
             SELECT u.empresa_id, f.permissoes 
             FROM painel_usuarios u
@@ -21,21 +24,28 @@ module.exports = async (req, res) => {
             WHERE u.session_tokens LIKE $1 LIMIT 1
         `, `%${sessionToken}%`);
 
-        if (users.length === 0) {
-            return res.status(403).json({ message: 'Acesso negado. Usuário não encontrado no novo painel.' });
+        if (users.length > 0) {
+            empresaId = users[0].empresa_id;
+            let permissoes = users[0].permissoes;
+            if (typeof permissoes === 'string') {
+                try { permissoes = JSON.parse(permissoes); } catch (e) { permissoes = []; }
+            }
+            if (Array.isArray(permissoes) && permissoes.includes('admin')) {
+                isAdmin = true;
+            }
+        } else {
+            const empresasLegacy = await prisma.$queryRawUnsafe(`
+                SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+            `, `%${sessionToken}%`);
+            if (empresasLegacy.length > 0) {
+                empresaId = empresasLegacy[0].id;
+                isAdmin = true; // Dono da empresa tem acesso ADMIN nativo
+            }
         }
 
-        const user = users[0];
-        let permissoes = user.permissoes;
-        if (typeof permissoes === 'string') {
-            try { permissoes = JSON.parse(permissoes); } catch (e) { permissoes = []; }
-        }
-
-        if (!Array.isArray(permissoes) || !permissoes.includes('admin')) {
+        if (!isAdmin || !empresaId) {
             return res.status(403).json({ message: 'Acesso negado. Requer permissão de administrador.' });
         }
-
-        const empresaId = user.empresa_id;
         const impHoras = parseInt(prazoImpressao) || 24;
         const acaHoras = parseInt(prazoAcabamento) || 24;
 
