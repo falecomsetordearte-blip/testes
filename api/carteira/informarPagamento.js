@@ -67,7 +67,7 @@ module.exports = async (req, res) => {
 
             await prisma.$executeRawUnsafe(`
                 UPDATE acertos_contas 
-                SET status = 'PAGO', 
+                SET status = 'AGUARDANDO_CONFIRMACAO', 
                     pago_em = NOW(), 
                     comprovante_url = $1 
                 WHERE id = ANY($2::int[]) AND empresa_id = $3

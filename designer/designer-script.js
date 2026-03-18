@@ -336,47 +336,91 @@
             const empId = `emp-${idx}`;
             return `
                 <div style="border-bottom: 1px solid #f1f5f9; margin-bottom: 5px; border-radius: 8px; overflow: hidden; background: #fff;">
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; padding: 15px; align-items: center; cursor:pointer;" onclick="toggleDetalhesEmpresa('${empId}')">
-                        <div style="font-weight:700; color:var(--text-main);"><i class="fas fa-chevron-right" id="icon-${empId}" style="margin-right:8px; transition:0.2s;"></i> ${grupo.nome}</div>
-                        <div style="font-size:0.8rem; color:var(--text-muted);">${grupo.itens.length} registro(s)</div>
-                        <div style="font-weight:700; color:var(--success); text-align:right;">${formatarMoeda(grupo.total)}</div>
-                        <div style="text-align:right; color:var(--primary-color); font-size:0.8rem;">Ver detalhes</div>
-                    </div>
-                    <div id="detalhes-${empId}" style="display:none; background: #f8fafc; padding: 10px 15px 10px 40px; border-top: 1px solid #edf2f7;">
-                        ${grupo.itens.map(item => {
-                            let statusHtml = `<span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">${item.status}</span>`;
-                            if(item.status === 'PAGO') statusHtml = `<span style="background:#d1fae5; color:#065f46; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">RECEBIDO</span>`;
-                            
-                            let linkDoc = item.comprovante_url ? `<a href="${item.comprovante_url}" target="_blank" title="Baixar Comprovante" style="color:var(--primary-color);"><i class="fas fa-file-invoice-dollar"></i></a>` : '-';
+                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1.2fr; gap: 10px; padding: 15px; align-items: center; cursor:pointer;" onclick="toggleDetalhesEmpresa('${empId}')">
+                            <div style="font-weight:700; color:var(--text-main);"><i class="fas fa-chevron-right" id="icon-${empId}" style="margin-right:8px; transition:0.2s;"></i> ${grupo.nome}</div>
+                            <div style="font-size:0.8rem; color:var(--text-muted);">${grupo.itens.length} registro(s)</div>
+                            <div style="font-weight:700; color:var(--success); text-align:right;">${formatarMoeda(grupo.total)}</div>
+                            <div style="text-align:right;" onclick="event.stopPropagation()">
+                                ${grupo.itens.some(i => i.comprovante_url) ? `<button onclick="baixarComprovantes('${empId}')" class="btn-outline-sm" title="Baixar todos"><i class="fas fa-download"></i></button>` : ''}
+                                <select onchange="atualizarStatusPagamentoDesigner('${empId}', this.value)" style="padding: 5px; border-radius: 6px; font-size: 0.75rem; border: 1px solid #ddd; outline:none; background:#fff;">
+                                    <option value="">Ações...</option>
+                                    <option value="PAGO">Confirmar Pago</option>
+                                    <option value="PENDENTE">Sinalizar Pendente</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="detalhes-${empId}" style="display:none; background: #f8fafc; padding: 10px 15px 10px 40px; border-top: 1px solid #edf2f7;">
+                            ${grupo.itens.map(item => {
+                                let statusHtml = `<span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">${item.status}</span>`;
+                                if(item.status === 'PAGO') statusHtml = `<span style="background:#d1fae5; color:#065f46; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">RECEBIDO</span>`;
+                                else if(item.status === 'AGUARDANDO_CONFIRMACAO') statusHtml = `<span style="background:#dcfce7; color:#16a34a; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">CONFIRMAR</span>`;
+                                
+                                let linkDoc = item.comprovante_url ? `<a href="${item.comprovante_url}" target="_blank" title="Baixar Comprovante" style="color:var(--primary-color);" class="btn-doc-${empId}"><i class="fas fa-file-invoice-dollar"></i></a>` : '-';
 
-                            return `
-                                <div style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr 0.5fr; gap: 10px; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; font-size:0.85rem; align-items: center;">
-                                    <div style="color:var(--text-muted); font-size:0.75rem;">${new Date(item.data).toLocaleDateString()}</div>
-                                    <div style="font-weight:500;">${item.descricao}</div>
-                                    <div>${statusHtml}</div>
-                                    <div style="font-weight:600; text-align:right;">${formatarMoeda(item.valor)}</div>
-                                    <div style="text-align:right;">${linkDoc}</div>
-                                </div>
-                            `;
-                        }).join('')}
+                                return `
+                                    <div style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr 0.5fr; gap: 10px; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; font-size:0.85rem; align-items: center;" data-id="${item.id}">
+                                        <div style="color:var(--text-muted); font-size:0.75rem;">${new Date(item.data).toLocaleDateString()}</div>
+                                        <div style="font-weight:500;">${item.descricao}</div>
+                                        <div>${statusHtml}</div>
+                                        <div style="font-weight:600; text-align:right;">${formatarMoeda(item.valor)}</div>
+                                        <div style="text-align:right;">${linkDoc}</div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
                     </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                ${renderizarControlesFiltro(statusFiltro)}
+                <div class="list-header" style="grid-template-columns: 2fr 1fr 1fr 1.2fr; margin-bottom: 10px; background:transparent;">
+                    <div>Empresa / Gráfica</div>
+                    <div>Registros</div>
+                    <div style="text-align:right;">Total Bruto</div>
+                    <div style="text-align:right;">Confirmação</div>
                 </div>
+                ${htmlGrupos}
             `;
-        }).join('');
+            
+            // Injetar os IDs no container de cada grupo para facilitar a API
+            Object.values(grupos).forEach((grupo, idx) => {
+                const empId = `emp-${idx}`;
+                const ids = grupo.itens.map(i => i.id).join(',');
+                const el = document.getElementById(`detalhes-${empId}`);
+                if(el) el.setAttribute('data-ids', ids);
+            });
+        }
 
-        container.innerHTML = `
-            ${renderizarControlesFiltro(statusFiltro)}
-            <div class="list-header" style="grid-template-columns: 2fr 1fr 1fr 1fr; margin-bottom: 10px; background:transparent;">
-                <div>Empresa / Gráfica</div>
-                <div>Registros</div>
-                <div style="text-align:right;">Total Bruto</div>
-                <div style="text-align:right;">Ação</div>
-            </div>
-            ${htmlGrupos}
-        `;
-    }
+        window.baixarComprovantes = (empId) => {
+            const links = document.querySelectorAll(`.btn-doc-${empId}`);
+            links.forEach(l => { if(l.href) window.open(l.href, '_blank'); });
+        }
 
-    function renderizarControlesFiltro(selecionado) {
+        window.atualizarStatusPagamentoDesigner = async (empId, status) => {
+            if(!status) return;
+            const det = document.getElementById(`detalhes-${empId}`);
+            const ids = det.getAttribute('data-ids');
+            
+            if(!confirm(`Deseja alterar o status destes pedidos para ${status}?`)) return;
+
+            try {
+                const res = await fetch('/api/designer/confirmarPagamento', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: sessionToken, acertoIds: ids, status })
+                });
+                if(res.ok) {
+                    alert("Status atualizado!");
+                    carregarHistoricoAcertos();
+                } else {
+                    const d = await res.json();
+                    alert("Erro: " + d.message);
+                }
+            } catch(e) { console.error(e); alert("Erro ao atualizar pagamento."); }
+        }
+
+        function renderizarControlesFiltro(selecionado) {
         return `
             <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px; background: #fff; padding: 15px; border-radius: 12px; box-shadow: var(--shadow-sm);">
                 <span style="font-weight:600; font-size:0.9rem; color:var(--secondary-color);">Filtrar Status:</span>

@@ -69,21 +69,29 @@ async function carregarAcertosGrafica() {
             const li = document.createElement('li');
             li.style.cssText = "border-bottom: 1px solid #f1f5f9; list-style: none;";
             
-            const temPendente = grupo.totalPendente > 0;
-            const statusGeral = temPendente ? 'PENDENTE' : 'PAGO';
-            let statusHtml = `<span class="badge-status badge-producao">${statusGeral}</span>`;
-            if(!temPendente) statusHtml = `<span class="badge-status badge-finalizado">PAGO</span>`;
+            const itensPendentes = grupo.itens.filter(i => i.status === 'PENDENTE');
+            const itensAguardando = grupo.itens.filter(i => i.status === 'AGUARDANDO_CONFIRMACAO');
+            const todosPagos = grupo.itens.every(i => i.status === 'PAGO');
 
-            let acaoHtml = '-';
-            if(temPendente) {
-                const idsPendenes = grupo.itens.filter(i => i.status !== 'PAGO').map(i => i.id).join(',');
-                acaoHtml = `<button onclick="abrirModalPagamento('${idsPendenes}', '${grupo.nome}', '${grupo.pix}', ${grupo.totalPendente})" class="btn-add-mini" style="background:#2ecc71; font-size:0.7rem;">PAGAR TUDO</button>`;
-            } else {
+            let bgStyle = "background: #fff;";
+            let statusHtml = "";
+            let acaoHtml = "-";
+
+            if (todosPagos) {
+                statusHtml = `<span class="badge-status badge-finalizado">PAGO</span>`;
                 acaoHtml = `<span style="color:#27ae60; font-size:0.75rem;"><i class="fas fa-check"></i> OK</span>`;
+            } else if (itensAguardando.length > 0 && itensPendentes.length === 0) {
+                bgStyle = "background: #dcfce7;"; // Verde claro
+                statusHtml = `<span class="badge-status" style="background:#16a34a; color:#fff;">AGUARDANDO DESIGNER</span>`;
+                acaoHtml = `<span style="font-size:0.7rem; color:#16a34a;">Aguardando...</span>`;
+            } else {
+                statusHtml = `<span class="badge-status badge-producao">PENDENTE</span>`;
+                const idsPendenes = grupo.itens.filter(i => i.status !== 'PAGO').map(i => i.id).join(',');
+                acaoHtml = `<button onclick="abrirModalPagamento('${idsPendenes}', '${grupo.nome}', '${grupo.pix}', ${grupo.totalPendente})" class="btn-add-mini" style="background:#2ecc71; font-size:0.7rem;">ANEXAR COMPROVANTE</button>`;
             }
 
             li.innerHTML = `
-                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 10px; padding: 15px 10px; align-items: center; cursor:pointer; background: #fff;" onclick="toggleDetalhes('${designerId}')">
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 10px; padding: 15px 10px; align-items: center; cursor:pointer; ${bgStyle}" onclick="toggleDetalhes('${designerId}')">
                     <div>
                         <div style="font-weight:700; color: #1e293b;"><i class="fas fa-chevron-right" id="icon-${designerId}" style="margin-right:8px; transition: 0.2s;"></i> ${grupo.nome}</div>
                         <div style="font-size:0.75rem; color:#888;">${grupo.itens.length} pedido(s) no período</div>
@@ -98,7 +106,11 @@ async function carregarAcertosGrafica() {
                         <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; font-size:0.85rem; align-items: center;">
                             <div><span style="font-weight:600;">#${item.id}</span> - ${item.descricao}</div>
                             <div style="color:#888;">${new Date(item.data).toLocaleDateString()}</div>
-                            <div><span class="badge-status ${item.status === 'PAGO' ? 'badge-finalizado' : 'badge-entrada'}" style="font-size:0.65rem;">${item.status}</span></div>
+                            <div>
+                                ${item.status === 'AGUARDANDO_CONFIRMACAO' 
+                                    ? `<span class="badge-status" style="background:#16a34a; color:#fff; font-size:0.6rem;">AGUARDANDO</span>` 
+                                    : `<span class="badge-status ${item.status === 'PAGO' ? 'badge-finalizado' : 'badge-entrada'}" style="font-size:0.65rem;">${item.status}</span>`}
+                            </div>
                             <div style="text-align:right; font-weight:600;">${fmtMoeda(item.valor)}</div>
                         </div>
                     `).join('')}
