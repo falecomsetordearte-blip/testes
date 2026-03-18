@@ -223,3 +223,13 @@ model AcertoContas {
 
   @@map("acertos_contas")
 }
+
+model AceiteTermo {
+  id           Int      @id @default(autoincrement())
+  usuario_id   Int
+  tipo_usuario String   // 'DESIGNER' ou 'EMPRESA'
+  versao       String   @default('v1.0')
+  aceito_em    DateTime @default(now())
+
+  @@map('aceite_termos')
+}
