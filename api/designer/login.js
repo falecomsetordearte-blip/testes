@@ -45,11 +45,11 @@ module.exports = async (req, res) => {
         // 3. Gera o token de sessão (JWT)
         const token = jwt.sign({ designerId: user.designer_id }, JWT_SECRET, { expiresIn: '7d' });
 
-        // 4. Salva o token na coluna session_tokens (Necessário para o seu getDashboard funcionar)
+        // 4. Salva o token na coluna session_tokens da tabela painel_usuarios
         await prisma.$executeRawUnsafe(`
-            UPDATE designers_financeiro 
+            UPDATE painel_usuarios 
             SET session_tokens = $1 
-            WHERE designer_id = $2
+            WHERE id = $2
         `, token, user.designer_id);
 
         // 5. Retorna sucesso para o Front-end

@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
         // 1. Identificar Designer (Agora puxando também a PONTUAÇÃO)
         // 1. Identificar Designer
         const designers = await prisma.$queryRawUnsafe(`
-            SELECT d.designer_id, u.nome, d.assinatura_status, d.pontuacao 
+            SELECT d.designer_id, u.nome, d.assinatura_status, d.pontuacao, d.nivel
             FROM designers_financeiro d
             JOIN painel_usuarios u ON u.id = d.designer_id
             WHERE u.session_tokens LIKE $1 LIMIT 1
