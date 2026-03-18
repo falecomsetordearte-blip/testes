@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel do Designer - Setor de Arte</title>
     <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
@@ -21,85 +23,474 @@
             --warning: #f59e0b;
             --danger: #ef4444;
             --border-radius: 16px;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
-        
-        .app-header { background-color: var(--card-bg); box-shadow: var(--shadow-sm); position: sticky; top: 0; z-index: 100; height: 80px; display: flex; align-items: center; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-        .app-logo { height: 50px; width: auto; }
-        .user-menu { display: flex; align-items: center; gap: 20px; }
-        #designer-greeting { font-weight: 600; color: var(--text-main); font-size: 0.95rem; }
-        #logout-button { background-color: #fee2e2; color: var(--danger); border: none; padding: 8px 20px; border-radius: 50px; font-weight: 600; cursor: pointer; transition: var(--transition); font-size: 0.9rem; }
-        #logout-button:hover { background-color: var(--danger); color: white; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-        .main-painel { padding: 40px 0; flex: 1; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; width: 100%; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
 
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin-bottom: 40px; }
-        .dash-card { background: var(--card-bg); border-radius: var(--border-radius); padding: 25px; box-shadow: var(--shadow-md); border: 1px solid rgba(255,255,255,0.5); }
-        .card-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .card-title { font-size: 0.9rem; color: var(--secondary-color); font-weight: 500; text-transform: uppercase; }
-        .card-icon { font-size: 1.2rem; padding: 10px; border-radius: 12px; }
-        .fa-wallet { color: var(--primary-color); background: #e0e7ff; }
-        .fa-hourglass-half { color: var(--warning); background: #fef3c7; }
-        .fa-tasks { color: var(--success); background: #d1fae5; }
-        .card-value { font-size: 2rem; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 20px; }
-        .card-button { display: block; background-color: var(--primary-color); color: white; padding: 10px; border-radius: 8px; font-weight: 500; text-align: center; transition: var(--transition); text-decoration: none; }
-        .card-button:hover { background-color: var(--primary-hover); }
+        .app-header {
+            background-color: var(--card-bg);
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            height: 80px;
+            display: flex;
+            align-items: center;
+        }
 
-        .user-stats-bar { display: flex; gap: 10px; align-items: center; margin-left: 15px; }
-        .stat-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
-        .lvl-1 { background: #fef08a; color: #b45309; border: 1px solid #fde047; }
-        .lvl-2 { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
-        .lvl-3 { background: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
-        .score-badge { background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
 
-        .tabs-component { background: var(--card-bg); border-radius: var(--border-radius); box-shadow: var(--shadow-md); overflow: hidden; }
-        .tab-buttons { display: flex; border-bottom: 1px solid #e2e8f0; padding: 0 20px; background: #fff; }
-        .tab-btn { background: none; border: none; padding: 20px 25px; font-family: 'Poppins', sans-serif; font-size: 0.95rem; font-weight: 500; color: var(--secondary-color); cursor: pointer; position: relative; display: flex; align-items: center; }
-        .tab-btn.active { color: var(--primary-color); font-weight: 600; }
-        .tab-btn.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background-color: var(--primary-color); }
-        .badge-tab { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; font-size: 0.7rem; font-weight: 700; margin-left: 8px; color: white; }
-        .bg-yellow { background-color: var(--warning); }
-        .bg-green { background-color: var(--success); }
+        .app-logo {
+            height: 50px;
+            width: auto;
+        }
 
-        .tab-content { padding: 20px; min-height: 300px; }
-        .tab-pane { display: none; }
-        .tab-pane.active { display: block; }
-        .list-header { display: grid; background-color: #f8fafc; padding: 15px; border-radius: 8px; font-weight: 600; font-size: 0.8rem; color: var(--secondary-color); margin-bottom: 10px; text-transform: uppercase; }
-        .list-item { display: grid; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; align-items: center; margin-bottom: 8px; }
-        .btn-action { background: var(--primary-color); color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
-        .btn-outline-sm { background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; margin-top: 5px; font-weight: 600; }
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
 
-        .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9998; opacity: 0; visibility: hidden; transition: var(--transition); backdrop-filter: blur(2px); }
-        .drawer-overlay.active { opacity: 1; visibility: visible; }
-        .drawer-panel { position: fixed; top: 0; right: -100%; width: 100%; max-width: 480px; height: 100%; background: white; z-index: 9999; transition: var(--transition); display: flex; flex-direction: column; box-shadow: -5px 0 25px rgba(0,0,0,0.15); }
-        .drawer-panel.active { right: 0; }
-        .drawer-header { padding: 25px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
-        .drawer-body { padding: 25px; flex: 1; overflow-y: auto; }
-        .drawer-footer { padding: 20px 25px; border-top: 1px solid #f1f5f9; display: flex; flex-direction: column; gap: 10px; }
-        
-        .drawer-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--secondary-color); display: block; margin-bottom: 8px; margin-top: 15px; letter-spacing: 0.5px; }
-        .briefing-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 18px; border-radius: 12px; font-size: 0.95rem; line-height: 1.6; color: var(--text-main); white-space: pre-wrap; }
-        .drawer-input { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-family: 'Poppins', sans-serif; font-size: 0.9rem; margin-bottom: 10px; }
-        .btn-full { width: 100%; padding: 16px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; font-family: 'Poppins', sans-serif; transition: 0.2s; font-size: 0.95rem; }
-        .btn-primary { background: var(--primary-color); color: white; }
-        .btn-primary:hover { background: var(--primary-hover); }
-        .btn-secondary { background: #f1f5f9; color: var(--secondary-color); }
+        #designer-greeting {
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 0.95rem;
+        }
+
+        #logout-button {
+            background-color: #fee2e2;
+            color: var(--danger);
+            border: none;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+
+        #logout-button:hover {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .main-painel {
+            padding: 40px 0;
+            flex: 1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            width: 100%;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .dash-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .card-icon {
+            font-size: 1.2rem;
+            padding: 10px;
+            border-radius: 12px;
+        }
+
+        .fa-wallet {
+            color: var(--primary-color);
+            background: #e0e7ff;
+        }
+
+        .fa-hourglass-half {
+            color: var(--warning);
+            background: #fef3c7;
+        }
+
+        .fa-tasks {
+            color: var(--success);
+            background: #d1fae5;
+        }
+
+        .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: block;
+            margin-bottom: 20px;
+        }
+
+        .card-button {
+            display: block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 500;
+            text-align: center;
+            transition: var(--transition);
+            text-decoration: none;
+        }
+
+        .card-button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .user-stats-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-left: 15px;
+        }
+
+        .stat-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .lvl-1 {
+            background: #fef08a;
+            color: #b45309;
+            border: 1px solid #fde047;
+        }
+
+        .lvl-2 {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .lvl-3 {
+            background: #ffedd5;
+            color: #9a3412;
+            border: 1px solid #fed7aa;
+        }
+
+        .score-badge {
+            background: #e0e7ff;
+            color: #4338ca;
+            border: 1px solid #c7d2fe;
+        }
+
+        .tabs-component {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0 20px;
+            background: #fff;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 20px 25px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--secondary-color);
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--primary-color);
+        }
+
+        .badge-tab {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-left: 8px;
+            color: white;
+        }
+
+        .bg-yellow {
+            background-color: var(--warning);
+        }
+
+        .bg-green {
+            background-color: var(--success);
+        }
+
+        .tab-content {
+            padding: 20px;
+            min-height: 300px;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .list-header {
+            display: grid;
+            background-color: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .list-item {
+            display: grid;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .btn-action {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 600;
+        }
+
+        .btn-outline-sm {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            color: #475569;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+
+        .drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9998;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+            backdrop-filter: blur(2px);
+        }
+
+        .drawer-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .drawer-panel {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            background: white;
+            z-index: 9999;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            box-shadow: -5px 0 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .drawer-panel.active {
+            right: 0;
+        }
+
+        .drawer-header {
+            padding: 25px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .drawer-body {
+            padding: 25px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .drawer-footer {
+            padding: 20px 25px;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .drawer-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--secondary-color);
+            display: block;
+            margin-bottom: 8px;
+            margin-top: 15px;
+            letter-spacing: 0.5px;
+        }
+
+        .briefing-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 18px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--text-main);
+            white-space: pre-wrap;
+        }
+
+        .drawer-input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .btn-full {
+            width: 100%;
+            padding: 16px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            transition: 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: var(--secondary-color);
+        }
 
         @media (max-width: 768px) {
-            .list-header { display: none; }
-            .list-item { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
-            .user-stats-bar { display: none; }
-            .drawer-panel { max-width: 100%; }
+            .list-header {
+                display: none;
+            }
+
+            .list-item {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+
+            .user-stats-bar {
+                display: none;
+            }
+
+            .drawer-panel {
+                max-width: 100%;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <header class="app-header">
@@ -107,7 +498,8 @@
             <img src="https://app.setordearte.com.br/images/logo-fundo-claro-100x100.png" alt="Logo" class="app-logo">
             <div class="user-menu">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 35px; height: 35px; background: #e0e7ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary-color);">
+                    <div
+                        style="width: 35px; height: 35px; background: #e0e7ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary-color);">
                         <i class="fas fa-user"></i>
                     </div>
                     <span id="designer-greeting">Olá, Designer</span>
@@ -116,7 +508,7 @@
             </div>
         </div>
     </header>
-    
+
     <main class="main-painel">
         <div class="container">
             <div style="margin-bottom: 30px;">
@@ -124,23 +516,27 @@
                     Visão Geral
                     <div class="user-stats-bar">
                         <span id="badge-nivel" class="stat-badge lvl-3"><i class="fas fa-medal"></i> Nível Bronze</span>
-                        <span class="stat-badge score-badge"><i class="fas fa-star"></i> <span id="val-pontos">0</span> pts</span>
+                        <span class="stat-badge score-badge"><i class="fas fa-star"></i> <span id="val-pontos">0</span>
+                            pts</span>
                     </div>
                 </h2>
             </div>
 
             <div class="dashboard-grid">
                 <div class="dash-card">
-                    <div class="card-header"><span class="card-title">Ganhos no Mês</span><i class="fas fa-wallet card-icon"></i></div>
-                    <span id="designer-ganhos-mes" class="card-value">R$ 0,00</span>
-                    <span style="font-size: 0.8rem; color: var(--text-muted);">Total aprovado pelos clientes neste mês.</span>
+                    <div class="card-header"><span class="card-title">Saldo Disponível</span><i
+                            class="fas fa-wallet card-icon"></i></div>
+                    <span id="designer-saldo-disponivel" class="card-value">R$ 0,00</span>
+                    <a href="solicitar-saque.html" class="card-button">Solicitar Saque</a>
                 </div>
                 <div class="dash-card">
-                    <div class="card-header"><span class="card-title">A Receber das Gráficas (Acertos)</span><i class="fas fa-hourglass-half card-icon"></i></div>
+                    <div class="card-header"><span class="card-title">Aguardando Depósito</span><i
+                            class="fas fa-hourglass-half card-icon"></i></div>
                     <span id="designer-saldo-pendente" class="card-value">R$ 0,00</span>
                 </div>
                 <div class="dash-card">
-                    <div class="card-header"><span class="card-title">Pedidos Ativos</span><i class="fas fa-tasks card-icon"></i></div>
+                    <div class="card-header"><span class="card-title">Pedidos Ativos</span><i
+                            class="fas fa-tasks card-icon"></i></div>
                     <span id="designer-pedidos-ativos" class="card-value">0</span>
                 </div>
             </div>
@@ -153,29 +549,35 @@
                     <button class="tab-btn" data-tab="mercado">
                         Mercado de Pedidos <span id="count-mercado" class="badge-tab bg-green">0</span>
                     </button>
-                    <button class="tab-btn" data-tab="acertos-recebimentos">Acertos e Recebimentos</button>
+                    <button class="tab-btn" data-tab="saques">Histórico</button>
                 </div>
-                
+
                 <div class="tab-content">
                     <div id="atendimentos" class="tab-pane active">
                         <div class="list-header" style="grid-template-columns: 0.5fr 3fr 1fr 1fr 1.2fr;">
-                            <div>ID</div><div>Pedido</div><div>Status</div><div>Oferta</div><div style="text-align: right;">Ações</div>
+                            <div>ID</div>
+                            <div>Pedido</div>
+                            <div>Status</div>
+                            <div>Oferta</div>
+                            <div style="text-align: right;">Ações</div>
                         </div>
                         <div id="atendimentos-list"></div>
                     </div>
 
                     <div id="mercado" class="tab-pane">
                         <div class="list-header" style="grid-template-columns: 0.5fr 3fr 1fr 1fr;">
-                            <div>ID</div><div>Descrição</div><div>Oferta</div><div style="text-align: right;">Ação</div>
+                            <div>ID</div>
+                            <div>Descrição</div>
+                            <div>Oferta</div>
+                            <div style="text-align: right;">Ação</div>
                         </div>
                         <div id="mercado-list"></div>
                     </div>
 
-                    <div id="acertos-recebimentos" class="tab-pane">
-                        <div class="list-header" style="grid-template-columns: 1fr 3fr 1fr 1fr 1fr;">
-                            <div>Data</div><div>Gráfica</div><div>Valor</div><div>Status</div><div style="text-align: right;">Comprovante</div>
+                    <div id="saques" class="tab-pane">
+                        <div id="saques-list">
+                            <p style="text-align:center; padding:20px; color:var(--text-muted);">Carregando...</p>
                         </div>
-                        <div id="acertos-list"><p style="text-align:center; padding:20px; color:var(--text-muted);">Carregando Acertos...</p></div>
                     </div>
                 </div>
             </div>
@@ -187,7 +589,8 @@
     <div class="drawer-panel" id="drawer-panel">
         <div class="drawer-header">
             <h3 id="drawer-title" style="margin:0; font-weight: 600;">Detalhes</h3>
-            <button onclick="fecharGaveta()" style="border:none; background:none; font-size:1.8rem; cursor:pointer;">&times;</button>
+            <button onclick="fecharGaveta()"
+                style="border:none; background:none; font-size:1.8rem; cursor:pointer;">&times;</button>
         </div>
         <div class="drawer-body" id="drawer-content"></div>
         <div class="drawer-footer" id="drawer-footer"></div>
@@ -206,4 +609,5 @@
         });
     </script>
 </body>
+
 </html>

@@ -1,15 +1,15 @@
 // /designer/designer-script.js - VERSÃO COMPLETA E ATUALIZADA
 
-(function() {
+(function () {
     const sessionToken = localStorage.getItem('designerToken');
     const path = window.location.pathname;
 
     const paginasPublicas = ['login.html', 'cadastro.html', 'esqueci-senha.html', 'redefinir-senha.html'];
     const ehPaginaPublica = paginasPublicas.some(pg => path.includes(pg));
 
-    if (!sessionToken && !ehPaginaPublica) { 
-        window.location.href = 'login.html'; 
-        return; 
+    if (!sessionToken && !ehPaginaPublica) {
+        window.location.href = 'login.html';
+        return;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -17,13 +17,13 @@
         if (document.querySelector('main.main-painel')) {
             carregarDashboardDesigner();
         }
-        
+
         // Configura o botão de logout padrão do painel
         const logoutBtn = document.getElementById('logout-button');
         if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => { 
-                localStorage.clear(); 
-                window.location.href = 'login.html'; 
+            logoutBtn.addEventListener('click', () => {
+                localStorage.clear();
+                window.location.href = 'login.html';
             });
         }
 
@@ -40,29 +40,29 @@
                 const senha = document.getElementById('senha').value;
                 const btnSubmit = loginForm.querySelector('button[type="submit"]');
                 const feedback = document.getElementById('form-error-feedback');
-                
-                btnSubmit.disabled = true; 
-                btnSubmit.textContent = 'Entrando...'; 
+
+                btnSubmit.disabled = true;
+                btnSubmit.textContent = 'Entrando...';
                 feedback.classList.add('hidden');
 
                 try {
                     const res = await fetch('/api/designer/login', {
-                        method: 'POST', 
+                        method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email, senha })
                     });
-                    
+
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.message || 'Erro ao fazer login.');
-                    
+
                     // Salva a sessão e redireciona
                     localStorage.setItem('designerToken', data.token);
                     localStorage.setItem('designerInfo', JSON.stringify({ name: data.nome, nivel: data.nivel }));
                     window.location.href = 'painel.html';
                 } catch (error) {
-                    feedback.textContent = error.message; 
+                    feedback.textContent = error.message;
                     feedback.classList.remove('hidden');
-                    btnSubmit.disabled = false; 
+                    btnSubmit.disabled = false;
                     btnSubmit.textContent = 'Entrar';
                 }
             });
@@ -77,10 +77,10 @@
                 const email = document.getElementById('email').value;
                 const senha = document.getElementById('senha').value;
                 const confirmarSenha = document.getElementById('confirmar-senha').value;
-                
+
                 const btnSubmit = cadastroForm.querySelector('button[type="submit"]');
                 const feedback = document.getElementById('form-error-feedback');
-                
+
                 feedback.classList.add('hidden');
 
                 if (senha !== confirmarSenha) {
@@ -89,19 +89,19 @@
                     return;
                 }
 
-                btnSubmit.disabled = true; 
-                btnSubmit.textContent = 'Cadastrando...'; 
+                btnSubmit.disabled = true;
+                btnSubmit.textContent = 'Cadastrando...';
 
                 try {
                     const res = await fetch('/api/designer/register', {
-                        method: 'POST', 
+                        method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ nome, email, senha })
                     });
-                    
+
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.message || 'Erro ao criar conta.');
-                    
+
                     if (data.token) {
                         localStorage.setItem('designerToken', data.token);
                         localStorage.setItem('designerInfo', JSON.stringify({ name: data.nome, nivel: data.nivel }));
@@ -111,9 +111,9 @@
                         window.abrirGaveta("Sucesso!", corpo, `<button onclick="window.location.href='login.html'" class="btn-full btn-primary">Fazer Login</button>`);
                     }
                 } catch (error) {
-                    feedback.textContent = error.message; 
+                    feedback.textContent = error.message;
                     feedback.classList.remove('hidden');
-                    btnSubmit.disabled = false; 
+                    btnSubmit.disabled = false;
                     btnSubmit.textContent = 'Cadastrar e Entrar';
                 }
             });
@@ -126,25 +126,25 @@
                 e.preventDefault();
                 const email = document.getElementById('email').value;
                 const btnSubmit = esqueciSenhaForm.querySelector('button[type="submit"]');
-                
-                btnSubmit.disabled = true; 
+
+                btnSubmit.disabled = true;
                 btnSubmit.textContent = 'Enviando link...';
 
                 try {
                     const res = await fetch('/api/designer/forgotPassword', {
-                        method: 'POST', 
+                        method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email })
                     });
-                    
+
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.message || 'Erro ao processar solicitação.');
-                    
+
                     const corpo = `<p style="color:var(--success); font-weight:600; text-align:center;">${data.message}</p>`;
                     window.abrirGaveta("E-mail Enviado!", corpo, `<button onclick="window.location.href='login.html'" class="btn-full btn-primary">Voltar ao Login</button>`);
                 } catch (error) {
                     window.mostrarErro(error.message);
-                    btnSubmit.disabled = false; 
+                    btnSubmit.disabled = false;
                     btnSubmit.textContent = 'Enviar Link de Recuperação';
                 }
             });
@@ -177,25 +177,25 @@
                     return;
                 }
 
-                btnSubmit.disabled = true; 
+                btnSubmit.disabled = true;
                 btnSubmit.textContent = 'Salvando...';
 
                 try {
                     const res = await fetch('/api/designer/resetPassword', {
-                        method: 'POST', 
+                        method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ token, novaSenha })
                     });
-                    
+
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.message || 'Erro ao redefinir senha.');
-                    
+
                     const corpo = `<p style="color:var(--success); font-weight:600; text-align:center;">${data.message}</p>`;
                     window.abrirGaveta("Senha Atualizada!", corpo, `<button onclick="window.location.href='login.html'" class="btn-full btn-primary">Ir para Login</button>`);
                 } catch (error) {
-                    feedback.textContent = error.message; 
+                    feedback.textContent = error.message;
                     feedback.classList.remove('hidden');
-                    btnSubmit.disabled = false; 
+                    btnSubmit.disabled = false;
                     btnSubmit.textContent = 'Salvar Nova Senha';
                 }
             });
@@ -205,19 +205,19 @@
     // =========================================================
     // FUNÇÕES GLOBAIS DA GAVETA (MODAL LATERAL)
     // =========================================================
-    
+
     window.fecharGaveta = () => {
         const overlay = document.getElementById('drawer-overlay');
         const panel = document.getElementById('drawer-panel');
-        if(overlay) overlay.classList.remove('active');
-        if(panel) panel.classList.remove('active');
+        if (overlay) overlay.classList.remove('active');
+        if (panel) panel.classList.remove('active');
     };
 
     window.abrirGaveta = (titulo, htmlCorpo, htmlRodape = '') => {
         document.getElementById('drawer-title').innerText = titulo;
         document.getElementById('drawer-content').innerHTML = htmlCorpo;
         document.getElementById('drawer-footer').innerHTML = htmlRodape;
-        
+
         document.getElementById('drawer-overlay').classList.add('active');
         document.getElementById('drawer-panel').classList.add('active');
     };
@@ -247,7 +247,7 @@
                 body: JSON.stringify({ token: sessionToken })
             });
             const data = await res.json();
-            
+
             if (!res.ok) {
                 if (res.status === 401 || res.status === 403) {
                     localStorage.clear();
@@ -257,7 +257,7 @@
                 throw new Error(data.message);
             }
 
-            document.getElementById('designer-ganhos-mes').textContent = formatarMoeda(data.designer.ganhosMes);
+            document.getElementById('designer-saldo-disponivel').textContent = formatarMoeda(data.designer.saldo);
             document.getElementById('designer-saldo-pendente').textContent = formatarMoeda(data.designer.pendente);
             document.getElementById('designer-pedidos-ativos').textContent = data.meusPedidos.length;
             document.getElementById('count-meus').textContent = data.meusPedidos.length;
@@ -266,21 +266,20 @@
             const badgeNivel = document.getElementById('badge-nivel');
             const niveis = { 1: { t: 'Ouro', c: 'lvl-1' }, 2: { t: 'Prata', c: 'lvl-2' }, 3: { t: 'Bronze', c: 'lvl-3' } };
             const n = niveis[data.designer.nivel] || niveis[3];
-            
+
             if (badgeNivel) {
                 badgeNivel.innerHTML = `<i class="fas fa-medal"></i> Nível ${n.t}`;
                 badgeNivel.className = `stat-badge ${n.c}`;
             }
-            
+
             const valPontos = document.getElementById('val-pontos');
             if (valPontos) valPontos.textContent = data.designer.pontuacao;
 
             renderizarMeusTrabalhos(data.meusPedidos);
             renderizarMercado(data.mercado);
-            renderizarAcertos(data.acertos);
 
-        } catch (error) { 
-            console.error(error); 
+        } catch (error) {
+            console.error(error);
             window.mostrarErro('Falha ao carregar os dados do painel.');
         }
     }
@@ -293,7 +292,7 @@
             container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhum atendimento ativo.</p>`;
             return;
         }
-        
+
         container.innerHTML = pedidos.map(p => `
             <div class="list-item" style="grid-template-columns: 0.5fr 3fr 1fr 1fr 1.2fr;">
                 <div style="color:var(--secondary-color);">#${p.id}</div>
@@ -312,14 +311,14 @@
     }
 
     function renderizarMercado(pedidos) {
-        const container = document.getElementById('mercado-list'); 
+        const container = document.getElementById('mercado-list');
         if (!container) return;
 
         if (pedidos.length === 0) {
             container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhum pedido disponível no momento.</p>`;
             return;
         }
-        
+
         container.innerHTML = pedidos.map(p => `
             <div class="list-item" style="grid-template-columns: 0.5fr 3fr 1fr 1fr;">
                 <div style="color:var(--secondary-color);">#${p.id}</div>
@@ -333,44 +332,6 @@
                 </div>
             </div>
         `).join('');
-    }
-
-    function renderizarAcertos(acertos) {
-        const container = document.getElementById('acertos-list');
-        if (!container) return;
-
-        if (!acertos || acertos.length === 0) {
-            container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhum histórico de recebimentos.</p>`;
-            return;
-        }
-
-        container.innerHTML = acertos.map(a => {
-            const dataStr = new Date(a.data).toLocaleDateString();
-            const badgeCor = a.status === 'PENDENTE' ? 'var(--warning)' : 'var(--success)';
-            let botaoAcao = '';
-
-            // Se a gráfica informou PAGO
-            if (a.status === 'PAGO_INFORMADO') {
-                botaoAcao = `<button onclick="confirmarRecebimento(${a.id})" class="btn-action" style="background:var(--success); font-size:0.75rem;">CONFIRMAR PIX</button>`;
-            } else if (a.status === 'PENDENTE') {
-                botaoAcao = `<span style="color:var(--text-muted); font-size:0.8rem;">Aguardando Gráfica</span>`;
-            } else if (a.status === 'PAGO') {
-                botaoAcao = `<span style="color:var(--success); font-weight:bold; font-size:0.8rem;"><i class="fas fa-check-circle"></i> Recebido</span>`;
-            }
-
-            return `
-            <div class="list-item" style="grid-template-columns: 1fr 3fr 1fr 1fr 1fr;">
-                <div style="color:var(--secondary-color); font-size:0.85rem;">${dataStr}</div>
-                <div style="font-weight:600;">${a.grafica}</div>
-                <div style="font-weight:700; color:var(--text-main);">${formatarMoeda(a.valor)}</div>
-                <div><span style="background:${badgeCor}; color:white; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">${a.status.replace('_', ' ')}</span></div>
-                <div style="text-align: right; display:flex; flex-direction:column; gap:5px; align-items:flex-end;">
-                    ${a.comprovante ? `<a href="${a.comprovante}" target="_blank" class="btn-outline-sm" style="text-decoration:none;"><i class="fas fa-receipt"></i> Ver Recibo</a>` : ''}
-                    ${botaoAcao}
-                </div>
-            </div>
-            `;
-        }).join('');
     }
 
     // =========================================================
@@ -394,7 +355,7 @@
             <button onclick="fecharGaveta()" class="btn-full btn-secondary">Cancelar</button>
         `;
         window.abrirGaveta("Confirmar Atendimento", corpo, rodape);
-        
+
         document.getElementById('btn-exec-assumir').onclick = async () => {
             const btn = document.getElementById('btn-exec-assumir');
             btn.disabled = true;
@@ -407,11 +368,11 @@
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message);
-                
+
                 fecharGaveta();
                 carregarDashboardDesigner();
-                
-            } catch (e) { 
+
+            } catch (e) {
                 fecharGaveta();
                 setTimeout(() => window.mostrarErro(e.message), 300);
             }
@@ -434,8 +395,8 @@
         document.getElementById('btn-exec-finalizar').onclick = async () => {
             const linkLayout = document.getElementById('f-layout').value.trim();
             const linkImpressao = document.getElementById('f-impressao').value.trim();
-            
-            if(!linkLayout || !linkImpressao) {
+
+            if (!linkLayout || !linkImpressao) {
                 alert("Por favor, preencha os dois links.");
                 return;
             }
@@ -451,7 +412,7 @@
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message || "Não foi possível finalizar.");
-                
+
                 fecharGaveta();
                 setTimeout(() => {
                     const corpoSucesso = `<p style="color:var(--success); font-weight:600; font-size: 1.1rem; text-align:center;">${data.message}</p>`;
@@ -459,38 +420,7 @@
                     carregarDashboardDesigner();
                 }, 300);
 
-            } catch (e) { 
-                fecharGaveta();
-                setTimeout(() => window.mostrarErro(e.message), 300);
-            }
-        };
-    };
-
-    window.confirmarRecebimento = (acertoId) => {
-        const corpo = `<p style="font-size:1rem; color:var(--text-main); line-height:1.5;">Você confirma que recebeu este PIX em sua conta bancária?</p>`;
-        const rodape = `
-            <button id="btn-exec-confirmar-pix" class="btn-full btn-primary" style="background:var(--success);">SIM, RECEBI</button>
-            <button onclick="fecharGaveta()" class="btn-full btn-secondary">Ainda não recebi</button>
-        `;
-        window.abrirGaveta("Confirmar Recebimento", corpo, rodape);
-        
-        document.getElementById('btn-exec-confirmar-pix').onclick = async () => {
-            const btn = document.getElementById('btn-exec-confirmar-pix');
-            btn.disabled = true;
-            btn.textContent = 'Aguarde...';
-
-            try {
-                const res = await fetch('/api/designer/confirmarRecebimento', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: sessionToken, acertoId: acertoId })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message);
-                
-                fecharGaveta();
-                carregarDashboardDesigner();
-                
-            } catch (e) { 
+            } catch (e) {
                 fecharGaveta();
                 setTimeout(() => window.mostrarErro(e.message), 300);
             }
@@ -501,10 +431,10 @@
     // UTILITÁRIOS & MINI CHAT
     // =========================================================
 
-    function formatarMoeda(valor) { 
-        return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor || 0); 
+    function formatarMoeda(valor) {
+        return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor || 0);
     }
-    
+
     window.b64EncodeUnicode = (str) => {
         return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1)));
     };
@@ -553,14 +483,14 @@
                     body: JSON.stringify({ action: 'get', pedidoId: pedidoId })
                 });
                 const data = await res.json();
-                
+
                 if (res.ok && data.mensagens.length !== totalMensagensCache) {
                     totalMensagensCache = data.mensagens.length;
                     container.innerHTML = data.mensagens.map(m => `
                         <div class="chat-bubble ${m.lado === 'in' ? 'chat-in' : 'chat-out'}">
                             <span class="chat-sender">${m.remetente}</span>
                             ${m.texto}
-                            <span class="chat-time">${new Date(m.hora * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            <span class="chat-time">${new Date(m.hora * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
                     `).join('');
                     container.scrollTop = container.scrollHeight;

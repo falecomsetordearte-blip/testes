@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    
+
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido' });
 
@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
         let usuario = null;
 
         const usuariosNovos = await prisma.$queryRawUnsafe(`
-            SELECT u.*, f.permissoes, u.assinatura_status 
+            SELECT u.*, f.permissoes 
             FROM painel_usuarios u
             LEFT JOIN painel_funcoes f ON u.funcao_id = f.id
             WHERE u.email = $1 LIMIT 1
@@ -35,9 +35,9 @@ module.exports = async (req, res) => {
         } else {
             // Se não achou na nova, busca na ANTIGA (empresas)
             const empresasLegacy = await prisma.$queryRawUnsafe(`
-                SELECT *, assinatura_status FROM empresas WHERE email = $1 LIMIT 1
+                SELECT * FROM empresas WHERE email = $1 LIMIT 1
             `, email);
-            
+
             if (empresasLegacy.length > 0) {
                 isNovoUsuario = false;
                 usuario = empresasLegacy[0];
@@ -54,7 +54,7 @@ module.exports = async (req, res) => {
             const novoHash = await bcrypt.hash('123456', 10);
             const tabela = isNovoUsuario ? 'painel_usuarios' : 'empresas';
             await prisma.$executeRawUnsafe(`UPDATE ${tabela} SET ${isNovoUsuario ? 'senha_hash' : 'senha'} = $1 WHERE id = $2`, novoHash, usuario.id);
-            if (isNovoUsuario) usuario.senha_hash = novoHash; else usuario.senha = novoHash; 
+            if (isNovoUsuario) usuario.senha_hash = novoHash; else usuario.senha = novoHash;
         }
 
         const passToCompare = isNovoUsuario ? usuario.senha_hash : usuario.senha;
@@ -81,17 +81,16 @@ module.exports = async (req, res) => {
 
         let permissoesFinal = null;
         if (usuario.permissoes) {
-            permissoesFinal = typeof usuario.permissoes === 'string' 
-                ? JSON.parse(usuario.permissoes) 
+            permissoesFinal = typeof usuario.permissoes === 'string'
+                ? JSON.parse(usuario.permissoes)
                 : usuario.permissoes;
         }
 
-        return res.status(200).json({ 
-            token: newSessionToken, 
+        return res.status(200).json({
+            token: newSessionToken,
             userName: usuario.nome || usuario.nome_fantasia || usuario.responsavel || email,
             permissoes: permissoesFinal,
-            tipoAcesso: isNovoUsuario ? 'NOVO' : 'LEGACY',
-            assinaturaStatus: usuario.assinatura_status || 'INATIVO'
+            tipoAcesso: isNovoUsuario ? 'NOVO' : 'LEGACY'
         });
 
     } catch (error) {

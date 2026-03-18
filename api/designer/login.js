@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    
+
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido.' });
 
@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
 
         // 1. Busca o usuário no Neon
         const users = await prisma.$queryRawUnsafe(`
-            SELECT designer_id, nome, senha_hash, nivel, assinatura_status 
+            SELECT designer_id, nome, senha_hash, nivel 
             FROM designers_financeiro 
             WHERE email = $1 LIMIT 1
         `, email);
@@ -57,8 +57,7 @@ module.exports = async (req, res) => {
             message: 'Login realizado com sucesso!',
             token: token,
             nome: user.nome,
-            nivel: user.nivel || 3,
-            assinaturaStatus: user.assinatura_status || 'INATIVO'
+            nivel: user.nivel || 3
         });
 
     } catch (error) {

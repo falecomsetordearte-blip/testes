@@ -25,11 +25,6 @@ model DesignerFinanceiro {
   chave_pix           String?
   pontuacao           Int       @default(0)
 
-  // Asaas
-  asaas_customer_id     String?
-  asaas_subscription_id String?
-  assinatura_status     String?   @default("INATIVO")
-
   @@map("designers_financeiro")
 }
 
@@ -55,11 +50,6 @@ model Empresa {
   solicitacao_credito_pendente Boolean  @default(false)
   dados_analise_credito        Json?    // Salva o formulário de solicitação
 
-  // Asaas
-  asaas_customer_id            String?
-  asaas_subscription_id        String?
-  assinatura_status            String?  @default("INATIVO")
-
   // Relacionamentos
   historico_financeiro         HistoricoFinanceiro[]
   produtos                     Produto[] // <--- ADICIONADO: Relação com produtos
@@ -68,6 +58,7 @@ model Empresa {
   funcoes                      Funcao[]
   usuarios                     Usuario[]
   configuracao_sistema         ConfiguracaoSistema?
+  acertos_contas               AcertoContas[]
 
   @@map("empresas")
 }
@@ -203,19 +194,7 @@ model ConfiguracaoSistema {
   empresa                 Empresa  @relation(fields: [empresa_id], references: [id])
   
   @@map("painel_configuracoes_sistema")
-}
-
-// ---------------------------------------------------------
-// MODELO DE ACERTO DE CONTAS (SAAS)
-// ---------------------------------------------------------
-
-model AcertoContas {
-  id              Int      @id @default(autoincrement())
-  empresa_id      Int      
-  designer_id     Int
-  pedido_id       Int      // ID do pedido que gerou a cobrança
-  valor           Decimal  @db.Decimal(10, 2)
-  status          String   @default("PENDENTE") // PENDENTE, PAGO
+} status          String   @default("PENDENTE") // PENDENTE, PAGO
   comprovante_url String?  @db.Text
   criado_em       DateTime @default(now())
   pago_em         DateTime?
