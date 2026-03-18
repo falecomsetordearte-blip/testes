@@ -277,10 +277,68 @@
 
             renderizarMeusTrabalhos(data.meusPedidos);
             renderizarMercado(data.mercado);
+            carregarHistoricoAcertos();
 
         } catch (error) {
             console.error(error);
             window.mostrarErro('Falha ao carregar os dados do painel.');
+        }
+    }
+
+    async function carregarHistoricoAcertos() {
+        const container = document.getElementById('saques-list');
+        if (!container) return;
+
+        try {
+            const res = await fetch('/api/designer/getAcertos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: sessionToken })
+            });
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.message);
+
+            if (data.acertos.length === 0) {
+                container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhum acerto registrado.</p>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="list-header" style="grid-template-columns: 1fr 2fr 1fr 1fr 1fr; margin-bottom: 10px;">
+                    <div>Data</div>
+                    <div>Pedido / Empresa</div>
+                    <div>Status</div>
+                    <div style="text-align:right;">Valor</div>
+                    <div style="text-align:right;">Comprovante</div>
+                </div>
+                ${data.acertos.map(a => {
+                    let statusHtml = `<span style="background:#fef3c7; color:#b45309; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">${a.status}</span>`;
+                    if(a.status === 'PAGO') statusHtml = `<span style="background:#d1fae5; color:#065f46; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">RECEBIDO</span>`;
+
+                    let docHtml = '-';
+                    if (a.comprovante_url) {
+                        docHtml = `<a href="${a.comprovante_url}" target="_blank" class="btn-outline-sm" style="text-decoration:none; display:inline-block;"><i class="fas fa-download"></i> BAIXAR</a>`;
+                    }
+
+                    return `
+                        <div class="list-item" style="grid-template-columns: 1fr 2fr 1fr 1fr 1fr;">
+                            <div style="color:var(--secondary-color); font-size:0.85rem;">${new Date(a.data).toLocaleDateString()}</div>
+                            <div>
+                                <div style="font-weight:600;">${a.descricao}</div>
+                                <div style="font-size:0.75rem; color:var(--text-muted);">${a.empresa}</div>
+                            </div>
+                            <div>${statusHtml}</div>
+                            <div style="font-weight:700; color:var(--success); text-align:right;">${formatarMoeda(a.valor)}</div>
+                            <div style="text-align:right;">${docHtml}</div>
+                        </div>
+                    `;
+                }).join('')}
+            `;
+
+        } catch (error) {
+            console.error(error);
+            container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--danger);">Erro ao carregar histórico.</p>`;
         }
     }
 
