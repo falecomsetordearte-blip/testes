@@ -48,9 +48,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         const pagePath = currentPage.replace(/\/$/, "");
         
         const sessionToken = localStorage.getItem("sessionToken");
-        const userName = localStorage.getItem("userName");
+        const userName = localStorage.getItem("userName") || 'Usuário';
 
-        if (!sessionToken || !userName) {
+        if (!sessionToken) {
             if (document.querySelector(".app-layout-grid")) {
                 window.location.href = "/login.html";
             }
