@@ -299,46 +299,105 @@
 
             if (!res.ok) throw new Error(data.message);
 
-            if (data.acertos.length === 0) {
-                container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhum acerto registrado.</p>`;
-                return;
-            }
-
-            container.innerHTML = `
-                <div class="list-header" style="grid-template-columns: 1fr 2fr 1fr 1fr 1fr; margin-bottom: 10px;">
-                    <div>Data</div>
-                    <div>Pedido / Empresa</div>
-                    <div>Status</div>
-                    <div style="text-align:right;">Valor</div>
-                    <div style="text-align:right;">Comprovante</div>
-                </div>
-                ${data.acertos.map(a => {
-                    let statusHtml = `<span style="background:#fef3c7; color:#b45309; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">${a.status}</span>`;
-                    if(a.status === 'PAGO') statusHtml = `<span style="background:#d1fae5; color:#065f46; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">RECEBIDO</span>`;
-
-                    let docHtml = '-';
-                    if (a.comprovante_url) {
-                        docHtml = `<a href="${a.comprovante_url}" target="_blank" class="btn-outline-sm" style="text-decoration:none; display:inline-block;"><i class="fas fa-download"></i> BAIXAR</a>`;
-                    }
-
-                    return `
-                        <div class="list-item" style="grid-template-columns: 1fr 2fr 1fr 1fr 1fr;">
-                            <div style="color:var(--secondary-color); font-size:0.85rem;">${new Date(a.data).toLocaleDateString()}</div>
-                            <div>
-                                <div style="font-weight:600;">${a.descricao}</div>
-                                <div style="font-size:0.75rem; color:var(--text-muted);">${a.empresa}</div>
-                            </div>
-                            <div>${statusHtml}</div>
-                            <div style="font-weight:700; color:var(--success); text-align:right;">${formatarMoeda(a.valor)}</div>
-                            <div style="text-align:right;">${docHtml}</div>
-                        </div>
-                    `;
-                }).join('')}
-            `;
+            window.acertosCache = data.acertos; // Cache para filtro
+            renderizarHistoricoFiltrado('TODOS');
 
         } catch (error) {
             console.error(error);
             container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--danger);">Erro ao carregar histórico.</p>`;
+        }
+    }
+
+    window.renderizarHistoricoFiltrado = (statusFiltro) => {
+        const container = document.getElementById('saques-list');
+        const acertos = window.acertosCache || [];
+        
+        const filtrados = statusFiltro === 'TODOS' ? acertos : acertos.filter(a => a.status === statusFiltro);
+
+        if (filtrados.length === 0) {
+            container.innerHTML = `
+                ${renderizarControlesFiltro(statusFiltro)}
+                <p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhum acerto encontrado para este filtro.</p>
+            `;
+            return;
+        }
+
+        // Agrupar por Empresa
+        const grupos = {};
+        filtrados.forEach(a => {
+            if (!grupos[a.empresa]) {
+                grupos[a.empresa] = { nome: a.empresa, total: 0, itens: [] };
+            }
+            grupos[a.empresa].itens.push(a);
+            grupos[a.empresa].total += a.valor;
+        });
+
+        const htmlGrupos = Object.values(grupos).map((grupo, idx) => {
+            const empId = `emp-${idx}`;
+            return `
+                <div style="border-bottom: 1px solid #f1f5f9; margin-bottom: 5px; border-radius: 8px; overflow: hidden; background: #fff;">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; padding: 15px; align-items: center; cursor:pointer;" onclick="toggleDetalhesEmpresa('${empId}')">
+                        <div style="font-weight:700; color:var(--text-main);"><i class="fas fa-chevron-right" id="icon-${empId}" style="margin-right:8px; transition:0.2s;"></i> ${grupo.nome}</div>
+                        <div style="font-size:0.8rem; color:var(--text-muted);">${grupo.itens.length} registro(s)</div>
+                        <div style="font-weight:700; color:var(--success); text-align:right;">${formatarMoeda(grupo.total)}</div>
+                        <div style="text-align:right; color:var(--primary-color); font-size:0.8rem;">Ver detalhes</div>
+                    </div>
+                    <div id="detalhes-${empId}" style="display:none; background: #f8fafc; padding: 10px 15px 10px 40px; border-top: 1px solid #edf2f7;">
+                        ${grupo.itens.map(item => {
+                            let statusHtml = `<span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">${item.status}</span>`;
+                            if(item.status === 'PAGO') statusHtml = `<span style="background:#d1fae5; color:#065f46; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">RECEBIDO</span>`;
+                            
+                            let linkDoc = item.comprovante_url ? `<a href="${item.comprovante_url}" target="_blank" title="Baixar Comprovante" style="color:var(--primary-color);"><i class="fas fa-file-invoice-dollar"></i></a>` : '-';
+
+                            return `
+                                <div style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr 0.5fr; gap: 10px; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; font-size:0.85rem; align-items: center;">
+                                    <div style="color:var(--text-muted); font-size:0.75rem;">${new Date(item.data).toLocaleDateString()}</div>
+                                    <div style="font-weight:500;">${item.descricao}</div>
+                                    <div>${statusHtml}</div>
+                                    <div style="font-weight:600; text-align:right;">${formatarMoeda(item.valor)}</div>
+                                    <div style="text-align:right;">${linkDoc}</div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = `
+            ${renderizarControlesFiltro(statusFiltro)}
+            <div class="list-header" style="grid-template-columns: 2fr 1fr 1fr 1fr; margin-bottom: 10px; background:transparent;">
+                <div>Empresa / Gráfica</div>
+                <div>Registros</div>
+                <div style="text-align:right;">Total Bruto</div>
+                <div style="text-align:right;">Ação</div>
+            </div>
+            ${htmlGrupos}
+        `;
+    }
+
+    function renderizarControlesFiltro(selecionado) {
+        return `
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px; background: #fff; padding: 15px; border-radius: 12px; box-shadow: var(--shadow-sm);">
+                <span style="font-weight:600; font-size:0.9rem; color:var(--secondary-color);">Filtrar Status:</span>
+                <select onchange="renderizarHistoricoFiltrado(this.value)" style="padding: 8px 15px; border-radius: 8px; border: 1px solid #e2e8f0; font-family: 'Poppins'; outline:none; cursor:pointer;">
+                    <option value="TODOS" ${selecionado === 'TODOS' ? 'selected' : ''}>Todos os Registros</option>
+                    <option value="PENDENTE" ${selecionado === 'PENDENTE' ? 'selected' : ''}>Pendentes de Recebimento</option>
+                    <option value="PAGO" ${selecionado === 'PAGO' ? 'selected' : ''}>Recebidos (Confirmados)</option>
+                </select>
+            </div>
+        `;
+    }
+
+    window.toggleDetalhesEmpresa = (id) => {
+        const el = document.getElementById(`detalhes-${id}`);
+        const icon = document.getElementById(`icon-${id}`);
+        if (el.style.display === 'none') {
+            el.style.display = 'block';
+            icon.style.transform = 'rotate(90deg)';
+        } else {
+            el.style.display = 'none';
+            icon.style.transform = 'rotate(0deg)';
         }
     }
 
