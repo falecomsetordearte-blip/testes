@@ -122,6 +122,60 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
 
         checkAceiteTermos('EMPRESA', sessionToken);
+        checkTrialStatus('EMPRESA', sessionToken);
+    }
+
+    // --- SISTEMA DE TRIAL (PERÍODO DE TESTE) ---
+    async function checkTrialStatus(type, token) {
+        if (!token) return;
+        try {
+            const res = await fetch('/api/auth/trial-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, type })
+            });
+            const data = await res.json();
+            
+            if (res.ok) {
+                if (data.is_trial) {
+                    if (data.expirado) {
+                        mostrarBloqueioTrial(type);
+                    } else {
+                        mostrarBannerTrial(data.dias_restantes);
+                    }
+                }
+            }
+        } catch (e) { console.error("Erro trial check:", e); }
+    }
+
+    function mostrarBannerTrial(dias) {
+        const cor = dias <= 3 ? 'linear-gradient(90deg, #ef4444, #f87171)' : 'linear-gradient(90deg, #4f46e5, #6366f1)';
+        const msg = dias === 0 ? "Último dia de teste grátis!" : `Você tem ${dias} dias de teste grátis. Aproveite!`;
+        
+        const bannerHtml = `
+            <div id="trial-banner" style="background:${cor}; color:white; padding:12px; text-align:center; font-size:0.9rem; font-weight:600; font-family:'Poppins', sans-serif; position:relative; z-index:9999; display:flex; align-items:center; justify-content:center; gap:20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+                <span style="display:flex; align-items:center; gap:8px;"><i class="fas fa-rocket"></i> ${msg}</span>
+                <button onclick="window.location.href='/assinatura.html'" style="background:white; color:#1e293b; border:none; padding:6px 18px; border-radius:8px; font-weight:800; cursor:pointer; font-size:0.8rem; transition:0.3s; box-shadow:0 4px 6px rgba(0,0,0,0.1);">ASSINAR AGORA</button>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('afterbegin', bannerHtml);
+    }
+
+    function mostrarBloqueioTrial(type) {
+        const modalHtml = `
+            <div id="modal-bloqueio-trial" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.95); z-index:200000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(10px);">
+                <div style="background:white; width:90%; max-width:500px; padding:45px; border-radius:30px; text-align:center; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
+                    <div style="font-size:4.5rem; background: linear-gradient(135deg, #f43f5e, #fb7185); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom:25px;"><i class="fas fa-hourglass-end"></i></div>
+                    <h2 style="color:#1e293b; margin-bottom:15px; font-family:'Poppins', sans-serif; font-weight:800;">O tempo de teste acabou!</h2>
+                    <p style="color:#64748b; margin-bottom:35px; line-height:1.7; font-family:'Poppins', sans-serif; font-size:1.05rem;">
+                        Seu período de 13 dias de experiência gratuita chegou ao fim. Para continuar usando todas as ferramentas do <strong>Setor de Arte</strong>, escolha seu plano agora.
+                    </p>
+                    <button onclick="window.location.href='/assinatura.html'" style="background:#4f46e5; color:white; border:none; padding:18px 30px; border-radius:16px; font-weight:800; cursor:pointer; font-size:1.15rem; width:100%; font-family:'Poppins', sans-serif; transition:0.4s; box-shadow:0 12px 20px -5px rgba(79,70,229,0.4); text-transform:uppercase; letter-spacing:0.5px;">Ativar Minha Conta</button>
+                    <p style="margin-top:25px; font-size:0.9rem; color:#94a3b8; font-family:'Poppins', sans-serif;">Planos flexíveis a partir de <strong>R$ 49,90/mês</strong>.</p>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
     }
 
     async function checkAceiteTermos(type, token) {
