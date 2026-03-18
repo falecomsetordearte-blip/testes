@@ -640,59 +640,95 @@
             <div class="chat-container" id="chat-msgs-container">
                 <p style="text-align:center; color:#888; margin-top: 20px;"><i class="fas fa-spinner fa-spin"></i> Conectando...</p>
             </div>
-            <div class="chat-input-row">
+            <div id="chat-file-preview" style="display:none; padding:10px; background:#f1f5f9; border-radius:8px; margin-top:10px; font-size:0.8rem; display:flex; justify-content:space-between; align-items:center;">
+                <span id="chat-file-name" style="color:var(--primary-color); font-weight:600;"></span>
+                <button onclick="document.getElementById('chat-file-input').value=''; document.getElementById('chat-file-preview').style.setProperty('display', 'none', 'important');" style="border:none; background:none; color:red; cursor:pointer;">&times;</button>
+            </div>
+            <div class="chat-input-row" style="position:relative;">
+                <input type="file" id="chat-file-input" style="display:none;" onchange="const f=this.files[0]; if(f){ document.getElementById('chat-file-name').innerText=f.name; document.getElementById('chat-file-preview').style.setProperty('display', 'flex', 'important'); }">
+                <button onclick="document.getElementById('chat-file-input').click()" class="btn-action" style="padding: 10px 15px; background:#64748b; font-size: 1.1rem; border-radius: 8px;" title="Anexar Arquivo"><i class="fas fa-paperclip"></i></button>
                 <input type="text" id="chat-texto-input" class="drawer-input" style="margin:0; flex:1;" placeholder="Escreva..." autocomplete="off">
                 <button id="btn-enviar-chat" class="btn-action" style="padding: 14px 20px; font-size: 1.2rem; border-radius: 8px;"><i class="fas fa-paper-plane"></i></button>
             </div>
         `;
-        window.abrirGaveta(`Atendimento: ${pedidoTitulo}`, corpo, "");
+        window.abrirGaveta(`Atendimento: ${pedidoId} - ${pedidoTitulo}`, corpo, "");
 
         const container = document.getElementById('chat-msgs-container');
         const input = document.getElementById('chat-texto-input');
         const btnEnviar = document.getElementById('btn-enviar-chat');
+        const fileInput = document.getElementById('chat-file-input');
         let totalMensagensCache = 0;
 
         const carregarMensagens = async () => {
             try {
+                const fd = new FormData();
+                fd.append('action', 'get');
+                fd.append('pedidoId', pedidoId);
+
                 const res = await fetch('/api/designer/chat', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'get', pedidoId: pedidoId })
+                    body: fd
                 });
                 const data = await res.json();
 
                 if (res.ok && data.mensagens.length !== totalMensagensCache) {
                     totalMensagensCache = data.mensagens.length;
-                    container.innerHTML = data.mensagens.map(m => `
-                        <div class="chat-bubble ${m.lado === 'in' ? 'chat-in' : 'chat-out'}">
-                            <span class="chat-sender">${m.remetente}</span>
-                            ${m.texto}
-                            <span class="chat-time">${new Date(m.hora * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                    `).join('');
+                    container.innerHTML = data.mensagens.map(m => {
+                        let msgHtml = m.texto;
+                        if (m.type === 'image' && m.file) {
+                            msgHtml = `<img src="${m.file.link}" style="max-width:100%; border-radius:8px; cursor:pointer; margin-bottom:5px;" onclick="window.open('${m.file.link}', '_blank')"><br><small>${m.texto}</small>`;
+                        } else if ((m.type === 'audio' || m.type === 'voice') && m.file) {
+                            msgHtml = `<audio src="${m.file.link}" controls style="max-width:100%; height:32px;"></audio><br><small>${m.texto}</small>`;
+                        } else if (m.type === 'video' && m.file) {
+                            msgHtml = `<video src="${m.file.link}" controls style="max-width:100%; border-radius:8px;"></video><br><small>${m.texto}</small>`;
+                        } else if (m.file) {
+                            msgHtml = `<div style="background:rgba(0,0,0,0.05); padding:10px; border-radius:8px; display:flex; align-items:center; gap:10px;">
+                                <i class="fas fa-file-alt" style="font-size:1.2rem;"></i>
+                                <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.75rem;">${m.file.name}</div>
+                                <a href="${m.file.link}" target="_blank" style="color:var(--primary-color);"><i class="fas fa-download"></i></a>
+                            </div><small>${m.texto}</small>`;
+                        }
+
+                        return `
+                            <div class="chat-bubble ${m.lado === 'in' ? 'chat-in' : 'chat-out'}">
+                                <span class="chat-sender">${m.remetente}</span>
+                                ${msgHtml}
+                                <span class="chat-time">${new Date(m.hora * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                        `;
+                    }).join('');
                     container.scrollTop = container.scrollHeight;
                 } else if (!res.ok) {
                     clearInterval(window.chatInterval);
                     container.innerHTML = `<p style="text-align:center; color:#c0392b;">${data.message || 'Erro ao carregar chat.'}</p>`;
                 }
             } catch (err) {
+                console.error(err);
                 clearInterval(window.chatInterval);
-                container.innerHTML = `<p style="text-align:center; color:#c0392b;">Erro de conexão.</p>`;
             }
         };
 
         const enviarMensagem = async () => {
             const texto = input.value;
-            if (!texto.trim()) return;
+            const arquivo = fileInput.files[0];
+            if (!texto.trim() && !arquivo) return;
 
             btnEnviar.disabled = true; input.disabled = true;
             try {
+                const fd = new FormData();
+                fd.append('action', 'send');
+                fd.append('pedidoId', pedidoId);
+                if (texto) fd.append('texto', texto);
+                if (arquivo) fd.append('file', arquivo);
+
                 await fetch('/api/designer/chat', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'send', pedidoId: pedidoId, texto: texto })
+                    body: fd
                 });
+                
                 input.value = '';
+                fileInput.value = '';
+                document.getElementById('chat-file-preview').style.setProperty('display', 'none', 'important');
                 await carregarMensagens();
             } catch (err) {
                 alert('Não foi possível enviar a mensagem.');
