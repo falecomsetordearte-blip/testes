@@ -10,15 +10,26 @@ module.exports = async (req, res) => {
     if (!sessionToken) return res.status(403).json({ message: 'Token ausente' });
 
     try {
-        // 1. Auth no Neon
-        const empresas = await prisma.$queryRawUnsafe(`
-            SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+        // 1. Auth no Neon (Checa nas duas tabelas)
+        let empresaId = null;
+        const users = await prisma.$queryRawUnsafe(`
+            SELECT empresa_id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1
         `, `%${sessionToken}%`);
 
-        if (empresas.length === 0) {
+        if (users.length > 0) {
+            empresaId = users[0].empresa_id;
+        } else {
+            const empresasLegacy = await prisma.$queryRawUnsafe(`
+                SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+            `, `%${sessionToken}%`);
+            if (empresasLegacy.length > 0) {
+                empresaId = empresasLegacy[0].id;
+            }
+        }
+
+        if (!empresaId) {
             return res.status(403).json({ message: 'Sessão inválida' });
         }
-        const empresaId = empresas[0].id;
 
         // 2. Buscar Pedidos no Neon
         // CORREÇÃO: Agora filtramos EXATAMENTE pela etapa 'ARTE'.

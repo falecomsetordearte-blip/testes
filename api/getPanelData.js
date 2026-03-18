@@ -18,19 +18,33 @@ module.exports = async (req, res) => {
         }
 
         // 1. Identificar a Empresa pelo Token (busca segura com LIKE)
-        const empresas = await prisma.$queryRawUnsafe(`
-            SELECT id, nome_fantasia, responsavel, saldo 
-            FROM empresas 
-            WHERE session_tokens LIKE $1 
-            LIMIT 1
+        let empresaId = null;
+        let saldoDaEmpresa = 0;
+
+        const users = await prisma.$queryRawUnsafe(`
+            SELECT u.empresa_id, e.saldo 
+            FROM painel_usuarios u
+            JOIN empresas e ON u.empresa_id = e.id
+            WHERE u.session_tokens LIKE $1 LIMIT 1
         `, `%${sessionToken}%`);
 
-        if (empresas.length === 0) {
-            return res.status(401).json({ message: 'Sessão inválida ou expirada.' });
+        if(users.length > 0) {
+            empresaId = users[0].empresa_id;
+            saldoDaEmpresa = parseFloat(users[0].saldo || 0);
+        } else {
+            const empresasLegacy = await prisma.$queryRawUnsafe(`
+                SELECT id, saldo FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+            `, `%${sessionToken}%`);
+            
+            if (empresasLegacy.length > 0) {
+                empresaId = empresasLegacy[0].id;
+                saldoDaEmpresa = parseFloat(empresasLegacy[0].saldo || 0);
+            }
         }
 
-        const empresa = empresas[0];
-        const saldoDaEmpresa = parseFloat(empresa.saldo || 0);
+        if (!empresaId) {
+            return res.status(401).json({ message: 'Sessão inválida ou expirada.' });
+        }
 
         // 2. Buscar os Pedidos dessa Empresa no Neon
         // Usamos o empresa_id para filtrar apenas os pedidos DESSE cliente
