@@ -79,10 +79,17 @@ module.exports = async (req, res) => {
             await prisma.$executeRawUnsafe(`UPDATE empresas SET session_tokens = $1 WHERE id = $2`, updatedTokens, usuario.id);
         }
 
+        let permissoesFinal = null;
+        if (usuario.permissoes) {
+            permissoesFinal = typeof usuario.permissoes === 'string' 
+                ? JSON.parse(usuario.permissoes) 
+                : usuario.permissoes;
+        }
+
         return res.status(200).json({ 
             token: newSessionToken, 
             userName: usuario.nome || usuario.nome_fantasia || usuario.responsavel || email,
-            permissoes: usuario.permissoes ? JSON.parse(usuario.permissoes) : null,
+            permissoes: permissoesFinal,
             tipoAcesso: isNovoUsuario ? 'NOVO' : 'LEGACY'
         });
 
