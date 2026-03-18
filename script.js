@@ -7,7 +7,9 @@
 async function handleAuthError(response) {
     if (response.status === 401 || response.status === 403) {
         console.warn("Sessão expirada ou inválida.");
-        localStorage.clear();
+        localStorage.removeItem('sessionToken');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userPermissoes');
         window.location.href = "login.html";
         return true;
     }
@@ -67,6 +69,11 @@ function initializeAuthPages() {
                 
                 localStorage.setItem('sessionToken', data.token);
                 localStorage.setItem('userName', data.userName);
+                if (data.permissoes) {
+                    localStorage.setItem('userPermissoes', JSON.stringify(data.permissoes));
+                } else {
+                    localStorage.removeItem('userPermissoes');
+                }
                 
                 // >>> ALTERAÇÃO AQUI: Redireciona para Dashboard (Visão Geral)
                 window.location.href = 'dashboard.html'; 
