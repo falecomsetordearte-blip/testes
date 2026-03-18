@@ -46,17 +46,46 @@ module.exports = async (req, res) => {
 
         const pedidos = await prisma.$queryRawUnsafe(querySql, ...queryParams);
 
-        const dealsFormatados = pedidos.map(p => ({
-            ID: p.id,
-            TITLE: p.titulo || String(p.id),
-            STAGE_ID: p.etapa,
-            'UF_CRM_1757756651931': p.status_impressao || '2659',
-            'UF_CRM_1741273407628': p.nome_cliente,
-            'UF_CRM_1749481565243': p.whatsapp_cliente,
-            'UF_CRM_1748277308731': p.link_arquivo_impressao || '', // Mapeado a coluna correta do BD
-            'UF_CRM_1757794109': p.data_entrega,
-            'UF_CRM_1738249371': p.briefing_completo
-        }));
+        const dealsFormatados = [];
+        
+        let prazoPadraoImpressao = null;
+
+        for (const p of pedidos) {
+            let dataEntregaAtual = p.data_entrega;
+
+            // Se o pedido CAIU na Impressão e AINDA NÃO TEM PRAZO, injetamos agora!
+            if (!dataEntregaAtual) {
+                // Busca a config apenas uma vez se precisar
+                if (prazoPadraoImpressao === null) {
+                    const configs = await prisma.$queryRawUnsafe(`
+                        SELECT prazo_padrao_impressao FROM painel_configuracoes_sistema WHERE empresa_id = $1 LIMIT 1
+                    `, empresaId);
+                    prazoPadraoImpressao = configs.length > 0 ? (configs[0].prazo_padrao_impressao || 24) : 24;
+                }
+
+                // Calcula: NOW() + prazoPadraoImpressao horas
+                const agora = new Date();
+                agora.setHours(agora.getHours() + parseInt(prazoPadraoImpressao));
+                dataEntregaAtual = agora;
+
+                // Atualiza no banco silenciosamente
+                await prisma.$executeRawUnsafe(`
+                    UPDATE pedidos SET data_entrega = $1 WHERE id = $2
+                `, dataEntregaAtual, p.id);
+            }
+
+            dealsFormatados.push({
+                ID: p.id,
+                TITLE: p.titulo || String(p.id),
+                STAGE_ID: p.etapa,
+                'UF_CRM_1757756651931': p.status_impressao || '2659',
+                'UF_CRM_1741273407628': p.nome_cliente,
+                'UF_CRM_1749481565243': p.whatsapp_cliente,
+                'UF_CRM_1748277308731': p.link_arquivo_impressao || '',
+                'UF_CRM_1757794109': dataEntregaAtual, // Retorna a nova data para o front
+                'UF_CRM_1738249371': p.briefing_completo
+            });
+        }
 
         return res.status(200).json({ deals: dealsFormatados, localCompanyId: empresaId });
     } catch (error) {

@@ -75,7 +75,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             "/instalacao-loja/painel.html": "instalacao_loja",
             "/instalacao/painel.html": "instalacao_ext",
             "/expedicao/index.html": "expedicao",
-            "/admin-equipe.html": "admin"
+            "/admin-equipe.html": "admin",
+            "/admin-configuracoes.html": "admin"
         };
         
         // BLOQUEIO DE PÁGINA:

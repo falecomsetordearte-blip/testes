@@ -103,7 +103,8 @@
             .status-sem-data .kanban-card { border-left-color: #95a5a6; }
 
             .card-id { font-size: 0.75rem; color: var(--text-light); font-weight: 600; margin-bottom: 5px; }
-            .card-client-name { font-size: 1rem; font-weight: 600; color: var(--text-dark); margin-bottom: 12px; line-height: 1.4; }
+            .card-client-name { font-size: 1rem; font-weight: 600; color: var(--text-dark); margin-bottom: 8px; line-height: 1.4; }
+            .card-deadline-tag { display: inline-block; background-color: #f4f6f9; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; color: var(--text-light); margin-bottom: 10px; }
             
             .btn-detalhes-visual { 
                 width: 100%; background: #f4f6f9; border: 1px solid #e1e1e1; padding: 8px; 
@@ -261,10 +262,18 @@
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
             const displayId = deal.TITLE ? `#${deal.TITLE}` : `#${deal.ID}`;
 
+            let prazoTagHtml = '';
+            const prazoFinalStr = deal[PRAZO_FINAL_FIELD];
+            if (prazoFinalStr) {
+                const dataFormatada = new Date(prazoFinalStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                prazoTagHtml = `<div class="card-deadline-tag"><i class="far fa-clock"></i> ${dataFormatada}</div>`;
+            }
+
             return `
                 <div class="kanban-card" data-deal-id-card="${deal.ID}">
                     <div class="card-id">${displayId}</div>
                     <div class="card-client-name">${nomeCliente}</div>
+                    ${prazoTagHtml}
                     <div class="btn-detalhes-visual">
                         <i class="fa-solid fa-eye"></i> Detalhes
                     </div>

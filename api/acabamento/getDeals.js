@@ -54,16 +54,42 @@ module.exports = async (req, res) => {
         const pedidos = await prisma.$queryRawUnsafe(querySql, ...queryParams);
 
         // 3. Mapear para chaves do Bitrix (Compatibilidade com acabamento-script.js)
-        const deals = pedidos.map(p => ({
-            ID: p.id,
-            TITLE: p.titulo || String(p.id),
-            STAGE_ID: p.etapa,
-            'UF_CRM_1741273407628': p.nome_cliente,
-            'UF_CRM_1749481565243': p.whatsapp_cliente,
-            'UF_CRM_1727464924690': '', // Medidas
-            'UF_CRM_1757794109': p.data_entrega, // Prazo Final
-            'UF_CRM_1738249371': p.briefing_completo
-        }));
+        const deals = [];
+        
+        let prazoPadraoAcabamento = null;
+
+        for (const p of pedidos) {
+            let dataEntregaAtual = p.data_entrega;
+
+            // Se o pedido CAIU no Acabamento e AINDA NÃO TEM PRAZO, injetamos agora!
+            if (!dataEntregaAtual) {
+                if (prazoPadraoAcabamento === null) {
+                    const configs = await prisma.$queryRawUnsafe(`
+                        SELECT prazo_padrao_acabamento FROM painel_configuracoes_sistema WHERE empresa_id = $1 LIMIT 1
+                    `, empresaId);
+                    prazoPadraoAcabamento = configs.length > 0 ? (configs[0].prazo_padrao_acabamento || 24) : 24;
+                }
+
+                const agora = new Date();
+                agora.setHours(agora.getHours() + parseInt(prazoPadraoAcabamento));
+                dataEntregaAtual = agora;
+
+                await prisma.$executeRawUnsafe(`
+                    UPDATE pedidos SET data_entrega = $1 WHERE id = $2
+                `, dataEntregaAtual, p.id);
+            }
+
+            deals.push({
+                ID: p.id,
+                TITLE: p.titulo || String(p.id),
+                STAGE_ID: p.etapa,
+                'UF_CRM_1741273407628': p.nome_cliente,
+                'UF_CRM_1749481565243': p.whatsapp_cliente,
+                'UF_CRM_1727464924690': '', // Medidas
+                'UF_CRM_1757794109': dataEntregaAtual, // Prazo Final
+                'UF_CRM_1738249371': p.briefing_completo
+            });
+        }
 
         return res.status(200).json({ 
             deals: deals,
