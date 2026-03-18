@@ -11,12 +11,23 @@ module.exports = async (req, res) => {
 
     try {
         const { sessionToken, impressoraFilter, materialFilter } = req.body;
-        const empresas = await prisma.$queryRawUnsafe(`
-            SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+        let empresaId = null;
+        const users = await prisma.$queryRawUnsafe(`
+            SELECT empresa_id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1
         `, `%${sessionToken}%`);
 
-        if (empresas.length === 0) return res.status(401).json({ message: 'Sessão inválida.' });
-        const empresaId = empresas[0].id;
+        if (users.length > 0) {
+            empresaId = users[0].empresa_id;
+        } else {
+            const empresasLegacy = await prisma.$queryRawUnsafe(`
+                SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+            `, `%${sessionToken}%`);
+            if (empresasLegacy.length > 0) {
+                empresaId = empresasLegacy[0].id;
+            }
+        }
+
+        if (!empresaId) return res.status(401).json({ message: 'Sessão inválida.' });
 
         // Query com campos específicos corrigida para ler link_arquivo_impressao
         let querySql = `

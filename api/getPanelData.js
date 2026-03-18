@@ -54,7 +54,7 @@ module.exports = async (req, res) => {
             WHERE empresa_id = $1
             ORDER BY id DESC
             LIMIT 20
-        `, empresa.id);
+        `, empresaId);
 
         // 3. Formatar para o Frontend
         const pedidosFormatados = pedidosRaw.map(p => ({
