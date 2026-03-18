@@ -348,7 +348,7 @@
         const banner = `
             <div id="trial-banner" style="background:${cor}; color:white; padding:12px; text-align:center; font-size:0.85rem; font-weight:600; font-family:'Poppins', sans-serif; position:relative; z-index:9999; display:flex; align-items:center; justify-content:center; gap:15px;">
                 <span>Você tem ${dias} dias de teste grátis. Aproveite!</span>
-                <button onclick="window.location.href='/assinatura.html'" style="background:white; color:#4f46e5; border:none; padding:5px 12px; border-radius:6px; font-weight:700; cursor:pointer; font-size:0.75rem;">ASSINAR R$ 29,90</button>
+                <button onclick="window.location.href='/designer/assinatura.html'" style="background:white; color:#4f46e5; border:none; padding:5px 12px; border-radius:6px; font-weight:700; cursor:pointer; font-size:0.75rem;">ASSINAR R$ 29,90</button>
             </div>
         `;
         document.body.insertAdjacentHTML('afterbegin', banner);
@@ -360,7 +360,7 @@
                 <div style="background:white; width:90%; max-width:480px; padding:40px; border-radius:24px; text-align:center;">
                     <h2 style="font-family:'Poppins', sans-serif; font-weight:800;">Teste Expirado</h2>
                     <p style="color:#64748b; margin-bottom:30px;">Seu período de teste acabou. Assine para continuar!</p>
-                    <button onclick="window.location.href='/assinatura.html'" style="background:#4f46e5; color:white; border:none; padding:18px; border-radius:12px; font-weight:700; cursor:pointer; width:100%;">ASSINAR AGORA - R$ 29,90</button>
+                    <button onclick="window.location.href='/designer/assinatura.html'" style="background:#4f46e5; color:white; border:none; padding:18px; border-radius:12px; font-weight:700; cursor:pointer; width:100%;">ASSINAR AGORA - R$ 29,90</button>
                 </div>
             </div>
         `;
