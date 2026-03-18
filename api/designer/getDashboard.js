@@ -5,10 +5,12 @@ const prisma = new PrismaClient();
 module.exports = async (req, res) => {
     try {
         const { token } = req.body;
+        console.log('[DEBUG getDashboard] Token recebido:', token ? `${token.substring(0, 10)}...` : 'NUL');
+        
         if (!token) return res.status(401).json({ message: 'Token não fornecido.' });
 
-        // 1. Identificar Designer (Agora puxando também a PONTUAÇÃO)
         // 1. Identificar Designer
+        console.log('[DEBUG getDashboard] Buscando designer no banco...');
         const designers = await prisma.$queryRawUnsafe(`
             SELECT d.designer_id, u.nome, d.assinatura_status, d.pontuacao, d.nivel
             FROM designers_financeiro d
@@ -16,7 +18,14 @@ module.exports = async (req, res) => {
             WHERE u.session_tokens LIKE $1 LIMIT 1
         `, `%${token}%`);
 
-        if (designers.length === 0) return res.status(403).json({ message: 'Sessão inválida.' });
+        console.log('[DEBUG getDashboard] Resultado da busca:', designers.length > 0 ? `Encontrado: ${designers[0].nome}` : 'NÃO ENCONTRADO');
+
+        if (designers.length === 0) {
+            // Log extra para ver o que tem na tabela painel_usuarios para esse token
+            const debugUser = await prisma.$queryRawUnsafe(`SELECT id, nome, email, session_tokens FROM painel_usuarios WHERE session_tokens LIKE $1`, `%${token}%`);
+            console.log('[DEBUG getDashboard] Busca direta em painel_usuarios:', debugUser.length > 0 ? 'Encontrou na painel_usuarios!' : 'Não encontrou nem na painel_usuarios');
+            return res.status(403).json({ message: 'Sessão inválida.' });
+        }
         const designer = designers[0];
 
         // 2. Buscar Pedidos ATIVOS (Meus Atendimentos)
