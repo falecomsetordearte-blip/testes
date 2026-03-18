@@ -70,57 +70,45 @@
                 <div class="container">
                     
                     <div style="margin-bottom: 1.5rem;">
-                        <h2 style="margin:0; color: #2d3748;"><i class="fa-solid fa-wallet" style="color: #3498db; margin-right: 8px;"></i> Minha Carteira</h2>
-                    </div>
-
-                    <div id="credit-status-box" class="credit-status status-prepaid">
-                        <div>
-                            <strong><i class="fas fa-info-circle"></i> Status da Conta: <span id="lbl-tipo-conta">Pré-paga</span></strong>
-                            <p style="margin: 5px 0 0 0; font-size: 0.9rem;"><span id="msg-credito">Necessário pagamento antecipado.</span></p>
-                        </div>
-                        <button id="btn-solicitar-credito" class="btn-credito">Solicitar Análise de Crédito</button>
+                        <h2 style="margin:0; color: #2d3748;"><i class="fa-solid fa-handshake" style="color: #3498db; margin-right: 8px;"></i> Acerto de Contas</h2>
+                        <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 5px;">Pague diretamente os designers parceiros pelos trabalhos finalizados.</p>
                     </div>
 
                     <div class="wallet-grid">
-                        <div class="wallet-card card-saldo">
-                            <div><h3>Saldo Disponível</h3><div class="wallet-value" id="val-saldo">R$ ...</div><div style="font-size: 0.85rem; color: #64748b;">Para uso imediato</div></div>
-                            <button class="btn-add-mini" onclick="abrirModalRecarga()"><i class="fas fa-plus-circle"></i> Adicionar Saldo</button><i class="fas fa-coins wallet-icon"></i>
+                        <div class="wallet-card card-pagar">
+                            <div><h3>Total a Pagar (Atrasado)</h3><div class="wallet-value" id="val-atrasado" style="color: #e74c3c;">R$ 0,00</div><div style="font-size: 0.85rem; color: #64748b;">Faturas vencidas</div></div><i class="fas fa-exclamation-triangle wallet-icon"></i>
                         </div>
                         <div class="wallet-card card-andamento">
-                            <div><h3>Em Produção</h3><div class="wallet-value" id="val-andamento">R$ 0,00</div><div style="font-size: 0.85rem; color: #64748b;">Serviços sendo executados</div></div><i class="fas fa-cog wallet-icon"></i>
+                            <div><h3>Total a Pagar (No Prazo)</h3><div class="wallet-value" id="val-pendente" style="color: #f39c12;">R$ 0,00</div><div style="font-size: 0.85rem; color: #64748b;">Artes entregues recentemente</div></div><i class="fas fa-clock wallet-icon"></i>
                         </div>
-                        <div class="wallet-card card-pagar">
-                            <div><h3>Total Faturado/Gasto</h3><div class="wallet-value" id="val-pagar" style="color: #e74c3c;">R$ 0,00</div><div style="font-size: 0.85rem; color: #64748b;">Histórico acumulado</div></div><i class="fas fa-file-invoice-dollar wallet-icon"></i>
+                        <div class="wallet-card card-saldo">
+                            <div><h3>Total Pago no Mês</h3><div class="wallet-value" id="val-pago" style="color: #27ae60;">R$ 0,00</div><div style="font-size: 0.85rem; color: #64748b;">Acertos já confirmados</div></div><i class="fas fa-check-circle wallet-icon"></i>
                         </div>
                     </div>
 
                     <div class="history-container" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.04);">
                         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-                            <h4 style="margin:0; color: #4a5568;">Extrato Financeiro</h4>
+                            <h4 style="margin:0; color: #4a5568;">Extrato de Acertos por Designer</h4>
                             <div class="filter-bar">
                                 <select id="filtro-status" class="filter-input">
-                                    <option value="TODOS">Todos os Status</option>
-                                    <option value="EM_PRODUCAO">Em Produção</option>
-                                    <option value="FINALIZADO">Finalizados</option>
+                                    <option value="PENDENTE">Pendentes</option>
+                                    <option value="TODOS">Todos</option>
+                                    <option value="PAGO">Pagos</option>
                                 </select>
-                                <input type="date" id="filtro-inicio" class="filter-input">
-                                <span style="color: #aaa; font-size: 0.9rem;">até</span>
-                                <input type="date" id="filtro-fim" class="filter-input">
-                                <button onclick="carregarExtrato()" class="btn-action-sm" style="background: #2c3e50; padding: 9px 15px; color:white; border:none; border-radius:6px; cursor:pointer;"><i class="fas fa-filter"></i> Filtrar</button>
-                                <button onclick="exportarCSV()" class="btn-action-sm" style="background: #27ae60; padding: 9px 15px; color:white; border:none; border-radius:6px; cursor:pointer;"><i class="fas fa-file-csv"></i> Baixar CSV</button>
+                                <button onclick="carregarAcertosGrafica()" class="btn-action-sm" style="background: #2c3e50; padding: 9px 15px; color:white; border:none; border-radius:6px; cursor:pointer;"><i class="fas fa-filter"></i> Filtrar</button>
                             </div>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr; gap: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-weight: 600; color: #64748b; font-size: 0.9rem; margin-bottom: 10px;">
-                            <div>Descrição / Pedido</div>
+                        <div style="display: grid; grid-template-columns: 1fr 2.5fr 1fr 1fr 1fr; gap: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-weight: 600; color: #64748b; font-size: 0.9rem; margin-bottom: 10px;">
                             <div>Data</div>
+                            <div>Designer / Arte</div>
                             <div>Status</div>
                             <div style="text-align: right;">Valor</div>
-                            <div style="text-align: center;">Link</div>
+                            <div style="text-align: center;">Ação</div>
                         </div>
 
-                        <ul class="history-list" id="lista-historico" style="list-style:none; padding:0;">
-                            <li style="text-align:center; padding:20px; color:#94a3b8;">Carregando extrato...</li>
+                        <ul class="history-list" id="lista-acertos" style="list-style:none; padding:0;">
+                            <li style="text-align:center; padding:20px; color:#94a3b8;">Carregando acertos...</li>
                         </ul>
                     </div>
                 </div>
@@ -128,9 +116,33 @@
         </div>
     </div>
 
-    <!-- Modais omitidos para brevidade (mantém os mesmos) -->
-    <div class="modal-overlay" id="modal-recarga"><div class="modal-content"><button class="close-modal" onclick="fecharModal('modal-recarga')">×</button><h3 style="margin-top:0;">Adicionar Saldo</h3><form id="form-recarga"><div class="form-group"><label>Valor (R$)</label><input type="text" id="input-valor-recarga" class="form-control" placeholder="0,00" required></div><button type="submit" class="btn-submit btn-pay" id="btn-submit-recarga">Gerar Pagamento</button></form></div></div>
-    <div class="modal-overlay" id="modal-analise"><div class="modal-content"><button class="close-modal" onclick="fecharModal('modal-analise')">×</button><h3 style="margin-top:0;">Análise de Crédito</h3><form id="form-analise"><div class="form-group"><label>Razão Social</label><input type="text" name="razaoSocial" class="form-control" required></div><div class="form-group"><label>CNPJ</label><input type="text" name="cnpj" id="input-cnpj" class="form-control" required></div><div class="form-group"><label>Faturamento</label><input type="text" name="faturamento" id="input-faturamento" class="form-control" required></div><div class="form-group"><label>Atividade</label><select name="tempoAtividade" class="form-control"><option>+1 ano</option></select></div><div class="form-group"><label>Obs</label><textarea name="obs" class="form-control"></textarea></div><button type="submit" class="btn-submit btn-send" id="btn-submit-analise">Enviar</button></form></div></div>
+    <!-- Modal Pagamento PIX -->
+    <div class="modal-overlay" id="modal-pagamento-pix">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <button class="close-modal" onclick="fecharModal('modal-pagamento-pix')">×</button>
+            <h3 style="margin-top:0; color: var(--text-main);">Pagar <span id="pix-nome-designer">Designer</span></h3>
+            
+            <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin: 20px 0; border: 1px dashed #cbd5e1;">
+                <p style="font-size: 0.9rem; color: var(--secondary-color); margin-bottom: 5px;">Chave PIX do Recebedor:</p>
+                <div style="font-size: 1.2rem; font-weight: 700; color: var(--primary-color); word-break: break-all;" id="pix-chave-designer">Carregando...</div>
+                
+                <h2 style="font-size: 2.5rem; color: var(--text-main); margin: 15px 0 0 0;" id="pix-valor-cobrado">R$ 0,00</h2>
+            </div>
+            
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
+                Efetue a transferência usando o app do seu banco. Após a transferência ser concluída, anexe o comprovante abaixo.
+            </p>
+
+            <form id="form-confirmar-pix-grafica">
+                <input type="hidden" id="input-acerto-id">
+                <div class="form-group" style="text-align: left;">
+                    <label>Link do Comprovante (Opcional, porém recomendado)</label>
+                    <input type="url" id="input-comprovante-url" class="form-control" placeholder="Link do Drive, Lightshot, etc.">
+                </div>
+                <button type="submit" class="btn-submit btn-pay" id="btn-submit-comprovante"><i class="fas fa-check-circle"></i> Informar Pagamento Enviado</button>
+            </form>
+        </div>
+    </div>
 
     <script src="https://unpkg.com/imask"></script>
     <script src="/layout.js"></script>

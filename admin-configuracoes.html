@@ -152,6 +152,7 @@
             const fb = document.getElementById('feedback-message');
             fb.textContent = mensagem;
             fb.className = isErro ? 'error' : 'success';
+            fb.style.display = 'block';
             setTimeout(() => { fb.className = ''; fb.style.display = 'none'; }, 4000);
         }
         

@@ -20,33 +20,49 @@ module.exports = async (req, res) => {
         
         const resultEmpresa = empresas[0];
 
-        // 2. CALCULAR TOTAIS VIA SQL (Raw Query)
+        // 2. RECUPERAR DADOS DO ACERTO DE CONTAS
+        const acertos = await prisma.$queryRawUnsafe(`
+            SELECT valor, status, criado_em 
+            FROM acertos_contas 
+            WHERE empresa_id = $1
+        `, resultEmpresa.id);
+
+        let pendenteNoPrazo = 0;
+        let atrasado = 0;
+        let pagoNoMes = 0;
+
+        const dataAtual = new Date();
+        const mesAtual = dataAtual.getMonth();
+        const anoAtual = dataAtual.getFullYear();
         
-        // A) Saldo Em Produção: Soma dos pedidos na etapa 'ARTE'
-        const emProducaoResult = await prisma.$queryRawUnsafe(`
-            SELECT COALESCE(SUM(valor_designer), 0) as total 
-            FROM pedidos 
-            WHERE empresa_id = $1 AND etapa = 'ARTE'
-        `, resultEmpresa.id);
+        // Regra de Atraso: 5 dias após a criação do Acerto (entrega da arte)
+        const prazoEmDias = 5; 
 
-        // B) Total Faturado/Gasto: Soma dos pedidos na etapa 'IMPRESSÃO'
-        const totalGastoResult = await prisma.$queryRawUnsafe(`
-            SELECT COALESCE(SUM(valor_designer), 0) as total 
-            FROM pedidos 
-            WHERE empresa_id = $1 AND etapa = 'IMPRESSÃO'
-        `, resultEmpresa.id);
+        acertos.forEach(acerto => {
+            const valor = parseFloat(acerto.valor || 0);
+            const dataCriacao = new Date(acerto.criado_em);
 
-        // Conversão segura de BigInt/Decimal para Float
-        const emProducao = parseFloat(emProducaoResult[0]?.total || 0);
-        const totalGasto = parseFloat(totalGastoResult[0]?.total || 0);
-        const saldoDisponivel = parseFloat(resultEmpresa.saldo || 0);
+            if (acerto.status === 'PENDENTE' || acerto.status === 'PAGO_INFORMADO') {
+                const diferencaTempo = dataAtual.getTime() - dataCriacao.getTime();
+                const diferencaDias = Math.ceil(diferencaTempo / (1000 * 3600 * 24));
+                
+                if (diferencaDias > prazoEmDias) {
+                    atrasado += valor;
+                } else {
+                    pendenteNoPrazo += valor;
+                }
+            } else if (acerto.status === 'PAGO') {
+                // Soma apenas o que foi pago NO MÊS ATUAL
+                if (dataCriacao.getMonth() === mesAtual && dataCriacao.getFullYear() === anoAtual) {
+                    pagoNoMes += valor;
+                }
+            }
+        });
 
         res.json({
-            saldo_disponivel: saldoDisponivel,
-            em_andamento: emProducao,
-            a_pagar: totalGasto,
-            credito_aprovado: resultEmpresa.credito_aprovado || false,
-            solicitacao_pendente: resultEmpresa.solicitacao_credito_pendente || false
+            atrasado: atrasado,
+            pendente: pendenteNoPrazo,
+            pago_mes: pagoNoMes
         });
 
     } catch (error) {

@@ -27,77 +27,55 @@ module.exports = async (req, res) => {
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
 
-        // 3. Buscar Histórico Financeiro (SQL PURO)
-        const historico = await prisma.$queryRawUnsafe(`
-            SELECT * FROM historico_financeiro 
-            WHERE empresa_id = $1 
-            AND data >= $2 
-            AND data <= $3 
-            ORDER BY data DESC
-        `, empresaLocal.id, start, end);
+        // 3. Buscar Acertos de Contas
+        let queryParams = [empresaLocal.id, start, end];
+        let statusCondition = "";
 
-        // 4. Buscar status atual dos pedidos relacionados
-        // Extrair IDs de pedidos (garantindo que sejam números)
-        const dealIds = historico
-            .map(h => parseInt(h.deal_id))
-            .filter(id => !isNaN(id) && id > 0);
-
-        const statusMap = {};
-
-        if (dealIds.length > 0) {
-            // Monta string para o IN (ex: "10, 12, 15")
-            const idsString = dealIds.join(',');
-            
-            // Query segura injetando apenas números inteiros
-            const pedidosStatus = await prisma.$queryRawUnsafe(`
-                SELECT id, etapa FROM pedidos WHERE id IN (${idsString})
-            `);
-
-            pedidosStatus.forEach(p => statusMap[p.id] = p.etapa);
+        if (statusFilter && statusFilter !== 'TODOS') {
+            statusCondition = "AND a.status = $4";
+            queryParams.push(statusFilter);
         }
 
-        // 5. Processar e Filtrar
-        let extratoFormatado = historico.map(item => {
-            const dealId = parseInt(item.deal_id);
-            const etapaAtual = statusMap[dealId] || null;
-            
-            let statusItem = 'CONCLUIDO'; 
-            if (item.tipo === 'SAIDA') {
-                if (etapaAtual === 'ARTE') statusItem = 'EM_PRODUCAO';
-                else if (etapaAtual === 'IMPRESSÃO') statusItem = 'FINALIZADO';
-                else statusItem = 'FINALIZADO'; 
-            }
+        const acertos = await prisma.$queryRawUnsafe(`
+            SELECT 
+                a.id, 
+                a.valor, 
+                a.status, 
+                a.criado_em as data, 
+                p.titulo as pedido_titulo,
+                p.id as pedido_id,
+                d.nome as designer_nome,
+                d.chave_pix as designer_pix,
+                a.comprovante_url
+            FROM acertos_contas a
+            LEFT JOIN pedidos p ON a.pedido_id = p.id
+            LEFT JOIN painel_usuarios d ON p.designer_id = d.id -- Ajuste: DesignerName da tabela de usuarios ou pedidos?
+            WHERE a.empresa_id = $1 
+            AND a.criado_em >= $2 
+            AND a.criado_em <= $3 
+            ${statusCondition}
+            ORDER BY a.criado_em DESC
+        `, ...queryParams);
 
-            let link = null;
-            if (item.metadados) {
-                try {
-                    const meta = typeof item.metadados === 'string' ? JSON.parse(item.metadados) : item.metadados;
-                    link = meta.link_atendimento;
-                } catch(e) {}
-            }
-
+        // Como o relacionamento original de DesignerFinanceiro não tinha 'nome', vamos precisar 
+        // garantir que pegamos o nome correto se houver falha no join com painel_usuarios
+        // Uma abordagem mais segura aqui é fazer um loop para formatar/garantir dados.
+        
+        let acertosFormatado = acertos.map(item => {
             return {
                 id: item.id,
                 data: item.data,
-                deal_id: item.deal_id || '-',
-                descricao: item.descricao || item.titulo,
+                deal_id: item.pedido_id || '-',
+                descricao: item.pedido_titulo || 'Arte Finalizada',
+                designer_nome: item.designer_nome || 'Designer Parceiro',
+                designer_pix: item.designer_pix || 'Chave não cadastrada',
                 valor: parseFloat(item.valor || 0),
-                tipo: item.tipo, 
-                status: statusItem, 
-                link_atendimento: link || ''
+                status: item.status, 
+                comprovante: item.comprovante_url || ''
             };
         });
 
-        // 6. Aplicar Filtro
-        if (statusFilter && statusFilter !== 'TODOS') {
-            extratoFormatado = extratoFormatado.filter(item => {
-                if (statusFilter === 'EM_PRODUCAO') return item.status === 'EM_PRODUCAO';
-                if (statusFilter === 'FINALIZADO') return item.status === 'FINALIZADO';
-                return true;
-            });
-        }
-
-        res.status(200).json({ extrato: extratoFormatado });
+        res.status(200).json({ extrato: acertosFormatado });
 
     } catch (error) {
         console.error("Erro API Extrato:", error);

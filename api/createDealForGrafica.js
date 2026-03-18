@@ -58,7 +58,7 @@ module.exports = async (req, res) => {
         const newPedidoId = insertResult[0].id;
         console.log(`[DEBUG] Pedido gravado com Sucesso! ID: ${newPedidoId}`);
 
-       // --- 4. BLOCO DE AUTOMAÇÃO CHATAPP ---
+        // --- 4. BLOCO DE AUTOMAÇÃO CHATAPP ---
         if (arte === 'Setor de Arte') {
             try {
                 const automacao = await criarGrupoProducao(
@@ -78,14 +78,9 @@ module.exports = async (req, res) => {
             }
         }
 
-        // 5. Lógica Financeira (Débito na Empresa)
-        if (arte === 'Setor de Arte' && valorParaSalvar > 0) {
-            await prisma.$executeRawUnsafe(`UPDATE empresas SET saldo = saldo - $1 WHERE id = $2`, valorParaSalvar, empresa.id);
-            await prisma.$executeRawUnsafe(`
-                INSERT INTO historico_financeiro (empresa_id, valor, tipo, deal_id, titulo, data) 
-                VALUES ($1, $2, 'SAIDA', $3, $4, NOW())
-            `, empresa.id, valorParaSalvar, String(newPedidoId), `Produção: ${formData.titulo}`);
-        }
+        // 5. Lógica Financeira (REMOVIDA NA TRANSIÇÃO SAAS)
+        // No novo modelo SaaS, a gráfica não tem saldo debitado ao postar pedido.
+        // O valor é registrado apenas como dívida a ser paga via PIX posteriormente.
 
         return res.status(200).json({ success: true, dealId: newPedidoId });
 

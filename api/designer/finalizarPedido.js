@@ -33,22 +33,36 @@ module.exports = async (req, res) => {
 
         const pedido = pedidos[0];
         
-        // --- CÁLCULO DA COMISSÃO (15%) ---
-        const valorBruto = parseFloat(pedido.valor_designer || 0);
-        const valorLiquido = valorBruto * 0.85; // Designer recebe 85%
+        // --- SAAS MODEL: ACERTO DE CONTAS DIRETAS ---
+        // 1. O designer ganha a pontuação e +1 design aprovado
+        // 2. Não há salto adicionado à carteira local. O sistema registra a dívida.
+        const valorCombinado = parseFloat(pedido.valor_designer || 0);
 
-        // A) Creditar valor LÍQUIDO no saldo do Designer
+        // A) Atualizar Métricas do Designer
         await prisma.$executeRawUnsafe(`
             UPDATE designers_financeiro 
-            SET saldo_disponivel = saldo_disponivel + $1,
-                aprovados = aprovados + 1,
+            SET aprovados = aprovados + 1,
                 pontuacao = pontuacao + 10 
-            WHERE designer_id = $2
-        `, valorLiquido, designerId);
+            WHERE designer_id = $1
+        `, designerId);
 
-        // B) Atualizar o Pedido
-        // Salvamos em 'valor_designer_pago' o que foi efetivamente transferido (o líquido)
-        // A coluna 'valor_designer' continua com o Bruto para o histórico da empresa
+        // B) Registrar a Dívida (Acerto de Contas)
+        // Busca a empresa dona do pedido
+        const pedidosEmpresa = await prisma.$queryRawUnsafe(`
+            SELECT empresa_id FROM pedidos WHERE id = $1
+        `, parseInt(pedidoId));
+        
+        const empresaId = pedidosEmpresa.length > 0 ? pedidosEmpresa[0].empresa_id : null;
+
+        if (empresaId) {
+            await prisma.$executeRawUnsafe(`
+                INSERT INTO acertos_contas (empresa_id, designer_id, pedido_id, valor, status, criado_em)
+                VALUES ($1, $2, $3, $4, 'PENDENTE', NOW())
+            `, empresaId, designerId, parseInt(pedidoId), valorCombinado);
+        }
+
+        // C) Atualizar o Pedido
+        // Salvamos em 'valor_designer_pago' o que a gráfica PROMETEU pagar no PIX (valor cheio).
         await prisma.$executeRawUnsafe(`
             UPDATE pedidos 
             SET etapa = 'IMPRESSÃO', 
@@ -57,11 +71,11 @@ module.exports = async (req, res) => {
                 valor_designer_pago = $3, 
                 updated_at = NOW() 
             WHERE id = $4
-        `, linkImpressao, linkLayout, valorLiquido, parseInt(pedidoId));
+        `, linkImpressao, linkLayout, valorCombinado, parseInt(pedidoId));
 
         return res.status(200).json({ 
             success: true, 
-            message: `Sucesso! R$ ${valorLiquido.toFixed(2).replace('.', ',')} creditados na sua conta (Já descontada taxa de 15%).` 
+            message: `Layout enviado com sucesso! Se aprovado, a gráfica fará um PIX de R$ ${valorCombinado.toFixed(2).replace('.', ',')} diretamente para a sua chave.` 
         });
 
     } catch (error) {

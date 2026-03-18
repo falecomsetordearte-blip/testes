@@ -257,7 +257,7 @@
                 throw new Error(data.message);
             }
 
-            document.getElementById('designer-saldo-disponivel').textContent = formatarMoeda(data.designer.saldo);
+            document.getElementById('designer-ganhos-mes').textContent = formatarMoeda(data.designer.ganhosMes);
             document.getElementById('designer-saldo-pendente').textContent = formatarMoeda(data.designer.pendente);
             document.getElementById('designer-pedidos-ativos').textContent = data.meusPedidos.length;
             document.getElementById('count-meus').textContent = data.meusPedidos.length;
@@ -277,6 +277,7 @@
 
             renderizarMeusTrabalhos(data.meusPedidos);
             renderizarMercado(data.mercado);
+            renderizarAcertos(data.acertos);
 
         } catch (error) { 
             console.error(error); 
@@ -332,6 +333,44 @@
                 </div>
             </div>
         `).join('');
+    }
+
+    function renderizarAcertos(acertos) {
+        const container = document.getElementById('acertos-list');
+        if (!container) return;
+
+        if (!acertos || acertos.length === 0) {
+            container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhum histórico de recebimentos.</p>`;
+            return;
+        }
+
+        container.innerHTML = acertos.map(a => {
+            const dataStr = new Date(a.data).toLocaleDateString();
+            const badgeCor = a.status === 'PENDENTE' ? 'var(--warning)' : 'var(--success)';
+            let botaoAcao = '';
+
+            // Se a gráfica informou PAGO
+            if (a.status === 'PAGO_INFORMADO') {
+                botaoAcao = `<button onclick="confirmarRecebimento(${a.id})" class="btn-action" style="background:var(--success); font-size:0.75rem;">CONFIRMAR PIX</button>`;
+            } else if (a.status === 'PENDENTE') {
+                botaoAcao = `<span style="color:var(--text-muted); font-size:0.8rem;">Aguardando Gráfica</span>`;
+            } else if (a.status === 'PAGO') {
+                botaoAcao = `<span style="color:var(--success); font-weight:bold; font-size:0.8rem;"><i class="fas fa-check-circle"></i> Recebido</span>`;
+            }
+
+            return `
+            <div class="list-item" style="grid-template-columns: 1fr 3fr 1fr 1fr 1fr;">
+                <div style="color:var(--secondary-color); font-size:0.85rem;">${dataStr}</div>
+                <div style="font-weight:600;">${a.grafica}</div>
+                <div style="font-weight:700; color:var(--text-main);">${formatarMoeda(a.valor)}</div>
+                <div><span style="background:${badgeCor}; color:white; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">${a.status.replace('_', ' ')}</span></div>
+                <div style="text-align: right; display:flex; flex-direction:column; gap:5px; align-items:flex-end;">
+                    ${a.comprovante ? `<a href="${a.comprovante}" target="_blank" class="btn-outline-sm" style="text-decoration:none;"><i class="fas fa-receipt"></i> Ver Recibo</a>` : ''}
+                    ${botaoAcao}
+                </div>
+            </div>
+            `;
+        }).join('');
     }
 
     // =========================================================
@@ -420,6 +459,37 @@
                     carregarDashboardDesigner();
                 }, 300);
 
+            } catch (e) { 
+                fecharGaveta();
+                setTimeout(() => window.mostrarErro(e.message), 300);
+            }
+        };
+    };
+
+    window.confirmarRecebimento = (acertoId) => {
+        const corpo = `<p style="font-size:1rem; color:var(--text-main); line-height:1.5;">Você confirma que recebeu este PIX em sua conta bancária?</p>`;
+        const rodape = `
+            <button id="btn-exec-confirmar-pix" class="btn-full btn-primary" style="background:var(--success);">SIM, RECEBI</button>
+            <button onclick="fecharGaveta()" class="btn-full btn-secondary">Ainda não recebi</button>
+        `;
+        window.abrirGaveta("Confirmar Recebimento", corpo, rodape);
+        
+        document.getElementById('btn-exec-confirmar-pix').onclick = async () => {
+            const btn = document.getElementById('btn-exec-confirmar-pix');
+            btn.disabled = true;
+            btn.textContent = 'Aguarde...';
+
+            try {
+                const res = await fetch('/api/designer/confirmarRecebimento', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: sessionToken, acertoId: acertoId })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+                
+                fecharGaveta();
+                carregarDashboardDesigner();
+                
             } catch (e) { 
                 fecharGaveta();
                 setTimeout(() => window.mostrarErro(e.message), 300);

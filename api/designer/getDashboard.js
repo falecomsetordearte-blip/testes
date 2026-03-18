@@ -7,9 +7,9 @@ module.exports = async (req, res) => {
         const { token } = req.body;
         if (!token) return res.status(401).json({ message: 'Token não fornecido.' });
 
-        // 1. Identificar Designer (Agora puxando também a PONTUAÇÃO)
+        // 1. Identificar Designer
         const designers = await prisma.$queryRawUnsafe(`
-            SELECT designer_id, nome, nivel, saldo_disponivel, saldo_pendente, pontuacao 
+            SELECT designer_id, nome, nivel, pontuacao 
             FROM designers_financeiro WHERE session_tokens LIKE $1 LIMIT 1
         `, `%${token}%`);
 
@@ -37,24 +37,59 @@ module.exports = async (req, res) => {
             ORDER BY created_at ASC
         `);
 
-        // Aplicação da Taxa de 15% (Designer vê o Líquido)
-        const aplicarTaxa = (pedidos) => {
-            return pedidos.map(p => ({
-                ...p,
-                valor_designer: parseFloat(p.valor_designer || 0) * 0.85
-            }));
-        };
+        // 4. Buscar Acertos de Contas (Ganhos Gerais e Dívidas das Gráficas)
+        const acertos = await prisma.$queryRawUnsafe(`
+            SELECT a.id, a.valor, a.status, a.criado_em, a.comprovante_url, e.nome_fantasia as grafica_nome 
+            FROM acertos_contas a
+            JOIN empresas e ON a.empresa_id = e.id
+            WHERE a.designer_id = $1
+            ORDER BY a.criado_em DESC
+        `, designer.designer_id);
+
+        // Calcula Métricas de SaaS Direto
+        let saldoPendente = 0; // A receber
+        let ganhosMes = 0;     // Total pago neste mês
+
+        const dataAtual = new Date();
+        const mesAtual = dataAtual.getMonth();
+        const anoAtual = dataAtual.getFullYear();
+
+        acertos.forEach(acerto => {
+            const valorFloat = parseFloat(acerto.valor || 0);
+            if (acerto.status === 'PENDENTE') {
+                saldoPendente += valorFloat;
+            } else if (acerto.status === 'PAGO') {
+                const dataAcerto = new Date(acerto.criado_em);
+                if (dataAcerto.getMonth() === mesAtual && dataAcerto.getFullYear() === anoAtual) {
+                    ganhosMes += valorFloat;
+                }
+            }
+        });
+
+        // Retornar os arrays formatando os valores numéricos
+        const parseValor = (pedidos) => pedidos.map(p => ({
+            ...p,
+            valor_designer: parseFloat(p.valor_designer || 0)
+        }));
 
         return res.status(200).json({
             designer: {
                 nome: designer.nome,
-                saldo: parseFloat(designer.saldo_disponivel || 0),
-                pendente: parseFloat(designer.saldo_pendente || 0),
+                ganhosMes: ganhosMes,
+                pendente: saldoPendente,
                 nivel: designer.nivel,
-                pontuacao: parseInt(designer.pontuacao || 0) // Enviando pontuação pro Front
+                pontuacao: parseInt(designer.pontuacao || 0)
             },
-            meusPedidos: aplicarTaxa(meusPedidosRaw),
-            mercado: aplicarTaxa(mercadoRaw)
+            meusPedidos: parseValor(meusPedidosRaw),
+            mercado: parseValor(mercadoRaw),
+            acertos: acertos.map(a => ({
+                id: a.id,
+                grafica: a.grafica_nome,
+                valor: parseFloat(a.valor || 0),
+                status: a.status,
+                data: a.criado_em,
+                comprovante: a.comprovante_url
+            }))
         });
 
     } catch (error) {
