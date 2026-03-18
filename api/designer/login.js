@@ -44,16 +44,21 @@ module.exports = async (req, res) => {
 
         // 3. Gera o token de sessão (JWT)
         const token = jwt.sign({ designerId: user.designer_id }, JWT_SECRET, { expiresIn: '7d' });
-        console.log('[DEBUG login] Token gerado:', token.substring(0, 10) + '...');
 
-        // 4. Salva o token na coluna session_tokens da tabela painel_usuarios
-        console.log('[DEBUG login] Salvando token para ID:', user.designer_id);
+        // 4. Salva o token na coluna session_tokens das tabelas envolvidas
+        // Salva na painel_usuarios (para compatibilidade futura)
         await prisma.$executeRawUnsafe(`
             UPDATE painel_usuarios 
             SET session_tokens = $1 
             WHERE id = $2
         `, token, user.designer_id);
-        console.log('[DEBUG login] Token salvo com sucesso.');
+
+        // Salva na designers_financeiro (garantido que funciona para designers)
+        await prisma.$executeRawUnsafe(`
+            UPDATE designers_financeiro 
+            SET session_tokens = $1 
+            WHERE designer_id = $2
+        `, token, user.designer_id);
 
         // 5. Retorna sucesso para o Front-end
         return res.status(200).json({
