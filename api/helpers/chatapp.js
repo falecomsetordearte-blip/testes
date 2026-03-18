@@ -3,18 +3,32 @@
 const axios = require('axios');
 const CHATAPP_API = 'https://api.chatapp.online/v1';
 
+let cachedToken = null;
+let lastAuthTime = 0;
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutos em milissegundos
+
 async function getChatAppToken() {
+    const now = Date.now();
+    if (cachedToken && (now - lastAuthTime < CACHE_DURATION)) {
+        return cachedToken;
+    }
+
     try {
         const response = await axios.post(`${CHATAPP_API}/tokens`, {
             email: process.env.CHATAPP_EMAIL,
             password: process.env.CHATAPP_PASSWORD,
             appId: process.env.CHATAPP_APP_ID
         });
-        // A API v1 retorna o token em accessToken ou data.accessToken
-        return response.data?.accessToken || response.data?.data?.accessToken;
+        
+        const token = response.data?.accessToken || response.data?.data?.accessToken;
+        if (token) {
+            cachedToken = token;
+            lastAuthTime = now;
+        }
+        return token;
     } catch (error) {
         console.error("[CHATAPP AUTH ERROR]", error.response?.data || error.message);
-        return null;
+        return cachedToken; // Retorna o último token conhecido em caso de erro de rate limit na auth
     }
 }
 
