@@ -29,6 +29,7 @@ module.exports = async (req, res) => {
         const action = Array.isArray(fields.action) ? fields.action[0] : fields.action;
         const pedidoId = Array.isArray(fields.pedidoId) ? fields.pedidoId[0] : fields.pedidoId;
         const texto = Array.isArray(fields.texto) ? fields.texto[0] : fields.texto;
+        const designerNome = Array.isArray(fields.designerNome) ? fields.designerNome[0] : fields.designerNome;
         const arquivo = files.file ? (Array.isArray(files.file) ? files.file[0] : files.file) : null;
 
         try {
@@ -76,14 +77,14 @@ module.exports = async (req, res) => {
                     url = `https://api.chatapp.online/v1/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/messages/file`;
                     const fd = new FormData();
                     fd.append('file', fs.createReadStream(arquivo.filepath), { filename: arquivo.originalFilename });
-                    if (texto) fd.append('caption', `*Designer:* ${texto}`);
-                    else fd.append('caption', `*Designer*`);
+                    if (texto) fd.append('caption', `*${designerNome}:* ${texto}`);
+                    else fd.append('caption', `*${designerNome}*`);
                     
                     data = fd;
                     Object.assign(headers, fd.getHeaders());
                 } else {
                     url = `https://api.chatapp.online/v1/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/messages/text`;
-                    data = { text: `*Designer:* ${texto}` };
+                    data = { text: `*${designerNome}:* ${texto}` };
                     headers['Content-Type'] = 'application/json';
                 }
 

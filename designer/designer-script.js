@@ -651,6 +651,7 @@
                 <button id="btn-enviar-chat" class="btn-action" style="padding: 14px 20px; font-size: 1.2rem; border-radius: 8px;"><i class="fas fa-paper-plane"></i></button>
             </div>
         `;
+        const designerNome = document.getElementById('designer-greeting')?.innerText.replace('Olá, ', '').split('!')[0] || 'Designer';
         window.abrirGaveta(`Atendimento: ${pedidoId} - ${pedidoTitulo}`, corpo, "");
 
         const container = document.getElementById('chat-msgs-container');
@@ -720,6 +721,7 @@
                 fd.append('pedidoId', pedidoId);
                 if (texto) fd.append('texto', texto);
                 if (arquivo) fd.append('file', arquivo);
+                fd.append('designerNome', designerNome);
 
                 await fetch('/api/designer/chat', {
                     method: 'POST',
