@@ -326,7 +326,7 @@
         const grupos = {};
         filtrados.forEach(a => {
             if (!grupos[a.empresa]) {
-                grupos[a.empresa] = { nome: a.empresa, total: 0, itens: [] };
+                grupos[a.empresa] = { nome: a.empresa, empresa_id: a.empresa_id, total: 0, itens: [] };
             }
             grupos[a.empresa].itens.push(a);
             grupos[a.empresa].total += a.valor;

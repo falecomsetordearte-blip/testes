@@ -6,8 +6,11 @@ module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido' });
 
     const { sessionToken, empresaId, valor } = req.body;
-    if (!sessionToken || !empresaId || !valor) {
-        return res.status(400).json({ message: 'Dados incompletos.' });
+    const parsedEmpresaId = parseInt(empresaId);
+    const parsedValor = parseFloat(valor);
+
+    if (!sessionToken || isNaN(parsedEmpresaId) || isNaN(parsedValor)) {
+        return res.status(400).json({ message: 'Dados inválidos ou incompletos (token, empresaId ou valor).' });
     }
 
     try {
@@ -24,13 +27,13 @@ module.exports = async (req, res) => {
         const acertos = await prisma.acertoContas.findMany({
             where: {
                 designer_id: designerId,
-                empresa_id: parseInt(empresaId),
+                empresa_id: parsedEmpresaId,
                 status: { in: ['PENDENTE', 'AGUARDANDO_CONFIRMACAO'] }
             },
             orderBy: { criado_em: 'asc' }
         });
 
-        let montanteRestante = parseFloat(valor);
+        let montanteRestante = parsedValor;
         const transacoes = [];
 
         for (const acerto of acertos) {

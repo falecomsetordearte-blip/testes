@@ -43,6 +43,7 @@ module.exports = async (req, res) => {
             data: a.criado_em,
             descricao: a.arte_titulo || 'Pedido #' + a.pedido_id,
             empresa: a.empresa_nome || 'Gráfica #' + a.empresa_id,
+            empresa_id: a.empresa_id,
             valor: parseFloat(a.valor || 0),
             status: a.status,
             pago_em: a.pago_em,
