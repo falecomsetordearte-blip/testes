@@ -15,17 +15,26 @@ module.exports = async (req, res) => {
     try {
         const { sessionToken, arte, supervisaoWpp, valorDesigner, tipoEntrega, ...formData } = req.body;
 
-        // 1. Identificar Empresa
-        const empresas = await prisma.$queryRawUnsafe(`SELECT * FROM empresas WHERE session_tokens = $1 LIMIT 1`, sessionToken);
-        if (empresas.length === 0) {
-            console.error("[ERRO] Empresa não encontrada para o token informado.");
-            return res.status(403).json({ message: 'Sessão inválida.' });
-        }
-        const empresa = empresas[0];
+        // Log para ver se o token está chegando do frontend
+        console.log(`[DEBUG] Token Recebido: "${sessionToken ? sessionToken.substring(0, 15) + '...' : 'NULL'}"`);
 
-        // 2. Normalizar a checagem da ARTE (Evita erro de maiúscula/minúscula)
+        // 1. Identificar Empresa (Voltamos para o LIKE para garantir a compatibilidade)
+        const empresas = await prisma.$queryRawUnsafe(
+            `SELECT * FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`, 
+            `%${sessionToken}%`
+        );
+
+        if (empresas.length === 0) {
+            console.error(`[ERRO] Empresa não encontrada. Token enviado: ${sessionToken}`);
+            return res.status(403).json({ message: 'Sessão inválida. Tente fazer login novamente.' });
+        }
+        
+        const empresa = empresas[0];
+        console.log(`[OK] Empresa Identificada: ${empresa.nome || empresa.id}`);
+
+        // 2. Normalizar a checagem da ARTE
         const arteNormalizada = arte ? arte.trim().toLowerCase() : "";
-        console.log(`[DEBUG] Arte recebida: "${arte}" | Normalizada: "${arteNormalizada}"`);
+        console.log(`[DEBUG] Arte selecionada: "${arte}"`);
 
         let etapaDestino = (arteNormalizada === 'arquivo do cliente') ? 'IMPRESSÃO' : 'ARTE';
         let briefingFinal = `${formData.briefingFormatado || 'Sem briefing'}\n\nEntrega: ${tipoEntrega ? tipoEntrega.toUpperCase() : 'NÃO INFORMADA'}`;
@@ -59,13 +68,13 @@ module.exports = async (req, res) => {
         );
 
         const newPedidoId = insertResult[0].id;
-        console.log(`[OK] Pedido salvo no banco. ID: ${newPedidoId}`);
+        console.log(`[OK] Pedido salvo com Sucesso! ID: ${newPedidoId}`);
 
         // --- 4. BLOCO DE AUTOMAÇÃO CHATAPP ---
-        // Checagem flexível: se contiver "setor" e "arte", ele tenta criar o grupo
+        // Condição: Se o texto da arte contiver "setor" e "arte" (independente de maiúsculas)
         if (arteNormalizada.includes("setor") && arteNormalizada.includes("arte")) {
-            console.log(`[CHATAPP] Condição aceita. Tentando criar grupo...`);
-            console.log(`[CHATAPP] Cliente: ${formData.wppCliente} | Supervisor: ${supervisaoWpp}`);
+            console.log(`[CHATAPP] Iniciando criação de grupo...`);
+            console.log(`[CHATAPP] Dados: Cliente=${formData.wppCliente} | Supervisor=${supervisaoWpp}`);
 
             try {
                 const automacao = await criarGrupoProducao(
@@ -79,18 +88,18 @@ module.exports = async (req, res) => {
                     await prisma.$executeRawUnsafe(`
                         UPDATE pedidos SET chatapp_chat_id = $1, link_acompanhar = $2 WHERE id = $3
                     `, automacao.chatId, automacao.groupLink, newPedidoId);
-                    console.log(`[CHATAPP] SUCESSO: Grupo ${automacao.chatId} vinculado ao pedido.`);
+                    console.log(`[CHATAPP] Grupo criado e vinculado! ID: ${automacao.chatId}`);
                 } else {
-                    console.error(`[CHATAPP] FALHA: A função criarGrupoProducao retornou vazio.`);
+                    console.error(`[CHATAPP] FALHA: A função criarGrupoProducao não retornou um ID de chat.`);
                 }
             } catch (errAuto) {
-                console.error("[CHATAPP] ERRO FATAL NA AUTOMAÇÃO:", errAuto.message);
+                console.error("[CHATAPP] ERRO CRÍTICO NA FUNÇÃO DE GRUPO:", errAuto.message);
             }
         } else {
-            console.log(`[CHATAPP] Ignorado. Motivo: arte="${arte}" não é 'Setor de Arte'`);
+            console.log(`[CHATAPP] Ignorado: Arte não é 'Setor de Arte'. (Valor: "${arte}")`);
         }
 
-        // 5. Financeiro
+        // 5. Lógica Financeira
         if (arteNormalizada.includes("setor") && valorParaSalvar > 0) {
             await prisma.$executeRawUnsafe(`UPDATE empresas SET saldo = saldo - $1 WHERE id = $2`, valorParaSalvar, empresa.id);
             await prisma.$executeRawUnsafe(`
@@ -102,7 +111,7 @@ module.exports = async (req, res) => {
         return res.status(200).json({ success: true, dealId: newPedidoId });
 
     } catch (error) {
-        console.error("[ERRO GERAL]:", error.message);
-        return res.status(500).json({ message: "Erro interno: " + error.message });
+        console.error("[ERRO GERAL NO ENDPOINT]:", error.message);
+        return res.status(500).json({ message: "Erro interno no servidor: " + error.message });
     }
 };
