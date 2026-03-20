@@ -1,4 +1,4 @@
-// api/asaas/status.js
+// /api/asaas/status.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -7,28 +7,21 @@ module.exports = async (req, res) => {
 
     try {
         const { token, tipo } = req.body; 
+        if (!token || !tipo) return res.status(400).json({ message: 'Dados incompletos.' });
 
-        if (!token || !tipo) return res.status(400).json({ message: 'Token e tipo de usuário são obrigatórios.' });
+        let status = 'INATIVO';
 
-        let usuario;
         if (tipo === 'empresa') {
-            const empresas = await prisma.$queryRawUnsafe(`SELECT id, asaas_subscription_id, assinatura_status FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`, `%${token}%`);
-            if (empresas.length > 0) usuario = empresas[0];
-        } else if (tipo === 'designer') {
-            const designers = await prisma.$queryRawUnsafe(`SELECT designer_id as id, asaas_subscription_id, assinatura_status FROM designers_financeiro WHERE session_tokens LIKE $1 LIMIT 1`, `%${token}%`);
-            if (designers.length > 0) usuario = designers[0];
+            const rows = await prisma.$queryRawUnsafe(`SELECT assinatura_status FROM empresas WHERE session_tokens = $1 LIMIT 1`, token);
+            if (rows.length > 0) status = rows[0].assinatura_status;
+        } else {
+            const rows = await prisma.$queryRawUnsafe(`SELECT assinatura_status FROM designers_financeiro WHERE session_tokens = $1 LIMIT 1`, token);
+            if (rows.length > 0) status = rows[0].assinatura_status;
         }
 
-        if (!usuario) return res.status(403).json({ message: 'Sessão inválida.' });
-
-        return res.status(200).json({ 
-            status: usuario.assinatura_status || 'INATIVO',
-            pixUrl: null, 
-            pixCode: null
-        });
+        return res.status(200).json({ status: status || 'INATIVO' });
 
     } catch (error) {
-        console.error("Erro ao verificar status da assinatura:", error);
-        return res.status(500).json({ message: 'Erro interno ao processar a verificação.' });
+        return res.status(500).json({ status: 'INATIVO', error: error.message });
     }
 };
