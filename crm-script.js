@@ -1,4 +1,4 @@
-﻿// crm-script.js - LÃ“GICA DE META DIÃRIA AJUSTADA E LANÃ‡AMENTO RÃPIDO COM VALIDAÃ‡Ã•ES EXTRAS
+﻿// crm-script.js - LÓGICA DE META DIÁRIA AJUSTADA E LANÇAMENTO RÁPIDO COM VALIDAÇÕES EXTRAS
 
 let currentStep = 1;
 const totalSteps = 3;
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     configurarBuscaCliente();
 
-    // ConfiguraÃ§Ãµes de UX dos Valores (Calcula saldo e apaga o 0 automaticamente)
+    // Configurações de UX dos Valores (Calcula saldo e apaga o 0 automaticamente)
     const valTotalInput = document.getElementById('crm-valor');
     const valPagoInput = document.getElementById('crm-valor-pago');
 
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// --- 1. LÃ“GICA DE METAS E LANÃ‡AMENTO RÃPIDO ---
+// --- 1. LÓGICA DE METAS E LANÇAMENTO RÁPIDO ---
 
 window.lancarVendaRapida = async function () {
     const input = document.getElementById('quick-venda-valor');
@@ -60,7 +60,7 @@ window.lancarVendaRapida = async function () {
     const valor = parseFloat(input.value);
 
     if (isNaN(valor) || valor <= 0) {
-        showToast("Digite um valor vÃ¡lido maior que zero.", "error");
+        showToast("Digite um valor válido maior que zero.", "error");
         return;
     }
 
@@ -84,10 +84,10 @@ window.lancarVendaRapida = async function () {
             showToast(`+ R$ ${valor.toFixed(2)} somados a hoje!`, "success");
             await carregarMetasCRM(); // Recarrega a barra de progresso
         } else {
-            showToast(data.error || "Erro ao lanÃ§ar venda", "error");
+            showToast(data.error || "Erro ao lançar venda", "error");
         }
     } catch (err) {
-        showToast("Erro de conexÃ£o.", "error");
+        showToast("Erro de conexão.", "error");
     } finally {
         btn.innerHTML = '<i class="fas fa-plus"></i>';
         btn.disabled = false;
@@ -111,8 +111,8 @@ async function carregarMetasCRM() {
             renderizarVisualizacaoMeta();
         } else {
             container.style.display = 'flex';
-            document.getElementById('meta-text-left').innerHTML = `<span style="color:#e74c3c;"><i class="fas fa-exclamation-triangle"></i> Metas do mÃªs nÃ£o configuradas.</span>`;
-            document.getElementById('meta-text-right').innerHTML = `<a href="/admin-metas.html" style="color:#3498db; font-weight:bold; text-decoration:underline;">âš™ï¸ Configurar</a>`;
+            document.getElementById('meta-text-left').innerHTML = `<span style="color:#e74c3c;"><i class="fas fa-exclamation-triangle"></i> Metas do mês não configuradas.</span>`;
+            document.getElementById('meta-text-right').innerHTML = `<a href="/admin-metas.html" style="color:#3498db; font-weight:bold; text-decoration:underline;">⚙️ Configurar</a>`;
         }
     } catch (e) {
         console.error("Erro ao carregar metas:", e);
@@ -127,10 +127,10 @@ function atualizarLabelsDoSelect(m) {
     };
     const sel = document.getElementById('filtro-metas');
     if (!sel) return;
-    if (m.sem_1_inicio) sel.options[2].text = `ðŸ“Œ Semana 1 (${format(m.sem_1_inicio)} a ${format(m.sem_1_fim)})`;
-    if (m.sem_2_inicio) sel.options[3].text = `ðŸ“Œ Semana 2 (${format(m.sem_2_inicio)} a ${format(m.sem_2_fim)})`;
-    if (m.sem_3_inicio) sel.options[4].text = `ðŸ“Œ Semana 3 (${format(m.sem_3_inicio)} a ${format(m.sem_3_fim)})`;
-    if (m.sem_4_inicio) sel.options[5].text = `ðŸ“Œ Semana 4 (${format(m.sem_4_inicio)} a ${format(m.sem_4_fim)})`;
+    if (m.sem_1_inicio) sel.options[2].text = `📍 Semana 1 (${format(m.sem_1_inicio)} a ${format(m.sem_1_fim)})`;
+    if (m.sem_2_inicio) sel.options[3].text = `📍 Semana 2 (${format(m.sem_2_inicio)} a ${format(m.sem_2_fim)})`;
+    if (m.sem_3_inicio) sel.options[4].text = `📍 Semana 3 (${format(m.sem_3_inicio)} a ${format(m.sem_3_fim)})`;
+    if (m.sem_4_inicio) sel.options[5].text = `📍 Semana 4 (${format(m.sem_4_inicio)} a ${format(m.sem_4_fim)})`;
 }
 
 function contarDiasRestantesNoMes() {
@@ -172,12 +172,12 @@ window.renderizarVisualizacaoMeta = function () {
         atual = total_hoje;
 
         textoEsq = `Vendido Hoje: ${fmt(atual)}`;
-        textoDir = `Alvo diÃ¡rio para bater o mÃªs: ${fmt(metaAlvo)}`;
+        textoDir = `Alvo diário para bater o mês: ${fmt(metaAlvo)}`;
 
     } else if (filtro === 'mensal') {
         metaAlvo = Number(metas.meta_mensal);
         atual = total_mes;
-        textoEsq = `Acumulado MÃªs: ${fmt(atual)}`;
+        textoEsq = `Acumulado Mês: ${fmt(atual)}`;
         textoDir = `Meta: ${fmt(metaAlvo)}`;
         premio = metas.premio_mensal;
 
@@ -216,7 +216,7 @@ window.renderizarVisualizacaoMeta = function () {
     }
 }
 
-// --- 2. LÃ“GICA DE BUSCA DE CLIENTE (AUTOCOMPLETE) ---
+// --- 2. LÓGICA DE BUSCA DE CLIENTE (AUTOCOMPLETE) ---
 
 function configurarBuscaCliente() {
     const input = document.getElementById('crm-nome');
@@ -272,7 +272,7 @@ function configurarBuscaCliente() {
     });
 }
 
-// --- 3. WIZARD DE VENDAS (PASSOS E VALIDAÃ‡Ã•ES) ---
+// --- 3. WIZARD DE VENDAS (PASSOS E VALIDAÇÕES) ---
 
 window.mudarPasso = function (direction) {
     if (direction === 1 && !validarPassoAtual()) return;
@@ -302,36 +302,36 @@ function renderizarPasso() {
 
 function validarPassoAtual() {
     if (currentStep === 1) {
-        if (!document.getElementById('pedido-servico-hidden').value) { showToast("Selecione o tipo de serviÃ§o.", "error"); return false; }
+        if (!document.getElementById('pedido-servico-hidden').value) { showToast("Selecione o tipo de serviço.", "error"); return false; }
         if (document.getElementById('crm-nome').value.length < 2) { showToast("Informe o nome do cliente.", "error"); return false; }
         const titulo = document.getElementById('crm-titulo-manual').value;
-        if (titulo.length > 30) { showToast("O Nome do Pedido nÃ£o pode ter mais de 30 caracteres.", "error"); return false; }
+        if (titulo.length > 30) { showToast("O Nome do Pedido não pode ter mais de 30 caracteres.", "error"); return false; }
     }
 
     if (currentStep === 2) {
         const arteOrigem = document.getElementById('pedido-arte-hidden').value;
-        if (!arteOrigem) { showToast("Informe quem farÃ¡ a arte.", "error"); return false; }
+        if (!arteOrigem) { showToast("Informe quem fará a arte.", "error"); return false; }
 
-        // Regra Ouro: Se Setor de Arte, SupervisÃ£o e Designer sÃ£o obrigatÃ³rios
         if (arteOrigem === 'Setor de Arte') {
             const supWpp = document.getElementById('pedido-supervisao').value;
             const designerValor = document.getElementById('valor-designer').value;
             const formato = document.getElementById('pedido-formato').value;
 
-            if (!supWpp || supWpp.length < 14) { showToast("Informe o WhatsApp da SupervisÃ£o completo.", "error"); return false; }
+            if (!supWpp || supWpp.length < 14) { showToast("Informe o WhatsApp da Supervisão completo.", "error"); return false; }
             if (!designerValor || parseFloat(designerValor) <= 0) { showToast("Informe o valor (maior que 0) para o Designer.", "error"); return false; }
             if (!formato) { showToast("Selecione o formato do arquivo (PDF, JPG, CDR).", "error"); return false; }
         }
 
-        // Regra Ouro: Se Arquivo do cliente, o link Ã© obrigatÃ³rio
         if (arteOrigem === 'Arquivo do Cliente') {
             const linkArquivo = document.getElementById('link-arquivo').value;
-            if (!linkArquivo || linkArquivo.trim() === '') { showToast("Cole o Link do Arquivo recebido do cliente.", "error"); return false; }
+            const linkDrive = document.getElementById('link-arquivo-drive-arquivo').value;
+            if ((!linkArquivo || linkArquivo.trim() === '') && (!linkDrive || linkDrive.trim() === '')) { 
+                showToast("Cole o Link do Arquivo recebido do cliente ou envie para o Drive.", "error"); return false; 
+            }
         }
 
-        // Regra Ouro: Entrega / InstalaÃ§Ã£o obrigatÃ³ria
         const entrega = document.getElementById('pedido-entrega-hidden').value;
-        if (!entrega) { showToast("Selecione como serÃ¡ a Entrega/InstalaÃ§Ã£o.", "error"); return false; }
+        if (!entrega) { showToast("Selecione como será a Entrega/Instalação.", "error"); return false; }
     }
 
     return true;
@@ -348,12 +348,12 @@ window.selectCard = function (group, value, element) {
         const proprioFields = document.getElementById('designer-proprio-fields');
         if (fileFields) fileFields.classList.toggle('hidden', value !== 'Arquivo do Cliente');
         if (setorFields) setorFields.classList.toggle('hidden', value !== 'Setor de Arte');
-        if (proprioFields) proprioFields.classList.toggle('hidden', value !== 'Designer Pr\u00f3prio');
+        if (proprioFields) proprioFields.classList.toggle('hidden', value !== 'Designer Próprio');
         checkGoogleDriveStatus();
     }
 };
 
-// --- 4. GESTÃƒO DE CARDS NO KANBAN ---
+// --- 4. GESTÃO DE CARDS NO KANBAN ---
 
 async function carregarKanban() {
     try {
@@ -373,8 +373,8 @@ async function carregarKanban() {
 function criarCardHTML(card) {
     const map = {
         'Novos': 'col-novos-list',
-        'Visita TÃ©cnica': 'col-visita-list',
-        'Aguardando OrÃ§amento': 'col-orcamento-list',
+        'Visita Técnica': 'col-visita-list',
+        'Aguardando Orçamento': 'col-orcamento-list',
         'Aguardando Pagamento': 'col-pagamento-list',
         'Abrir Pedido': 'col-abrir-list'
     };
@@ -394,7 +394,7 @@ function criarCardHTML(card) {
         <div class="card-title">${card.nome_cliente}</div>
         <div class="card-footer-row">
             <span class="card-price">R$ ${valor}</span>
-            <button class="btn-card-produzir" onclick="window.produzirCardDireto(${card.id}, this)"><i class="fas fa-rocket"></i> PRODUZIR</button>
+            <button class="btn-card-produzir" onclick="window.produzirCardDireto(${card.id}, this, event)"><i class="fas fa-rocket"></i> PRODUZIR</button>
         </div>
     `;
     container.appendChild(div);
@@ -422,13 +422,17 @@ function inicializarDragAndDrop() {
     });
 }
 
-// --- 5. PRODUÃ‡ÃƒO E EXCLUSÃƒO ---
+// --- 5. PRODUÇÃO E EXCLUSÃO (COM BLOQUEIO DE LOADING) ---
 
-window.produzirCardDireto = function (cardId, btnElement) {
-    event.stopPropagation();
+window.produzirCardDireto = function (cardId, btnElement, event) {
+    if (event) event.stopPropagation();
+
     if (btnElement.dataset.confirming === "true") {
         const card = allCardsCache.find(c => c.id == cardId);
-        if (!card) return showToast("Erro: Card nÃ£o encontrado.", "error");
+        if (!card) return showToast("Erro: Card não encontrado.", "error");
+
+        // Captura o card HTML inteiro para bloquear cliques
+        const cardElementHTML = btnElement.closest('.kanban-card');
 
         let extras = {};
         try { if (card.briefing_json) extras = (typeof card.briefing_json === 'string') ? JSON.parse(card.briefing_json) : card.briefing_json; } catch (e) { }
@@ -452,8 +456,10 @@ window.produzirCardDireto = function (cardId, btnElement) {
             cdrVersao: extras.cdr_versao
         };
 
-        btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        btnElement.style.pointerEvents = 'none';
+        // --- ATIVA O LOADING E BLOQUEIA O CARD ---
+        if (cardElementHTML) {
+            cardElementHTML.classList.add('card-is-loading');
+        }
 
         fetch('/api/createDealForGrafica', {
             method: 'POST',
@@ -468,16 +474,21 @@ window.produzirCardDireto = function (cardId, btnElement) {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: cardId })
                     });
-                } else { throw new Error(data.message || "Erro na produÃ§Ã£o"); }
+                } else { throw new Error(data.message || "Erro na produção"); }
             })
             .then(() => {
-                showToast('Enviado para ProduÃ§Ã£o!', 'success');
-                fecharPanel(); carregarKanban(); carregarMetasCRM();
+                showToast('Enviado para Produção!', 'success');
+                fecharPanel(); 
+                carregarKanban(); // O card será apagado da tela automaticamente aqui
+                carregarMetasCRM();
             })
             .catch(err => {
+                // --- SE DER ERRO, DESBLOQUEIA O CARD PARA TENTAR DE NOVO ---
+                if (cardElementHTML) {
+                    cardElementHTML.classList.remove('card-is-loading');
+                }
                 showToast(err.message, 'error');
                 btnElement.innerHTML = '<i class="fas fa-rocket"></i> PRODUZIR';
-                btnElement.style.pointerEvents = 'auto';
                 btnElement.dataset.confirming = "false";
                 btnElement.classList.remove('confirm-state');
             });
@@ -495,7 +506,7 @@ window.produzirCardDireto = function (cardId, btnElement) {
 };
 
 window.confirmarExclusaoCard = async function (cardId, event) {
-    event.stopPropagation();
+    if (event) event.stopPropagation();
     if (confirm("Deseja realmente excluir este card permanentemente?")) {
         try {
             const res = await fetch('/api/crm/deleteCard', {
@@ -503,30 +514,28 @@ window.confirmarExclusaoCard = async function (cardId, event) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: cardId })
             });
-            if (res.ok) { showToast("Card excluÃ­do!", "success"); carregarKanban(); carregarMetasCRM(); }
+            if (res.ok) { showToast("Card excluído!", "success"); carregarKanban(); carregarMetasCRM(); }
             else { showToast("Erro ao excluir.", "error"); }
-        } catch (err) { showToast("Erro de conexÃ£o.", "error"); }
+        } catch (err) { showToast("Erro de conexão.", "error"); }
     }
 };
 
-// --- 6. FUNÃ‡Ã•ES DE FORMULÃRIO (SALVAR, ABRIR, RESET) ---
+// --- 6. FUNÇÕES DE FORMULÁRIO (SALVAR, ABRIR, RESET) ---
 
 document.getElementById('form-crm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Regra Ouro: Valor Total Ã© obrigatÃ³rio e deve ser > 0
     const valorTotal = parseFloat(document.getElementById('crm-valor').value) || 0;
     if (valorTotal <= 0) {
-        showToast("O Valor Total do pedido nÃ£o pode ser zero.", "error");
+        showToast("O Valor Total do pedido não pode ser zero.", "error");
         return;
     }
 
-    // Regra Ouro: TÃ­tulo automÃ¡tico caso fique em branco
     let tituloInput = document.getElementById('crm-titulo-manual');
     if (tituloInput.value.trim() === '') {
         const codigoAleatorio = Math.floor(1000 + Math.random() * 9000);
         tituloInput.value = `PED-${codigoAleatorio}`;
-        showToast(`TÃ­tulo vazio. Gerado cÃ³digo automÃ¡tico: ${tituloInput.value}`, 'success');
+        showToast(`Título vazio. Gerado código automático: ${tituloInput.value}`, 'success');
     }
 
     const btn = document.getElementById('btn-salvar-rascunho');
@@ -573,7 +582,7 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
             fecharPanel(); carregarKanban(); carregarMetasCRM();
             showToast('Salvo com sucesso!', 'success');
         } else { showToast('Erro ao salvar.', 'error'); }
-    } catch (err) { showToast('Erro de conexÃ£o.', 'error'); }
+    } catch (err) { showToast('Erro de conexão.', 'error'); }
     finally { btn.innerText = originalText; btn.disabled = false; }
 });
 
@@ -656,7 +665,7 @@ function resetarForm() {
     document.getElementById('setor-arte-fields').classList.add('hidden');
     const dp = document.getElementById('designer-proprio-fields');
     if (dp) dp.classList.add('hidden');
-    // Reset link results do Drive
+    
     ['arquivo','setor','proprio'].forEach(b => {
         const lr = document.getElementById('link-result-' + b);
         const lh = document.getElementById('link-arquivo-drive-' + b);
@@ -674,10 +683,10 @@ function adicionarMaterialNoForm(desc = '', det = '') {
             <i class="fas fa-trash-alt"></i>
         </button>
         <div style="margin-bottom:10px">
-            <input type="text" class="mat-desc form-control" value="${desc}" placeholder="DescriÃ§Ã£o do Material (Ex: Lona 440g)">
+            <input type="text" class="mat-desc form-control" value="${desc}" placeholder="Descrição do Material (Ex: Lona 440g)">
         </div>
         <div>
-            <textarea class="mat-det form-control" rows="2" placeholder="Detalhes (Ex: Acabamento em ilhÃ³s, medida 1x2m)">${det}</textarea>
+            <textarea class="mat-det form-control" rows="2" placeholder="Detalhes (Ex: Acabamento em ilhós, medida 1x2m)">${det}</textarea>
         </div>
     `;
     container.appendChild(div);
@@ -709,6 +718,32 @@ function injectCleanStyles() {
         .toast-message a { color: #e74c3c; font-weight: bold; text-decoration: underline; cursor: pointer; }
         .progress-fill.danger { background: linear-gradient(90deg, #e74c3c, #c0392b) !important; }
         .confirm-state { background: #e74c3c !important; color: white !important; }
+
+        /* --- NOVO: ESTILO DE CARREGAMENTO DO CARD --- */
+        .kanban-card.card-is-loading {
+            pointer-events: none !important;
+            position: relative;
+            overflow: hidden;
+        }
+        .kanban-card.card-is-loading::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.85);
+            z-index: 50;
+        }
+        .kanban-card.card-is-loading::after {
+            content: "\\f110"; /* Código do ícone Spinner do FontAwesome */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            color: #27ae60;
+            animation: fa-spin 1s infinite linear;
+            z-index: 51;
+        }
     `;
     document.head.appendChild(style);
 }
@@ -738,6 +773,7 @@ function configurarMascaras() {
         });
     }
 }
+
 // --- 8. GOOGLE DRIVE INTEGRATION ---
 let gDriveConectado = false;
 
