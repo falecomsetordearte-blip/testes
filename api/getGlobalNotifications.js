@@ -1,6 +1,6 @@
 // /api/getGlobalNotifications.js
-const { Client } = require('pg');
-const DATABASE_URL = process.env.DATABASE_URL;
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 module.exports = async (req, res) => {
     // CORS padrão
@@ -10,25 +10,27 @@ module.exports = async (req, res) => {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    const client = new Client({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
+    // Permitir opcionalmente buscar todas (incluindo inativas) se for o admin que bater
+    const isAdmin = req.query.admin === 'true';
 
     try {
-        await client.connect();
-        
-        // Pega apenas as notificações ATIVAS, ordenadas da mais nova para a mais velha
-        const result = await client.query(`
-            SELECT * FROM notificacoes_globais 
-            WHERE ativa = TRUE 
-            ORDER BY criado_em DESC 
-            LIMIT 5
-        `);
+        let whereClause = { ativa: true };
+        if (isAdmin) {
+            whereClause = {}; // Admin quer ver todas
+        }
 
-        return res.status(200).json(result.rows);
+        const notificacoes = await prisma.notificacaoGlobal.findMany({
+            where: whereClause,
+            orderBy: { criado_em: 'desc' },
+            take: isAdmin ? 50 : 5 // Limitando para admin tb
+        });
+
+        return res.status(200).json(notificacoes);
 
     } catch (error) {
         console.error("Erro notificacoes:", error);
         return res.status(500).json([]);
     } finally {
-        await client.end();
+        await prisma.$disconnect();
     }
 };

@@ -16,6 +16,9 @@ module.exports = async (req, res) => {
     try {
         const { sessionToken, arte, supervisaoWpp, valorDesigner, tipoEntrega, ...formData } = req.body;
 
+        // LOG DE DIAGNÓSTICO — Ver o que chega no backend
+        console.log(`[DEBUG] arte='${arte}' | supervisaoWpp='${supervisaoWpp}' | wppCliente='${formData.wppCliente}' | titulo='${formData.titulo}'`);
+
         // 1. Identificar Empresa no Neon
         const empresas = await prisma.$queryRawUnsafe(`SELECT * FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`, `%${sessionToken}%`);
 
@@ -28,10 +31,15 @@ module.exports = async (req, res) => {
         let etapaDestino = (arte === 'Arquivo do Cliente') ? 'IMPRESSÃO' : 'ARTE';
         let briefingFinal = `${formData.briefingFormatado || 'Sem briefing'}\n\nEntrega: ${tipoEntrega ? tipoEntrega.toUpperCase() : 'NÃO INFORMADA'}`;
 
-        // Tratamento do valor para garantir que seja número (evita salvar NULL se vier vazio)
+        // Se há link do Drive, adiciona ao briefing
+        if (formData.linkArquivoDrive) {
+            briefingFinal += `\n\n📎 Arquivos de Referência: ${formData.linkArquivoDrive}`;
+        }
+
+        // Tratamento do valor para garantir que seja número
         const valorParaSalvar = parseFloat(valorDesigner || 0);
 
-        // 3. Inserir o Pedido no Neon (CORREÇÃO AQUI: ADICIONADO link_arquivo_impressao)
+        // 3. Inserir o Pedido no Neon
         console.log(`[DEBUG] Gravando pedido. Valor Designer: R$ ${valorParaSalvar}`);
 
         const insertResult = await prisma.$queryRawUnsafe(`
@@ -52,7 +60,7 @@ module.exports = async (req, res) => {
             briefingFinal,
             etapaDestino,
             valorParaSalvar,
-            formData.linkArquivo || null // <--- $10: Agora salvamos o link de impressão correto
+            formData.linkArquivo || formData.linkArquivoDrive || null
         );
 
         const newPedidoId = insertResult[0].id;
@@ -60,6 +68,7 @@ module.exports = async (req, res) => {
 
         // --- 4. BLOCO DE AUTOMAÇÃO CHATAPP ---
         if (arte === 'Setor de Arte') {
+            console.log(`[CHATAPP] Iniciando automação. supervisaoWpp='${supervisaoWpp}' wppCliente='${formData.wppCliente}'`);
             try {
                 const automacao = await criarGrupoProducao(
                     formData.titulo,
@@ -72,10 +81,15 @@ module.exports = async (req, res) => {
                     await prisma.$executeRawUnsafe(`
                         UPDATE pedidos SET chatapp_chat_id = $1, link_acompanhar = $2 WHERE id = $3
                     `, automacao.chatId, automacao.groupLink, newPedidoId);
+                    console.log(`[CHATAPP] Grupo criado! chatId=${automacao.chatId}`);
+                } else {
+                    console.warn(`[CHATAPP] automacao retornou null — grupo NÃO criado.`);
                 }
             } catch (errAuto) {
                 console.error(">>> [AUTOMAÇÃO] ERRO:", errAuto.message);
             }
+        } else {
+            console.log(`[CHATAPP] Pulando automação — arte='${arte}' (não é Setor de Arte)`);
         }
 
         // 5. Lógica Financeira (Débito na Empresa)

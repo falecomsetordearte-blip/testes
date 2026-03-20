@@ -1,9 +1,9 @@
-// /api/createGlobalNotification.js
+// /api/toggleGlobalNotification.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 module.exports = async (req, res) => {
-    // CORS
+    // CORS padrão
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
@@ -12,26 +12,21 @@ module.exports = async (req, res) => {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
 
-    const { titulo, mensagem, tipo, senha_admin } = req.body;
+    const { id, ativa, senha_admin } = req.body;
 
-    // Segurança simples para impedir que qualquer um poste
     if (senha_admin !== 'admin123') {
         return res.status(403).json({ message: 'Senha de administrador incorreta.' });
     }
 
     try {
-        await prisma.notificacaoGlobal.create({
-            data: {
-                titulo,
-                mensagem,
-                tipo: tipo || 'info',
-                ativa: true
-            }
+        const updated = await prisma.notificacaoGlobal.update({
+            where: { id: parseInt(id) },
+            data: { ativa: ativa }
         });
-        return res.status(200).json({ success: true });
+        return res.status(200).json({ success: true, notificacao: updated });
     } catch (error) {
-        console.error("Erro createGlobalNotification:", error);
-        return res.status(500).json({ error: error.message });
+        console.error("Erro ao toggle notificacao:", error);
+        return res.status(500).json({ message: 'Erro ao atualizar notificação.', error: error.message });
     } finally {
         await prisma.$disconnect();
     }

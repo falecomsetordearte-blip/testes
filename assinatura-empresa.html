@@ -96,10 +96,222 @@
         <a href="/dashboard.html" class="back-link"><i class="fas fa-arrow-left"></i> Voltar ao Painel</a>
     </div>
 
+    <!-- Modal do Checkout Transparente -->
+    <div id="pix-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center; backdrop-filter:blur(5px); overflow-y:auto; padding:20px 0;">
+        <div style="background:var(--card-bg); padding:30px; border-radius:16px; width:95%; max-width:450px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.5); margin:auto;">
+            <h2 style="margin-bottom:20px; font-size:1.4rem; color:white;">Finalizar Assinatura</h2>
+            
+            <div id="method-selection" style="display:block;">
+                <div style="display:flex; gap:10px; margin-bottom:20px; justify-content:center;">
+                    <button id="btn-pix" class="method-btn active" onclick="selectMethod('PIX')" style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--primary); background:var(--primary); color:white; cursor:pointer; font-weight:600;"><i class="fas fa-qrcode"></i> PIX</button>
+                    <button id="btn-cc" class="method-btn" onclick="selectMethod('CREDIT_CARD')" style="flex:1; padding:10px; border-radius:8px; border:1px solid #334155; background:transparent; color:white; cursor:pointer; font-weight:600;"><i class="fas fa-credit-card"></i> Cartão</button>
+                    <button id="btn-boleto" class="method-btn" onclick="selectMethod('BOLETO')" style="flex:1; padding:10px; border-radius:8px; border:1px solid #334155; background:transparent; color:white; cursor:pointer; font-weight:600;"><i class="fas fa-barcode"></i> Boleto</button>
+                </div>
+
+                <div id="form-cc" style="display:none; text-align:left; margin-bottom:20px;">
+                    <style> .chk-input { width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white; font-family:'Poppins'; font-size:0.85rem;} </style>
+                    <input type="text" id="cc-name" placeholder="Nome impresso no Cartão" class="chk-input">
+                    <input type="text" id="cc-cpf" placeholder="CPF/CNPJ do Titular" class="chk-input">
+                    <input type="text" id="cc-number" placeholder="Número do Cartão" class="chk-input" maxlength="19">
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="cc-month" placeholder="Mês (MM)" class="chk-input" style="flex:1" maxlength="2">
+                        <input type="text" id="cc-year" placeholder="Ano (AAAA)" class="chk-input" style="flex:1" maxlength="4">
+                        <input type="text" id="cc-ccv" placeholder="CVV" class="chk-input" style="flex:1.2" maxlength="4">
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="cc-cep" placeholder="CEP" class="chk-input" style="flex:1" maxlength="9">
+                        <input type="text" id="cc-num" placeholder="Nº da Casa" class="chk-input" style="flex:0.8">
+                    </div>
+                    <input type="text" id="cc-phone" placeholder="Celular com DDD" class="chk-input">
+                </div>
+
+                <div id="form-boleto" style="display:none; margin-bottom:20px; font-size:0.9rem; color:#cbd5e1;">
+                    <i class="fas fa-file-invoice-dollar" style="font-size:2rem; color:var(--primary); margin-bottom:10px;"></i>
+                    <p>O boleto será gerado e enviado para o seu e-mail cadastrado. A liberação ocorre em até 1 dia útil após o pagamento.</p>
+                </div>
+
+                <button id="btn-processar" onclick="processarPagamento()" style="width:100%; background:#22c55e; color:white; border:none; padding:15px; border-radius:10px; font-weight:700; cursor:pointer; font-size:1rem; font-family:'Poppins'; text-transform:uppercase;">Processar Pagamento</button>
+            </div>
+
+            <div id="loading-checkout" style="display:none; padding:30px 0;">
+                <i class="fas fa-spinner fa-spin" style="font-size:2.5rem; color:var(--primary); margin-bottom:15px;"></i>
+                <p style="color:var(--text-muted);">Processando...</p>
+            </div>
+
+            <div id="pix-content" style="display:none;">
+                <img id="pix-qrcode" src="" alt="QR Code PIX" style="width:200px; height:200px; margin:0 auto 20px; border-radius:12px; border:2px solid var(--primary);">
+                <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:10px;">Ou copie o código abaixo:</p>
+                <div style="display:flex; gap:10px; margin-bottom:20px;">
+                    <input type="text" id="pix-copia-cola" readonly style="flex:1; padding:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white; font-size:0.8rem;">
+                    <button onclick="copiarPix()" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:8px; cursor:pointer;" title="Copiar"><i class="fas fa-copy"></i></button>
+                </div>
+                <div id="status-pagamento" style="padding:10px; border-radius:8px; background:rgba(244,63,94,0.1); color:var(--primary); font-size:0.9rem; font-weight:600;">
+                    <i class="fas fa-circle-notch fa-spin"></i> Aguardando Pagamento...
+                </div>
+            </div>
+
+            <div id="sucesso-content" style="display:none; padding:20px 0;">
+                <i class="fas fa-check-circle" style="font-size:4rem; color:#22c55e; margin-bottom:15px;"></i>
+                <h3 style="color:white; margin-bottom:10px;">Sucesso!</h3>
+                <p id="sucesso-msg" style="color:#cbd5e1; font-size:0.9rem;"></p>
+                <button onclick="window.location.href='/dashboard.html'" style="margin-top:20px; width:100%; background:var(--primary); color:white; border:none; padding:15px; border-radius:10px; font-weight:700; cursor:pointer; font-size:1rem; font-family:'Poppins';">Ir para o Painel</button>
+            </div>
+
+            <button id="btn-fechar-modal" onclick="fecharModal()" style="margin-top:20px; background:transparent; border:1px solid var(--text-muted); color:var(--text-muted); padding:10px 20px; border-radius:8px; cursor:pointer; width:100%;">Cancelar</button>
+        </div>
+    </div>
+
     <script>
+        let pollingInterval = null;
+        let selectedPaymentMethod = 'PIX';
+
         function abrirCheckout() {
-            alert("Redirecionando para o Checkout Asaas...");
-            // Em breve: window.location.href = '/api/asaas/create-checkout?type=EMPRESA';
+            const token = localStorage.getItem('sessionToken');
+            if (!token) {
+                alert("Sessão inválida. Faça login novamente.");
+                window.location.href = '/login.html';
+                return;
+            }
+            document.getElementById('pix-modal').style.display = 'flex';
+            resetModal();
+        }
+
+        function resetModal() {
+            document.getElementById('method-selection').style.display = 'block';
+            document.getElementById('loading-checkout').style.display = 'none';
+            document.getElementById('pix-content').style.display = 'none';
+            document.getElementById('sucesso-content').style.display = 'none';
+            document.getElementById('btn-fechar-modal').style.display = 'block';
+            if (pollingInterval) clearInterval(pollingInterval);
+        }
+
+        function selectMethod(method) {
+            selectedPaymentMethod = method;
+            const btns = document.querySelectorAll('.method-btn');
+            btns.forEach(b => {
+                b.style.background = 'transparent';
+                b.style.border = '1px solid #334155';
+            });
+            const activeBtn = method === 'PIX' ? 'btn-pix' : (method === 'CREDIT_CARD' ? 'btn-cc' : 'btn-boleto');
+            document.getElementById(activeBtn).style.background = 'var(--primary)';
+            document.getElementById(activeBtn).style.border = '1px solid var(--primary)';
+
+            document.getElementById('form-cc').style.display = method === 'CREDIT_CARD' ? 'flex' : 'none';
+            document.getElementById('form-boleto').style.display = method === 'BOLETO' ? 'block' : 'none';
+            document.getElementById('btn-processar').innerText = method === 'PIX' ? 'Gerar PIX' : (method === 'BOLETO' ? 'Gerar Boleto' : 'Assinar com Cartão');
+        }
+
+        async function processarPagamento() {
+            const token = localStorage.getItem('sessionToken');
+            
+            let creditCard = null;
+            let creditCardHolderInfo = null;
+
+            if (selectedPaymentMethod === 'CREDIT_CARD') {
+                const name = document.getElementById('cc-name').value.trim();
+                const cpf = document.getElementById('cc-cpf').value.trim();
+                const number = document.getElementById('cc-number').value.replace(/\s+/g,'');
+                const month = document.getElementById('cc-month').value.trim();
+                const year = document.getElementById('cc-year').value.trim();
+                const ccv = document.getElementById('cc-ccv').value.trim();
+                const cep = document.getElementById('cc-cep').value.replace(/\D/g,'');
+                const num = document.getElementById('cc-num').value.trim();
+                const phone = document.getElementById('cc-phone').value.replace(/\D/g,'');
+
+                if (!name || !cpf || !number || !month || !year || !ccv || !cep || !num || !phone) {
+                    alert('Preencha todos os campos do cartão e titular.');
+                    return;
+                }
+
+                creditCard = { holderName: name, number: number, expiryMonth: month, expiryYear: year, ccv: ccv };
+                creditCardHolderInfo = { name: name, email: '-', cpfCnpj: cpf, postalCode: cep, addressNumber: num, phone: phone };
+            }
+
+            document.getElementById('method-selection').style.display = 'none';
+            document.getElementById('btn-fechar-modal').style.display = 'none';
+            document.getElementById('loading-checkout').style.display = 'block';
+
+            try {
+                const res = await fetch('/api/asaas/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, tipo: 'empresa', paymentMethod: selectedPaymentMethod, creditCard, creditCardHolderInfo })
+                });
+                const data = await res.json();
+
+                document.getElementById('loading-checkout').style.display = 'none';
+
+                if (data.status === 'ACTIVE') {
+                    showSuccess('Sua assinatura foi ativada instantaneamente com sucesso!');
+                    return;
+                }
+
+                if (!data.success && !data.pixUrl && !data.boletoUrl) {
+                    alert("Erro: " + (data.message || "Pagamento recusado ou erro na geração."));
+                    fecharModal();
+                    return;
+                }
+
+                if (selectedPaymentMethod === 'PIX') {
+                    document.getElementById('btn-fechar-modal').style.display = 'block';
+                    document.getElementById('pix-qrcode').src = `data:image/jpeg;base64,${data.pixUrl}`;
+                    document.getElementById('pix-copia-cola').value = data.pixCode;
+                    document.getElementById('pix-content').style.display = 'block';
+                    iniciarPolling(token, 'empresa', '/dashboard.html');
+                } else if (selectedPaymentMethod === 'BOLETO') {
+                    showSuccess(`Boleto gerado com sucesso! <br><br> <a href="${data.boletoUrl}" target="_blank" style="color:var(--primary); font-weight:bold; text-decoration:underline;">Clique aqui para baixar seu boleto</a> <br><br> A assinatura será ativada após a compensação bancária.`);
+                } else {
+                    showSuccess(data.message || 'Cartão em análise. O acesso será liberado assim que o banco confirmar.');
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Erro de comunicação com o servidor.");
+                fecharModal();
+            }
+        }
+
+        function showSuccess(msg) {
+            document.getElementById('pix-content').style.display = 'none';
+            document.getElementById('loading-checkout').style.display = 'none';
+            document.getElementById('method-selection').style.display = 'none';
+            document.getElementById('btn-fechar-modal').style.display = 'none';
+            
+            document.getElementById('sucesso-msg').innerHTML = msg;
+            document.getElementById('sucesso-content').style.display = 'block';
+        }
+
+        function iniciarPolling(token, tipo, redirectUrl) {
+            if (pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = setInterval(async () => {
+                try {
+                    const res = await fetch('/api/asaas/status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token, tipo })
+                    });
+                    const data = await res.json();
+                    if (data.status === 'ACTIVE') {
+                        clearInterval(pollingInterval);
+                        document.getElementById('status-pagamento').innerHTML = '<i class="fas fa-check-circle"></i> Pagamento Confirmado!';
+                        document.getElementById('status-pagamento').style.background = 'rgba(34,197,94,0.1)';
+                        document.getElementById('status-pagamento').style.color = '#22c55e';
+                        setTimeout(() => { showSuccess('Seu PIX foi recebido e a assinatura está confirmada!'); document.querySelector('#sucesso-content button').onclick = () => window.location.href=redirectUrl; }, 1500);
+                    }
+                } catch (e) { console.error("Erro no polling:", e); }
+            }, 5000);
+        }
+
+        function copiarPix() {
+            const input = document.getElementById('pix-copia-cola');
+            input.select();
+            document.execCommand('copy');
+            alert("Código PIX copiado!");
+        }
+
+        function fecharModal() {
+            document.getElementById('pix-modal').style.display = 'none';
+            if (pollingInterval) clearInterval(pollingInterval);
+            resetModal();
         }
     </script>
 </body>

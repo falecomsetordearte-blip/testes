@@ -1,4 +1,4 @@
-// crm-script.js - LÓGICA DE META DIÁRIA AJUSTADA E LANÇAMENTO RÁPIDO COM VALIDAÇÕES EXTRAS
+﻿// crm-script.js - LÃ“GICA DE META DIÃRIA AJUSTADA E LANÃ‡AMENTO RÃPIDO COM VALIDAÃ‡Ã•ES EXTRAS
 
 let currentStep = 1;
 const totalSteps = 3;
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     configurarBuscaCliente();
 
-    // Configurações de UX dos Valores (Calcula saldo e apaga o 0 automaticamente)
+    // ConfiguraÃ§Ãµes de UX dos Valores (Calcula saldo e apaga o 0 automaticamente)
     const valTotalInput = document.getElementById('crm-valor');
     const valPagoInput = document.getElementById('crm-valor-pago');
 
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// --- 1. LÓGICA DE METAS E LANÇAMENTO RÁPIDO ---
+// --- 1. LÃ“GICA DE METAS E LANÃ‡AMENTO RÃPIDO ---
 
 window.lancarVendaRapida = async function () {
     const input = document.getElementById('quick-venda-valor');
@@ -60,7 +60,7 @@ window.lancarVendaRapida = async function () {
     const valor = parseFloat(input.value);
 
     if (isNaN(valor) || valor <= 0) {
-        showToast("Digite um valor válido maior que zero.", "error");
+        showToast("Digite um valor vÃ¡lido maior que zero.", "error");
         return;
     }
 
@@ -84,10 +84,10 @@ window.lancarVendaRapida = async function () {
             showToast(`+ R$ ${valor.toFixed(2)} somados a hoje!`, "success");
             await carregarMetasCRM(); // Recarrega a barra de progresso
         } else {
-            showToast(data.error || "Erro ao lançar venda", "error");
+            showToast(data.error || "Erro ao lanÃ§ar venda", "error");
         }
     } catch (err) {
-        showToast("Erro de conexão.", "error");
+        showToast("Erro de conexÃ£o.", "error");
     } finally {
         btn.innerHTML = '<i class="fas fa-plus"></i>';
         btn.disabled = false;
@@ -111,8 +111,8 @@ async function carregarMetasCRM() {
             renderizarVisualizacaoMeta();
         } else {
             container.style.display = 'flex';
-            document.getElementById('meta-text-left').innerHTML = `<span style="color:#e74c3c;"><i class="fas fa-exclamation-triangle"></i> Metas do mês não configuradas.</span>`;
-            document.getElementById('meta-text-right').innerHTML = `<a href="/admin-metas.html" style="color:#3498db; font-weight:bold; text-decoration:underline;">⚙️ Configurar</a>`;
+            document.getElementById('meta-text-left').innerHTML = `<span style="color:#e74c3c;"><i class="fas fa-exclamation-triangle"></i> Metas do mÃªs nÃ£o configuradas.</span>`;
+            document.getElementById('meta-text-right').innerHTML = `<a href="/admin-metas.html" style="color:#3498db; font-weight:bold; text-decoration:underline;">âš™ï¸ Configurar</a>`;
         }
     } catch (e) {
         console.error("Erro ao carregar metas:", e);
@@ -127,10 +127,10 @@ function atualizarLabelsDoSelect(m) {
     };
     const sel = document.getElementById('filtro-metas');
     if (!sel) return;
-    if (m.sem_1_inicio) sel.options[2].text = `📌 Semana 1 (${format(m.sem_1_inicio)} a ${format(m.sem_1_fim)})`;
-    if (m.sem_2_inicio) sel.options[3].text = `📌 Semana 2 (${format(m.sem_2_inicio)} a ${format(m.sem_2_fim)})`;
-    if (m.sem_3_inicio) sel.options[4].text = `📌 Semana 3 (${format(m.sem_3_inicio)} a ${format(m.sem_3_fim)})`;
-    if (m.sem_4_inicio) sel.options[5].text = `📌 Semana 4 (${format(m.sem_4_inicio)} a ${format(m.sem_4_fim)})`;
+    if (m.sem_1_inicio) sel.options[2].text = `ðŸ“Œ Semana 1 (${format(m.sem_1_inicio)} a ${format(m.sem_1_fim)})`;
+    if (m.sem_2_inicio) sel.options[3].text = `ðŸ“Œ Semana 2 (${format(m.sem_2_inicio)} a ${format(m.sem_2_fim)})`;
+    if (m.sem_3_inicio) sel.options[4].text = `ðŸ“Œ Semana 3 (${format(m.sem_3_inicio)} a ${format(m.sem_3_fim)})`;
+    if (m.sem_4_inicio) sel.options[5].text = `ðŸ“Œ Semana 4 (${format(m.sem_4_inicio)} a ${format(m.sem_4_fim)})`;
 }
 
 function contarDiasRestantesNoMes() {
@@ -172,12 +172,12 @@ window.renderizarVisualizacaoMeta = function () {
         atual = total_hoje;
 
         textoEsq = `Vendido Hoje: ${fmt(atual)}`;
-        textoDir = `Alvo diário para bater o mês: ${fmt(metaAlvo)}`;
+        textoDir = `Alvo diÃ¡rio para bater o mÃªs: ${fmt(metaAlvo)}`;
 
     } else if (filtro === 'mensal') {
         metaAlvo = Number(metas.meta_mensal);
         atual = total_mes;
-        textoEsq = `Acumulado Mês: ${fmt(atual)}`;
+        textoEsq = `Acumulado MÃªs: ${fmt(atual)}`;
         textoDir = `Meta: ${fmt(metaAlvo)}`;
         premio = metas.premio_mensal;
 
@@ -216,7 +216,7 @@ window.renderizarVisualizacaoMeta = function () {
     }
 }
 
-// --- 2. LÓGICA DE BUSCA DE CLIENTE (AUTOCOMPLETE) ---
+// --- 2. LÃ“GICA DE BUSCA DE CLIENTE (AUTOCOMPLETE) ---
 
 function configurarBuscaCliente() {
     const input = document.getElementById('crm-nome');
@@ -272,7 +272,7 @@ function configurarBuscaCliente() {
     });
 }
 
-// --- 3. WIZARD DE VENDAS (PASSOS E VALIDAÇÕES) ---
+// --- 3. WIZARD DE VENDAS (PASSOS E VALIDAÃ‡Ã•ES) ---
 
 window.mudarPasso = function (direction) {
     if (direction === 1 && !validarPassoAtual()) return;
@@ -302,36 +302,36 @@ function renderizarPasso() {
 
 function validarPassoAtual() {
     if (currentStep === 1) {
-        if (!document.getElementById('pedido-servico-hidden').value) { showToast("Selecione o tipo de serviço.", "error"); return false; }
+        if (!document.getElementById('pedido-servico-hidden').value) { showToast("Selecione o tipo de serviÃ§o.", "error"); return false; }
         if (document.getElementById('crm-nome').value.length < 2) { showToast("Informe o nome do cliente.", "error"); return false; }
         const titulo = document.getElementById('crm-titulo-manual').value;
-        if (titulo.length > 30) { showToast("O Nome do Pedido não pode ter mais de 30 caracteres.", "error"); return false; }
+        if (titulo.length > 30) { showToast("O Nome do Pedido nÃ£o pode ter mais de 30 caracteres.", "error"); return false; }
     }
 
     if (currentStep === 2) {
         const arteOrigem = document.getElementById('pedido-arte-hidden').value;
-        if (!arteOrigem) { showToast("Informe quem fará a arte.", "error"); return false; }
+        if (!arteOrigem) { showToast("Informe quem farÃ¡ a arte.", "error"); return false; }
 
-        // Regra Ouro: Se Setor de Arte, Supervisão e Designer são obrigatórios
+        // Regra Ouro: Se Setor de Arte, SupervisÃ£o e Designer sÃ£o obrigatÃ³rios
         if (arteOrigem === 'Setor de Arte') {
             const supWpp = document.getElementById('pedido-supervisao').value;
             const designerValor = document.getElementById('valor-designer').value;
             const formato = document.getElementById('pedido-formato').value;
 
-            if (!supWpp || supWpp.length < 14) { showToast("Informe o WhatsApp da Supervisão completo.", "error"); return false; }
+            if (!supWpp || supWpp.length < 14) { showToast("Informe o WhatsApp da SupervisÃ£o completo.", "error"); return false; }
             if (!designerValor || parseFloat(designerValor) <= 0) { showToast("Informe o valor (maior que 0) para o Designer.", "error"); return false; }
             if (!formato) { showToast("Selecione o formato do arquivo (PDF, JPG, CDR).", "error"); return false; }
         }
 
-        // Regra Ouro: Se Arquivo do cliente, o link é obrigatório
+        // Regra Ouro: Se Arquivo do cliente, o link Ã© obrigatÃ³rio
         if (arteOrigem === 'Arquivo do Cliente') {
             const linkArquivo = document.getElementById('link-arquivo').value;
             if (!linkArquivo || linkArquivo.trim() === '') { showToast("Cole o Link do Arquivo recebido do cliente.", "error"); return false; }
         }
 
-        // Regra Ouro: Entrega / Instalação obrigatória
+        // Regra Ouro: Entrega / InstalaÃ§Ã£o obrigatÃ³ria
         const entrega = document.getElementById('pedido-entrega-hidden').value;
-        if (!entrega) { showToast("Selecione como será a Entrega/Instalação.", "error"); return false; }
+        if (!entrega) { showToast("Selecione como serÃ¡ a Entrega/InstalaÃ§Ã£o.", "error"); return false; }
     }
 
     return true;
@@ -345,12 +345,15 @@ window.selectCard = function (group, value, element) {
     if (group === 'arte') {
         const fileFields = document.getElementById('arquivo-cliente-fields');
         const setorFields = document.getElementById('setor-arte-fields');
+        const proprioFields = document.getElementById('designer-proprio-fields');
         if (fileFields) fileFields.classList.toggle('hidden', value !== 'Arquivo do Cliente');
         if (setorFields) setorFields.classList.toggle('hidden', value !== 'Setor de Arte');
+        if (proprioFields) proprioFields.classList.toggle('hidden', value !== 'Designer Pr\u00f3prio');
+        checkGoogleDriveStatus();
     }
 };
 
-// --- 4. GESTÃO DE CARDS NO KANBAN ---
+// --- 4. GESTÃƒO DE CARDS NO KANBAN ---
 
 async function carregarKanban() {
     try {
@@ -370,8 +373,8 @@ async function carregarKanban() {
 function criarCardHTML(card) {
     const map = {
         'Novos': 'col-novos-list',
-        'Visita Técnica': 'col-visita-list',
-        'Aguardando Orçamento': 'col-orcamento-list',
+        'Visita TÃ©cnica': 'col-visita-list',
+        'Aguardando OrÃ§amento': 'col-orcamento-list',
         'Aguardando Pagamento': 'col-pagamento-list',
         'Abrir Pedido': 'col-abrir-list'
     };
@@ -419,13 +422,13 @@ function inicializarDragAndDrop() {
     });
 }
 
-// --- 5. PRODUÇÃO E EXCLUSÃO ---
+// --- 5. PRODUÃ‡ÃƒO E EXCLUSÃƒO ---
 
 window.produzirCardDireto = function (cardId, btnElement) {
     event.stopPropagation();
     if (btnElement.dataset.confirming === "true") {
         const card = allCardsCache.find(c => c.id == cardId);
-        if (!card) return showToast("Erro: Card não encontrado.", "error");
+        if (!card) return showToast("Erro: Card nÃ£o encontrado.", "error");
 
         let extras = {};
         try { if (card.briefing_json) extras = (typeof card.briefing_json === 'string') ? JSON.parse(card.briefing_json) : card.briefing_json; } catch (e) { }
@@ -465,10 +468,10 @@ window.produzirCardDireto = function (cardId, btnElement) {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: cardId })
                     });
-                } else { throw new Error(data.message || "Erro na produção"); }
+                } else { throw new Error(data.message || "Erro na produÃ§Ã£o"); }
             })
             .then(() => {
-                showToast('Enviado para Produção!', 'success');
+                showToast('Enviado para ProduÃ§Ã£o!', 'success');
                 fecharPanel(); carregarKanban(); carregarMetasCRM();
             })
             .catch(err => {
@@ -500,30 +503,30 @@ window.confirmarExclusaoCard = async function (cardId, event) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: cardId })
             });
-            if (res.ok) { showToast("Card excluído!", "success"); carregarKanban(); carregarMetasCRM(); }
+            if (res.ok) { showToast("Card excluÃ­do!", "success"); carregarKanban(); carregarMetasCRM(); }
             else { showToast("Erro ao excluir.", "error"); }
-        } catch (err) { showToast("Erro de conexão.", "error"); }
+        } catch (err) { showToast("Erro de conexÃ£o.", "error"); }
     }
 };
 
-// --- 6. FUNÇÕES DE FORMULÁRIO (SALVAR, ABRIR, RESET) ---
+// --- 6. FUNÃ‡Ã•ES DE FORMULÃRIO (SALVAR, ABRIR, RESET) ---
 
 document.getElementById('form-crm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Regra Ouro: Valor Total é obrigatório e deve ser > 0
+    // Regra Ouro: Valor Total Ã© obrigatÃ³rio e deve ser > 0
     const valorTotal = parseFloat(document.getElementById('crm-valor').value) || 0;
     if (valorTotal <= 0) {
-        showToast("O Valor Total do pedido não pode ser zero.", "error");
+        showToast("O Valor Total do pedido nÃ£o pode ser zero.", "error");
         return;
     }
 
-    // Regra Ouro: Título automático caso fique em branco
+    // Regra Ouro: TÃ­tulo automÃ¡tico caso fique em branco
     let tituloInput = document.getElementById('crm-titulo-manual');
     if (tituloInput.value.trim() === '') {
         const codigoAleatorio = Math.floor(1000 + Math.random() * 9000);
         tituloInput.value = `PED-${codigoAleatorio}`;
-        showToast(`Título vazio. Gerado código automático: ${tituloInput.value}`, 'success');
+        showToast(`TÃ­tulo vazio. Gerado cÃ³digo automÃ¡tico: ${tituloInput.value}`, 'success');
     }
 
     const btn = document.getElementById('btn-salvar-rascunho');
@@ -551,7 +554,8 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
         briefing_json: JSON.stringify({
             tipo_entrega: document.getElementById('pedido-entrega-hidden').value,
             materiais: mats,
-            link_arquivo: document.getElementById('link-arquivo').value,
+            link_arquivo: document.getElementById('link-arquivo').value || document.getElementById('link-arquivo-drive-arquivo').value,
+            link_arquivo_drive: document.getElementById('link-arquivo-drive-arquivo').value || document.getElementById('link-arquivo-drive-setor').value || document.getElementById('link-arquivo-drive-proprio').value,
             supervisao_wpp: document.getElementById('pedido-supervisao').value,
             valor_designer: document.getElementById('valor-designer').value,
             formato: document.getElementById('pedido-formato').value,
@@ -569,7 +573,7 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
             fecharPanel(); carregarKanban(); carregarMetasCRM();
             showToast('Salvo com sucesso!', 'success');
         } else { showToast('Erro ao salvar.', 'error'); }
-    } catch (err) { showToast('Erro de conexão.', 'error'); }
+    } catch (err) { showToast('Erro de conexÃ£o.', 'error'); }
     finally { btn.innerText = originalText; btn.disabled = false; }
 });
 
@@ -628,6 +632,7 @@ window.abrirPanelNovo = function () {
     adicionarMaterialNoForm();
     document.getElementById('slide-overlay').classList.add('active');
     document.getElementById('slide-panel').classList.add('active');
+    checkGoogleDriveStatus();
 };
 
 window.fecharPanel = function () {
@@ -649,6 +654,15 @@ function resetarForm() {
     document.getElementById('materiais-container').innerHTML = '';
     document.getElementById('arquivo-cliente-fields').classList.add('hidden');
     document.getElementById('setor-arte-fields').classList.add('hidden');
+    const dp = document.getElementById('designer-proprio-fields');
+    if (dp) dp.classList.add('hidden');
+    // Reset link results do Drive
+    ['arquivo','setor','proprio'].forEach(b => {
+        const lr = document.getElementById('link-result-' + b);
+        const lh = document.getElementById('link-arquivo-drive-' + b);
+        if (lr) lr.style.display = 'none';
+        if (lh) lh.value = '';
+    });
 }
 
 function adicionarMaterialNoForm(desc = '', det = '') {
@@ -660,10 +674,10 @@ function adicionarMaterialNoForm(desc = '', det = '') {
             <i class="fas fa-trash-alt"></i>
         </button>
         <div style="margin-bottom:10px">
-            <input type="text" class="mat-desc form-control" value="${desc}" placeholder="Descrição do Material (Ex: Lona 440g)">
+            <input type="text" class="mat-desc form-control" value="${desc}" placeholder="DescriÃ§Ã£o do Material (Ex: Lona 440g)">
         </div>
         <div>
-            <textarea class="mat-det form-control" rows="2" placeholder="Detalhes (Ex: Acabamento em ilhós, medida 1x2m)">${det}</textarea>
+            <textarea class="mat-det form-control" rows="2" placeholder="Detalhes (Ex: Acabamento em ilhÃ³s, medida 1x2m)">${det}</textarea>
         </div>
     `;
     container.appendChild(div);
@@ -724,3 +738,132 @@ function configurarMascaras() {
         });
     }
 }
+// --- 8. GOOGLE DRIVE INTEGRATION ---
+let gDriveConectado = false;
+
+window.checkGoogleDriveStatus = async function () {
+    const sessionToken = localStorage.getItem('sessionToken');
+    if (!sessionToken) return;
+    try {
+        const res = await fetch('/api/auth/google-drive/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionToken })
+        });
+        const data = await res.json();
+        gDriveConectado = data.conectado || false;
+        atualizarUIGDrive();
+    } catch (e) { gDriveConectado = false; }
+};
+
+function atualizarUIGDrive() {
+    ['arquivo', 'setor', 'proprio'].forEach(bloco => {
+        const btnConnect = document.getElementById(`btn-connect-${bloco}`);
+        const badge = document.getElementById(`badge-${bloco}`);
+        const uploadArea = document.getElementById(`upload-area-${bloco}`);
+        const gdSection = document.getElementById(`gdrive-block-${bloco}`);
+        if (gDriveConectado) {
+            if (btnConnect) btnConnect.style.display = 'none';
+            if (badge) badge.style.display = 'inline-flex';
+            if (uploadArea) uploadArea.style.display = 'block';
+            if (gdSection) gdSection.classList.add('conectado');
+        } else {
+            if (btnConnect) btnConnect.style.display = 'inline-flex';
+            if (badge) badge.style.display = 'none';
+            if (uploadArea) uploadArea.style.display = 'none';
+            if (gdSection) gdSection.classList.remove('conectado');
+        }
+    });
+}
+
+window.conectarGoogleDrive = async function (bloco) {
+    const sessionToken = localStorage.getItem('sessionToken');
+    if (!sessionToken) return showToast('Faca login primeiro.', 'error');
+    try {
+        const res = await fetch('/api/auth/google-drive/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionToken })
+        });
+        const data = await res.json();
+        if (!data.authUrl) return showToast('Erro ao gerar link de autorizacao.', 'error');
+
+        const popup = window.open(data.authUrl, 'google-drive-auth', 'width=500,height=620,top=100,left=300');
+
+        const onMessage = (event) => {
+            if (event.data && event.data.type === 'GOOGLE_DRIVE_AUTH') {
+                window.removeEventListener('message', onMessage);
+                if (event.data.sucesso) {
+                    gDriveConectado = true;
+                    atualizarUIGDrive();
+                    showToast('Google Drive conectado com sucesso!', 'success');
+                } else {
+                    showToast('Falha ao conectar o Drive. Tente novamente.', 'error');
+                }
+                if (!popup.closed) popup.close();
+            }
+        };
+        window.addEventListener('message', onMessage);
+        const checkPopup = setInterval(() => {
+            if (popup.closed) { clearInterval(checkPopup); window.removeEventListener('message', onMessage); }
+        }, 1000);
+    } catch (e) { showToast('Erro de conexao.', 'error'); }
+};
+
+window.atualizarContadorArquivos = function (bloco) {
+    const input = document.getElementById(`input-file-${bloco}`);
+    const contador = document.getElementById(`count-${bloco}`);
+    if (!input || !contador) return;
+    const n = input.files.length;
+    if (n === 0) contador.textContent = 'Nenhum arquivo selecionado';
+    else if (n === 1) contador.textContent = `1 arquivo: ${input.files[0].name}`;
+    else contador.textContent = `${n} arquivos selecionados`;
+};
+
+window.uploadParaGoogleDrive = async function (bloco) {
+    const input = document.getElementById(`input-file-${bloco}`);
+    const btn = document.getElementById(`btn-upload-${bloco}`);
+    const linkResult = document.getElementById(`link-result-${bloco}`);
+    const linkUrl = document.getElementById(`link-url-${bloco}`);
+    const linkHidden = document.getElementById(`link-arquivo-drive-${bloco}`);
+    const sessionToken = localStorage.getItem('sessionToken');
+
+    if (!input || !input.files.length) { showToast('Selecione pelo menos um arquivo.', 'error'); return; }
+
+    const tituloPedido = document.getElementById('crm-titulo-manual') ? document.getElementById('crm-titulo-manual').value : 'Pedido';
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+    try {
+        const formData = new FormData();
+        formData.append('sessionToken', sessionToken);
+        formData.append('tituloPedido', tituloPedido);
+        for (const file of input.files) formData.append('files', file);
+
+        const res = await fetch('/api/upload/google-drive', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (res.ok && data.link) {
+            linkUrl.href = data.link;
+            linkUrl.textContent = data.link.length > 60 ? data.link.substring(0, 60) + '...' : data.link;
+            linkResult.style.display = 'flex';
+            if (linkHidden) linkHidden.value = data.link;
+            if (bloco === 'arquivo') {
+                const el = document.getElementById('link-arquivo');
+                if (el && !el.value) el.value = data.link;
+            }
+            showToast(`${data.arquivos} arquivo(s) enviados para o Drive!`, 'success');
+        } else if (data.needsAuth) {
+            gDriveConectado = false;
+            atualizarUIGDrive();
+            showToast('Autorizacao do Drive expirou. Reconecte.', 'error');
+        } else {
+            showToast(data.message || 'Erro no upload.', 'error');
+        }
+    } catch (e) {
+        showToast('Erro de conexao ao fazer upload.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fab fa-google-drive"></i> Enviar para o Drive';
+    }
+};

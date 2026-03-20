@@ -807,3 +807,60 @@ a.btn-ver-pedido:hover { text-decoration: underline; color: #2c89c8; }
         position: fixed; top: 70px; left: 10px; right: 10px; width: auto;
     }
 }
+
+/* --- Global News Modal Overlay --- */
+.global-news-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+.global-news-overlay.active {
+    opacity: 1; visibility: visible;
+}
+.global-news-modal {
+    background: #fff;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    transform: translateY(20px) scale(0.95);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+}
+.global-news-overlay.active .global-news-modal {
+    transform: translateY(0) scale(1);
+}
+.global-news-header {
+    padding: 24px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.global-news-header h3 {
+    margin: 0; font-size: 1.25rem; color: #1e293b;
+}
+.global-news-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+}
+.global-news-icon.info { background: #dbeafe; color: #2563eb; }
+.global-news-icon.alerta { background: #fef3c7; color: #d97706; }
+.global-news-icon.erro { background: #fee2e2; color: #dc2626; }
+
+.global-news-body { padding: 24px; color: #475569; font-size: 1rem; line-height: 1.6; }
+.global-news-footer { padding: 20px 24px; background: #f8fafc; text-align: right; border-top: 1px solid #e2e8f0; }
+.global-news-close-btn {
+    background: #2563eb; color: #fff; border: none; padding: 10px 24px;
+    border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+}
+.global-news-close-btn:hover { background: #1d4ed8; }

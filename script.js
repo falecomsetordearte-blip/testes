@@ -296,18 +296,68 @@ function setupNotifications() {
 
     if (!btnBell || !dropdown) return;
 
+    // Função que cria o modal na tela dinamicamente
+    function openGlobalNewsModal(notif) {
+        // Se já existir, remove
+        const existing = document.getElementById('globalNewsOverlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'globalNewsOverlay';
+        overlay.className = 'global-news-overlay';
+
+        let iconClass = 'fa-info-circle info';
+        if (notif.tipo === 'alerta') iconClass = 'fa-exclamation-triangle alerta';
+        if (notif.tipo === 'erro') iconClass = 'fa-times-circle erro';
+
+        overlay.innerHTML = `
+            <div class="global-news-modal">
+                <div class="global-news-header">
+                    <div class="global-news-icon ${notif.tipo || 'info'}">
+                        <i class="fas ${iconClass.split(' ')[0]}"></i>
+                    </div>
+                    <h3>${notif.titulo}</h3>
+                </div>
+                <div class="global-news-body">
+                    ${notif.mensagem.replace(/\n/g, '<br>')}
+                </div>
+                <div class="global-news-footer">
+                    <button class="global-news-close-btn" id="closeNewsModalBtn">Entendi</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        // Pequeno atraso para animação CSS disparar
+        setTimeout(() => {
+            overlay.classList.add('active');
+        }, 100);
+
+        // Fechar Modal
+        document.getElementById('closeNewsModalBtn').addEventListener('click', () => {
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.remove(), 400); // Espera transição finalizar
+            localStorage.setItem('lastSeenModalNotifId', notif.id);
+        });
+    }
+
     async function loadNotifs() {
         try {
             const res = await fetch('/api/getGlobalNotifications');
             if (!res.ok) return; 
             const notifications = await res.json();
+            
             if (!notifications || notifications.length === 0) {
                 list.innerHTML = '<div style="padding:15px; text-align:center; font-size:0.85rem; color:#94a3b8;">Nenhuma notificação no momento.</div>';
                 return;
             }
-            const lastSeenId = localStorage.getItem('lastSeenNotifId') || 0;
+
+            // 1. Lógica do Sininho
+            const lastSeenDropdownId = localStorage.getItem('lastSeenNotifId') || 0;
             const newestId = notifications[0].id;
-            if (newestId > lastSeenId) badge.classList.add('active');
+            
+            if (newestId > lastSeenDropdownId) badge.classList.add('active');
             else badge.classList.remove('active');
 
             list.innerHTML = notifications.map(n => `
@@ -317,7 +367,16 @@ function setupNotifications() {
                     <span class="notif-date">${new Date(n.criado_em).toLocaleDateString('pt-BR')}</span>
                 </div>
             `).join('');
+            
             btnBell.dataset.newestId = newestId;
+
+            // 2. Lógica do Modal de Tela Cheia (Salva no LocalStorage de forma independente)
+            const lastSeenModalId = localStorage.getItem('lastSeenModalNotifId') || 0;
+            // Verifica a mais nova, se o ID for maior do que o usuário já viu, abre o modal
+            if (newestId > lastSeenModalId) {
+                openGlobalNewsModal(notifications[0]);
+            }
+
         } catch (err) { console.error("Erro notificações:", err); }
     }
 
@@ -333,6 +392,7 @@ function setupNotifications() {
     window.addEventListener('click', (e) => {
         if (!e.target.closest('.notification-wrapper')) dropdown.classList.remove('active');
     });
+    
     loadNotifs();
 }
 
