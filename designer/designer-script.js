@@ -1,4 +1,4 @@
-﻿// /designer/designer-script.js - VERSÃƒO COMPLETA E ATUALIZADA
+﻿// /designer/designer-script.js - VERSÃO COMPLETA E ATUALIZADA
 (function () {
     const sessionToken = localStorage.getItem('designerToken');
     const path = window.location.pathname;
@@ -12,12 +12,12 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Inicializa o Dashboard se estiver na pÃ¡gina do painel
+        // Inicializa o Dashboard se estiver na página do painel
         if (document.querySelector('main.main-painel')) {
             carregarDashboardDesigner();
         }
 
-        // Configura o botÃ£o de logout padrÃ£o do painel
+        // Configura o botão de logout padrão do painel
         const logoutBtn = document.getElementById('logout-button');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
@@ -27,10 +27,10 @@
         }
 
         // =========================================================
-        // LÃ“GICA DAS TELAS DE AUTENTICAÃ‡ÃƒO (LOGIN, CADASTRO, SENHA)
+        // LÓGICA DAS TELAS DE AUTENTICAÇÃO (LOGIN, CADASTRO, SENHA)
         // =========================================================
 
-        // --- LÃ“GICA DE LOGIN ---
+        // --- LÓGICA DE LOGIN ---
         const loginForm = document.getElementById('designer-login-form');
         if (loginForm) {
             loginForm.addEventListener('submit', async (e) => {
@@ -54,7 +54,7 @@
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.message || 'Erro ao fazer login.');
 
-                    // Salva a sessÃ£o e redireciona
+                    // Salva a sessão e redireciona
                     localStorage.setItem('designerToken', data.token);
                     localStorage.setItem('designerInfo', JSON.stringify({ name: data.nome, nivel: data.nivel }));
                     window.location.href = 'painel.html';
@@ -67,7 +67,7 @@
             });
         }
 
-        // --- LÃ“GICA DE CADASTRO ---
+        // --- LÓGICA DE CADASTRO ---
         const cadastroForm = document.getElementById('designer-cadastro-form');
         if (cadastroForm) {
             cadastroForm.addEventListener('submit', async (e) => {
@@ -76,6 +76,8 @@
                 const email = document.getElementById('email').value;
                 const senha = document.getElementById('senha').value;
                 const confirmarSenha = document.getElementById('confirmar-senha').value;
+                // CAPTURA DA CHAVE PIX (Novo campo para evitar NULL no banco)
+                const chave_pix = document.getElementById('chave_pix')?.value || '';
 
                 const btnSubmit = cadastroForm.querySelector('button[type="submit"]');
                 const feedback = document.getElementById('form-error-feedback');
@@ -83,7 +85,7 @@
                 feedback.classList.add('hidden');
 
                 if (senha !== confirmarSenha) {
-                    feedback.textContent = "As senhas nÃ£o coincidem.";
+                    feedback.textContent = "As senhas não coincidem.";
                     feedback.classList.remove('hidden');
                     return;
                 }
@@ -95,7 +97,8 @@
                     const res = await fetch('/api/designer/register', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ nome, email, senha })
+                        // ENVIANDO CHAVE_PIX PARA O BACKEND
+                        body: JSON.stringify({ nome, email, senha, chave_pix })
                     });
 
                     const data = await res.json();
@@ -118,7 +121,7 @@
             });
         }
 
-        // --- LÃ“GICA DE ESQUECI A SENHA ---
+        // --- LÓGICA DE ESQUECI A SENHA ---
         const esqueciSenhaForm = document.getElementById('designer-esqueci-senha-form');
         if ( esqueciSenhaForm) {
             esqueciSenhaForm.addEventListener('submit', async (e) => {
@@ -137,19 +140,19 @@
                     });
 
                     const data = await res.json();
-                    if (!res.ok) throw new Error(data.message || 'Erro ao processar solicitaÃ§Ã£o.');
+                    if (!res.ok) throw new Error(data.message || 'Erro ao processar solicitação.');
 
                     const corpo = `<p style="color:var(--success); font-weight:600; text-align:center;">${data.message}</p>`;
                     window.abrirGaveta("E-mail Enviado!", corpo, `<button onclick="window.location.href='login.html'" class="btn-full btn-primary">Voltar ao Login</button>`);
                 } catch (error) {
                     window.mostrarErro(error.message);
                     btnSubmit.disabled = false;
-                    btnSubmit.textContent = 'Enviar Link de RecuperaÃ§Ã£o';
+                    btnSubmit.textContent = 'Enviar Link de Recuperação';
                 }
             });
         }
 
-        // --- LÃ“GICA DE REDEFINIR A SENHA (CRIAR NOVA SENHA) ---
+        // --- LÓGICA DE REDEFINIR A SENHA (CRIAR NOVA SENHA) ---
         const redefinirSenhaForm = document.getElementById('designer-redefinir-senha-form');
         if (redefinirSenhaForm) {
             redefinirSenhaForm.addEventListener('submit', async (e) => {
@@ -162,7 +165,7 @@
                 feedback.classList.add('hidden');
 
                 if (novaSenha !== confirmarSenha) {
-                    feedback.textContent = "As senhas nÃ£o coincidem.";
+                    feedback.textContent = "As senhas não coincidem.";
                     feedback.classList.remove('hidden');
                     return;
                 }
@@ -171,7 +174,7 @@
                 const token = urlParams.get('token');
 
                 if (!token) {
-                    feedback.textContent = "Token invÃ¡lido ou ausente. Solicite um novo link.";
+                    feedback.textContent = "Token inválido ou ausente. Solicite um novo link.";
                     feedback.classList.remove('hidden');
                     return;
                 }
@@ -202,7 +205,7 @@
     });
 
     // =========================================================
-    // FUNÃ‡Ã•ES GLOBAIS DA GAVETA (MODAL LATERAL)
+    // FUNÇÕES GLOBAIS DA GAVETA (MODAL LATERAL)
     // =========================================================
 
     window.fecharGaveta = () => {
@@ -230,13 +233,13 @@
     };
 
     // =========================================================
-    // FUNÃ‡Ã•ES DO DASHBOARD (PAINEL PRINCIPAL)
+    // FUNÇÕES DO DASHBOARD (PAINEL PRINCIPAL)
     // =========================================================
 
     async function carregarDashboardDesigner() {
         const designerInfo = JSON.parse(localStorage.getItem('designerInfo'));
         if (designerInfo) {
-            document.getElementById('designer-greeting').textContent = `OlÃ¡, ${designerInfo.name}!`;
+            document.getElementById('designer-greeting').textContent = `Olá, ${designerInfo.name}!`;
         }
 
         try {
@@ -267,7 +270,7 @@
             const n = niveis[data.designer.nivel] || niveis[3];
 
             if (badgeNivel) {
-                badgeNivel.innerHTML = `<i class="fas fa-medal"></i> NÃ­vel ${n.t}`;
+                badgeNivel.innerHTML = `<i class="fas fa-medal"></i> Nível ${n.t}`;
                 badgeNivel.className = `stat-badge ${n.c}`;
             }
 
@@ -303,7 +306,7 @@
 
         } catch (error) {
             console.error(error);
-            container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--danger);">Erro ao carregar histÃ³rico.</p>`;
+            container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--danger);">Erro ao carregar histórico.</p>`;
         }
     }
 
@@ -353,7 +356,7 @@
                             ${grupo.itens.map(item => {
                                 let statusHtml = `<span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">${item.status}</span>`;
                                 if(item.status === 'PAGO') statusHtml = `<span style="background:#d1fae5; color:#065f46; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">RECEBIDO</span>`;
-                                else if(item.status === 'AGUARDANDO_CONFIRMACAO') statusHtml = `<span style="background:#dcfce7; color:#16a34a; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">AGUARDANDO VOCÃŠ</span>`;
+                                else if(item.status === 'AGUARDANDO_CONFIRMACAO') statusHtml = `<span style="background:#dcfce7; color:#16a34a; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">AGUARDANDO VOCÊ</span>`;
                                 
                                 let linkDoc = item.comprovante_url ? `<a href="${item.comprovante_url}" target="_blank" title="Baixar Comprovante" style="color:var(--primary-color);" class="btn-doc-${empId}"><i class="fas fa-file-invoice-dollar"></i></a>` : '-';
 
@@ -375,9 +378,9 @@
             container.innerHTML = `
                 ${renderizarControlesFiltro(statusFiltro)}
                 <div class="list-header" style="grid-template-columns: 2fr 1fr 1fr 1.5fr; margin-bottom: 10px; background:transparent;">
-                    <div>Empresa / GrÃ¡fica</div>
+                    <div>Empresa / Gráfica</div>
                     <div>Registros</div>
-                    <div style="text-align:right;">PendÃªncia Atual</div>
+                    <div style="text-align:right;">Pendência Atual</div>
                     <div style="text-align:right;">Registrar Recebimento</div>
                 </div>
                 ${htmlGrupos}
@@ -414,7 +417,7 @@
             let valorStr = input.value.replace('R$ ', '').replace(/\./g, '').replace(',', '.').trim();
             const valorNum = parseFloat(valorStr);
 
-            if(isNaN(valorNum) || valorNum <= 0) return alert("Informe um valor vÃ¡lido.");
+            if(isNaN(valorNum) || valorNum <= 0) return alert("Informe um valor válido.");
             
             if(!confirm(`Confirma que recebeu ${formatarMoeda(valorNum)} desta empresa?`)) return;
 
@@ -426,7 +429,7 @@
                 });
                 if(res.ok) {
                     alert("Pagamento registrado e acertos abatidos!");
-                    carregarDashboard();
+                    carregarDashboardDesigner();
                     carregarHistoricoAcertos();
                 } else {
                     const data = await res.json();
@@ -476,7 +479,7 @@
                     <div style="font-weight:600;">${p.titulo}</div>
                     <button onclick="verBriefing('${b64EncodeUnicode(p.briefing_completo || 'Sem detalhes.')}')" class="btn-outline-sm">LER BRIEFING</button>
                 </div>
-                <div><span style="background:#fef3c7; color:#b45309; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">PRODUÃ‡ÃƒO</span></div>
+                <div><span style="background:#fef3c7; color:#b45309; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">PRODUÇÃO</span></div>
                 <div style="font-weight:700; color:var(--success);">${formatarMoeda(p.valor_designer)}</div>
                 <div style="text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
                     <button onclick="abrirChatEmbutido(${p.id}, '${p.titulo}')" class="btn-action" style="background:#25D366;"><i class="fab fa-whatsapp"></i> Chat Grupo</button>
@@ -491,7 +494,7 @@
         if (!container) return;
 
         if (pedidos.length === 0) {
-            container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhum pedido disponÃ­vel no momento.</p>`;
+            container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhum pedido disponível no momento.</p>`;
             return;
         }
 
@@ -511,13 +514,13 @@
     }
 
     // =========================================================
-    // AÃ‡Ã•ES DOS BOTÃ•ES DAS LISTAS
+    // AÇÕES DOS BOTÕES DAS LISTAS
     // =========================================================
 
     window.verBriefing = (b64) => {
         const texto = decodeURIComponent(Array.prototype.map.call(atob(b64), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
         const corpo = `
-            <span class="drawer-label">InstruÃ§Ãµes e Detalhes</span>
+            <span class="drawer-label">Instruções e Detalhes</span>
             <div class="briefing-box">${texto}</div>
         `;
         const rodape = `<button onclick="fecharGaveta()" class="btn-full btn-secondary">Fechar</button>`;
@@ -525,7 +528,7 @@
     };
 
     window.confirmarAssumir = (id) => {
-        const corpo = `<p style="font-size:1rem; color:var(--text-main); line-height:1.5;">Deseja assumir este pedido? VocÃª serÃ¡ responsÃ¡vel pela comunicaÃ§Ã£o e entrega da arte.</p>`;
+        const corpo = `<p style="font-size:1rem; color:var(--text-main); line-height:1.5;">Deseja assumir este pedido? Você será responsável pela comunicação e entrega da arte.</p>`;
         const rodape = `
             <button id="btn-exec-assumir" class="btn-full btn-primary">SIM, ATENDER</button>
             <button onclick="fecharGaveta()" class="btn-full btn-secondary">Cancelar</button>
@@ -559,7 +562,7 @@
         const corpo = `
             <span class="drawer-label">Link do Layout Aprovado (JPG/PNG)</span>
             <input type="url" id="f-layout" class="drawer-input" placeholder="Cole o link do layout..." required>
-            <span class="drawer-label">Link para ImpressÃ£o (PDF/AI/CDR)</span>
+            <span class="drawer-label">Link para Impressão (PDF/AI/CDR)</span>
             <input type="url" id="f-impressao" class="drawer-input" placeholder="Cole o link do arquivo final..." required>
         `;
         const rodape = `
@@ -587,7 +590,7 @@
                     body: JSON.stringify({ token: sessionToken, pedidoId: id, linkLayout, linkImpressao })
                 });
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.message || "NÃ£o foi possÃ­vel finalizar.");
+                if (!res.ok) throw new Error(data.message || "Não foi possível finalizar.");
 
                 fecharGaveta();
                 setTimeout(() => {
@@ -604,7 +607,7 @@
     };
 
     // =========================================================
-    // UTILITÃRIOS & MINI CHAT
+    // UTILITÁRIOS & MINI CHAT
     // =========================================================
 
     function formatarMoeda(valor) {
@@ -650,7 +653,7 @@
                 <button id="btn-enviar-chat" class="btn-action" style="padding: 14px 20px; font-size: 1.2rem; border-radius: 8px;"><i class="fas fa-paper-plane"></i></button>
             </div>
         `;
-        const designerNome = document.getElementById('designer-greeting')?.innerText.replace('OlÃ¡, ', '').split('!')[0] || 'Designer';
+        const designerNome = document.getElementById('designer-greeting')?.innerText.replace('Olá, ', '').split('!')[0] || 'Designer';
         window.abrirGaveta(`Atendimento: ${pedidoId} - ${pedidoTitulo}`, corpo, "");
 
         const container = document.getElementById('chat-msgs-container');
@@ -732,7 +735,7 @@
                 document.getElementById('chat-file-preview').style.setProperty('display', 'none', 'important');
                 await carregarMensagens();
             } catch (err) {
-                alert('NÃ£o foi possÃ­vel enviar a mensagem.');
+                alert('Não foi possível enviar a mensagem.');
             } finally {
                 btnEnviar.disabled = false; input.disabled = false; input.focus();
             }
@@ -768,12 +771,12 @@
             <div id="modal-termos-lgpd" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
                 <div style="background:white; width:90%; max-width:550px; padding:35px; border-radius:16px; box-shadow:0 20px 25px rgba(0,0,0,0.2); text-align:center;">
                     <div style="font-size:3rem; color:#4f46e5; margin-bottom:20px;"><i class="fas fa-file-signature"></i></div>
-                    <h2 style="margin-bottom:15px; color:#1e293b; font-family:'Poppins', sans-serif;">AtualizaÃ§Ã£o dos Termos de Uso</h2>
+                    <h2 style="margin-bottom:15px; color:#1e293b; font-family:'Poppins', sans-serif;">Atualização dos Termos de Uso</h2>
                     <p style="color:#64748b; font-size:0.95rem; margin-bottom:20px; font-family:'Poppins', sans-serif;">
-                        Para continuar utilizando o <strong>Setor de Arte</strong>, vocÃª precisa ler e aceitar nossos novos termos de uso e polÃ­tica de privacidade (LGPD).
+                        Para continuar utilizando o <strong>Setor de Arte</strong>, você precisa ler e aceitar nossos novos termos de uso e política de privacidade (LGPD).
                     </p>
                     <div style="background:#fff7ed; border-left:4px solid #f97316; padding:15px; margin-bottom:25px; text-align:left; font-size:0.9rem; color:#9a3412; font-family:'Poppins', sans-serif;">
-                        <strong>Aviso Importante:</strong> O Setor de Arte Ã© apenas um facilitador tecnolÃ³gico. NÃ£o nos responsabilizamos por negociaÃ§Ãµes, prazos ou pagamentos entre Designers e GrÃ¡ficas.
+                        <strong>Aviso Importante:</strong> O Setor de Arte é apenas um facilitador tecnológico. Não nos responsabilizamos por negociações, prazos ou pagamentos entre Designers e Gráficas.
                     </div>
                     <div style="display:flex; flex-direction:column; gap:10px;">
                         <button id="btn-aceitar-termos" style="background:#4f46e5; color:white; border:none; padding:16px; border-radius:10px; font-weight:700; cursor:pointer; font-size:1rem; font-family:'Poppins', sans-serif;">Li e Concordo com os Termos</button>
@@ -800,7 +803,7 @@
                     this.disabled = false;
                     this.innerText = 'Li e Concordo com os Termos';
                 }
-            } catch (e) { alert("Erro de conexÃ£o."); this.disabled = false; }
+            } catch (e) { alert("Erro de conexão."); this.disabled = false; }
         };
     }
 
