@@ -28,7 +28,6 @@ module.exports = async (req, res) => {
     // =================================================================
     // 1. VALIDAÇÃO DE DUPLICIDADE NO BANCO (NEON)
     // =================================================================
-    console.log("[DEBUG] Verificando duplicidade no banco...");
     const checkClient = new Client({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
     try {
         await checkClient.connect();
@@ -57,53 +56,38 @@ module.exports = async (req, res) => {
     let asaasCustomerId = null;
 
     try {
-        // 2. Preparar Senha e Token (Agora ficam no Neon)
         const sessionToken = uuidv4();
         const hashedPassword = await bcrypt.hash(senha, 10);
-        
-        const nameParts = nomeResponsavel.split(' ');
-        const firstName = nameParts.shift();
+        const firstName = nomeResponsavel.split(' ')[0];
 
         // =================================================================
-        // 3. INTEGRAÇÃO ASAAS (ISOLADA)
+        // 3. INTEGRAÇÃO ASAAS
         // =================================================================
-        console.log("[DEBUG] Tentando criar cliente no Asaas...");
         try {
-            if (!ASAAS_API_KEY) throw new Error("ASAAS_API_KEY não configurada.");
-
-            const createAsaasResponse = await axios.post(`${ASAAS_API_URL}/customers`, {
-                name: nomeEmpresa, 
-                cpfCnpj: cnpj, 
-                email: email, 
-                mobilePhone: telefoneEmpresa
-            }, { 
-                headers: { 'access_token': ASAAS_API_KEY, 'Content-Type': 'application/json' } 
-            });
-            
-            asaasCustomerId = createAsaasResponse.data.id;
-            console.log(`[DEBUG] Cliente Asaas criado com sucesso: ${asaasCustomerId}`);
-
+            if (ASAAS_API_KEY) {
+                const createAsaasResponse = await axios.post(`${ASAAS_API_URL}/customers`, {
+                    name: nomeEmpresa, cpfCnpj: cnpj, email: email, mobilePhone: telefoneEmpresa
+                }, { headers: { 'access_token': ASAAS_API_KEY, 'Content-Type': 'application/json' } });
+                
+                asaasCustomerId = createAsaasResponse.data.id;
+                console.log(`[DEBUG] Cliente Asaas criado: ${asaasCustomerId}`);
+            }
         } catch (asaasError) {
-            console.error("--- [ATENÇÃO: FALHA NO ASAAS] ---");
-            console.error("Status:", asaasError.response?.status);
-            console.error("Detalhes:", JSON.stringify(asaasError.response?.data || asaasError.message));
-            console.error("O cadastro local continuará mesmo sem o Asaas.");
-            asaasCustomerId = null; 
+            console.error("[ASAAS ERROR]", asaasError.response?.data || asaasError.message);
         }
 
         // =================================================================
         // 4. SALVAR NO BANCO LOCAL (NEON)
         // =================================================================
-        console.log("[DEBUG] Salvando dados e senha no Banco Local (Neon)...");
         const client = new Client({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
         try {
             await client.connect();
             
-            // Salvando tudo direto na tabela 'empresas'
+            // AJUSTADO: Usando 'senha' e 'asaas_customer_id' conforme seu print do Neon
             const sql = `
                 INSERT INTO empresas (
                     cnpj, nome_fantasia, whatsapp, email, responsavel, 
-                    senha_hash, session_tokens, asaas_id, created_at
+                    senha, session_tokens, asaas_customer_id, created_at
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
                 RETURNING id;
             `;
@@ -116,22 +100,20 @@ module.exports = async (req, res) => {
             const dbRes = await client.query(sql, values);
             const empresaLocalId = dbRes.rows[0].id;
 
-            // Cria o registro na tabela crm_clientes para ele aparecer nas buscas do CRM
             await client.query(`
                 INSERT INTO crm_clientes (empresa_id, nome, whatsapp, created_at)
                 VALUES ($1, $2, $3, NOW())
             `, [empresaLocalId, nomeResponsavel, telefoneEmpresa]);
 
-            console.log(`[DEBUG] Cadastro 100% finalizado! ID Local: ${empresaLocalId}`);
+            console.log(`[DEBUG] Cadastro finalizado! ID: ${empresaLocalId}`);
 
         } catch (dbError) {
-            console.error("ERRO CRÍTICO AO SALVAR NO NEON:", dbError.message);
+            console.error("ERRO AO SALVAR NO NEON:", dbError.message);
             throw new Error(`Falha no banco: ${dbError.message}`);
         } finally {
             await client.end();
         }
 
-        // 5. Retorna sucesso para o Front-End
         return res.status(200).json({
             success: true,
             message: "Conta criada com sucesso!",
@@ -141,6 +123,6 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error('--- [ERRO FATAL NO CADASTRO] ---', error.message);
-        return res.status(500).json({ message: 'Erro ao processar cadastro no servidor. Tente novamente.' });
+        return res.status(500).json({ message: 'Erro interno ao processar cadastro.' });
     }
 };
