@@ -1,127 +1,117 @@
-// /api/helpers/chatapp.js
-const axios = require('axios');
+// /api/createDealForGrafica.js
 const { PrismaClient } = require('@prisma/client');
-const CHATAPP_API = 'https://api.chatapp.online/v1';
 const prisma = new PrismaClient();
+const { criarGrupoProducao } = require('./helpers/chatapp');
 
-// --- Garante a tabela de configuração ---
-async function garantirTabelaConfig() {
+module.exports = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') return res.status(200).end();
+
+    console.log("--- [DEBUG] INICIANDO REQUISIÇÃO DE PEDIDO ---");
+
     try {
-        await prisma.$executeRawUnsafe(`
-            CREATE TABLE IF NOT EXISTS system_config (
-                chave TEXT PRIMARY KEY, valor TEXT, atualizado_em TIMESTAMPTZ DEFAULT NOW()
-            )`);
-    } catch (e) {}
-}
+        const { sessionToken, arte, supervisaoWpp, valorDesigner, tipoEntrega, ...formData } = req.body;
 
-// --- Busca token ou gera um novo ---
-async function getChatAppToken(forceRefresh = false) {
-    if (!forceRefresh) {
-        try {
-            await garantirTabelaConfig();
-            const rows = await prisma.$queryRawUnsafe(`SELECT valor FROM system_config WHERE chave = 'chatapp_token' LIMIT 1`);
-            if (rows.length > 0) return rows[0].valor;
-        } catch (e) {}
-    }
+        // Log para ver se o token está chegando do frontend
+        console.log(`[DEBUG] Token Recebido: "${sessionToken ? sessionToken.substring(0, 15) + '...' : 'NULL'}"`);
 
-    // Se não tem no banco ou forçado: Autentica
-    try {
-        console.log('[CHATAPP] Autenticando para obter NOVO token...');
-        const response = await axios.post(`${CHATAPP_API}/tokens`, {
-            email: process.env.CHATAPP_EMAIL,
-            password: process.env.CHATAPP_PASSWORD,
-            appId: process.env.CHATAPP_APP_ID
-        });
+        // 1. Identificar Empresa (Voltamos para o LIKE para garantir a compatibilidade)
+        const empresas = await prisma.$queryRawUnsafe(
+            `SELECT * FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`, 
+            `%${sessionToken}%`
+        );
 
-        const token = response.data?.accessToken || response.data?.data?.accessToken;
-        if (token) {
+        if (empresas.length === 0) {
+            console.error(`[ERRO] Empresa não encontrada. Token enviado: ${sessionToken}`);
+            return res.status(403).json({ message: 'Sessão inválida. Tente fazer login novamente.' });
+        }
+        
+        const empresa = empresas[0];
+        console.log(`[OK] Empresa Identificada: ${empresa.nome || empresa.id}`);
+
+        // 2. Normalizar a checagem da ARTE
+        const arteNormalizada = arte ? arte.trim().toLowerCase() : "";
+        console.log(`[DEBUG] Arte selecionada: "${arte}"`);
+
+        let etapaDestino = (arteNormalizada === 'arquivo do cliente') ? 'IMPRESSÃO' : 'ARTE';
+        let briefingFinal = `${formData.briefingFormatado || 'Sem briefing'}\n\nEntrega: ${tipoEntrega ? tipoEntrega.toUpperCase() : 'NÃO INFORMADA'}`;
+
+        if (formData.linkArquivoDrive) {
+            briefingFinal += `\n\n📎 Arquivos de Referência: ${formData.linkArquivoDrive}`;
+        }
+
+        const valorParaSalvar = parseFloat(valorDesigner || 0);
+
+        // 3. Inserir Pedido no Banco
+        const insertResult = await prisma.$queryRawUnsafe(`
+            INSERT INTO pedidos (
+                empresa_id, titulo, nome_cliente, whatsapp_cliente, 
+                servico, tipo_arte, briefing_completo, etapa, 
+                valor_designer, link_arquivo_impressao, created_at, bitrix_deal_id
+            ) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), 0)
+            RETURNING id
+        `,
+            empresa.id,
+            formData.titulo || 'Sem Título',
+            formData.nomeCliente || 'Sem Nome',
+            formData.wppCliente || '',
+            formData.servico || '',
+            arte,
+            briefingFinal,
+            etapaDestino,
+            valorParaSalvar,
+            formData.linkArquivo || formData.linkArquivoDrive || null
+        );
+
+        const newPedidoId = insertResult[0].id;
+        console.log(`[OK] Pedido salvo com Sucesso! ID: ${newPedidoId}`);
+
+        // --- 4. BLOCO DE AUTOMAÇÃO CHATAPP ---
+        // Condição: Se o texto da arte contiver "setor" e "arte" (independente de maiúsculas)
+        if (arteNormalizada.includes("setor") && arteNormalizada.includes("arte")) {
+            console.log(`[CHATAPP] Iniciando criação de grupo...`);
+            console.log(`[CHATAPP] Dados: Cliente=${formData.wppCliente} | Supervisor=${supervisaoWpp}`);
+
+            try {
+                const automacao = await criarGrupoProducao(
+                    formData.titulo,
+                    formData.wppCliente, 
+                    supervisaoWpp,       
+                    briefingFinal
+                );
+
+                if (automacao && automacao.chatId) {
+                    await prisma.$executeRawUnsafe(`
+                        UPDATE pedidos SET chatapp_chat_id = $1, link_acompanhar = $2 WHERE id = $3
+                    `, automacao.chatId, automacao.groupLink, newPedidoId);
+                    console.log(`[CHATAPP] Grupo criado e vinculado! ID: ${automacao.chatId}`);
+                } else {
+                    console.error(`[CHATAPP] FALHA: A função criarGrupoProducao não retornou um ID de chat.`);
+                }
+            } catch (errAuto) {
+                console.error("[CHATAPP] ERRO CRÍTICO NA FUNÇÃO DE GRUPO:", errAuto.message);
+            }
+        } else {
+            console.log(`[CHATAPP] Ignorado: Arte não é 'Setor de Arte'. (Valor: "${arte}")`);
+        }
+
+        // 5. Lógica Financeira
+        if (arteNormalizada.includes("setor") && valorParaSalvar > 0) {
+            await prisma.$executeRawUnsafe(`UPDATE empresas SET saldo = saldo - $1 WHERE id = $2`, valorParaSalvar, empresa.id);
             await prisma.$executeRawUnsafe(`
-                INSERT INTO system_config (chave, valor, atualizado_em) VALUES ('chatapp_token', $1, NOW())
-                ON CONFLICT (chave) DO UPDATE SET valor = $1, atualizado_em = NOW()
-            `, token);
-            return token;
-        }
-        return null;
-    } catch (error) {
-        console.error("[CHATAPP AUTH ERROR]", error.message);
-        return null;
-    }
-}
-
-// --- Formata telefone (Garante string limpa para a API) ---
-function formatarTelefone(telefone) {
-    if (!telefone) return null;
-    let limpo = telefone.toString().replace(/\D/g, '');
-    if (limpo.length === 10 || limpo.length === 11) limpo = '55' + limpo;
-    return limpo.length >= 12 ? parseInt(limpo, 10) : null;
-}
-
-// --- Função Principal com Retry (Tentativa de recuperação) ---
-async function criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, retry = true) {
-    console.log(`--- [CHATAPP] Iniciando automação (Tentativa: ${retry ? '1' : '2 (Retry)'}) ---`);
-
-    const token = await getChatAppToken(!retry); // Se for retry, força um token novo
-    if (!token) return null;
-
-    const headers = { 'Authorization': token, 'Content-Type': 'application/json', 'Lang': 'pt' };
-    const L_ID = process.env.CHATAPP_LICENSE_ID || '59808';
-    const L_MSG = 'grWhatsApp';
-
-    try {
-        const numCliente = formatarTelefone(wppCliente);
-        const numSupervisor = formatarTelefone(supervisorWpp);
-
-        const participantsItems = [];
-        if (numCliente) participantsItems.push({ value: numCliente });
-        if (numSupervisor) participantsItems.push({ value: numSupervisor });
-
-        if (participantsItems.length === 0) return null;
-
-        // 1. Tenta criar o grupo
-        const urlGroups = `${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats`;
-        const resGrupo = await axios.post(urlGroups, {
-            type: "group",
-            name: `Pedido: ${titulo}`.substring(0, 50),
-            participantsType: "phone",
-            participantsItems: participantsItems
-        }, { headers });
-
-        const gData = resGrupo.data?.data || resGrupo.data;
-        const chatId = gData.id;
-        const groupLink = gData.inviteLink || '';
-
-        if (!chatId) return null;
-
-        // Aguarda propagação
-        await new Promise(r => setTimeout(r, 3000));
-
-        // 2. Tenta enviar o briefing
-        const urlMsg = `${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/messages/text`;
-        await axios.post(urlMsg, {
-            text: `🚀 *NOVO PEDIDO INICIADO*\n\n*Serviço:* ${titulo}\n\n*Briefing de Arte:* \n${briefing}\n\n---`
-        }, { headers });
-
-        console.log(`[CHATAPP] Grupo criado com sucesso: ${chatId}`);
-        return { chatId, groupLink };
-
-    } catch (error) {
-        const errData = error.response?.data || {};
-        const errCode = errData.error?.code || "";
-
-        // SE O ERRO FOR TOKEN INVÁLIDO E AINDA NÃO TENTAMOS O RETRY
-        if ((errCode === "ApiInvalidTokenError" || error.response?.status === 401) && retry) {
-            console.warn("[CHATAPP] Token inválido detectado. Limpando cache e tentando novamente...");
-            
-            // Apaga o token bichado do banco
-            await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => {});
-            
-            // Chama a função novamente forçando um novo token (retry = false para não entrar em loop infinito)
-            return await criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, false);
+                INSERT INTO historico_financeiro (empresa_id, valor, tipo, deal_id, titulo, data) 
+                VALUES ($1, $2, 'SAIDA', $3, $4, NOW())
+            `, empresa.id, valorParaSalvar, String(newPedidoId), `Produção: ${formData.titulo}`);
         }
 
-        console.error("[CHATAPP FATAL ERROR]", JSON.stringify(errData, null, 2));
-        return null;
-    }
-}
+        return res.status(200).json({ success: true, dealId: newPedidoId });
 
-module.exports = { criarGrupoProducao, getChatAppToken };
+    } catch (error) {
+        console.error("[ERRO GERAL NO ENDPOINT]:", error.message);
+        return res.status(500).json({ message: "Erro interno no servidor: " + error.message });
+    }
+};
