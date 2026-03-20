@@ -1,5 +1,4 @@
 // /api/createDealForGrafica.js
-
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { criarGrupoProducao } = require('./helpers/chatapp');
@@ -11,37 +10,33 @@ module.exports = async (req, res) => {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    console.log("--- [DEBUG PEDIDO] Iniciando nova tentativa de criação ---");
+    console.log("--- [DEBUG] INICIANDO REQUISIÇÃO DE PEDIDO ---");
 
     try {
         const { sessionToken, arte, supervisaoWpp, valorDesigner, tipoEntrega, ...formData } = req.body;
 
-        // LOG DE DIAGNÓSTICO — Ver o que chega no backend
-        console.log(`[DEBUG] arte='${arte}' | supervisaoWpp='${supervisaoWpp}' | wppCliente='${formData.wppCliente}' | titulo='${formData.titulo}'`);
-
-        // 1. Identificar Empresa no Neon
-        const empresas = await prisma.$queryRawUnsafe(`SELECT * FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`, `%${sessionToken}%`);
-
+        // 1. Identificar Empresa
+        const empresas = await prisma.$queryRawUnsafe(`SELECT * FROM empresas WHERE session_tokens = $1 LIMIT 1`, sessionToken);
         if (empresas.length === 0) {
+            console.error("[ERRO] Empresa não encontrada para o token informado.");
             return res.status(403).json({ message: 'Sessão inválida.' });
         }
         const empresa = empresas[0];
 
-        // 2. Definir regras de Etapa e Briefing
-        let etapaDestino = (arte === 'Arquivo do Cliente') ? 'IMPRESSÃO' : 'ARTE';
+        // 2. Normalizar a checagem da ARTE (Evita erro de maiúscula/minúscula)
+        const arteNormalizada = arte ? arte.trim().toLowerCase() : "";
+        console.log(`[DEBUG] Arte recebida: "${arte}" | Normalizada: "${arteNormalizada}"`);
+
+        let etapaDestino = (arteNormalizada === 'arquivo do cliente') ? 'IMPRESSÃO' : 'ARTE';
         let briefingFinal = `${formData.briefingFormatado || 'Sem briefing'}\n\nEntrega: ${tipoEntrega ? tipoEntrega.toUpperCase() : 'NÃO INFORMADA'}`;
 
-        // Se há link do Drive, adiciona ao briefing
         if (formData.linkArquivoDrive) {
             briefingFinal += `\n\n📎 Arquivos de Referência: ${formData.linkArquivoDrive}`;
         }
 
-        // Tratamento do valor para garantir que seja número
         const valorParaSalvar = parseFloat(valorDesigner || 0);
 
-        // 3. Inserir o Pedido no Neon
-        console.log(`[DEBUG] Gravando pedido. Valor Designer: R$ ${valorParaSalvar}`);
-
+        // 3. Inserir Pedido no Banco
         const insertResult = await prisma.$queryRawUnsafe(`
             INSERT INTO pedidos (
                 empresa_id, titulo, nome_cliente, whatsapp_cliente, 
@@ -64,16 +59,19 @@ module.exports = async (req, res) => {
         );
 
         const newPedidoId = insertResult[0].id;
-        console.log(`[DEBUG] Pedido gravado com Sucesso! ID: ${newPedidoId}`);
+        console.log(`[OK] Pedido salvo no banco. ID: ${newPedidoId}`);
 
         // --- 4. BLOCO DE AUTOMAÇÃO CHATAPP ---
-        if (arte === 'Setor de Arte') {
-            console.log(`[CHATAPP] Iniciando automação. supervisaoWpp='${supervisaoWpp}' wppCliente='${formData.wppCliente}'`);
+        // Checagem flexível: se contiver "setor" e "arte", ele tenta criar o grupo
+        if (arteNormalizada.includes("setor") && arteNormalizada.includes("arte")) {
+            console.log(`[CHATAPP] Condição aceita. Tentando criar grupo...`);
+            console.log(`[CHATAPP] Cliente: ${formData.wppCliente} | Supervisor: ${supervisaoWpp}`);
+
             try {
                 const automacao = await criarGrupoProducao(
                     formData.titulo,
-                    formData.wppCliente, // Número do Cliente
-                    supervisaoWpp,       // Número do Supervisor
+                    formData.wppCliente, 
+                    supervisaoWpp,       
                     briefingFinal
                 );
 
@@ -81,19 +79,19 @@ module.exports = async (req, res) => {
                     await prisma.$executeRawUnsafe(`
                         UPDATE pedidos SET chatapp_chat_id = $1, link_acompanhar = $2 WHERE id = $3
                     `, automacao.chatId, automacao.groupLink, newPedidoId);
-                    console.log(`[CHATAPP] Grupo criado! chatId=${automacao.chatId}`);
+                    console.log(`[CHATAPP] SUCESSO: Grupo ${automacao.chatId} vinculado ao pedido.`);
                 } else {
-                    console.warn(`[CHATAPP] automacao retornou null — grupo NÃO criado.`);
+                    console.error(`[CHATAPP] FALHA: A função criarGrupoProducao retornou vazio.`);
                 }
             } catch (errAuto) {
-                console.error(">>> [AUTOMAÇÃO] ERRO:", errAuto.message);
+                console.error("[CHATAPP] ERRO FATAL NA AUTOMAÇÃO:", errAuto.message);
             }
         } else {
-            console.log(`[CHATAPP] Pulando automação — arte='${arte}' (não é Setor de Arte)`);
+            console.log(`[CHATAPP] Ignorado. Motivo: arte="${arte}" não é 'Setor de Arte'`);
         }
 
-        // 5. Lógica Financeira (Débito na Empresa)
-        if (arte === 'Setor de Arte' && valorParaSalvar > 0) {
+        // 5. Financeiro
+        if (arteNormalizada.includes("setor") && valorParaSalvar > 0) {
             await prisma.$executeRawUnsafe(`UPDATE empresas SET saldo = saldo - $1 WHERE id = $2`, valorParaSalvar, empresa.id);
             await prisma.$executeRawUnsafe(`
                 INSERT INTO historico_financeiro (empresa_id, valor, tipo, deal_id, titulo, data) 
@@ -104,7 +102,7 @@ module.exports = async (req, res) => {
         return res.status(200).json({ success: true, dealId: newPedidoId });
 
     } catch (error) {
-        console.error("Mensagem:", error.message);
+        console.error("[ERRO GERAL]:", error.message);
         return res.status(500).json({ message: "Erro interno: " + error.message });
     }
 };
