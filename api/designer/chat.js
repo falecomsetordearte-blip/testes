@@ -39,13 +39,43 @@ module.exports = async (req, res) => {
             }
 
             const chatId = pedidoRes[0].chatapp_chat_id;
-            const token = await getChatAppToken();
             const L_ID = process.env.CHATAPP_LICENSE_ID || '59808'; 
             const L_MSG = 'grWhatsApp'; 
 
+            // --- SISTEMA DE AUTO-CURA (RENOVAÇÃO DE TOKEN) ---
+            // Se a requisição der Token Inválido, ele apaga o token velho, pega um novo e tenta novamente.
+            const fetchWithRetry = async (method, url, data, customHeaders = {}) => {
+                let token = await getChatAppToken();
+                let headers = { ...customHeaders, 'Authorization': token };
+
+                try {
+                    return await axios({ method, url, data, headers });
+                } catch (error) {
+                    const errCode = error.response?.data?.error?.code;
+                    // Se o erro for de token expirado (401 ou ApiInvalidTokenError)
+                    if (errCode === 'ApiInvalidTokenError' || error.response?.status === 401) {
+                        console.log("[CHATAPP] Token expirado na leitura/envio. Forçando renovação rápida...");
+                        
+                        // 1. Deleta o token vencido do banco
+                        await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => {});
+                        
+                        // 2. Chama a função passando 'true' para forçar a criação de um token novo no chatapp.js
+                        token = await getChatAppToken(true); 
+                        headers['Authorization'] = token;
+                        
+                        // 3. Refaz a requisição silenciosamente com o token novo
+                        return await axios({ method, url, data, headers });
+                    }
+                    throw error; // Se for outro erro (ex: sem internet, arquivo muito grande), ele repassa o erro
+                }
+            };
+            // --------------------------------------------------
+
             if (action === 'get') {
                 const url = `https://api.chatapp.online/v1/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/messages?limit=50&direction=prev`;
-                const response = await axios.get(url, { headers: { 'Authorization': token } });
+                
+                // Usa a nova função com Retry em vez do axios direto
+                const response = await fetchWithRetry('GET', url, null);
                 
                 let itens = (response.data?.data?.items || []).reverse();
 
@@ -71,7 +101,7 @@ module.exports = async (req, res) => {
             if (action === 'send') {
                 let url = '';
                 let data = null;
-                let headers = { 'Authorization': token };
+                let headers = {};
 
                 if (arquivo) {
                     url = `https://api.chatapp.online/v1/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/messages/file`;
@@ -81,14 +111,16 @@ module.exports = async (req, res) => {
                     else fd.append('caption', `*${designerNome}*`);
                     
                     data = fd;
-                    Object.assign(headers, fd.getHeaders());
+                    headers = fd.getHeaders();
                 } else {
                     url = `https://api.chatapp.online/v1/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/messages/text`;
                     data = { text: `*${designerNome}:* ${texto}` };
                     headers['Content-Type'] = 'application/json';
                 }
 
-                await axios.post(url, data, { headers });
+                // Usa a nova função com Retry em vez do axios direto
+                await fetchWithRetry('POST', url, data, headers);
+                
                 return res.status(200).json({ success: true, message: "Mensagem enviada." });
             }
 

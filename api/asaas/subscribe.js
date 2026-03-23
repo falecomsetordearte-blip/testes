@@ -22,12 +22,15 @@ module.exports = async (req, res) => {
 
         let usuario, idColuna;
 
-        // 1. Identificar Usuário
+        // Formatação de busca flexível (resolve o erro 403 caso o token seja salvo como Array/JSON no banco)
+        const tokenBusca = `%${token}%`;
+
+        // 1. Identificar Usuário usando LIKE
         if (tipo === 'empresa') {
-            const empresas = await prisma.$queryRawUnsafe(`SELECT id, cnpj as documento, nome_fantasia as nome, email, asaas_customer_id, asaas_subscription_id FROM empresas WHERE session_tokens = $1 LIMIT 1`, token);
+            const empresas = await prisma.$queryRawUnsafe(`SELECT id, cnpj as documento, nome_fantasia as nome, email, asaas_customer_id, asaas_subscription_id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`, tokenBusca);
             if (empresas.length > 0) { usuario = empresas[0]; idColuna = 'id'; }
         } else {
-            const designers = await prisma.$queryRawUnsafe(`SELECT designer_id as id, email, nome, asaas_customer_id, asaas_subscription_id FROM designers_financeiro WHERE session_tokens = $1 LIMIT 1`, token);
+            const designers = await prisma.$queryRawUnsafe(`SELECT designer_id as id, email, nome, asaas_customer_id, asaas_subscription_id FROM designers_financeiro WHERE session_tokens LIKE $1 LIMIT 1`, tokenBusca);
             if (designers.length > 0) { usuario = designers[0]; idColuna = 'designer_id'; }
         }
 
@@ -57,7 +60,7 @@ module.exports = async (req, res) => {
             
             await prisma.$executeRawUnsafe(`UPDATE ${tabela} SET asaas_customer_id = $1 WHERE ${idColuna} = $2`, asaasCustomerId, usuario.id);
         } else {
-            // B. Se JÁ EXISTE (O que causou seu erro), faz um UPDATE no Asaas garantindo que o CPF preenchido vai ser injetado lá
+            // B. Se JÁ EXISTE, faz um UPDATE no Asaas garantindo que o CPF preenchido vai ser injetado lá
             console.log(`[ASAAS] Atualizando cliente existente ${asaasCustomerId} para garantir o documento ${docFinal}`);
             try {
                 await axios.post(`${ASAAS_BASE_URL}/customers/${asaasCustomerId}`, {
