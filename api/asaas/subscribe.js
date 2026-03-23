@@ -15,7 +15,6 @@ module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido' });
 
     try {
-        // Agora recebemos o customerCpf do frontend
         const { token, tipo, paymentMethod = 'PIX', customerCpf = null, creditCard = null, creditCardHolderInfo = null } = req.body;
         
         if (!token || !tipo) return res.status(400).json({ message: 'Token e tipo são obrigatórios.' });
@@ -23,7 +22,7 @@ module.exports = async (req, res) => {
 
         let usuario, idColuna;
 
-        // 1. Identificar Usuário (Removido o "email as documento" que causava o erro)
+        // 1. Identificar Usuário
         if (tipo === 'empresa') {
             const empresas = await prisma.$queryRawUnsafe(`SELECT id, cnpj as documento, nome_fantasia as nome, email, asaas_customer_id, asaas_subscription_id FROM empresas WHERE session_tokens = $1 LIMIT 1`, token);
             if (empresas.length > 0) { usuario = empresas[0]; idColuna = 'id'; }
@@ -38,15 +37,15 @@ module.exports = async (req, res) => {
         let asaasCustomerId = usuario.asaas_customer_id;
         const tabela = tipo === 'empresa' ? 'empresas' : 'designers_financeiro';
 
-        // Trata o documento validando se veio do frontend ou se já existe no banco (empresas)
         let docFinal = customerCpf ? customerCpf.replace(/\D/g, '') : (usuario.documento ? usuario.documento.replace(/\D/g, '') : '');
 
-        // 2. Criar Cliente no Asaas se não existir
-        if (!asaasCustomerId) {
-            if (!docFinal || (docFinal.length !== 11 && docFinal.length !== 14)) {
-                return res.status(400).json({ message: 'Um CPF ou CNPJ válido é obrigatório para gerar a assinatura.' });
-            }
+        if (!docFinal || (docFinal.length !== 11 && docFinal.length !== 14)) {
+            return res.status(400).json({ message: 'Um CPF ou CNPJ válido é obrigatório para gerar a assinatura.' });
+        }
 
+        // 2. Tratar Cliente no Asaas
+        if (!asaasCustomerId) {
+            // A. Se NÃO EXISTE, cria um novo
             console.log(`[ASAAS] Criando cliente para ${usuario.email} com documento ${docFinal}`);
             const customerPayload = { 
                 name: usuario.nome, 
@@ -57,9 +56,19 @@ module.exports = async (req, res) => {
             asaasCustomerId = responseCustomer.data.id;
             
             await prisma.$executeRawUnsafe(`UPDATE ${tabela} SET asaas_customer_id = $1 WHERE ${idColuna} = $2`, asaasCustomerId, usuario.id);
+        } else {
+            // B. Se JÁ EXISTE (O que causou seu erro), faz um UPDATE no Asaas garantindo que o CPF preenchido vai ser injetado lá
+            console.log(`[ASAAS] Atualizando cliente existente ${asaasCustomerId} para garantir o documento ${docFinal}`);
+            try {
+                await axios.post(`${ASAAS_BASE_URL}/customers/${asaasCustomerId}`, {
+                    cpfCnpj: docFinal
+                }, { headers: { 'access_token': ASAAS_API_KEY } });
+            } catch (updateErr) {
+                console.log(`[ASAAS] Aviso: Atualização de cadastro falhou. (Pode já estar correto). Erro ignorado para tentar assinar.`);
+            }
         }
 
-        // 3. Gerar Assinatura Recorrente (Cycle: MONTHLY garante a recorrência mensal automática do Asaas)
+        // 3. Gerar Assinatura Recorrente
         let subscriptionId = usuario.asaas_subscription_id;
         const dueDate = new Date().toISOString().split('T')[0];
 
