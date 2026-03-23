@@ -3,7 +3,6 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const axios = require('axios');
 
-// Pega das variáveis de ambiente da Vercel
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY;
 const ASAAS_BASE_URL = process.env.ASAAS_API_URL || 'https://api.asaas.com/v3';
 
@@ -16,19 +15,20 @@ module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido' });
 
     try {
-        const { token, tipo, paymentMethod = 'PIX', creditCard = null, creditCardHolderInfo = null } = req.body;
+        // Agora recebemos o customerCpf do frontend
+        const { token, tipo, paymentMethod = 'PIX', customerCpf = null, creditCard = null, creditCardHolderInfo = null } = req.body;
         
         if (!token || !tipo) return res.status(400).json({ message: 'Token e tipo são obrigatórios.' });
         if (!ASAAS_API_KEY) return res.status(500).json({ message: 'Configuração de API Asaas faltando na Vercel.' });
 
         let usuario, idColuna;
 
-        // 1. Identificar Usuário
+        // 1. Identificar Usuário (Removido o "email as documento" que causava o erro)
         if (tipo === 'empresa') {
             const empresas = await prisma.$queryRawUnsafe(`SELECT id, cnpj as documento, nome_fantasia as nome, email, asaas_customer_id, asaas_subscription_id FROM empresas WHERE session_tokens = $1 LIMIT 1`, token);
             if (empresas.length > 0) { usuario = empresas[0]; idColuna = 'id'; }
         } else {
-            const designers = await prisma.$queryRawUnsafe(`SELECT designer_id as id, email, nome, email as documento, asaas_customer_id, asaas_subscription_id FROM designers_financeiro WHERE session_tokens = $1 LIMIT 1`, token);
+            const designers = await prisma.$queryRawUnsafe(`SELECT designer_id as id, email, nome, asaas_customer_id, asaas_subscription_id FROM designers_financeiro WHERE session_tokens = $1 LIMIT 1`, token);
             if (designers.length > 0) { usuario = designers[0]; idColuna = 'designer_id'; }
         }
 
@@ -38,20 +38,28 @@ module.exports = async (req, res) => {
         let asaasCustomerId = usuario.asaas_customer_id;
         const tabela = tipo === 'empresa' ? 'empresas' : 'designers_financeiro';
 
+        // Trata o documento validando se veio do frontend ou se já existe no banco (empresas)
+        let docFinal = customerCpf ? customerCpf.replace(/\D/g, '') : (usuario.documento ? usuario.documento.replace(/\D/g, '') : '');
+
         // 2. Criar Cliente no Asaas se não existir
         if (!asaasCustomerId) {
-            console.log(`[ASAAS] Criando cliente para ${usuario.email}`);
+            if (!docFinal || (docFinal.length !== 11 && docFinal.length !== 14)) {
+                return res.status(400).json({ message: 'Um CPF ou CNPJ válido é obrigatório para gerar a assinatura.' });
+            }
+
+            console.log(`[ASAAS] Criando cliente para ${usuario.email} com documento ${docFinal}`);
             const customerPayload = { 
                 name: usuario.nome, 
-                cpfCnpj: usuario.documento ? usuario.documento.replace(/\D/g, '') : '00000000000', 
+                cpfCnpj: docFinal, 
                 email: usuario.email 
             };
             const responseCustomer = await axios.post(`${ASAAS_BASE_URL}/customers`, customerPayload, { headers: { 'access_token': ASAAS_API_KEY } });
             asaasCustomerId = responseCustomer.data.id;
+            
             await prisma.$executeRawUnsafe(`UPDATE ${tabela} SET asaas_customer_id = $1 WHERE ${idColuna} = $2`, asaasCustomerId, usuario.id);
         }
 
-        // 3. Gerar Assinatura Recorrente (Cycle: MONTHLY garante a recorrência)
+        // 3. Gerar Assinatura Recorrente (Cycle: MONTHLY garante a recorrência mensal automática do Asaas)
         let subscriptionId = usuario.asaas_subscription_id;
         const dueDate = new Date().toISOString().split('T')[0];
 
@@ -80,7 +88,6 @@ module.exports = async (req, res) => {
         const paymentsReq = await axios.get(`${ASAAS_BASE_URL}/payments?subscription=${subscriptionId}&status=PENDING`, { headers: { 'access_token': ASAAS_API_KEY } });
         
         if (paymentsReq.data.data.length === 0) {
-            // Se for cartão, pode já ter aprovado
             const subCheck = await axios.get(`${ASAAS_BASE_URL}/subscriptions/${subscriptionId}`, { headers: { 'access_token': ASAAS_API_KEY } });
             if (subCheck.data.status === 'ACTIVE') {
                 await prisma.$executeRawUnsafe(`UPDATE ${tabela} SET assinatura_status = 'ACTIVE' WHERE ${idColuna} = $1`, usuario.id);

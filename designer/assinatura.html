@@ -95,6 +95,13 @@
             <h2 style="margin-bottom:20px; font-size:1.4rem; color:white;">Finalizar Assinatura</h2>
             
             <div id="method-selection" style="display:block;">
+
+                <!-- CAMPO DE CPF OBRIGATÓRIO PARA O ASAAS -->
+                <div style="margin-bottom:20px; text-align:left;">
+                    <label style="color:var(--text-muted); font-size:0.85rem; margin-bottom:5px; display:block;">Seu CPF ou CNPJ (Obrigatório para emissão)</label>
+                    <input type="text" id="customer-cpf" placeholder="Apenas números..." style="width:100%; padding:12px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white; font-family:'Poppins'; font-size:0.9rem;" maxlength="18">
+                </div>
+
                 <div style="display:flex; gap:10px; margin-bottom:20px; justify-content:center;">
                     <button id="btn-pix" class="method-btn active" onclick="selectMethod('PIX')" style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--primary); background:var(--primary); color:white; cursor:pointer; font-weight:600;"><i class="fas fa-qrcode"></i> PIX</button>
                     <button id="btn-cc" class="method-btn" onclick="selectMethod('CREDIT_CARD')" style="flex:1; padding:10px; border-radius:8px; border:1px solid #334155; background:transparent; color:white; cursor:pointer; font-weight:600;"><i class="fas fa-credit-card"></i> Cartão</button>
@@ -104,7 +111,7 @@
                 <div id="form-cc" style="display:none; text-align:left; margin-bottom:20px;">
                     <style> .chk-input { width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white; font-family:'Poppins'; font-size:0.85rem;} </style>
                     <input type="text" id="cc-name" placeholder="Nome impresso no Cartão" class="chk-input">
-                    <input type="text" id="cc-cpf" placeholder="CPF/CNPJ do Titular" class="chk-input">
+                    <input type="text" id="cc-cpf" placeholder="CPF/CNPJ do Titular (Opcional se for o mesmo acima)" class="chk-input">
                     <input type="text" id="cc-number" placeholder="Número do Cartão" class="chk-input" maxlength="19">
                     <div style="display:flex; gap:10px;">
                         <input type="text" id="cc-month" placeholder="Mês (MM)" class="chk-input" style="flex:1" maxlength="2">
@@ -197,12 +204,20 @@
         async function processarPagamento() {
             const token = localStorage.getItem('designerToken');
             
+            // Pega e valida o CPF Geral
+            const customerCpf = document.getElementById('customer-cpf').value.replace(/\D/g, '');
+            if (customerCpf.length !== 11 && customerCpf.length !== 14) {
+                alert('Por favor, informe seu CPF ou CNPJ válido no campo acima (apenas números).');
+                return;
+            }
+
             let creditCard = null;
             let creditCardHolderInfo = null;
 
             if (selectedPaymentMethod === 'CREDIT_CARD') {
                 const name = document.getElementById('cc-name').value.trim();
-                const cpf = document.getElementById('cc-cpf').value.trim();
+                // Usa o CPF geral caso o CPF do cartão não seja preenchido
+                const cpfCartao = document.getElementById('cc-cpf').value.replace(/\D/g, '') || customerCpf;
                 const number = document.getElementById('cc-number').value.replace(/\s+/g,'');
                 const month = document.getElementById('cc-month').value.trim();
                 const year = document.getElementById('cc-year').value.trim();
@@ -211,13 +226,13 @@
                 const num = document.getElementById('cc-num').value.trim();
                 const phone = document.getElementById('cc-phone').value.replace(/\D/g,'');
 
-                if (!name || !cpf || !number || !month || !year || !ccv || !cep || !num || !phone) {
-                    alert('Preencha todos os campos do cartão e titular.');
+                if (!name || !number || !month || !year || !ccv || !cep || !num || !phone) {
+                    alert('Preencha todos os campos do cartão e endereço.');
                     return;
                 }
 
                 creditCard = { holderName: name, number: number, expiryMonth: month, expiryYear: year, ccv: ccv };
-                creditCardHolderInfo = { name: name, email: '-', cpfCnpj: cpf, postalCode: cep, addressNumber: num, phone: phone };
+                creditCardHolderInfo = { name: name, email: '-', cpfCnpj: cpfCartao, postalCode: cep, addressNumber: num, phone: phone };
             }
 
             document.getElementById('method-selection').style.display = 'none';
@@ -228,7 +243,7 @@
                 const res = await fetch('/api/asaas/subscribe', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token, tipo: 'designer', paymentMethod: selectedPaymentMethod, creditCard, creditCardHolderInfo })
+                    body: JSON.stringify({ token, tipo: 'designer', paymentMethod: selectedPaymentMethod, customerCpf, creditCard, creditCardHolderInfo })
                 });
                 const data = await res.json();
 
