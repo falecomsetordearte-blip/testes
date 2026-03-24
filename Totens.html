@@ -2,99 +2,289 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Controle de Execução</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kanban de Execução - Totens</title>
 
 <style>
-body{
-    font-family: Arial, sans-serif;
-    background:#f4f4f4;
-    padding:20px;
-}
+    * {
+        box-sizing: border-box;
+    }
 
-h1{
-    margin-bottom:20px;
-}
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f4f4;
+        padding: 20px;
+        margin: 0;
+    }
 
-.container{
-    display:grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px,1fr));
-    gap:10px;
-}
+    h1 {
+        margin-bottom: 20px;
+        color: #333;
+    }
 
-.item{
-    background:white;
-    padding:12px;
-    border-radius:8px;
-    box-shadow:0 1px 4px rgba(0,0,0,0.1);
-}
+    /* Container do Kanban com Scroll Horizontal caso necessário */
+    .kanban-board {
+        display: flex;
+        gap: 15px;
+        overflow-x: auto;
+        padding-bottom: 20px;
+        align-items: flex-start;
+    }
 
-.executado{
-    text-decoration: line-through;
-    color:gray;
-}
+    /* Estilo das Colunas */
+    .kanban-column {
+        background: #ebecf0;
+        border-radius: 8px;
+        min-width: 280px;
+        max-width: 280px;
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+    }
+
+    .column-header {
+        padding: 12px 15px;
+        font-weight: bold;
+        color: #172b4d;
+        border-bottom: 2px solid #dfe1e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .column-contador {
+        background: #dfe1e6;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 0.8em;
+    }
+
+    /* Área onde os cartões são soltos */
+    .column-body {
+        padding: 10px;
+        min-height: 400px; /* Garante espaço para soltar mesmo vazia */
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    /* Estilo dos Cartões */
+    .kanban-card {
+        background: white;
+        padding: 12px;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        cursor: grab;
+        word-wrap: break-word;
+        border-left: 4px solid #007bff;
+        transition: transform 0.1s ease;
+    }
+
+    .kanban-card:active {
+        cursor: grabbing;
+        transform: scale(0.98);
+    }
+
+    .card-title {
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 8px;
+        font-size: 0.95em;
+    }
+
+    /* Estilo específico para a etapa de Letras */
+    .letras-info {
+        margin-top: 10px;
+        padding: 8px;
+        background: #ffebe6;
+        color: #bf2600;
+        border: 1px solid #ffbdad;
+        border-radius: 4px;
+        font-size: 0.85em;
+        font-weight: bold;
+    }
+
+    .btn-editar-letras {
+        margin-top: 10px;
+        padding: 6px 10px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.8em;
+        width: 100%;
+        transition: background 0.2s;
+    }
+
+    .btn-editar-letras:hover {
+        background: #0056b3;
+    }
+
+    /* Efeito de arraste */
+    .drag-over {
+        background: #dfe1e6;
+    }
 </style>
 </head>
 
 <body>
 
-<h1>Checklist de Execução</h1>
+<h1>Kanban de Execução - Totens</h1>
 
-<div class="container" id="lista"></div>
+<div class="kanban-board" id="board"></div>
 
 <script>
+// Lista original de itens
+const itensOriginais = [
+    "01_Familia_Brioschi", "02_Familia_Busato", "03_Cachaca_Temosinha", 
+    "04_Cervejaria_Aurora", "05_Fazenda_Carnielli", "07_Produtos_AnGar", 
+    "08_Queijaria_Ines", "09_Sitio_Espresso_do", "10_Varejao_das_Artes", 
+    "11_Villa_Arcade_Artesanato", "12_Vinicola_Tonole", "13_Zandonade", 
+    "14_Fiore_di_Laranja_Lima", "15_Cantinho_Rustico", "16_Fazenda_Saude", 
+    "17_Bela_Aurora", "18_Pousada_Tonoli", "19_Casa_Nostra"
+];
 
-const itens = [
-"01_Familia_Brioschi",
-"02_Familia_Busato",
-"03_Cachaca_Temosinha",
-"04_Cervejaria_Aurora",
-"05_Fazenda_Carnielli",
-"07_Produtos_AnGar",
-"08_Queijaria_Ines",
-"09_Sitio_Espresso_do",
-"10_Varejao_das_Artes",
-"11_Villa_Arcade_Artesanato",
-"12_Vinicola_Tonole",
-"13_Zandonade",
-"14_Fiore_di_Laranja_Lima",
-"15_Cantinho_Rustico",
-"16_Fazenda_Saude",
-"17_Bela_Aurora",
-"18_Pousada_Tonoli",
-"19_Casa_Nostra"
-]
+// Fases do Kanban
+const fases = ["Estrutura", "Adesivo", "Letras", "Mapa", "Verniz", "Instalação"];
 
-const lista = document.getElementById("lista")
+// Recupera o estado do LocalStorage ou inicia um objeto vazio
+let state = JSON.parse(localStorage.getItem("kanbanTotens")) || {};
 
-itens.forEach(nome => {
+// Sincroniza a lista de itens com o state salvo (Garante que itens novos apareçam na Estrutura)
+itensOriginais.forEach(nome => {
+    if (!state[nome]) {
+        state[nome] = { fase: "Estrutura", letrasFaltantes: "" };
+    }
+});
 
-    const estado = localStorage.getItem(nome) === "true"
+// Função para salvar no LocalStorage
+function salvarState() {
+    localStorage.setItem("kanbanTotens", JSON.stringify(state));
+}
 
-    const div = document.createElement("div")
-    div.className = "item"
+// Função para renderizar o quadro inteiro
+function renderizarBoard() {
+    const board = document.getElementById("board");
+    board.innerHTML = ""; // Limpa o board
 
-    const label = document.createElement("label")
+    fases.forEach(fase => {
+        // Cria a coluna
+        const colunaDiv = document.createElement("div");
+        colunaDiv.className = "kanban-column";
 
-    const checkbox = document.createElement("input")
-    checkbox.type = "checkbox"
-    checkbox.checked = estado
+        // Filtra os itens desta fase
+        const itensDaFase = Object.keys(state).filter(nome => state[nome].fase === fase);
 
-    const span = document.createElement("span")
-    span.textContent = " " + nome
+        // Header da Coluna
+        const header = document.createElement("div");
+        header.className = "column-header";
+        header.innerHTML = `<span>${fase}</span> <span class="column-contador">${itensDaFase.length}</span>`;
+        colunaDiv.appendChild(header);
 
-    if(estado) span.classList.add("executado")
+        // Corpo da Coluna (Área de Drop)
+        const body = document.createElement("div");
+        body.className = "column-body";
+        body.setAttribute("ondragover", "allowDrop(event)");
+        body.setAttribute("ondrop", `drop(event, '${fase}')`);
+        body.setAttribute("ondragenter", "dragEnter(event)");
+        body.setAttribute("ondragleave", "dragLeave(event)");
 
-    checkbox.onchange = () => {
-        localStorage.setItem(nome, checkbox.checked)
-        span.classList.toggle("executado")
+        // Adiciona os cartões na coluna
+        itensDaFase.forEach(nome => {
+            const card = document.createElement("div");
+            card.className = "kanban-card";
+            card.draggable = true;
+            card.id = nome; // O ID do elemento é o nome do totem
+            card.setAttribute("ondragstart", `drag(event, '${nome}')`);
+
+            // Título do cartão
+            const title = document.createElement("div");
+            title.className = "card-title";
+            title.textContent = nome.replace(/_/g, " "); // Troca os underlines por espaço para ficar bonito
+            card.appendChild(title);
+
+            // Se tiver letras faltantes preenchidas, mostra no cartão (em qualquer fase)
+            if (state[nome].letrasFaltantes.trim() !== "") {
+                const infoLetras = document.createElement("div");
+                infoLetras.className = "letras-info";
+                infoLetras.textContent = `Faltam: ${state[nome].letrasFaltantes}`;
+                card.appendChild(infoLetras);
+            }
+
+            // Se a fase for "Letras", mostra o botão de editar
+            if (fase === "Letras") {
+                const btnEditar = document.createElement("button");
+                btnEditar.className = "btn-editar-letras";
+                btnEditar.textContent = "✎ Editar Letras Faltantes";
+                btnEditar.onclick = () => editarLetras(nome);
+                card.appendChild(btnEditar);
+            }
+
+            body.appendChild(card);
+        });
+
+        colunaDiv.appendChild(body);
+        board.appendChild(colunaDiv);
+    });
+}
+
+// Lógica de Drag and Drop
+function allowDrop(ev) {
+    ev.preventDefault();
+}
+
+function dragEnter(ev) {
+    ev.preventDefault();
+    // Adiciona uma classe para mostrar visualmente onde o card vai cair
+    if(ev.currentTarget.classList.contains("column-body")){
+        ev.currentTarget.classList.add("drag-over");
+    }
+}
+
+function dragLeave(ev) {
+    if(ev.currentTarget.classList.contains("column-body")){
+        ev.currentTarget.classList.remove("drag-over");
+    }
+}
+
+function drag(ev, id) {
+    ev.dataTransfer.setData("text", id);
+}
+
+function drop(ev, novaFase) {
+    ev.preventDefault();
+    
+    // Remove efeito visual do arraste
+    if(ev.currentTarget.classList.contains("column-body")){
+        ev.currentTarget.classList.remove("drag-over");
     }
 
-    label.appendChild(checkbox)
-    label.appendChild(span)
-    div.appendChild(label)
+    const itemId = ev.dataTransfer.getData("text");
+    
+    // Atualiza a fase no state
+    if (state[itemId]) {
+        state[itemId].fase = novaFase;
+        salvarState();
+        renderizarBoard(); // Recarrega a tela
+    }
+}
 
-    lista.appendChild(div)
-})
+// Lógica específica para editar as letras
+function editarLetras(id) {
+    const atual = state[id].letrasFaltantes;
+    const resposta = prompt(`Quais letras estão faltando para o totem "${id.replace(/_/g, " ")}"?\n(Deixe em branco para apagar)`, atual);
+    
+    // Se o usuário não clicou em cancelar
+    if (resposta !== null) {
+        state[id].letrasFaltantes = resposta;
+        salvarState();
+        renderizarBoard();
+    }
+}
+
+// Inicializa o quadro ao carregar a página
+renderizarBoard();
 
 </script>
 
