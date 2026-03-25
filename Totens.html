@@ -77,7 +77,7 @@
         cursor: grab;
         word-wrap: break-word;
         border-left: 4px solid #007bff;
-        transition: transform 0.1s ease;
+        transition: transform 0.1s ease, opacity 0.2s ease;
     }
 
     .kanban-card:active {
@@ -90,6 +90,17 @@
         color: #333;
         margin-bottom: 8px;
         font-size: 0.95em;
+    }
+
+    /* Estilos para a coluna "Concluídos" */
+    .card-concluido {
+        border-left: 4px solid #28a745;
+        opacity: 0.6;
+    }
+
+    .card-concluido .card-title {
+        text-decoration: line-through;
+        color: #666;
     }
 
     /* Estilo específico para a etapa de Letras */
@@ -145,13 +156,13 @@ const itensOriginais = [
     "17_Bela_Aurora", "18_Pousada_Tonoli", "19_Casa_Nostra"
 ];
 
-// Fases do Kanban
-const fases = ["Estrutura", "Adesivo", "Letras", "Mapa", "Verniz", "Instalação"];
+// Fases do Kanban (adicionado "Concluídos")
+const fases = ["Estrutura", "Adesivo", "Letras", "Mapa", "Verniz", "Instalação", "Concluídos"];
 
 // Recupera o estado do LocalStorage ou inicia um objeto vazio
 let state = JSON.parse(localStorage.getItem("kanbanTotens")) || {};
 
-// Sincroniza a lista de itens com o state salvo (Garante que itens novos apareçam na Estrutura)
+// Sincroniza a lista de itens com o state salvo
 itensOriginais.forEach(nome => {
     if (!state[nome]) {
         state[nome] = { fase: "Estrutura", letrasFaltantes: "" };
@@ -195,16 +206,21 @@ function renderizarBoard() {
             const card = document.createElement("div");
             card.className = "kanban-card";
             card.draggable = true;
-            card.id = nome; // O ID do elemento é o nome do totem
+            card.id = nome;
             card.setAttribute("ondragstart", `drag(event, '${nome}')`);
+
+            // Adiciona classe visual se for da fase "Concluídos"
+            if (fase === "Concluídos") {
+                card.classList.add("card-concluido");
+            }
 
             // Título do cartão
             const title = document.createElement("div");
             title.className = "card-title";
-            title.textContent = nome.replace(/_/g, " "); // Troca os underlines por espaço para ficar bonito
+            title.textContent = nome.replace(/_/g, " "); 
             card.appendChild(title);
 
-            // Se tiver letras faltantes preenchidas, mostra no cartão (em qualquer fase)
+            // Mostra texto de letras faltantes se houver
             if (state[nome].letrasFaltantes.trim() !== "") {
                 const infoLetras = document.createElement("div");
                 infoLetras.className = "letras-info";
@@ -236,7 +252,6 @@ function allowDrop(ev) {
 
 function dragEnter(ev) {
     ev.preventDefault();
-    // Adiciona uma classe para mostrar visualmente onde o card vai cair
     if(ev.currentTarget.classList.contains("column-body")){
         ev.currentTarget.classList.add("drag-over");
     }
@@ -255,27 +270,24 @@ function drag(ev, id) {
 function drop(ev, novaFase) {
     ev.preventDefault();
     
-    // Remove efeito visual do arraste
     if(ev.currentTarget.classList.contains("column-body")){
         ev.currentTarget.classList.remove("drag-over");
     }
 
     const itemId = ev.dataTransfer.getData("text");
     
-    // Atualiza a fase no state
     if (state[itemId]) {
         state[itemId].fase = novaFase;
         salvarState();
-        renderizarBoard(); // Recarrega a tela
+        renderizarBoard();
     }
 }
 
-// Lógica específica para editar as letras
+// Lógica para editar as letras
 function editarLetras(id) {
     const atual = state[id].letrasFaltantes;
     const resposta = prompt(`Quais letras estão faltando para o totem "${id.replace(/_/g, " ")}"?\n(Deixe em branco para apagar)`, atual);
     
-    // Se o usuário não clicou em cancelar
     if (resposta !== null) {
         state[id].letrasFaltantes = resposta;
         salvarState();
@@ -283,7 +295,7 @@ function editarLetras(id) {
     }
 }
 
-// Inicializa o quadro ao carregar a página
+// Inicializa o quadro
 renderizarBoard();
 
 </script>
