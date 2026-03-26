@@ -10,7 +10,11 @@ module.exports = async (req, res) => {
         const d = await prisma.$queryRawUnsafe(`
             SELECT designer_id FROM designers_financeiro WHERE session_tokens LIKE $1 LIMIT 1
         `, `%${token}%`);
-        if (d.length === 0) return res.status(403).json({ message: 'Sessão inválida.' });
+        
+        if (d.length === 0) {
+            return res.status(403).json({ message: 'Sessão inválida.' });
+        }
+        
         const designerId = d[0].designer_id;
 
         // 2. Tentar assumir o pedido (Check se ainda está vago)
@@ -18,8 +22,12 @@ module.exports = async (req, res) => {
             SELECT id, designer_id, link_acompanhar FROM pedidos WHERE id = $1
         `, parseInt(pedidoId));
 
-        if (check.length === 0) return res.status(404).json({ message: 'Pedido não encontrado.' });
-        if (check[0].designer_id) return res.status(400).json({ message: 'Este pedido já foi assumido por outro designer.' });
+        if (check.length === 0) {
+            return res.status(404).json({ message: 'Pedido não encontrado.' });
+        }
+        if (check[0].designer_id) {
+            return res.status(400).json({ message: 'Este pedido já foi assumido por outro designer.' });
+        }
 
         // 3. Vincular Designer ao Pedido
         await prisma.$executeRawUnsafe(`
@@ -33,7 +41,7 @@ module.exports = async (req, res) => {
         return res.status(200).json({ 
             success: true, 
             chatLink: check[0].link_acompanhar,
-            message: 'Pedido assumido! Agora você pode conversar com o cliente.' 
+            message: 'Pedido assumido! Agora você pode conversar com o cliente e com a gráfica.' 
         });
 
     } catch (error) {

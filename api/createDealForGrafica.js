@@ -73,22 +73,30 @@ module.exports = async (req, res) => {
         // --- 4. BLOCO DE AUTOMAÇÃO CHATAPP ---
         // Condição: Se o texto da arte contiver "setor" e "arte" (independente de maiúsculas)
         if (arteNormalizada.includes("setor") && arteNormalizada.includes("arte")) {
-            console.log(`[CHATAPP] Iniciando criação de grupo...`);
+            console.log(`[CHATAPP] Iniciando criação de grupo duplo...`);
             console.log(`[CHATAPP] Dados: Cliente=${formData.wppCliente} | Supervisor=${supervisaoWpp}`);
 
             try {
+                // Adicionado nomeCliente e nomeEmpresa para mandar as mensagens no privado personalizadas
                 const automacao = await criarGrupoProducao(
                     formData.titulo,
                     formData.wppCliente, 
                     supervisaoWpp,       
-                    briefingFinal
+                    briefingFinal,
+                    formData.nomeCliente || 'Cliente',
+                    empresa.nome || 'nossa gráfica'
                 );
 
                 if (automacao && automacao.chatId) {
+                    // Atualizado para salvar tanto o chat do cliente quanto o chat interno
                     await prisma.$executeRawUnsafe(`
-                        UPDATE pedidos SET chatapp_chat_id = $1, link_acompanhar = $2 WHERE id = $3
-                    `, automacao.chatId, automacao.groupLink, newPedidoId);
-                    console.log(`[CHATAPP] Grupo criado e vinculado! ID: ${automacao.chatId}`);
+                        UPDATE pedidos 
+                        SET chatapp_chat_id = $1, 
+                            link_acompanhar = $2,
+                            chatapp_chat_intern_id = $3
+                        WHERE id = $4
+                    `, automacao.chatId, automacao.groupLink, automacao.chatIdInterno, newPedidoId);
+                    console.log(`[CHATAPP] Grupos criados e vinculados! Cliente ID: ${automacao.chatId} | Interno ID: ${automacao.chatIdInterno}`);
                 } else {
                     console.error(`[CHATAPP] FALHA: A função criarGrupoProducao não retornou um ID de chat.`);
                 }
