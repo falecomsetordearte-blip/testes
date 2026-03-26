@@ -1,15 +1,18 @@
 // /layout.js
 document.addEventListener("DOMContentLoaded", async () => {
+    console.log("[Layout] Iniciando carregamento do layout...");
+
     // Função genérica para carregar um componente HTML
     async function loadComponent(componentPath) {
         try {
+            console.log(`[Layout] Carregando componente: ${componentPath}`);
             const response = await fetch(componentPath);
             if (!response.ok) {
                 throw new Error(`Componente não encontrado: ${componentPath}`);
             }
             return await response.text();
         } catch (error) {
-            console.error(error);
+            console.error(`[Layout] Erro ao carregar ${componentPath}:`, error);
             return `<p style="color:red; font-family: monospace; padding: 10px;">Erro ao carregar componente: ${componentPath}</p>`;
         }
     }
@@ -21,9 +24,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         const footerPlaceholder = document.getElementById("footer-placeholder");
 
         // ===== CORREÇÃO DEFINITIVA =====
-        // Trocamos o caminho relativo "./" pelo caminho absoluto "/"
-        // Isso garante que o script encontre os componentes a partir da raiz do site,
-        // não importa em qual subpasta a página atual esteja.
         const [headerHtml, sidebarHtml, footerHtml] = await Promise.all([
             headerPlaceholder ? loadComponent("/components/header.html") : Promise.resolve(null),
             sidebarPlaceholder ? loadComponent("/components/sidebar.html") : Promise.resolve(null),
@@ -32,18 +32,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (headerPlaceholder && headerHtml) {
             headerPlaceholder.innerHTML = headerHtml;
+            console.log("[Layout] Header montado.");
         }
         if (sidebarPlaceholder && sidebarHtml) {
             sidebarPlaceholder.innerHTML = sidebarHtml;
+            console.log("[Layout] Sidebar montada.");
         }
         if (footerPlaceholder && footerHtml) {
             footerPlaceholder.innerHTML = footerHtml;
+            console.log("[Layout] Footer montado.");
         }
         
         initializeGlobalScripts();
     }
 
     function initializeGlobalScripts() {
+        console.log("[Layout] Inicializando scripts globais...");
         const currentPage = window.location.pathname;
         const pagePath = currentPage.replace(/\/$/, "");
         
@@ -51,6 +55,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const userName = localStorage.getItem("userName") || 'Usuário';
 
         if (!sessionToken) {
+            console.warn("[Layout] Sessão não encontrada. Redirecionando para login se for área restrita.");
             if (document.querySelector(".app-layout-grid")) {
                 window.location.href = "/login.html";
             }
@@ -61,11 +66,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         // SISTEMA DE CONTROLE DE ACESSO (PERMISSÕES)
         // ==========================================
         const rawPerms = localStorage.getItem("userPermissoes");
-        // Se a pessoa não tem permissões ainda (legado), array vazio:
         const permissoesArr = rawPerms ? JSON.parse(rawPerms) : []; 
-        const isLegacyUser = !rawPerms; // Usuários velhos antes dessa feature terão passe livre por enquanto?
+        const isLegacyUser = !rawPerms; 
         
-        // Mapeamento: "Caminho da URL/Módulo" => "Nome da Permissão no banco"
         const roteamentoPermissoes = {
             "/carteira.html": "carteira",
             "/crm.html": "crm",
@@ -79,15 +82,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             "/admin-configuracoes.html": "admin"
         };
         
-        // BLOQUEIO DE PÁGINA:
-        // Verifica se a página atual requer permissão
         const permissaoNecessaria = roteamentoPermissoes[pagePath];
         if (!isLegacyUser && permissaoNecessaria) {
             if (!permissoesArr.includes("admin") && !permissoesArr.includes(permissaoNecessaria)) {
-                // Usuário não tem o cargo/permissão para essa tela
+                console.error(`[Layout] Acesso Negado: Permissão exigida: ${permissaoNecessaria}`);
                 alert("Acesso Negado: Você não possui permissão para acessar este módulo.");
-                window.location.href = "/dashboard.html"; // Redireciona para o início seguro
-                return; // Para a execução do script
+                window.location.href = "/dashboard.html"; 
+                return; 
             }
         }
 
@@ -98,15 +99,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             const linkPathUrl = new URL(link.href).pathname.replace(/\/$/, ""); 
             const linkPermRequired = roteamentoPermissoes[linkPathUrl];
 
-            // 1. Marca Ativo se for a página atual
             if (linkPathUrl === pagePath || (pagePath.endsWith('index.html') && linkPathUrl === '/dashboard.html') || (pagePath === '/' && linkPathUrl === '/dashboard.html')) {
                 link.classList.add("active");
             }
 
-            // 2. Esconde o link se o usuário não tem permissão para vê-lo
             if (!isLegacyUser && linkPermRequired) {
                 if (!permissoesArr.includes("admin") && !permissoesArr.includes(linkPermRequired)) {
-                    // Esconde o <li> inteiro, que é o pai do <a>
                     link.parentElement.style.display = "none";
                 }
             }
@@ -117,18 +115,32 @@ document.addEventListener("DOMContentLoaded", async () => {
     
         const logoutButton = document.getElementById('logout-button');
         if(logoutButton) logoutButton.addEventListener('click', () => {
+            console.log("[Layout] Realizando logout...");
             localStorage.clear();
             window.location.href = '/login.html';
         });
 
         checkAceiteTermos('EMPRESA', sessionToken);
         checkTrialStatus('EMPRESA', sessionToken);
+
+        // ==========================================
+        // CARREGAMENTO DINÂMICO DA BUSCA GLOBAL
+        // ==========================================
+        // Isso garante que a busca global funcione em qualquer página que tenha o layout
+        if (!document.getElementById("script-busca-global")) {
+            console.log("[Layout] Injetando sistema de Busca Global...");
+            const searchScript = document.createElement("script");
+            searchScript.id = "script-busca-global";
+            searchScript.src = "/globalSearch.js"; // Caminho do seu arquivo globalSearch.js na pasta public
+            document.body.appendChild(searchScript);
+        }
     }
 
     // --- SISTEMA DE TRIAL (PERÍODO DE TESTE) ---
     async function checkTrialStatus(type, token) {
         if (!token) return;
         try {
+            console.log("[Layout] Verificando status de trial...");
             const res = await fetch('/api/auth/trial-status', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -145,7 +157,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     }
                 }
             }
-        } catch (e) { console.error("Erro trial check:", e); }
+        } catch (e) { console.error("[Layout] Erro trial check:", e); }
     }
 
     function mostrarBannerTrial(dias) {
@@ -180,6 +192,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function checkAceiteTermos(type, token) {
         try {
+            console.log("[Layout] Verificando aceite de termos...");
             const checkRes = await fetch('/api/auth/aceite-termos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -190,7 +203,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (checkRes.ok && !data.ja_aceitou) {
                 mostrarModalTermos(type, token);
             }
-        } catch (e) { console.error("Erro check termos:", e); }
+        } catch (e) { console.error("[Layout] Erro check termos:", e); }
     }
 
     function mostrarModalTermos(type, token) {
@@ -225,6 +238,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 });
                 if (res.ok) {
                     document.getElementById('modal-termos-lgpd').remove();
+                    console.log("[Layout] Termos aceitos com sucesso.");
                 } else {
                     alert("Erro ao gravar aceite. Tente novamente.");
                     this.disabled = false;
