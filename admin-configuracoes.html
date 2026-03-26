@@ -19,7 +19,6 @@
             box-sizing: border-box;
         }
 
-        /* Modern Header */
         .dashboard-header {
             display: flex;
             justify-content: space-between;
@@ -44,13 +43,13 @@
             margin: 0;
         }
 
-        /* Panels & Tables */
         .admin-panel {
             background: #fff;
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
             padding: 2rem;
-            max-width: 800px;
+            max-width: 900px;
+            margin-bottom: 2rem;
         }
 
         .panel-toolbar {
@@ -133,6 +132,55 @@
             font-weight: 500;
         }
 
+        .form-control-text {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            resize: vertical;
+        }
+        
+        .form-control-text:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .msg-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .msg-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .msg-item span {
+            font-weight: 700;
+            color: #334155;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        .msg-obs {
+            grid-column: 1 / -1;
+            background: #eff6ff;
+            color: #1e3a8a;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            border-left: 4px solid #3b82f6;
+        }
+
         #feedback-message {
             margin-top: 1rem;
             padding: 1rem;
@@ -141,16 +189,11 @@
             font-weight: 500;
         }
 
-        #feedback-message.success {
-            background-color: #dcfce7;
-            color: #166534;
-            display: block;
-        }
+        #feedback-message.success { background-color: #dcfce7; color: #166534; display: block; }
+        #feedback-message.error { background-color: #fee2e2; color: #991b1b; display: block; }
 
-        #feedback-message.error {
-            background-color: #fee2e2;
-            color: #991b1b;
-            display: block;
+        @media(max-width: 768px){
+            .msg-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -169,43 +212,83 @@
                     <section class="dashboard-header">
                         <div class="welcome-message">
                             <h1>Configurações do Sistema</h1>
-                            <p>Defina prazos padrão e outras regras gerais para a sua empresa.</p>
+                            <p>Defina prazos e mensagens automáticas para o envio via WhatsApp.</p>
                         </div>
                     </section>
 
-                    <div class="admin-panel">
-                        <div class="panel-toolbar">
-                            <h3><i class="fa-solid fa-clock"></i> Prazos de Produção</h3>
-                        </div>
-
-                        <form id="form-configuracoes">
+                    <form id="form-configuracoes">
+                        
+                        <!-- PAINEL DE PRAZOS -->
+                        <div class="admin-panel">
+                            <div class="panel-toolbar">
+                                <h3><i class="fa-solid fa-clock"></i> Prazos de Produção</h3>
+                            </div>
                             <div class="form-group">
                                 <label for="prazo_impressao">Prazo Padrão - Impressão</label>
-                                <p class="help-text">Tempo projetado a partir do momento em que o pedido entra no setor
-                                    de Impressão.</p>
+                                <p class="help-text">Tempo projetado a partir do momento em que o pedido entra no setor de Impressão.</p>
                                 <div class="input-group">
                                     <input type="number" id="prazo_impressao" min="1" step="1" required>
                                     <span class="addon">Horas Úteis</span>
                                 </div>
                             </div>
-
                             <div class="form-group">
                                 <label for="prazo_acabamento">Prazo Padrão - Acabamento</label>
-                                <p class="help-text">Tempo projetado a partir do momento em que o pedido entra no setor
-                                    de Acabamento.</p>
+                                <p class="help-text">Tempo projetado a partir do momento em que o pedido entra no setor de Acabamento.</p>
                                 <div class="input-group">
                                     <input type="number" id="prazo_acabamento" min="1" step="1" required>
                                     <span class="addon">Horas Úteis</span>
                                 </div>
                             </div>
+                        </div>
 
-                            <button type="submit" class="btn-primary" id="btn-salvar">
-                                <i class="fa-solid fa-save"></i> Salvar Configurações
+                        <!-- PAINEL DE MENSAGENS DO WHATSAPP -->
+                        <div class="admin-panel">
+                            <div class="panel-toolbar">
+                                <h3><i class="fa-brands fa-whatsapp" style="color:#25D366;"></i> Mensagens de Atualização (WhatsApp)</h3>
+                            </div>
+                            <p class="help-text" style="margin-bottom: 20px;">Personalize o texto que o cliente receberá quando o pedido dele mudar de etapa no CRM.</p>
+                            
+                            <div class="msg-grid">
+                                <div class="msg-item">
+                                    <span>🎨 ARTE</span>
+                                    <textarea id="msg_arte" class="form-control-text" rows="3" required></textarea>
+                                </div>
+                                <div class="msg-item">
+                                    <span>🖨️ IMPRESSÃO</span>
+                                    <textarea id="msg_impressao" class="form-control-text" rows="3" required></textarea>
+                                </div>
+                                <div class="msg-item">
+                                    <span>✂️ ACABAMENTO</span>
+                                    <textarea id="msg_acabamento" class="form-control-text" rows="3" required></textarea>
+                                </div>
+                                <div class="msg-item">
+                                    <span>📦 EXPEDIÇÃO</span>
+                                    <textarea id="msg_expedicao" class="form-control-text" rows="3" required></textarea>
+                                </div>
+                                <div class="msg-item">
+                                    <span>🏪 INSTALAÇÃO NA LOJA</span>
+                                    <textarea id="msg_inst_loja" class="form-control-text" rows="3" required></textarea>
+                                </div>
+                                <div class="msg-item">
+                                    <span>🚚 INSTALAÇÃO EXTERNA</span>
+                                    <textarea id="msg_inst_ext" class="form-control-text" rows="3" required></textarea>
+                                </div>
+                                
+                                <div class="msg-obs">
+                                    <i class="fa-solid fa-circle-info"></i> <strong>Aviso:</strong> O sistema adicionará automaticamente no final de cada mensagem a frase obrigatória: <em>"Dúvidas, falar com (Seu Número)"</em>.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BOTÃO SALVAR GERAL -->
+                        <div class="admin-panel" style="background: transparent; box-shadow: none; padding: 0;">
+                            <button type="submit" class="btn-primary" id="btn-salvar" style="width: 100%; justify-content: center; padding: 15px; font-size: 1.1rem;">
+                                <i class="fa-solid fa-save"></i> Salvar Todas as Configurações
                             </button>
-
                             <div id="feedback-message"></div>
-                        </form>
-                    </div>
+                        </div>
+
+                    </form>
 
                 </div>
             </main>
@@ -215,10 +298,7 @@
     <script src="/layout.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. Carrega configs atuais
             carregarConfiguracoes();
-
-            // 2. Prepara o formulário
             document.getElementById('form-configuracoes').addEventListener('submit', salvarConfiguracoes);
         });
 
@@ -237,14 +317,21 @@
                     body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') })
                 });
 
-                if (!response.ok) {
-                    throw new Error('Erro ao carregar configurações.');
-                }
+                if (!response.ok) throw new Error('Erro ao carregar configurações.');
 
                 const data = await response.json();
                 if (data.config) {
                     document.getElementById('prazo_impressao').value = data.config.prazo_padrao_impressao;
                     document.getElementById('prazo_acabamento').value = data.config.prazo_padrao_acabamento;
+
+                    // Textos pré-carregados da API (já vêm com fallback no backend se tiver vazio)
+                    const msgs = data.config.mensagens_etapas || {};
+                    document.getElementById('msg_arte').value = msgs.ARTE || '';
+                    document.getElementById('msg_impressao').value = msgs.IMPRESSAO || '';
+                    document.getElementById('msg_acabamento').value = msgs.ACABAMENTO || '';
+                    document.getElementById('msg_expedicao').value = msgs.EXPEDICAO || '';
+                    document.getElementById('msg_inst_loja').value = msgs.INSTALACAO_LOJA || '';
+                    document.getElementById('msg_inst_ext').value = msgs.INSTALACAO_EXTERNA || '';
                 }
             } catch (error) {
                 console.error("Erro carregando configurações:", error);
@@ -261,7 +348,15 @@
             const payload = {
                 sessionToken: localStorage.getItem('sessionToken'),
                 prazoImpressao: document.getElementById('prazo_impressao').value,
-                prazoAcabamento: document.getElementById('prazo_acabamento').value
+                prazoAcabamento: document.getElementById('prazo_acabamento').value,
+                mensagens_etapas: {
+                    ARTE: document.getElementById('msg_arte').value,
+                    IMPRESSAO: document.getElementById('msg_impressao').value,
+                    ACABAMENTO: document.getElementById('msg_acabamento').value,
+                    EXPEDICAO: document.getElementById('msg_expedicao').value,
+                    INSTALACAO_LOJA: document.getElementById('msg_inst_loja').value,
+                    INSTALACAO_EXTERNA: document.getElementById('msg_inst_ext').value
+                }
             };
 
             try {
@@ -271,19 +366,15 @@
                     body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) {
-                    throw new Error('Falha ao salvar configurações.');
-                }
-
+                if (!response.ok) throw new Error('Falha ao salvar configurações.');
                 mostrarFeedback("Configurações salvas com sucesso!");
             } catch (error) {
                 mostrarFeedback(error.message, true);
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-save"></i> Salvar Configurações';
+                btn.innerHTML = '<i class="fa-solid fa-save"></i> Salvar Todas as Configurações';
             }
         }
     </script>
 </body>
-
 </html>

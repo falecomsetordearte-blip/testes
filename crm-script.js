@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     configurarBuscaCliente();
 
-    // Configurações de UX dos Valores (Calcula saldo e apaga o 0 automaticamente)
     const valTotalInput = document.getElementById('crm-valor');
     const valPagoInput = document.getElementById('crm-valor-pago');
 
@@ -52,8 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// --- 1. LÓGICA DE METAS E LANÇAMENTO RÁPIDO ---
-
 window.lancarVendaRapida = async function () {
     const input = document.getElementById('quick-venda-valor');
     const btn = document.getElementById('btn-quick-venda');
@@ -80,9 +77,9 @@ window.lancarVendaRapida = async function () {
         const data = await res.json();
 
         if (res.ok) {
-            input.value = ''; // Limpa o campo
+            input.value = ''; 
             showToast(`+ R$ ${valor.toFixed(2)} somados a hoje!`, "success");
-            await carregarMetasCRM(); // Recarrega a barra de progresso
+            await carregarMetasCRM(); 
         } else {
             showToast(data.error || "Erro ao lançar venda", "error");
         }
@@ -216,8 +213,6 @@ window.renderizarVisualizacaoMeta = function () {
     }
 }
 
-// --- 2. LÓGICA DE BUSCA DE CLIENTE (AUTOCOMPLETE) ---
-
 function configurarBuscaCliente() {
     const input = document.getElementById('crm-nome');
     const btnBuscar = document.getElementById('btn-buscar-cliente');
@@ -271,8 +266,6 @@ function configurarBuscaCliente() {
         if (!e.target.closest('.autocomplete-wrapper')) list.style.display = 'none';
     });
 }
-
-// --- 3. WIZARD DE VENDAS (PASSOS E VALIDAÇÕES) ---
 
 window.mudarPasso = function (direction) {
     if (direction === 1 && !validarPassoAtual()) return;
@@ -353,8 +346,6 @@ window.selectCard = function (group, value, element) {
     }
 };
 
-// --- 4. GESTÃO DE CARDS NO KANBAN ---
-
 async function carregarKanban() {
     try {
         const res = await fetch('/api/crm/listCards', {
@@ -422,8 +413,6 @@ function inicializarDragAndDrop() {
     });
 }
 
-// --- 5. PRODUÇÃO E EXCLUSÃO (COM BLOQUEIO DE LOADING) ---
-
 window.produzirCardDireto = function (cardId, btnElement, event) {
     if (event) event.stopPropagation();
 
@@ -431,14 +420,16 @@ window.produzirCardDireto = function (cardId, btnElement, event) {
         const card = allCardsCache.find(c => c.id == cardId);
         if (!card) return showToast("Erro: Card não encontrado.", "error");
 
-        // Captura o card HTML inteiro para bloquear cliques
         const cardElementHTML = btnElement.closest('.kanban-card');
-
         let extras = {};
         try { if (card.briefing_json) extras = (typeof card.briefing_json === 'string') ? JSON.parse(card.briefing_json) : card.briefing_json; } catch (e) { }
 
         let txt = "";
         if (extras.materiais) extras.materiais.forEach((d, i) => { txt += `--- Item ${i + 1} ---\nMaterial: ${d.descricao}\nDetalhes: ${d.detalhes}\n\n`; });
+
+        // PEGA O VALOR DO CHECKBOX NOVO (COM FALLBACK PARA TRUE)
+        const chkNotificar = document.getElementById('notificar-cliente');
+        const notificarCliente = chkNotificar ? chkNotificar.checked : true;
 
         const payload = {
             sessionToken: localStorage.getItem('sessionToken'),
@@ -453,13 +444,11 @@ window.produzirCardDireto = function (cardId, btnElement, event) {
             supervisaoWpp: extras.supervisao_wpp,
             valorDesigner: extras.valor_designer,
             formato: extras.formato,
-            cdrVersao: extras.cdr_versao
+            cdrVersao: extras.cdr_versao,
+            notificarCliente: notificarCliente
         };
 
-        // --- ATIVA O LOADING E BLOQUEIA O CARD ---
-        if (cardElementHTML) {
-            cardElementHTML.classList.add('card-is-loading');
-        }
+        if (cardElementHTML) cardElementHTML.classList.add('card-is-loading');
 
         fetch('/api/createDealForGrafica', {
             method: 'POST',
@@ -479,14 +468,11 @@ window.produzirCardDireto = function (cardId, btnElement, event) {
             .then(() => {
                 showToast('Enviado para Produção!', 'success');
                 fecharPanel(); 
-                carregarKanban(); // O card será apagado da tela automaticamente aqui
+                carregarKanban();
                 carregarMetasCRM();
             })
             .catch(err => {
-                // --- SE DER ERRO, DESBLOQUEIA O CARD PARA TENTAR DE NOVO ---
-                if (cardElementHTML) {
-                    cardElementHTML.classList.remove('card-is-loading');
-                }
+                if (cardElementHTML) cardElementHTML.classList.remove('card-is-loading');
                 showToast(err.message, 'error');
                 btnElement.innerHTML = '<i class="fas fa-rocket"></i> PRODUZIR';
                 btnElement.dataset.confirming = "false";
@@ -519,8 +505,6 @@ window.confirmarExclusaoCard = async function (cardId, event) {
         } catch (err) { showToast("Erro de conexão.", "error"); }
     }
 };
-
-// --- 6. FUNÇÕES DE FORMULÁRIO (SALVAR, ABRIR, RESET) ---
 
 document.getElementById('form-crm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -672,6 +656,9 @@ function resetarForm() {
         if (lr) lr.style.display = 'none';
         if (lh) lh.value = '';
     });
+
+    const chkNotificar = document.getElementById('notificar-cliente');
+    if(chkNotificar) chkNotificar.checked = true;
 }
 
 function adicionarMaterialNoForm(desc = '', det = '') {
@@ -710,39 +697,27 @@ function calcularSaldoRestante() {
     }
 }
 
-// --- 7. UI HELPERS (TOAST, MASCARAS, ESTILOS) ---
-
 function injectCleanStyles() {
     const style = document.createElement('style');
     style.textContent = `
         .toast-message a { color: #e74c3c; font-weight: bold; text-decoration: underline; cursor: pointer; }
         .progress-fill.danger { background: linear-gradient(90deg, #e74c3c, #c0392b) !important; }
         .confirm-state { background: #e74c3c !important; color: white !important; }
-
-        /* --- NOVO: ESTILO DE CARREGAMENTO DO CARD --- */
         .kanban-card.card-is-loading {
             pointer-events: none !important;
             position: relative;
             overflow: hidden;
         }
         .kanban-card.card-is-loading::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255, 255, 255, 0.85);
-            z-index: 50;
+            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.85); z-index: 50;
         }
         .kanban-card.card-is-loading::after {
-            content: "\\f110"; /* Código do ícone Spinner do FontAwesome */
-            font-family: "Font Awesome 6 Free";
-            font-weight: 900;
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 2.5rem;
-            color: #27ae60;
-            animation: fa-spin 1s infinite linear;
-            z-index: 51;
+            content: "\\f110";
+            font-family: "Font Awesome 6 Free"; font-weight: 900;
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); font-size: 2.5rem;
+            color: #27ae60; animation: fa-spin 1s infinite linear; z-index: 51;
         }
     `;
     document.head.appendChild(style);
@@ -774,9 +749,7 @@ function configurarMascaras() {
     }
 }
 
-// --- 8. GOOGLE DRIVE INTEGRATION ---
 let gDriveConectado = false;
-
 window.checkGoogleDriveStatus = async function () {
     const sessionToken = localStorage.getItem('sessionToken');
     if (!sessionToken) return;

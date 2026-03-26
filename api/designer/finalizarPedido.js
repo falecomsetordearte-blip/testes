@@ -1,6 +1,8 @@
-// /api/designer/finalizarPedido.js
+// /api/designer/finalizarPedido.js - COMPLETO COM NOTIFICAÇÃO
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+// 1. IMPORTANDO A FUNÇÃO MÁGICA DE NOTIFICAÇÃO
+const { enviarNotificacaoEtapa } = require('../helpers/chatapp');
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido.' });
@@ -57,6 +59,17 @@ module.exports = async (req, res) => {
                 updated_at = NOW() 
             WHERE id = $3
         `, linkImpressao, linkLayout, parseInt(pedidoId));
+
+        // =========================================================================
+        // D) DISPARAR NOTIFICAÇÃO AUTOMÁTICA NO GRUPO DO CLIENTE
+        // =========================================================================
+        try {
+            // Notifica que o pedido (finalizado pelo designer terceirizado) foi para Impressão
+            await enviarNotificacaoEtapa(pedidoId, 'IMPRESSÃO');
+        } catch (notifError) {
+            console.error('[CHATAPP AVISO] Falha silenciada ao notificar cliente:', notifError.message);
+        }
+        // =========================================================================
 
         return res.status(200).json({
             success: true,

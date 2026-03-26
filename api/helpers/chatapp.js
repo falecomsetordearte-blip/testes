@@ -4,17 +4,12 @@ const { PrismaClient } = require('@prisma/client');
 const CHATAPP_API = 'https://api.chatapp.online/v1';
 const prisma = new PrismaClient();
 
-// --- Garante a tabela de configuração ---
 async function garantirTabelaConfig() {
     try {
-        await prisma.$executeRawUnsafe(`
-            CREATE TABLE IF NOT EXISTS system_config (
-                chave TEXT PRIMARY KEY, valor TEXT, atualizado_em TIMESTAMPTZ DEFAULT NOW()
-            )`);
+        await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS system_config (chave TEXT PRIMARY KEY, valor TEXT, atualizado_em TIMESTAMPTZ DEFAULT NOW())`);
     } catch (e) {}
 }
 
-// --- Busca token ou gera um novo ---
 async function getChatAppToken(forceRefresh = false) {
     if (!forceRefresh) {
         try {
@@ -24,7 +19,6 @@ async function getChatAppToken(forceRefresh = false) {
         } catch (e) {}
     }
 
-    // Se não tem no banco ou forçado: Autentica
     try {
         console.log('[CHATAPP] Autenticando para obter NOVO token...');
         const response = await axios.post(`${CHATAPP_API}/tokens`, {
@@ -43,12 +37,10 @@ async function getChatAppToken(forceRefresh = false) {
         }
         return null;
     } catch (error) {
-        console.error("[CHATAPP AUTH ERROR]", error.message);
         return null;
     }
 }
 
-// --- Formata telefone (Garante string limpa para a API) ---
 function formatarTelefone(telefone) {
     if (!telefone) return null;
     let limpo = telefone.toString().replace(/\D/g, '');
@@ -56,11 +48,11 @@ function formatarTelefone(telefone) {
     return limpo.length >= 12 ? parseInt(limpo, 10) : null;
 }
 
-// --- Função Principal com Retry (Tentativa de recuperação) ---
+// -------------------------------------------------------------
+// 1. CRIAÇÃO DOS GRUPOS PARA QUEM TERCEIRIZA A ARTE
+// -------------------------------------------------------------
 async function criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, nomeCliente = 'Cliente', nomeEmpresa = 'nossa gráfica', retry = true) {
-    console.log(`--- [CHATAPP] Iniciando automação DUPLA (Tentativa: ${retry ? '1' : '2 (Retry)'}) ---`);
-
-    const token = await getChatAppToken(!retry); // Se for retry, força um token novo
+    const token = await getChatAppToken(!retry);
     if (!token) return null;
 
     const headers = { 'Authorization': token, 'Content-Type': 'application/json', 'Lang': 'pt' };
@@ -70,129 +62,159 @@ async function criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, n
     try {
         const numCliente = formatarTelefone(wppCliente);
         const numSupervisor = formatarTelefone(supervisorWpp);
-
         const participantsItems = [];
         if (numCliente) participantsItems.push({ value: numCliente });
         if (numSupervisor) participantsItems.push({ value: numSupervisor });
-
         if (participantsItems.length === 0) return null;
 
-        // =========================================================
-        // 1. CRIAÇÃO DO GRUPO 1 (CLIENTE + SUPERVISÃO + DESIGNER)
-        // =========================================================
         const urlGroups = `${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats`;
-        const resGrupo1 = await axios.post(urlGroups, {
-            type: "group",
-            name: `Pedido: ${titulo}`.substring(0, 50),
-            participantsType: "phone",
-            participantsItems: participantsItems
-        }, { headers });
-
-        const gData1 = resGrupo1.data?.data || resGrupo1.data;
-        const chatId1 = gData1.id;
-        const groupLink1 = gData1.inviteLink || '';
-
-        // Aguarda propagação
+        
+        // GRUPO 1
+        const resGrupo1 = await axios.post(urlGroups, { type: "group", name: `Pedido: ${titulo}`.substring(0, 50), participantsType: "phone", participantsItems: participantsItems }, { headers });
+        const chatId1 = resGrupo1.data?.data?.id || resGrupo1.data?.id;
+        const groupLink1 = resGrupo1.data?.data?.inviteLink || resGrupo1.data?.inviteLink || '';
         await new Promise(r => setTimeout(r, 2000));
-
-        // Envia briefing no Grupo 1
         if (chatId1) {
-            await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId1}/messages/text`, {
-                text: `🚀 *NOVO PEDIDO INICIADO*\n\n*Serviço:* ${titulo}\n\n*Briefing de Arte:* \n${briefing}\n\n---`
-            }, { headers });
+            await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId1}/messages/text`, { text: `🚀 *NOVO PEDIDO INICIADO*\n\n*Serviço:* ${titulo}\n\n*Briefing de Arte:* \n${briefing}\n\n---` }, { headers });
         }
 
-        // =========================================================
-        // 2. CRIAÇÃO DO GRUPO 2 (APENAS SUPERVISÃO + DESIGNER)
-        // =========================================================
+        // GRUPO 2 (INTERNO)
         let chatIdInterno = null;
         let groupLinkInterno = '';
-
         if (numSupervisor) {
-            const resGrupo2 = await axios.post(urlGroups, {
-                type: "group",
-                name: `${titulo} - Designer`.substring(0, 50),
-                participantsType: "phone",
-                participantsItems: [{ value: numSupervisor }]
-            }, { headers });
-
-            const gData2 = resGrupo2.data?.data || resGrupo2.data;
-            chatIdInterno = gData2.id;
-            groupLinkInterno = gData2.inviteLink || '';
-
-            // Aguarda propagação
+            const resGrupo2 = await axios.post(urlGroups, { type: "group", name: `${titulo} - Designer`.substring(0, 50), participantsType: "phone", participantsItems: [{ value: numSupervisor }] }, { headers });
+            chatIdInterno = resGrupo2.data?.data?.id || resGrupo2.data?.id;
+            groupLinkInterno = resGrupo2.data?.data?.inviteLink || resGrupo2.data?.inviteLink || '';
             await new Promise(r => setTimeout(r, 2000));
-
-            // Envia mensagem específica no Grupo 2
             if (chatIdInterno) {
-                await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatIdInterno}/messages/text`, {
-                    text: `Nesse grupo aqui não tem o cliente. Se precisar falar só comigo sobre esse pedido use por aqui.`
-                }, { headers });
+                await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatIdInterno}/messages/text`, { text: `Nesse grupo aqui não tem o cliente. Se precisar falar só comigo sobre esse pedido use por aqui.` }, { headers });
             }
         }
 
-        // =========================================================
-        // 3. ENVIO DE MENSAGENS DIRETAS (PV / INBOX)
-        // =========================================================
-        
-        // Mensagem direta para o CLIENTE
+        // PV CLIENTE E SUPERVISÃO
         if (numCliente && groupLink1) {
-            try {
-                // <--- ALTERADO AQUI PARA A FRASE EXATA QUE VOCÊ PEDIU --->
-                await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${numCliente}/messages/text`, {
-                    text: `${nomeCliente} eu sou o Dior, Designer e vou cuidar da arte do pedido que você fez lá na ${nomeEmpresa} ok?\nAssim que der, entre no grupo abaixo que criei só pra falar sobre esse pedido.\n\n${groupLink1}`
-                }, { headers });
-                await new Promise(r => setTimeout(r, 1000));
-            } catch (e) { console.error("Erro ao mandar PV Cliente:", e.message); }
+            try { await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${numCliente}/messages/text`, { text: `${nomeCliente} eu sou o Dior, Designer e vou cuidar da arte do pedido que você fez lá na ${nomeEmpresa} ok?\nAssim que der, entre no grupo abaixo que criei só pra falar sobre esse pedido.\n\n${groupLink1}` }, { headers }); await new Promise(r => setTimeout(r, 1000)); } catch (e) {}
         }
-
-        // Mensagens diretas para a SUPERVISÃO
         if (numSupervisor) {
             try {
-                // Mensagem 1 (Sobre o grupo do cliente)
-                if (groupLink1) {
-                    await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${numSupervisor}/messages/text`, {
-                        text: `Eu criei o grupo para o pedido ${titulo} e convidei o ${nomeCliente}. Se quiser reforçar o convite o link é ${groupLink1}`
-                    }, { headers });
-                    await new Promise(r => setTimeout(r, 1000));
-                }
-                
-                // Mensagem 2 (Sobre o grupo interno)
-                if (groupLinkInterno) {
-                    await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${numSupervisor}/messages/text`, {
-                        text: `Se precisar falar só comigo, sem o cliente, sobre o pedido ${titulo} use esse grupo: ${groupLinkInterno}`
-                    }, { headers });
-                }
-            } catch (e) { console.error("Erro ao mandar PV Supervisão:", e.message); }
+                if (groupLink1) { await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${numSupervisor}/messages/text`, { text: `Eu criei o grupo para o pedido ${titulo} e convidei o ${nomeCliente}. Se quiser reforçar o convite o link é ${groupLink1}` }, { headers }); await new Promise(r => setTimeout(r, 1000)); }
+                if (groupLinkInterno) await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${numSupervisor}/messages/text`, { text: `Se precisar falar só comigo, sem o cliente, sobre o pedido ${titulo} use esse grupo: ${groupLinkInterno}` }, { headers });
+            } catch (e) {}
         }
 
-        console.log(`[CHATAPP] Automação concluída! Grupo 1: ${chatId1} | Grupo Interno: ${chatIdInterno}`);
-        
-        return { 
-            chatId: chatId1, 
-            groupLink: groupLink1,
-            chatIdInterno: chatIdInterno,
-            groupLinkInterno: groupLinkInterno
-        };
+        return { chatId: chatId1, groupLink: groupLink1, chatIdInterno: chatIdInterno, groupLinkInterno: groupLinkInterno };
 
     } catch (error) {
-        const errData = error.response?.data || {};
-        const errCode = errData.error?.code || "";
-
-        // SE O ERRO FOR TOKEN INVÁLIDO E AINDA NÃO TENTAMOS O RETRY
-        if ((errCode === "ApiInvalidTokenError" || error.response?.status === 401) && retry) {
-            console.warn("[CHATAPP] Token inválido detectado. Limpando cache e tentando novamente...");
-            
-            // Apaga o token bichado do banco
+        if ((error.response?.data?.error?.code === "ApiInvalidTokenError" || error.response?.status === 401) && retry) {
             await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => {});
-            
-            // Chama a função novamente forçando um novo token
             return await criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, nomeCliente, nomeEmpresa, false);
         }
-
-        console.error("[CHATAPP FATAL ERROR]", JSON.stringify(errData, null, 2));
         return null;
     }
 }
 
-module.exports = { criarGrupoProducao, getChatAppToken };
+
+// -------------------------------------------------------------
+// 2. CRIAÇÃO DO GRUPO EXCLUSIVO DE ATUALIZAÇÕES
+// -------------------------------------------------------------
+async function criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, retry = true) {
+    const token = await getChatAppToken(!retry);
+    if (!token) return null;
+
+    const headers = { 'Authorization': token, 'Content-Type': 'application/json', 'Lang': 'pt' };
+    const L_ID = process.env.CHATAPP_LICENSE_ID || '59808';
+    const L_MSG = 'grWhatsApp';
+
+    try {
+        const numCliente = formatarTelefone(wppCliente);
+        const numEmpresa = formatarTelefone(wppEmpresa);
+        const participantsItems = [];
+
+        if (numCliente) participantsItems.push({ value: numCliente });
+        if (numEmpresa) participantsItems.push({ value: numEmpresa });
+        if (participantsItems.length === 0) return null;
+
+        const urlGroups = `${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats`;
+        const resGrupo = await axios.post(urlGroups, {
+            type: "group",
+            name: `Pedido ${titulo} - Atualizações`.substring(0, 50),
+            participantsType: "phone",
+            participantsItems: participantsItems
+        }, { headers });
+
+        const chatId = resGrupo.data?.data?.id || resGrupo.data?.id;
+
+        if (chatId) {
+            await new Promise(r => setTimeout(r, 2000));
+            await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/messages/text`, {
+                text: `Olá! Criamos este grupo exclusivamente para enviar atualizações automáticas sobre as etapas do seu pedido.\n\nQualquer dúvida, fale com nosso atendimento: ${wppEmpresa || 'no privado'}`
+            }, { headers });
+        }
+
+        return { chatId };
+    } catch(error) {
+        if ((error.response?.data?.error?.code === "ApiInvalidTokenError" || error.response?.status === 401) && retry) {
+            await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => {});
+            return await criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, false);
+        }
+        return null;
+    }
+}
+
+
+// -------------------------------------------------------------
+// 3. ENVIAR MENSAGEM QUANDO O PEDIDO TROCAR DE ETAPA
+// -------------------------------------------------------------
+async function enviarNotificacaoEtapa(pedidoId, novaEtapa, retry = true) {
+    const token = await getChatAppToken(!retry);
+    if (!token) return false;
+
+    try {
+        // 1. Busca dados do Pedido e da Empresa
+        const pedidos = await prisma.$queryRawUnsafe(`SELECT empresa_id, notificar_cliente, chatapp_chat_notificacoes_id, nome_cliente FROM pedidos WHERE id = $1`, Number(pedidoId));
+        if (!pedidos.length || !pedidos[0].notificar_cliente || !pedidos[0].chatapp_chat_notificacoes_id) return false;
+        const p = pedidos[0];
+
+        // 2. Pega as configurações personalizadas daquela empresa específica
+        const configs = await prisma.$queryRawUnsafe(`SELECT mensagens_etapas FROM painel_configuracoes_sistema WHERE empresa_id = $1`, p.empresa_id);
+        const empresas = await prisma.$queryRawUnsafe(`SELECT whatsapp FROM empresas WHERE id = $1`, p.empresa_id);
+        
+        let mensagens = configs.length && configs[0].mensagens_etapas ? configs[0].mensagens_etapas : {};
+        if (typeof mensagens === 'string') mensagens = JSON.parse(mensagens);
+
+        // 3. Mapeia a nova etapa com a CHAVE salva no banco
+        let key = novaEtapa.toUpperCase().replace(' ', '_').replace('Ç', 'C').replace('Ã', 'A'); 
+        if(novaEtapa === 'Instalação na Loja') key = 'INSTALACAO_LOJA';
+        if(novaEtapa === 'Instalação Externa') key = 'INSTALACAO_EXTERNA';
+        if(novaEtapa === 'Expedição') key = 'EXPEDICAO';
+        if(novaEtapa === 'Impressão') key = 'IMPRESSAO';
+        if(novaEtapa === 'Acabamento') key = 'ACABAMENTO';
+        if(novaEtapa === 'Arte') key = 'ARTE';
+
+        const msgBase = mensagens[key] || `Seu pedido avançou para a etapa: ${novaEtapa}. Nossa equipe cuidará de tudo para você!`;
+        const numeroEmpresa = empresas.length ? empresas[0].whatsapp : '';
+
+        // 4. Concatena a mensagem com a obrigação de "Fale conosco"
+        const textoFinal = `Olá ${p.nome_cliente || ''}!\n\n${msgBase}\n\n*Dúvidas? Falar com nosso atendimento:* ${numeroEmpresa}`;
+
+        // 5. Envia no Chat do Grupo
+        const headers = { 'Authorization': token, 'Content-Type': 'application/json', 'Lang': 'pt' };
+        const L_ID = process.env.CHATAPP_LICENSE_ID || '59808'; 
+        const L_MSG = 'grWhatsApp'; 
+        const url = `${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${p.chatapp_chat_notificacoes_id}/messages/text`;
+
+        await axios.post(url, { text: textoFinal }, { headers });
+        console.log(`[CHATAPP] Mensagem da etapa ${novaEtapa} enviada!`);
+        return true;
+
+    } catch (error) {
+        if ((error.response?.data?.error?.code === "ApiInvalidTokenError" || error.response?.status === 401) && retry) {
+            await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => {});
+            return await enviarNotificacaoEtapa(pedidoId, novaEtapa, false);
+        }
+        console.error(`[NOTIFICACAO ERRO] Falha:`, error.message);
+        return false;
+    }
+}
+
+module.exports = { criarGrupoProducao, criarGrupoNotificacoes, enviarNotificacaoEtapa, getChatAppToken };

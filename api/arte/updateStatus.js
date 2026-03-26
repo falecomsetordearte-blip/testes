@@ -1,7 +1,9 @@
-// /api/arte/updateStatus.js - COMPLETO E CORRIGIDO
+// /api/arte/updateStatus.js - COMPLETO E CORRIGIDO COM NOTIFICAÇÃO
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+// 1. IMPORTANDO A FUNÇÃO DE NOTIFICAÇÃO
+const { enviarNotificacaoEtapa } = require('../helpers/chatapp');
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -67,6 +69,17 @@ module.exports = async (req, res) => {
                 DELETE FROM painel_arte_cards 
                 WHERE bitrix_deal_id = $1 AND empresa_id = $2
             `, idPedido, empresaId);
+
+            // =========================================================================
+            // DISPARAR NOTIFICAÇÃO AUTOMÁTICA NO GRUPO DO CLIENTE
+            // =========================================================================
+            try {
+                // Notifica que o pedido foi para Impressão
+                await enviarNotificacaoEtapa(idPedido, 'IMPRESSÃO');
+            } catch (notifError) {
+                console.error('[CHATAPP AVISO] Falha silenciada ao notificar cliente:', notifError.message);
+            }
+            // =========================================================================
 
             return res.status(200).json({ success: true, message: 'Arte aprovada!', movedToNextStage: true });
         }

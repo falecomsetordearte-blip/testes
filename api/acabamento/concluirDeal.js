@@ -1,6 +1,8 @@
-// /api/acabamento/concluirDeal.js - COMPLETO E ATUALIZADO
+// /api/acabamento/concluirDeal.js - COMPLETO E ATUALIZADO COM NOTIFICAÇÃO
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+// 1. IMPORTANDO A FUNÇÃO MÁGICA DE NOTIFICAÇÃO
+const { enviarNotificacaoEtapa } = require('../helpers/chatapp');
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -49,6 +51,17 @@ module.exports = async (req, res) => {
             SET etapa = $1, updated_at = NOW() 
             WHERE id = $2
         `, novaEtapa, parseInt(dealId));
+
+        // =========================================================================
+        // 5. DISPARAR NOTIFICAÇÃO AUTOMÁTICA NO GRUPO DO CLIENTE
+        // =========================================================================
+        try {
+            // Aguarda o envio, mas se falhar cai no catch local e não quebra o sistema
+            await enviarNotificacaoEtapa(dealId, novaEtapa);
+        } catch (notifError) {
+            console.error('[CHATAPP AVISO] Falha silenciada ao notificar cliente:', notifError.message);
+        }
+        // =========================================================================
 
         return res.status(200).json({ 
             success: true, 

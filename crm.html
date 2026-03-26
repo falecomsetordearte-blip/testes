@@ -130,7 +130,6 @@
         .metas-controls { display: flex; align-items: center; gap: 10px; min-width: 250px; flex-wrap: wrap; }
         .metas-controls select { padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: 600; color: #334155; outline: none; cursor: pointer; width: 100%; font-size: 0.85rem; }
         
-        /* NOVO: LANÇAMENTO RÁPIDO CSS */
         .quick-sale-wrapper { display: flex; align-items: center; gap: 5px; border-left: 2px solid #e2e8f0; padding-left: 15px; margin-left: 5px; }
         .quick-sale-wrapper input { width: 90px; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem; outline: none; transition: 0.2s; }
         .quick-sale-wrapper input:focus { border-color: #3498db; }
@@ -183,7 +182,6 @@
                         </button>
                     </div>
 
-                    <!-- WIDGET DE METAS -->
                     <div class="metas-widget" id="metas-widget-container" style="display:none;">
                         <div class="metas-controls">
                             <i class="fas fa-bullseye" style="color:#e74c3c; font-size:1.4rem;"></i>
@@ -196,7 +194,6 @@
                                 <option value="sem4">📌 Semana 4</option>
                             </select>
 
-                            <!-- NOVO: LANÇAMENTO RÁPIDO DE VENDAS -->
                             <div class="quick-sale-wrapper" title="Somar venda no dia de hoje">
                                 <input type="number" id="quick-venda-valor" placeholder="R$ Lançar" step="0.01">
                                 <button id="btn-quick-venda" onclick="window.lancarVendaRapida()"><i class="fas fa-plus"></i></button>
@@ -244,7 +241,6 @@
         </div>
     </div>
 
-    <!-- DRAWER / PANEL PARA NOVA OPORTUNIDADE -->
     <div id="slide-overlay" class="slide-overlay" onclick="window.fecharPanel()"></div>
     <div id="slide-panel" class="slide-panel">
         <div class="panel-header">
@@ -255,7 +251,6 @@
             <button class="close-panel-btn" onclick="window.fecharPanel()">×</button>
         </div>
 
-        <!-- INDICADOR DE PASSOS -->
         <div class="stepper-container">
             <div class="step-indicator active" id="indicator-1"><div class="step-number">1</div> Cliente</div>
             <div class="step-line"></div>
@@ -293,7 +288,16 @@
                         <label>WhatsApp</label>
                         <input type="tel" id="crm-wpp" class="form-control" placeholder="(00) 00000-0000">
                     </div>
-                    <div class="form-group">
+                    
+                    <!-- NOVO: NOTIFICAÇÃO DO CLIENTE -->
+                    <div class="form-group" style="background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:8px; margin-top:15px;">
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:#166534; margin:0; font-weight:600;">
+                            <input type="checkbox" id="notificar-cliente" checked style="width:20px; height:20px; cursor:pointer; accent-color:#16a34a;">
+                            <span><i class="fab fa-whatsapp"></i> Criar Grupo e Notificar Cliente a cada Etapa (Recomendado)</span>
+                        </label>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 20px;">
                         <label>Nome do Pedido (Opcional)</label>
                         <input type="text" id="crm-titulo-manual" class="form-control" placeholder="Ex: Logotipo Novo" maxlength="30">
                     </div>
@@ -308,7 +312,6 @@
                         <div class="selection-card" onclick="selectCard('arte', 'Arquivo do Cliente', this)"><i class="fas fa-file-upload"></i><span>Arquivo Pronto</span></div>
                     </div>
 
-                    <!-- ARQUIVO PRONTO -->
                     <div id="arquivo-cliente-fields" class="hidden">
                         <div class="form-group">
                             <label>Link Externo (Opcional)</label>
@@ -342,7 +345,6 @@
                         <input type="hidden" id="link-arquivo-drive-arquivo">
                     </div>
 
-                    <!-- FREELANCER (Setor de Arte) -->
                     <div id="setor-arte-fields" class="hidden" style="background:#f8f9fa; padding:15px; border-radius:8px;">
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                             <div class="form-group"><label>Supervisão (Wpp)</label><input type="tel" id="pedido-supervisao" class="form-control"></div>
@@ -359,7 +361,6 @@
                         </div>
                         <div id="cdr-versao-container" class="hidden"><label>Versão Corel</label><input type="text" id="cdr-versao" class="form-control"></div>
 
-                        <!-- Upload de referências/briefing visual -->
                         <div id="gdrive-block-setor" class="gdrive-section" style="margin-top:15px;">
                             <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px;"><i class="fab fa-google-drive" style="color:#4285f4;"></i> <strong>Arquivos de Referência (Opcional)</strong> — Envie logos, fotos ou arquivos para o freelancer</p>
                             <button type="button" class="gdrive-connect-btn" onclick="conectarGoogleDrive('setor')" id="btn-connect-setor">
@@ -386,7 +387,6 @@
                         <input type="hidden" id="link-arquivo-drive-setor">
                     </div>
 
-                    <!-- DESIGNER PRÓPRIO -->
                     <div id="designer-proprio-fields" class="hidden">
                         <div id="gdrive-block-proprio" class="gdrive-section">
                             <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px;"><i class="fab fa-google-drive" style="color:#4285f4;"></i> <strong>Arquivo para o Designer</strong> — Envie logos, fotos ou arquivos para o seu designer</p>
@@ -445,7 +445,6 @@
                     </div>
                 </div>
 
-                <!-- RODAPÉ DO DRAWER -->
                 <div class="panel-footer">
                     <button type="button" id="btn-prev" class="btn-nav btn-prev" onclick="mudarPasso(-1)">Voltar</button>
                     <button type="button" id="btn-next" class="btn-nav btn-next" onclick="mudarPasso(1)">Próximo</button>
@@ -457,7 +456,6 @@
         </div>
     </div>
 
-    <!-- TOAST CONTAINER -->
     <div class="toast-container"></div>
 
     <script src="/layout.js"></script>

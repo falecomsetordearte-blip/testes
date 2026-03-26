@@ -13,7 +13,6 @@ module.exports = async (req, res) => {
         const { sessionToken } = req.body;
         if (!sessionToken) return res.status(401).json({ message: 'Sessão inválida' });
 
-        // 1. Identificar Empresa e validar se tem acesso ADMIN
         let empresaId = null;
         let isAdmin = false;
 
@@ -30,39 +29,50 @@ module.exports = async (req, res) => {
             if (typeof permissoes === 'string') {
                 try { permissoes = JSON.parse(permissoes); } catch (e) { permissoes = []; }
             }
-            if (Array.isArray(permissoes) && permissoes.includes('admin')) {
-                isAdmin = true;
-            }
+            if (Array.isArray(permissoes) && permissoes.includes('admin')) isAdmin = true;
         } else {
-            const empresasLegacy = await prisma.$queryRawUnsafe(`
-                SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
-            `, `%${sessionToken}%`);
+            const empresasLegacy = await prisma.$queryRawUnsafe(`SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`, `%${sessionToken}%`);
             if (empresasLegacy.length > 0) {
                 empresaId = empresasLegacy[0].id;
-                isAdmin = true; // Dono da empresa tem acesso ADMIN nativo
+                isAdmin = true;
             }
         }
 
-        if (!isAdmin || !empresaId) {
-            return res.status(403).json({ message: 'Acesso negado. Requer permissão de administrador.' });
-        }
+        if (!isAdmin || !empresaId) return res.status(403).json({ message: 'Acesso negado. Requer permissão de administrador.' });
 
-        // 2. Buscar Configurações
+        // Mensagens padrão de fábrica
+        const msgsPadrao = {
+            ARTE: "Seu pedido está na etapa de Arte. Nossa equipe está cuidando dos detalhes com muito carinho.",
+            IMPRESSAO: "Ótima notícia! Seu pedido acabou de ir para a Impressão. Em breve tomará forma.",
+            ACABAMENTO: "A impressão terminou! Agora estamos nos acabamentos finais para deixar tudo perfeito.",
+            EXPEDICAO: "Tudo pronto! Seu pedido está na nossa expedição aguardando retirada ou rota de entrega.",
+            INSTALACAO_LOJA: "Tudo pronto! Seu pedido já está liberado e aguardando a instalação aqui na loja.",
+            INSTALACAO_EXTERNA: "Tudo pronto! Seu pedido já entrou na nossa rota para a instalação externa no seu local."
+        };
+
         const configs = await prisma.$queryRawUnsafe(`
-            SELECT prazo_padrao_impressao, prazo_padrao_acabamento
+            SELECT prazo_padrao_impressao, prazo_padrao_acabamento, mensagens_etapas
             FROM painel_configuracoes_sistema
             WHERE empresa_id = $1 LIMIT 1
         `, empresaId);
 
         if (configs.length === 0) {
-            // Se ainda não existir config, retorna os padrões documentados no Prisma
             return res.status(200).json({
                 config: {
                     prazo_padrao_impressao: 24,
-                    prazo_padrao_acabamento: 24
+                    prazo_padrao_acabamento: 24,
+                    mensagens_etapas: msgsPadrao
                 }
             });
         }
+
+        let dbMsgs = configs[0].mensagens_etapas;
+        if (typeof dbMsgs === 'string') { try { dbMsgs = JSON.parse(dbMsgs); } catch(e) { dbMsgs = null; } }
+        
+        // Mescla o que tá no banco com o padrão (para cobrir campos vazios)
+        const finalMsgs = { ...msgsPadrao, ...(dbMsgs || {}) };
+        
+        configs[0].mensagens_etapas = finalMsgs;
 
         return res.status(200).json({ config: configs[0] });
 

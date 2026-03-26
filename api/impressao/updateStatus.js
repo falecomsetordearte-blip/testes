@@ -1,6 +1,8 @@
-// /api/impressao/updateStatus.js
+// /api/impressao/updateStatus.js - COMPLETO COM NOTIFICAÇÃO
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+// 1. IMPORTANDO A FUNÇÃO DE NOTIFICAÇÃO
+const { enviarNotificacaoEtapa } = require('../helpers/chatapp');
 
 const STATUS_ID_PRONTO = '2663';
 
@@ -31,6 +33,17 @@ module.exports = async (req, res) => {
                 SET etapa = 'ACABAMENTO', updated_at = NOW()
                 WHERE id = $1
             `, parseInt(dealId));
+
+            // =========================================================================
+            // DISPARAR NOTIFICAÇÃO AUTOMÁTICA NO GRUPO DO CLIENTE
+            // =========================================================================
+            try {
+                // Notifica que o pedido (finalizado pela Impressão) foi para o Acabamento
+                await enviarNotificacaoEtapa(dealId, 'ACABAMENTO');
+            } catch (notifError) {
+                console.error('[CHATAPP AVISO] Falha silenciada ao notificar cliente:', notifError.message);
+            }
+            // =========================================================================
 
             return res.status(200).json({ 
                 message: 'Pedido finalizado e enviado para Acabamento!',

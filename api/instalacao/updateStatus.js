@@ -1,6 +1,8 @@
-// /api/instalacao/updateStatus.js
+// /api/instalacao/updateStatus.js - COMPLETO E ATUALIZADO COM NOTIFICAÇÃO
 const axios = require('axios');
 const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
+// 1. IMPORTANDO A FUNÇÃO MÁGICA DE NOTIFICAÇÃO
+const { enviarNotificacaoEtapa } = require('../helpers/chatapp');
 
 //
 // TODO: Substitua pelo ID do seu NOVO campo customizado "Status da Instalação".
@@ -48,6 +50,17 @@ module.exports = async (req, res) => {
             });
             
             console.log(`[updateStatus Instalação] Negócio ${dealId} movido para a etapa ${STAGE_ID_CONCLUIDO}.`);
+
+            // =========================================================================
+            // 3. DISPARAR NOTIFICAÇÃO AUTOMÁTICA NO GRUPO DO CLIENTE
+            // =========================================================================
+            try {
+                // Notifica que o pedido (da instalação) foi concluído
+                await enviarNotificacaoEtapa(dealId, 'CONCLUÍDO');
+            } catch (notifError) {
+                console.error('[CHATAPP AVISO] Falha silenciada ao notificar cliente:', notifError.message);
+            }
+            // =========================================================================
 
             return res.status(200).json({ 
                 message: 'Status atualizado e negócio concluído!',
