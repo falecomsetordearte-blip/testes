@@ -1,7 +1,7 @@
 // /api/createDealForGrafica.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const { criarGrupoProducao } = require('./helpers/chatapp');
+const { criarGrupoProducao, criarGrupoNotificacoes } = require('./helpers/chatapp');
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,7 +13,7 @@ module.exports = async (req, res) => {
     console.log("--- [DEBUG] INICIANDO REQUISIÇÃO DE PEDIDO ---");
 
     try {
-        const { sessionToken, arte, supervisaoWpp, valorDesigner, tipoEntrega, ...formData } = req.body;
+        const { sessionToken, arte, supervisaoWpp, valorDesigner, tipoEntrega, notificarCliente, ...formData } = req.body;
 
         // Log para ver se o token está chegando do frontend
         console.log(`[DEBUG] Token Recebido: "${sessionToken ? sessionToken.substring(0, 15) + '...' : 'NULL'}"`);
@@ -30,8 +30,7 @@ module.exports = async (req, res) => {
         }
         
         const empresa = empresas[0];
-        // Atualizado aqui para exibir o nome_fantasia no console
-        console.log(`[OK] Empresa Identificada: ${empresa.nome_fantasia || empresa.id}`);
+        console.log(`[OK] Empresa Identificada: ${empresa.nome_fantasia || empresa.nome || empresa.id}`);
 
         // 2. Normalizar a checagem da ARTE
         const arteNormalizada = arte ? arte.trim().toLowerCase() : "";
@@ -46,14 +45,17 @@ module.exports = async (req, res) => {
 
         const valorParaSalvar = parseFloat(valorDesigner || 0);
 
+        // Se não vier especificado, o padrão é SIM (true)
+        const deveNotificar = notificarCliente !== false;
+
         // 3. Inserir Pedido no Banco
         const insertResult = await prisma.$queryRawUnsafe(`
             INSERT INTO pedidos (
                 empresa_id, titulo, nome_cliente, whatsapp_cliente, 
                 servico, tipo_arte, briefing_completo, etapa, 
-                valor_designer, link_arquivo_impressao, created_at, bitrix_deal_id
+                valor_designer, link_arquivo_impressao, notificar_cliente, created_at, bitrix_deal_id
             ) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), 0)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), 0)
             RETURNING id
         `,
             empresa.id,
@@ -65,27 +67,24 @@ module.exports = async (req, res) => {
             briefingFinal,
             etapaDestino,
             valorParaSalvar,
-            formData.linkArquivo || formData.linkArquivoDrive || null
+            formData.linkArquivo || formData.linkArquivoDrive || null,
+            deveNotificar
         );
 
         const newPedidoId = insertResult[0].id;
         console.log(`[OK] Pedido salvo com Sucesso! ID: ${newPedidoId}`);
 
-        // --- 4. BLOCO DE AUTOMAÇÃO CHATAPP ---
-        // Condição: Se o texto da arte contiver "setor" e "arte" (independente de maiúsculas)
+        // --- 4. BLOCO DE AUTOMAÇÃO CHATAPP (SETOR DE ARTE) ---
         if (arteNormalizada.includes("setor") && arteNormalizada.includes("arte")) {
-            console.log(`[CHATAPP] Iniciando criação de grupo duplo...`);
-            console.log(`[CHATAPP] Dados: Cliente=${formData.wppCliente} | Supervisor=${supervisaoWpp}`);
-
+            console.log(`[CHATAPP] Iniciando criação de grupo duplo (Produção)...`);
             try {
-                // Adicionado nomeCliente e nomeEmpresa (usando empresa.nome_fantasia)
                 const automacao = await criarGrupoProducao(
                     formData.titulo,
                     formData.wppCliente, 
                     supervisaoWpp,       
                     briefingFinal,
                     formData.nomeCliente || 'Cliente',
-                    empresa.nome_fantasia || 'nossa gráfica' // <--- ALTERADO AQUI
+                    empresa.nome_fantasia || 'nossa gráfica'
                 );
 
                 if (automacao && automacao.chatId) {
@@ -104,7 +103,29 @@ module.exports = async (req, res) => {
                 console.error("[CHATAPP] ERRO CRÍTICO NA FUNÇÃO DE GRUPO:", errAuto.message);
             }
         } else {
-            console.log(`[CHATAPP] Ignorado: Arte não é 'Setor de Arte'. (Valor: "${arte}")`);
+            console.log(`[CHATAPP] Ignorado grupo de produção: Arte não é 'Setor de Arte'.`);
+        }
+
+        // --- 4.5. BLOCO DE GRUPO DE NOTIFICAÇÕES (ATUALIZAÇÕES) ---
+        if (deveNotificar && formData.wppCliente) {
+            console.log(`[NOTIF-GROUP] Disparando criação do grupo de notificações para o WhatsApp: ${formData.wppCliente}`);
+            try {
+                const grupoNotif = await criarGrupoNotificacoes(
+                    formData.titulo,
+                    formData.wppCliente,
+                    empresa.whatsapp
+                );
+                if (grupoNotif && grupoNotif.chatId) {
+                    await prisma.$executeRawUnsafe(`
+                        UPDATE pedidos SET chatapp_chat_notificacoes_id = $1 WHERE id = $2
+                    `, grupoNotif.chatId, newPedidoId);
+                    console.log(`[NOTIF-GROUP] Grupo de notificações vinculado com sucesso! ID: ${grupoNotif.chatId}`);
+                }
+            } catch(e) { 
+                console.error("[NOTIF-GROUP] Erro grupo notificações:", e.message); 
+            }
+        } else {
+            console.log(`[NOTIF-GROUP] Ignorado. Cliente quer notificação? ${deveNotificar}. WppCliente preenchido? ${formData.wppCliente}`);
         }
 
         // 5. Lógica Financeira
