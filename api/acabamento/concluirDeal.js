@@ -1,7 +1,6 @@
-// /api/acabamento/concluirDeal.js - COMPLETO E ATUALIZADO COM NOTIFICAÇÃO
+// /api/acabamento/concluirDeal.js - CORRIGIDO AUTENTICAÇÃO FUNCIONÁRIOS
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-// 1. IMPORTANDO A FUNÇÃO MÁGICA DE NOTIFICAÇÃO
 const { enviarNotificacaoEtapa } = require('../helpers/chatapp');
 
 module.exports = async (req, res) => {
@@ -17,57 +16,37 @@ module.exports = async (req, res) => {
 
         if (!dealId) return res.status(400).json({ message: 'ID do pedido é obrigatório.' });
 
-        // 1. Validar Sessão
-        const empresas = await prisma.$queryRawUnsafe(`
-            SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
-        `, `%${sessionToken}%`);
+        // 1. Validar Sessão (DUPLA CHECAGEM: Funcionários e Donos)
+        let empresaId = null;
+        const users = await prisma.$queryRawUnsafe(`SELECT empresa_id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1`, `%${sessionToken}%`);
+        if(users.length > 0) {
+            empresaId = users[0].empresa_id;
+        } else {
+            const legacy = await prisma.$queryRawUnsafe(`SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`, `%${sessionToken}%`);
+            if(legacy.length > 0) empresaId = legacy[0].id;
+        }
 
-        if (empresas.length === 0) return res.status(401).json({ message: 'Sessão inválida.' });
+        if (!empresaId) return res.status(401).json({ message: 'Sessão inválida.' });
 
-        // 2. Buscar o pedido para saber o Tipo de Entrega
-        const pedidos = await prisma.$queryRawUnsafe(`
-            SELECT id, tipo_entrega FROM pedidos WHERE id = $1
-        `, parseInt(dealId));
-
+        // 2. Buscar o pedido
+        const pedidos = await prisma.$queryRawUnsafe(`SELECT id, tipo_entrega FROM pedidos WHERE id = $1`, parseInt(dealId));
         if (pedidos.length === 0) return res.status(404).json({ message: 'Pedido não encontrado.' });
         
         const pedido = pedidos[0];
         const entrega = (pedido.tipo_entrega || '').toUpperCase();
 
-        // 3. Lógica de Destino Baseada na Entrega
-        let novaEtapa = 'EXPEDIÇÃO'; // Padrão
+        // 3. Lógica de Destino
+        let novaEtapa = 'EXPEDIÇÃO';
+        if (entrega.includes('EXTERNA')) novaEtapa = 'INSTALAÇÃO EXTERNA';
+        else if (entrega.includes('LOJA')) novaEtapa = 'INSTALAÇÃO NA LOJA';
 
-        if (entrega.includes('EXTERNA')) {
-            novaEtapa = 'INSTALAÇÃO EXTERNA';
-        } else if (entrega.includes('LOJA')) {
-            novaEtapa = 'INSTALAÇÃO NA LOJA';
-        } else {
-            novaEtapa = 'EXPEDIÇÃO';
-        }
+        // 4. Atualizar
+        await prisma.$executeRawUnsafe(`UPDATE pedidos SET etapa = $1, updated_at = NOW() WHERE id = $2`, novaEtapa, parseInt(dealId));
 
-        // 4. Atualizar no Neon
-        await prisma.$executeRawUnsafe(`
-            UPDATE pedidos 
-            SET etapa = $1, updated_at = NOW() 
-            WHERE id = $2
-        `, novaEtapa, parseInt(dealId));
+        // 5. Notificação
+        try { await enviarNotificacaoEtapa(dealId, novaEtapa); } catch (e) {}
 
-        // =========================================================================
-        // 5. DISPARAR NOTIFICAÇÃO AUTOMÁTICA NO GRUPO DO CLIENTE
-        // =========================================================================
-        try {
-            // Aguarda o envio, mas se falhar cai no catch local e não quebra o sistema
-            await enviarNotificacaoEtapa(dealId, novaEtapa);
-        } catch (notifError) {
-            console.error('[CHATAPP AVISO] Falha silenciada ao notificar cliente:', notifError.message);
-        }
-        // =========================================================================
-
-        return res.status(200).json({ 
-            success: true, 
-            message: `Pedido concluído e enviado para ${novaEtapa}`,
-            destino: novaEtapa 
-        });
+        return res.status(200).json({ success: true, message: `Pedido enviado para ${novaEtapa}`, destino: novaEtapa });
 
     } catch (error) {
         console.error('[concluirDeal Acabamento] Erro:', error);

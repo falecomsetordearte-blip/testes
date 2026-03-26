@@ -1,7 +1,6 @@
-// /api/instalacao-loja/concluir.js - COMPLETO E ATUALIZADO COM NOTIFICAÇÃO
+// /api/instalacao-loja/concluir.js - CORRIGIDO AUTENTICAÇÃO FUNCIONÁRIOS
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-// 1. IMPORTANDO A FUNÇÃO MÁGICA DE NOTIFICAÇÃO
 const { enviarNotificacaoEtapa } = require('../helpers/chatapp');
 
 module.exports = async (req, res) => {
@@ -16,35 +15,23 @@ module.exports = async (req, res) => {
 
         if (!dealId) return res.status(400).json({ message: 'ID do pedido obrigatório.' });
 
-        // 1. Validar Usuário
-        const empresas = await prisma.$queryRawUnsafe(`
-            SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
-        `, `%${sessionToken}%`);
-
-        if (empresas.length === 0) return res.status(401).json({ message: 'Sessão inválida.' });
-
-        // 2. Atualizar Etapa para EXPEDIÇÃO no Neon
-        await prisma.$executeRawUnsafe(`
-            UPDATE pedidos 
-            SET etapa = 'EXPEDIÇÃO', updated_at = NOW() 
-            WHERE id = $1
-        `, parseInt(dealId));
-
-        // =========================================================================
-        // 3. DISPARAR NOTIFICAÇÃO AUTOMÁTICA NO GRUPO DO CLIENTE
-        // =========================================================================
-        try {
-            // Notifica que a Instalação foi concluída e o pedido foi para Expedição
-            await enviarNotificacaoEtapa(dealId, 'EXPEDIÇÃO');
-        } catch (notifError) {
-            console.error('[CHATAPP AVISO] Falha silenciada ao notificar cliente:', notifError.message);
+        // 1. Validar Sessão (DUPLA CHECAGEM: Funcionários e Donos)
+        let empresaId = null;
+        const users = await prisma.$queryRawUnsafe(`SELECT empresa_id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1`, `%${sessionToken}%`);
+        if(users.length > 0) {
+            empresaId = users[0].empresa_id;
+        } else {
+            const legacy = await prisma.$queryRawUnsafe(`SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`, `%${sessionToken}%`);
+            if(legacy.length > 0) empresaId = legacy[0].id;
         }
-        // =========================================================================
 
-        return res.status(200).json({ 
-            success: true, 
-            message: 'Instalação na loja concluída com sucesso!' 
-        });
+        if (!empresaId) return res.status(401).json({ message: 'Sessão inválida.' });
+
+        await prisma.$executeRawUnsafe(`UPDATE pedidos SET etapa = 'EXPEDIÇÃO', updated_at = NOW() WHERE id = $1`, parseInt(dealId));
+
+        try { await enviarNotificacaoEtapa(dealId, 'EXPEDIÇÃO'); } catch (e) {}
+
+        return res.status(200).json({ success: true, message: 'Instalação na loja concluída com sucesso!' });
 
     } catch (error) {
         console.error('[concluir Instalação Loja] Erro:', error);
