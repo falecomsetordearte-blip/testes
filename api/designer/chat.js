@@ -30,20 +30,34 @@ module.exports = async (req, res) => {
         const pedidoId = Array.isArray(fields.pedidoId) ? fields.pedidoId[0] : fields.pedidoId;
         const texto = Array.isArray(fields.texto) ? fields.texto[0] : fields.texto;
         const designerNome = Array.isArray(fields.designerNome) ? fields.designerNome[0] : fields.designerNome;
+        
+        // NOVO: Recebe o tipo do chat ('cliente' ou 'interno')
+        const tipoChat = Array.isArray(fields.tipoChat) ? fields.tipoChat[0] : (fields.tipoChat || 'cliente');
+        
         const arquivo = files.file ? (Array.isArray(files.file) ? files.file[0] : files.file) : null;
 
         try {
-            const pedidoRes = await prisma.$queryRawUnsafe(`SELECT chatapp_chat_id FROM pedidos WHERE id = $1`, Number(pedidoId));
-            if (!pedidoRes || pedidoRes.length === 0 || !pedidoRes[0].chatapp_chat_id) {
-                return res.status(404).json({ message: "Chat não localizado." });
+            // Busca os DOIS IDs no banco de dados
+            const pedidoRes = await prisma.$queryRawUnsafe(`
+                SELECT chatapp_chat_id, chatapp_chat_intern_id 
+                FROM pedidos WHERE id = $1
+            `, Number(pedidoId));
+            
+            if (!pedidoRes || pedidoRes.length === 0) {
+                return res.status(404).json({ message: "Pedido não localizado." });
             }
 
-            const chatId = pedidoRes[0].chatapp_chat_id;
+            // Define qual chatId usar com base no botão que o usuário clicou
+            const chatId = tipoChat === 'interno' ? pedidoRes[0].chatapp_chat_intern_id : pedidoRes[0].chatapp_chat_id;
+
+            if (!chatId) {
+                return res.status(404).json({ message: "Este chat específico não foi criado/localizado para este pedido." });
+            }
+
             const L_ID = process.env.CHATAPP_LICENSE_ID || '59808'; 
             const L_MSG = 'grWhatsApp'; 
 
             // --- SISTEMA DE AUTO-CURA (RENOVAÇÃO DE TOKEN) ---
-            // Se a requisição der Token Inválido, ele apaga o token velho, pega um novo e tenta novamente.
             const fetchWithRetry = async (method, url, data, customHeaders = {}) => {
                 let token = await getChatAppToken();
                 let headers = { ...customHeaders, 'Authorization': token };
@@ -52,21 +66,14 @@ module.exports = async (req, res) => {
                     return await axios({ method, url, data, headers });
                 } catch (error) {
                     const errCode = error.response?.data?.error?.code;
-                    // Se o erro for de token expirado (401 ou ApiInvalidTokenError)
                     if (errCode === 'ApiInvalidTokenError' || error.response?.status === 401) {
                         console.log("[CHATAPP] Token expirado na leitura/envio. Forçando renovação rápida...");
-                        
-                        // 1. Deleta o token vencido do banco
                         await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => {});
-                        
-                        // 2. Chama a função passando 'true' para forçar a criação de um token novo no chatapp.js
                         token = await getChatAppToken(true); 
                         headers['Authorization'] = token;
-                        
-                        // 3. Refaz a requisição silenciosamente com o token novo
                         return await axios({ method, url, data, headers });
                     }
-                    throw error; // Se for outro erro (ex: sem internet, arquivo muito grande), ele repassa o erro
+                    throw error; 
                 }
             };
             // --------------------------------------------------
@@ -74,7 +81,6 @@ module.exports = async (req, res) => {
             if (action === 'get') {
                 const url = `https://api.chatapp.online/v1/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/messages?limit=50&direction=prev`;
                 
-                // Usa a nova função com Retry em vez do axios direto
                 const response = await fetchWithRetry('GET', url, null);
                 
                 let itens = (response.data?.data?.items || []).reverse();
@@ -83,7 +89,7 @@ module.exports = async (req, res) => {
                     const file = m.message?.file;
                     return {
                         id: m.id,
-                        type: m.type, // text, image, audio, voice, video, file
+                        type: m.type, 
                         texto: m.message?.text || m.message?.caption || '',
                         file: file ? {
                             link: file.link,
@@ -91,7 +97,7 @@ module.exports = async (req, res) => {
                             contentType: file.contentType
                         } : null,
                         lado: m.side,
-                        remetente: m.fromUser?.name || 'Cliente',
+                        remetente: m.fromUser?.name || 'Participante',
                         hora: m.time
                     };
                 });
@@ -118,7 +124,6 @@ module.exports = async (req, res) => {
                     headers['Content-Type'] = 'application/json';
                 }
 
-                // Usa a nova função com Retry em vez do axios direto
                 await fetchWithRetry('POST', url, data, headers);
                 
                 return res.status(200).json({ success: true, message: "Mensagem enviada." });

@@ -12,12 +12,10 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Inicializa o Dashboard se estiver na página do painel
         if (document.querySelector('main.main-painel')) {
             carregarDashboardDesigner();
         }
 
-        // Configura o botão de logout padrão do painel
         const logoutBtn = document.getElementById('logout-button');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
@@ -26,11 +24,6 @@
             });
         }
 
-        // =========================================================
-        // LÓGICA DAS TELAS DE AUTENTICAÇÃO (LOGIN, CADASTRO, SENHA)
-        // =========================================================
-
-        // --- LÓGICA DE LOGIN ---
         const loginForm = document.getElementById('designer-login-form');
         if (loginForm) {
             loginForm.addEventListener('submit', async (e) => {
@@ -54,7 +47,6 @@
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.message || 'Erro ao fazer login.');
 
-                    // Salva a sessão e redireciona
                     localStorage.setItem('designerToken', data.token);
                     localStorage.setItem('designerInfo', JSON.stringify({ name: data.nome, nivel: data.nivel }));
                     window.location.href = 'painel.html';
@@ -67,7 +59,6 @@
             });
         }
 
-        // --- LÓGICA DE CADASTRO ---
         const cadastroForm = document.getElementById('designer-cadastro-form');
         if (cadastroForm) {
             cadastroForm.addEventListener('submit', async (e) => {
@@ -76,7 +67,6 @@
                 const email = document.getElementById('email').value;
                 const senha = document.getElementById('senha').value;
                 const confirmarSenha = document.getElementById('confirmar-senha').value;
-                // CAPTURA DA CHAVE PIX (Novo campo para evitar NULL no banco)
                 const chave_pix = document.getElementById('chave_pix')?.value || '';
 
                 const btnSubmit = cadastroForm.querySelector('button[type="submit"]');
@@ -97,7 +87,6 @@
                     const res = await fetch('/api/designer/register', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        // ENVIANDO CHAVE_PIX PARA O BACKEND
                         body: JSON.stringify({ nome, email, senha, chave_pix })
                     });
 
@@ -121,7 +110,6 @@
             });
         }
 
-        // --- LÓGICA DE ESQUECI A SENHA ---
         const esqueciSenhaForm = document.getElementById('designer-esqueci-senha-form');
         if ( esqueciSenhaForm) {
             esqueciSenhaForm.addEventListener('submit', async (e) => {
@@ -152,7 +140,6 @@
             });
         }
 
-        // --- LÓGICA DE REDEFINIR A SENHA (CRIAR NOVA SENHA) ---
         const redefinirSenhaForm = document.getElementById('designer-redefinir-senha-form');
         if (redefinirSenhaForm) {
             redefinirSenhaForm.addEventListener('submit', async (e) => {
@@ -204,10 +191,6 @@
         }
     });
 
-    // =========================================================
-    // FUNÇÕES GLOBAIS DA GAVETA (MODAL LATERAL)
-    // =========================================================
-
     window.fecharGaveta = () => {
         const overlay = document.getElementById('drawer-overlay');
         const panel = document.getElementById('drawer-panel');
@@ -231,10 +214,6 @@
         const rodape = `<button onclick="fecharGaveta()" class="btn-full btn-secondary">Entendi</button>`;
         window.abrirGaveta("Ops! Algo deu errado", corpo, rodape);
     };
-
-    // =========================================================
-    // FUNÇÕES DO DASHBOARD (PAINEL PRINCIPAL)
-    // =========================================================
 
     async function carregarDashboardDesigner() {
         const designerInfo = JSON.parse(localStorage.getItem('designerInfo'));
@@ -301,7 +280,7 @@
 
             if (!res.ok) throw new Error(data.message);
 
-            window.acertosCache = data.acertos; // Cache para filtro
+            window.acertosCache = data.acertos; 
             renderizarHistoricoFiltrado('TODOS');
 
         } catch (error) {
@@ -324,7 +303,6 @@
             return;
         }
 
-        // Agrupar por Empresa
         const grupos = {};
         filtrados.forEach(a => {
             if (!grupos[a.empresa]) {
@@ -481,9 +459,12 @@
                 </div>
                 <div><span style="background:#fef3c7; color:#b45309; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">PRODUÇÃO</span></div>
                 <div style="font-weight:700; color:var(--success);">${formatarMoeda(p.valor_designer)}</div>
-                <div style="text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
-                    <button onclick="abrirChatEmbutido(${p.id}, '${p.titulo}')" class="btn-action" style="background:#25D366;"><i class="fab fa-whatsapp"></i> Chat Grupo</button>
-                    <button onclick="prepararFinalizacao(${p.id})" class="btn-action">Finalizar</button>
+                
+                <!-- BOTÕES ATUALIZADOS AQUI (CLIENTE E GRÁFICA) -->
+                <div style="text-align: right; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
+                    <button onclick="abrirChatEmbutido(${p.id}, '${p.titulo}', 'cliente')" class="btn-action" style="background:#25D366; padding: 6px 10px;"><i class="fab fa-whatsapp"></i> Cliente</button>
+                    <button onclick="abrirChatEmbutido(${p.id}, '${p.titulo}', 'interno')" class="btn-action" style="background:#4f46e5; padding: 6px 10px;"><i class="fas fa-building"></i> Gráfica</button>
+                    <button onclick="prepararFinalizacao(${p.id})" class="btn-action" style="padding: 6px 10px;">Finalizar</button>
                 </div>
             </div>
         `).join('');
@@ -512,10 +493,6 @@
             </div>
         `).join('');
     }
-
-    // =========================================================
-    // AÇÕES DOS BOTÕES DAS LISTAS
-    // =========================================================
 
     window.verBriefing = (b64) => {
         const texto = decodeURIComponent(Array.prototype.map.call(atob(b64), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
@@ -606,10 +583,6 @@
         };
     };
 
-    // =========================================================
-    // UTILITÁRIOS & MINI CHAT
-    // =========================================================
-
     function formatarMoeda(valor) {
         return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor || 0);
     }
@@ -637,7 +610,8 @@
         fecharGavetaOriginal();
     };
 
-    window.abrirChatEmbutido = async (pedidoId, pedidoTitulo) => {
+    // FUNÇÃO ATUALIZADA PARA SUPORTAR O tipoChat
+    window.abrirChatEmbutido = async (pedidoId, pedidoTitulo, tipoChat = 'cliente') => {
         const corpo = `
             <div class="chat-container" id="chat-msgs-container">
                 <p style="text-align:center; color:#888; margin-top: 20px;"><i class="fas fa-spinner fa-spin"></i> Conectando...</p>
@@ -654,7 +628,10 @@
             </div>
         `;
         const designerNome = document.getElementById('designer-greeting')?.innerText.replace('Olá, ', '').split('!')[0] || 'Designer';
-        window.abrirGaveta(`Atendimento: ${pedidoId} - ${pedidoTitulo}`, corpo, "");
+        
+        // Define o título visual dependendo de quem é o chat
+        const tituloGaveta = tipoChat === 'interno' ? `Chat Gráfica: ${pedidoId}` : `Chat Cliente: ${pedidoId}`;
+        window.abrirGaveta(tituloGaveta, corpo, "");
 
         const container = document.getElementById('chat-msgs-container');
         const input = document.getElementById('chat-texto-input');
@@ -667,6 +644,7 @@
                 const fd = new FormData();
                 fd.append('action', 'get');
                 fd.append('pedidoId', pedidoId);
+                fd.append('tipoChat', tipoChat); // NOVO
 
                 const res = await fetch('/api/designer/chat', {
                     method: 'POST',
@@ -721,6 +699,7 @@
                 const fd = new FormData();
                 fd.append('action', 'send');
                 fd.append('pedidoId', pedidoId);
+                fd.append('tipoChat', tipoChat); // NOVO
                 if (texto) fd.append('texto', texto);
                 if (arquivo) fd.append('file', arquivo);
                 fd.append('designerNome', designerNome);
@@ -750,7 +729,6 @@
         window.chatInterval = setInterval(carregarMensagens, 5000);
     };
 
-    // --- SISTEMA DE ACEITE DE TERMOS (LGPD) ---
     async function checkAceiteTermos(type, token) {
         if (!token) return;
         try {
