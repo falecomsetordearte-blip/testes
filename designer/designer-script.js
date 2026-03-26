@@ -3,22 +3,29 @@
     const sessionToken = localStorage.getItem('designerToken');
     const path = window.location.pathname;
 
+    console.log('[INIT] Verificando sessão na rota:', path);
+
     const paginasPublicas = ['login.html', 'cadastro.html', 'esqueci-senha.html', 'redefinir-senha.html'];
     const ehPaginaPublica = paginasPublicas.some(pg => path.includes(pg));
 
     if (!sessionToken && !ehPaginaPublica) {
+        console.warn('[AUTH] Usuário não autenticado. Redirecionando para login.');
         window.location.href = 'login.html';
         return;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        console.log('[DOM] DOM completamente carregado.');
+
         if (document.querySelector('main.main-painel')) {
+            console.log('[PAINEL] Inicializando Dashboard do Designer...');
             carregarDashboardDesigner();
         }
 
         const logoutBtn = document.getElementById('logout-button');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
+                console.log('[AUTH] Realizando logout...');
                 localStorage.clear();
                 window.location.href = 'login.html';
             });
@@ -28,6 +35,8 @@
         if (loginForm) {
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                console.log('[LOGIN] Tentativa de login iniciada.');
+                
                 const email = document.getElementById('email').value;
                 const senha = document.getElementById('senha').value;
                 const btnSubmit = loginForm.querySelector('button[type="submit"]');
@@ -47,10 +56,12 @@
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.message || 'Erro ao fazer login.');
 
+                    console.log('[LOGIN] Sucesso. Salvando sessão e redirecionando.');
                     localStorage.setItem('designerToken', data.token);
                     localStorage.setItem('designerInfo', JSON.stringify({ name: data.nome, nivel: data.nivel }));
                     window.location.href = 'painel.html';
                 } catch (error) {
+                    console.error('[LOGIN] Erro:', error.message);
                     feedback.textContent = error.message;
                     feedback.classList.remove('hidden');
                     btnSubmit.disabled = false;
@@ -63,6 +74,8 @@
         if (cadastroForm) {
             cadastroForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                console.log('[CADASTRO] Tentativa de cadastro iniciada.');
+
                 const nome = document.getElementById('nome').value;
                 const email = document.getElementById('email').value;
                 const senha = document.getElementById('senha').value;
@@ -75,6 +88,7 @@
                 feedback.classList.add('hidden');
 
                 if (senha !== confirmarSenha) {
+                    console.warn('[CADASTRO] Senhas divergentes.');
                     feedback.textContent = "As senhas não coincidem.";
                     feedback.classList.remove('hidden');
                     return;
@@ -93,6 +107,7 @@
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.message || 'Erro ao criar conta.');
 
+                    console.log('[CADASTRO] Sucesso.');
                     if (data.token) {
                         localStorage.setItem('designerToken', data.token);
                         localStorage.setItem('designerInfo', JSON.stringify({ name: data.nome, nivel: data.nivel }));
@@ -102,6 +117,7 @@
                         window.abrirGaveta("Sucesso!", corpo, `<button onclick="window.location.href='login.html'" class="btn-full btn-primary">Fazer Login</button>`);
                     }
                 } catch (error) {
+                    console.error('[CADASTRO] Erro:', error.message);
                     feedback.textContent = error.message;
                     feedback.classList.remove('hidden');
                     btnSubmit.disabled = false;
@@ -114,6 +130,8 @@
         if ( esqueciSenhaForm) {
             esqueciSenhaForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                console.log('[RECUPERAR SENHA] Solicitando link para email...');
+                
                 const email = document.getElementById('email').value;
                 const btnSubmit = esqueciSenhaForm.querySelector('button[type="submit"]');
 
@@ -130,9 +148,11 @@
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.message || 'Erro ao processar solicitação.');
 
+                    console.log('[RECUPERAR SENHA] Sucesso. Link enviado.');
                     const corpo = `<p style="color:var(--success); font-weight:600; text-align:center;">${data.message}</p>`;
                     window.abrirGaveta("E-mail Enviado!", corpo, `<button onclick="window.location.href='login.html'" class="btn-full btn-primary">Voltar ao Login</button>`);
                 } catch (error) {
+                    console.error('[RECUPERAR SENHA] Erro:', error.message);
                     window.mostrarErro(error.message);
                     btnSubmit.disabled = false;
                     btnSubmit.textContent = 'Enviar Link de Recuperação';
@@ -144,6 +164,8 @@
         if (redefinirSenhaForm) {
             redefinirSenhaForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                console.log('[REDEFINIR SENHA] Salvando nova senha...');
+
                 const novaSenha = document.getElementById('nova-senha').value;
                 const confirmarSenha = document.getElementById('confirmar-senha').value;
                 const feedback = document.getElementById('form-error-feedback');
@@ -161,6 +183,7 @@
                 const token = urlParams.get('token');
 
                 if (!token) {
+                    console.warn('[REDEFINIR SENHA] Token ausente na URL.');
                     feedback.textContent = "Token inválido ou ausente. Solicite um novo link.";
                     feedback.classList.remove('hidden');
                     return;
@@ -179,9 +202,11 @@
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.message || 'Erro ao redefinir senha.');
 
+                    console.log('[REDEFINIR SENHA] Sucesso.');
                     const corpo = `<p style="color:var(--success); font-weight:600; text-align:center;">${data.message}</p>`;
                     window.abrirGaveta("Senha Atualizada!", corpo, `<button onclick="window.location.href='login.html'" class="btn-full btn-primary">Ir para Login</button>`);
                 } catch (error) {
+                    console.error('[REDEFINIR SENHA] Erro:', error.message);
                     feedback.textContent = error.message;
                     feedback.classList.remove('hidden');
                     btnSubmit.disabled = false;
@@ -192,6 +217,7 @@
     });
 
     window.fecharGaveta = () => {
+        console.log('[UI] Fechando gaveta.');
         const overlay = document.getElementById('drawer-overlay');
         const panel = document.getElementById('drawer-panel');
         if (overlay) overlay.classList.remove('active');
@@ -199,6 +225,7 @@
     };
 
     window.abrirGaveta = (titulo, htmlCorpo, htmlRodape = '') => {
+        console.log('[UI] Abrindo gaveta:', titulo);
         document.getElementById('drawer-title').innerText = titulo;
         document.getElementById('drawer-content').innerHTML = htmlCorpo;
         document.getElementById('drawer-footer').innerHTML = htmlRodape;
@@ -208,6 +235,7 @@
     };
 
     window.mostrarErro = (mensagem) => {
+        console.warn('[UI] Exibindo modal de erro:', mensagem);
         const corpo = `<div style="color: #e11d48; background: #fff1f2; padding: 15px; border-radius: 8px; border: 1px solid #fda4af;">
             <i class="fas fa-exclamation-circle"></i> <strong>Erro:</strong> ${mensagem}
         </div>`;
@@ -216,6 +244,7 @@
     };
 
     async function carregarDashboardDesigner() {
+        console.log('[DASHBOARD] Buscando dados do painel do designer...');
         const designerInfo = JSON.parse(localStorage.getItem('designerInfo'));
         if (designerInfo) {
             document.getElementById('designer-greeting').textContent = `Olá, ${designerInfo.name}!`;
@@ -231,6 +260,7 @@
 
             if (!res.ok) {
                 if (res.status === 401 || res.status === 403) {
+                    console.warn('[DASHBOARD] Token inválido ou expirado. Deslogando.');
                     localStorage.clear();
                     window.location.href = 'login.html';
                     return;
@@ -238,6 +268,7 @@
                 throw new Error(data.message);
             }
 
+            console.log('[DASHBOARD] Dados recebidos com sucesso. Renderizando.');
             document.getElementById('designer-faturamento-mes').textContent = formatarMoeda(data.designer.faturamento_mes);
             document.getElementById('designer-acertos-pendentes').textContent = formatarMoeda(data.designer.acertos_pendentes);
             document.getElementById('designer-pedidos-ativos').textContent = data.meusPedidos.length;
@@ -261,12 +292,13 @@
             carregarHistoricoAcertos();
 
         } catch (error) {
-            console.error(error);
+            console.error('[DASHBOARD] Falha ao carregar os dados:', error);
             window.mostrarErro('Falha ao carregar os dados do painel.');
         }
     }
 
     async function carregarHistoricoAcertos() {
+        console.log('[HISTORICO] Buscando histórico de acertos...');
         const container = document.getElementById('saques-list');
         if (!container) return;
 
@@ -280,16 +312,18 @@
 
             if (!res.ok) throw new Error(data.message);
 
+            console.log('[HISTORICO] Sucesso. Registros encontrados:', data.acertos.length);
             window.acertosCache = data.acertos; 
             renderizarHistoricoFiltrado('TODOS');
 
         } catch (error) {
-            console.error(error);
+            console.error('[HISTORICO] Erro ao buscar acertos:', error);
             container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--danger);">Erro ao carregar histórico.</p>`;
         }
     }
 
     window.renderizarHistoricoFiltrado = (statusFiltro) => {
+        console.log('[HISTORICO] Renderizando filtro:', statusFiltro);
         const container = document.getElementById('saques-list');
         const acertos = window.acertosCache || [];
         
@@ -386,11 +420,13 @@
         }
 
         window.baixarComprovantes = (empId) => {
+            console.log('[DOCUMENTOS] Baixando comprovantes do grupo', empId);
             const links = document.querySelectorAll(`.btn-doc-${empId}`);
             links.forEach(l => { if(l.href) window.open(l.href, '_blank'); });
         }
 
         window.registrarPagamentoManual = async (empresaId, empId) => {
+            console.log('[FINANCEIRO] Tentativa de registro manual de pagamento. Empresa:', empresaId);
             const input = document.getElementById(`valor-recebido-${empId}`);
             let valorStr = input.value.replace('R$ ', '').replace(/\./g, '').replace(',', '.').trim();
             const valorNum = parseFloat(valorStr);
@@ -406,11 +442,13 @@
                     body: JSON.stringify({ sessionToken: sessionToken, empresaId, valor: valorNum })
                 });
                 if(res.ok) {
+                    console.log('[FINANCEIRO] Pagamento registrado com sucesso!');
                     alert("Pagamento registrado e acertos abatidos!");
                     carregarDashboardDesigner();
                     carregarHistoricoAcertos();
                 } else {
                     const data = await res.json();
+                    console.error('[FINANCEIRO] Erro:', data.message);
                     alert("Erro: " + data.message);
                 }
             } catch(e) { console.error(e); alert("Erro ao registrar pagamento."); }
@@ -460,7 +498,6 @@
                 <div><span style="background:#fef3c7; color:#b45309; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">PRODUÇÃO</span></div>
                 <div style="font-weight:700; color:var(--success);">${formatarMoeda(p.valor_designer)}</div>
                 
-                <!-- BOTÕES ATUALIZADOS AQUI (CLIENTE E GRÁFICA) -->
                 <div style="text-align: right; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
                     <button onclick="abrirChatEmbutido(${p.id}, '${p.titulo}', 'cliente')" class="btn-action" style="background:#25D366; padding: 6px 10px;"><i class="fab fa-whatsapp"></i> Cliente</button>
                     <button onclick="abrirChatEmbutido(${p.id}, '${p.titulo}', 'interno')" class="btn-action" style="background:#4f46e5; padding: 6px 10px;"><i class="fas fa-building"></i> Gráfica</button>
@@ -495,6 +532,7 @@
     }
 
     window.verBriefing = (b64) => {
+        console.log('[AÇÕES] Lendo briefing do pedido');
         const texto = decodeURIComponent(Array.prototype.map.call(atob(b64), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
         const corpo = `
             <span class="drawer-label">Instruções e Detalhes</span>
@@ -505,6 +543,7 @@
     };
 
     window.confirmarAssumir = (id) => {
+        console.log('[AÇÕES] Confirmação para assumir pedido ID:', id);
         const corpo = `<p style="font-size:1rem; color:var(--text-main); line-height:1.5;">Deseja assumir este pedido? Você será responsável pela comunicação e entrega da arte.</p>`;
         const rodape = `
             <button id="btn-exec-assumir" class="btn-full btn-primary">SIM, ATENDER</button>
@@ -513,6 +552,7 @@
         window.abrirGaveta("Confirmar Atendimento", corpo, rodape);
 
         document.getElementById('btn-exec-assumir').onclick = async () => {
+            console.log('[AÇÕES] Executando assumir pedido', id);
             const btn = document.getElementById('btn-exec-assumir');
             btn.disabled = true;
             btn.textContent = 'Aguarde...';
@@ -525,10 +565,12 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message);
 
+                console.log('[AÇÕES] Pedido assumido com sucesso!');
                 fecharGaveta();
                 carregarDashboardDesigner();
 
             } catch (e) {
+                console.error('[AÇÕES] Erro ao assumir:', e.message);
                 fecharGaveta();
                 setTimeout(() => window.mostrarErro(e.message), 300);
             }
@@ -536,6 +578,7 @@
     };
 
     window.prepararFinalizacao = (id) => {
+        console.log('[AÇÕES] Preparando finalização do pedido ID:', id);
         const corpo = `
             <span class="drawer-label">Link do Layout Aprovado (JPG/PNG)</span>
             <input type="url" id="f-layout" class="drawer-input" placeholder="Cole o link do layout..." required>
@@ -557,6 +600,7 @@
                 return;
             }
 
+            console.log('[AÇÕES] Executando envio dos links de finalização para ID:', id);
             const btn = document.getElementById('btn-exec-finalizar');
             btn.disabled = true;
             btn.textContent = 'Enviando...';
@@ -569,6 +613,7 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message || "Não foi possível finalizar.");
 
+                console.log('[AÇÕES] Pedido finalizado com sucesso!');
                 fecharGaveta();
                 setTimeout(() => {
                     const corpoSucesso = `<p style="color:var(--success); font-weight:600; font-size: 1.1rem; text-align:center;">${data.message}</p>`;
@@ -577,6 +622,7 @@
                 }, 300);
 
             } catch (e) {
+                console.error('[AÇÕES] Erro ao finalizar:', e.message);
                 fecharGaveta();
                 setTimeout(() => window.mostrarErro(e.message), 300);
             }
@@ -591,9 +637,10 @@
         return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1)));
     };
 
+    // CSS DO CHAT ATUALIZADO (REMOVIDO scroll-behavior: smooth para rolar instantaneamente pro fundo)
     const chatStyle = document.createElement('style');
     chatStyle.textContent = `
-        .chat-container { flex: 1; overflow-y: auto; padding: 15px; background: #efeae2; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; height: 60vh; scroll-behavior: smooth; }
+        .chat-container { flex: 1; overflow-y: auto; padding: 15px; background: #efeae2; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; height: 60vh; }
         .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; position: relative; word-wrap: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .chat-in { background: #ffffff; align-self: flex-start; border-top-left-radius: 0; }
         .chat-out { background: #dcf8c6; align-self: flex-end; border-top-right-radius: 0; }
@@ -606,12 +653,15 @@
     window.chatInterval = null;
     const fecharGavetaOriginal = window.fecharGaveta;
     window.fecharGaveta = () => {
-        if (window.chatInterval) clearInterval(window.chatInterval);
+        if (window.chatInterval) {
+            console.log('[CHAT] Limpando intervalo de atualização do chat.');
+            clearInterval(window.chatInterval);
+        }
         fecharGavetaOriginal();
     };
 
-    // FUNÇÃO ATUALIZADA PARA SUPORTAR O tipoChat
     window.abrirChatEmbutido = async (pedidoId, pedidoTitulo, tipoChat = 'cliente') => {
+        console.log(`[CHAT] Abrindo chat (${tipoChat}) para o pedido ID: ${pedidoId}`);
         const corpo = `
             <div class="chat-container" id="chat-msgs-container">
                 <p style="text-align:center; color:#888; margin-top: 20px;"><i class="fas fa-spinner fa-spin"></i> Conectando...</p>
@@ -629,7 +679,6 @@
         `;
         const designerNome = document.getElementById('designer-greeting')?.innerText.replace('Olá, ', '').split('!')[0] || 'Designer';
         
-        // Define o título visual dependendo de quem é o chat
         const tituloGaveta = tipoChat === 'interno' ? `Chat Gráfica: ${pedidoId}` : `Chat Cliente: ${pedidoId}`;
         window.abrirGaveta(tituloGaveta, corpo, "");
 
@@ -644,7 +693,7 @@
                 const fd = new FormData();
                 fd.append('action', 'get');
                 fd.append('pedidoId', pedidoId);
-                fd.append('tipoChat', tipoChat); // NOVO
+                fd.append('tipoChat', tipoChat);
 
                 const res = await fetch('/api/designer/chat', {
                     method: 'POST',
@@ -653,7 +702,9 @@
                 const data = await res.json();
 
                 if (res.ok && data.mensagens.length !== totalMensagensCache) {
+                    console.log(`[CHAT] Novas mensagens identificadas. Renderizando. Total: ${data.mensagens.length}`);
                     totalMensagensCache = data.mensagens.length;
+                    
                     container.innerHTML = data.mensagens.map(m => {
                         let msgHtml = m.texto;
                         if (m.type === 'image' && m.file) {
@@ -678,13 +729,31 @@
                             </div>
                         `;
                     }).join('');
-                    container.scrollTop = container.scrollHeight;
+                    
+                    // LÓGICA DE SCROLL ATUALIZADA (Padrão WhatsApp)
+                    // Garante que a rolagem aconteça após o DOM injetar o HTML
+                    setTimeout(() => {
+                        if (container) {
+                            console.log('[CHAT] Forçando rolagem para o fim da conversa.');
+                            container.scrollTop = container.scrollHeight;
+                        }
+                    }, 100);
+
+                    // Adiciona um listener para forçar o scroll novamente caso alguma imagem termine de carregar
+                    const images = container.querySelectorAll('img');
+                    images.forEach(img => {
+                        img.addEventListener('load', () => {
+                            if (container) container.scrollTop = container.scrollHeight;
+                        });
+                    });
+
                 } else if (!res.ok) {
+                    console.error('[CHAT] Erro ao carregar as mensagens:', data.message);
                     clearInterval(window.chatInterval);
                     container.innerHTML = `<p style="text-align:center; color:#c0392b;">${data.message || 'Erro ao carregar chat.'}</p>`;
                 }
             } catch (err) {
-                console.error(err);
+                console.error('[CHAT] Falha crítica ao buscar mensagens:', err);
                 clearInterval(window.chatInterval);
             }
         };
@@ -694,12 +763,13 @@
             const arquivo = fileInput.files[0];
             if (!texto.trim() && !arquivo) return;
 
+            console.log('[CHAT] Enviando mensagem...');
             btnEnviar.disabled = true; input.disabled = true;
             try {
                 const fd = new FormData();
                 fd.append('action', 'send');
                 fd.append('pedidoId', pedidoId);
-                fd.append('tipoChat', tipoChat); // NOVO
+                fd.append('tipoChat', tipoChat);
                 if (texto) fd.append('texto', texto);
                 if (arquivo) fd.append('file', arquivo);
                 fd.append('designerNome', designerNome);
@@ -709,11 +779,20 @@
                     body: fd
                 });
                 
+                console.log('[CHAT] Mensagem enviada com sucesso.');
                 input.value = '';
                 fileInput.value = '';
                 document.getElementById('chat-file-preview').style.setProperty('display', 'none', 'important');
+                
                 await carregarMensagens();
+
+                // Força rolagem logo depois de enviar
+                setTimeout(() => {
+                    if (container) container.scrollTop = container.scrollHeight;
+                }, 100);
+
             } catch (err) {
+                console.error('[CHAT] Erro ao enviar mensagem:', err);
                 alert('Não foi possível enviar a mensagem.');
             } finally {
                 btnEnviar.disabled = false; input.disabled = false; input.focus();
@@ -725,6 +804,7 @@
         });
         btnEnviar.onclick = enviarMensagem;
 
+        // Inicia carregamento
         await carregarMensagens();
         window.chatInterval = setInterval(carregarMensagens, 5000);
     };
@@ -732,6 +812,7 @@
     async function checkAceiteTermos(type, token) {
         if (!token) return;
         try {
+            console.log(`[TERMOS] Checando aceite de termos para ${type}...`);
             const checkRes = await fetch('/api/auth/aceite-termos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -739,9 +820,10 @@
             });
             const data = await checkRes.json();
             if (checkRes.ok && !data.ja_aceitou) {
+                console.log(`[TERMOS] Usuário precisa aceitar termos.`);
                 mostrarModalTermos(type, token);
             }
-        } catch (e) { console.error("Erro check termos:", e); }
+        } catch (e) { console.error("[TERMOS] Erro check termos:", e); }
     }
 
     function mostrarModalTermos(type, token) {
@@ -766,6 +848,7 @@
         document.body.insertAdjacentHTML('beforeend', modalHtml);
 
         document.getElementById('btn-aceitar-termos').onclick = async function() {
+            console.log('[TERMOS] Enviando aceite dos termos.');
             this.disabled = true;
             this.innerText = 'Processando...';
             try {
@@ -775,19 +858,22 @@
                     body: JSON.stringify({ token, type, action: 'save' })
                 });
                 if (res.ok) {
+                    console.log('[TERMOS] Aceite gravado com sucesso.');
                     document.getElementById('modal-termos-lgpd').remove();
                 } else {
+                    console.error('[TERMOS] Falha na gravação.');
                     alert("Erro ao gravar aceite. Tente novamente.");
                     this.disabled = false;
                     this.innerText = 'Li e Concordo com os Termos';
                 }
-            } catch (e) { alert("Erro de conexão."); this.disabled = false; }
+            } catch (e) { console.error(e); alert("Erro de conexão."); this.disabled = false; }
         };
     }
 
     async function checkTrialStatus(type, token) {
         if (!token) return;
         try {
+            console.log(`[TRIAL] Checando status trial para ${type}...`);
             const res = await fetch('/api/auth/trial-status', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -795,10 +881,15 @@
             });
             const data = await res.json();
             if (res.ok && data.is_trial) {
-                if (data.expirado) mostrarBloqueioTrial();
-                else mostrarBannerTrial(data.dias_restantes);
+                if (data.expirado) {
+                    console.log('[TRIAL] Período expirado. Exibindo bloqueio.');
+                    mostrarBloqueioTrial();
+                } else {
+                    console.log(`[TRIAL] Período ativo. Restam ${data.dias_restantes} dias.`);
+                    mostrarBannerTrial(data.dias_restantes);
+                }
             }
-        } catch (e) { console.error("Erro trial:", e); }
+        } catch (e) { console.error("[TRIAL] Erro trial:", e); }
     }
 
     function mostrarBannerTrial(dias) {
