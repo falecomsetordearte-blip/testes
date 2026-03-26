@@ -30,7 +30,8 @@ module.exports = async (req, res) => {
         }
         
         const empresa = empresas[0];
-        console.log(`[OK] Empresa Identificada: ${empresa.nome || empresa.id}`);
+        // Atualizado aqui para exibir o nome_fantasia no console
+        console.log(`[OK] Empresa Identificada: ${empresa.nome_fantasia || empresa.id}`);
 
         // 2. Normalizar a checagem da ARTE
         const arteNormalizada = arte ? arte.trim().toLowerCase() : "";
@@ -77,18 +78,17 @@ module.exports = async (req, res) => {
             console.log(`[CHATAPP] Dados: Cliente=${formData.wppCliente} | Supervisor=${supervisaoWpp}`);
 
             try {
-                // Adicionado nomeCliente e nomeEmpresa para mandar as mensagens no privado personalizadas
+                // Adicionado nomeCliente e nomeEmpresa (usando empresa.nome_fantasia)
                 const automacao = await criarGrupoProducao(
                     formData.titulo,
                     formData.wppCliente, 
                     supervisaoWpp,       
                     briefingFinal,
                     formData.nomeCliente || 'Cliente',
-                    empresa.nome || 'nossa gráfica'
+                    empresa.nome_fantasia || 'nossa gráfica' // <--- ALTERADO AQUI
                 );
 
                 if (automacao && automacao.chatId) {
-                    // Atualizado para salvar tanto o chat do cliente quanto o chat interno
                     await prisma.$executeRawUnsafe(`
                         UPDATE pedidos 
                         SET chatapp_chat_id = $1, 

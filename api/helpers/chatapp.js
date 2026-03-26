@@ -57,7 +57,6 @@ function formatarTelefone(telefone) {
 }
 
 // --- Função Principal com Retry (Tentativa de recuperação) ---
-// Adicionado nomeCliente e nomeEmpresa para montar as mensagens diretas
 async function criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, nomeCliente = 'Cliente', nomeEmpresa = 'nossa gráfica', retry = true) {
     console.log(`--- [CHATAPP] Iniciando automação DUPLA (Tentativa: ${retry ? '1' : '2 (Retry)'}) ---`);
 
@@ -139,8 +138,9 @@ async function criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, n
         // Mensagem direta para o CLIENTE
         if (numCliente && groupLink1) {
             try {
+                // <--- ALTERADO AQUI PARA A FRASE EXATA QUE VOCÊ PEDIU --->
                 await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${numCliente}/messages/text`, {
-                    text: `${nomeCliente} eu sou o Dior, Designer e vou cuidar da arte do seu pedido na ${nomeEmpresa} ok?\nAssim que der, entre no grupo abaixo que criei só pra falar sobre esse pedido.\n\n${groupLink1}`
+                    text: `${nomeCliente} eu sou o Dior, Designer e vou cuidar da arte do pedido que você fez lá na ${nomeEmpresa} ok?\nAssim que der, entre no grupo abaixo que criei só pra falar sobre esse pedido.\n\n${groupLink1}`
                 }, { headers });
                 await new Promise(r => setTimeout(r, 1000));
             } catch (e) { console.error("Erro ao mandar PV Cliente:", e.message); }
@@ -168,7 +168,6 @@ async function criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, n
 
         console.log(`[CHATAPP] Automação concluída! Grupo 1: ${chatId1} | Grupo Interno: ${chatIdInterno}`);
         
-        // Retorna AMBOS os IDs para que possam ser salvos no banco de dados (tabela pedidos)
         return { 
             chatId: chatId1, 
             groupLink: groupLink1,
