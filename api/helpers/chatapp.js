@@ -118,8 +118,12 @@ async function criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, n
 // 2. CRIAÇÃO DO GRUPO EXCLUSIVO DE ATUALIZAÇÕES
 // -------------------------------------------------------------
 async function criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, retry = true) {
+    console.log(`[NOTIF-GROUP] Iniciando criação do grupo de notificações para o pedido: ${titulo}`);
     const token = await getChatAppToken(!retry);
-    if (!token) return null;
+    if (!token) {
+        console.error(`[NOTIF-GROUP] Falha: Não foi possível obter token.`);
+        return null;
+    }
 
     const headers = { 'Authorization': token, 'Content-Type': 'application/json', 'Lang': 'pt' };
     const L_ID = process.env.CHATAPP_LICENSE_ID || '59808';
@@ -132,7 +136,11 @@ async function criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, retry = tr
 
         if (numCliente) participantsItems.push({ value: numCliente });
         if (numEmpresa) participantsItems.push({ value: numEmpresa });
-        if (participantsItems.length === 0) return null;
+        
+        if (participantsItems.length === 0) {
+            console.error(`[NOTIF-GROUP] Falha: Cliente e Empresa sem números formatáveis.`);
+            return null;
+        }
 
         const urlGroups = `${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats`;
         const resGrupo = await axios.post(urlGroups, {
@@ -145,6 +153,7 @@ async function criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, retry = tr
         const chatId = resGrupo.data?.data?.id || resGrupo.data?.id;
 
         if (chatId) {
+            console.log(`[NOTIF-GROUP] Grupo criado com ID: ${chatId}`);
             await new Promise(r => setTimeout(r, 2000));
             await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/messages/text`, {
                 text: `Olá! Criamos este grupo exclusivamente para enviar atualizações automáticas sobre as etapas do seu pedido.\n\nQualquer dúvida, fale com nosso atendimento: ${wppEmpresa || 'no privado'}`
@@ -153,6 +162,7 @@ async function criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, retry = tr
 
         return { chatId };
     } catch(error) {
+        console.error(`[NOTIF-GROUP] ERRO na API:`, error.response?.data || error.message);
         if ((error.response?.data?.error?.code === "ApiInvalidTokenError" || error.response?.status === 401) && retry) {
             await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => {});
             return await criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, false);
@@ -166,13 +176,36 @@ async function criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, retry = tr
 // 3. ENVIAR MENSAGEM QUANDO O PEDIDO TROCAR DE ETAPA
 // -------------------------------------------------------------
 async function enviarNotificacaoEtapa(pedidoId, novaEtapa, retry = true) {
+    console.log(`\n========================================`);
+    console.log(`[ETAPA] Disparada notificação. ID: ${pedidoId} | Nova Etapa: ${novaEtapa}`);
+    
     const token = await getChatAppToken(!retry);
-    if (!token) return false;
+    if (!token) {
+        console.log(`[ETAPA-ABORT] Sem token válido.`);
+        return false;
+    }
 
     try {
         // 1. Busca dados do Pedido e da Empresa
         const pedidos = await prisma.$queryRawUnsafe(`SELECT empresa_id, notificar_cliente, chatapp_chat_notificacoes_id, nome_cliente FROM pedidos WHERE id = $1`, Number(pedidoId));
-        if (!pedidos.length || !pedidos[0].notificar_cliente || !pedidos[0].chatapp_chat_notificacoes_id) return false;
+        
+        console.log(`[ETAPA-DB] Resultado da busca do pedido no DB:`, pedidos[0] || 'NÃO ENCONTRADO');
+
+        if (!pedidos.length) {
+            console.log(`[ETAPA-ABORT] Pedido não encontrado no banco de dados.`);
+            return false;
+        }
+
+        if (pedidos[0].notificar_cliente === false) {
+            console.log(`[ETAPA-ABORT] Pedido está com 'notificar_cliente' falso.`);
+            return false;
+        }
+
+        if (!pedidos[0].chatapp_chat_notificacoes_id) {
+            console.log(`[ETAPA-ABORT] Pedido sem ID de Chat do grupo. (Provavelmente um pedido antigo criado antes dessa feature).`);
+            return false;
+        }
+
         const p = pedidos[0];
 
         // 2. Pega as configurações personalizadas daquela empresa específica
@@ -181,6 +214,8 @@ async function enviarNotificacaoEtapa(pedidoId, novaEtapa, retry = true) {
         
         let mensagens = configs.length && configs[0].mensagens_etapas ? configs[0].mensagens_etapas : {};
         if (typeof mensagens === 'string') mensagens = JSON.parse(mensagens);
+
+        console.log(`[ETAPA-CONFIGS] Mensagens capturadas do admin:`, Object.keys(mensagens));
 
         // 3. Mapeia a nova etapa com a CHAVE salva no banco
         let key = novaEtapa.toUpperCase().replace(' ', '_').replace('Ç', 'C').replace('Ã', 'A'); 
@@ -203,16 +238,19 @@ async function enviarNotificacaoEtapa(pedidoId, novaEtapa, retry = true) {
         const L_MSG = 'grWhatsApp'; 
         const url = `${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${p.chatapp_chat_notificacoes_id}/messages/text`;
 
-        await axios.post(url, { text: textoFinal }, { headers });
-        console.log(`[CHATAPP] Mensagem da etapa ${novaEtapa} enviada!`);
+        console.log(`[ETAPA-ENVIO] Disparando para API da ChatApp...`);
+        const result = await axios.post(url, { text: textoFinal }, { headers });
+        
+        console.log(`[ETAPA-SUCESSO] Mensagem da etapa ${novaEtapa} ENVIADA! ID Mensagem:`, result.data?.data?.id || result.data?.id);
         return true;
 
     } catch (error) {
+        console.error(`[ETAPA-ERRO] Erro na API do ChatApp:`, error.response?.data || error.message);
         if ((error.response?.data?.error?.code === "ApiInvalidTokenError" || error.response?.status === 401) && retry) {
+            console.log(`[ETAPA-RETRY] Token vencido, renovando e tentando novamente...`);
             await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => {});
             return await enviarNotificacaoEtapa(pedidoId, novaEtapa, false);
         }
-        console.error(`[NOTIFICACAO ERRO] Falha:`, error.message);
         return false;
     }
 }
