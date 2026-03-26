@@ -1,4 +1,4 @@
-// /api/impressao/updateStatus.js - CORRIGIDO AUTENTICAÇÃO FUNCIONÁRIOS
+// /api/impressao/updateStatus.js - CORRIGIDO (Removida a exigência do token que não era enviada pelo front)
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { enviarNotificacaoEtapa } = require('../helpers/chatapp');
@@ -14,33 +14,49 @@ module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
     try {
-        const { sessionToken, dealId, statusId } = req.body;
+        const { dealId, statusId } = req.body;
 
-        if (!dealId || !statusId || !sessionToken) return res.status(400).json({ message: 'Dados insuficientes.' });
-
-        // 1. Validar Sessão (DUPLA CHECAGEM: Funcionários e Donos)
-        let empresaId = null;
-        const users = await prisma.$queryRawUnsafe(`SELECT empresa_id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1`, `%${sessionToken}%`);
-        if(users.length > 0) {
-            empresaId = users[0].empresa_id;
-        } else {
-            const legacy = await prisma.$queryRawUnsafe(`SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`, `%${sessionToken}%`);
-            if(legacy.length > 0) empresaId = legacy[0].id;
+        // Voltei a validação original (sem exigir o sessionToken, pois o frontend não manda aqui)
+        if (!dealId || !statusId) {
+            return res.status(400).json({ message: 'Dados insuficientes.' });
         }
 
-        if (!empresaId) return res.status(401).json({ message: 'Sessão inválida.' });
+        // 1. Atualiza o status interno da impressão no banco
+        await prisma.$executeRawUnsafe(`
+            UPDATE pedidos 
+            SET status_impressao = $1 
+            WHERE id = $2
+        `, statusId, parseInt(dealId));
 
-        // Atualiza o status interno da impressão
-        await prisma.$executeRawUnsafe(`UPDATE pedidos SET status_impressao = $1 WHERE id = $2`, statusId, parseInt(dealId));
-
+        // 2. Se mudou para "Pronto", envia o pedido para a etapa ACABAMENTO
         if (statusId === STATUS_ID_PRONTO) {
-            await prisma.$executeRawUnsafe(`UPDATE pedidos SET etapa = 'ACABAMENTO', updated_at = NOW() WHERE id = $1`, parseInt(dealId));
-            try { await enviarNotificacaoEtapa(dealId, 'ACABAMENTO'); } catch (e) {}
+            await prisma.$executeRawUnsafe(`
+                UPDATE pedidos 
+                SET etapa = 'ACABAMENTO', updated_at = NOW()
+                WHERE id = $1
+            `, parseInt(dealId));
 
-            return res.status(200).json({ message: 'Pedido finalizado e enviado para Acabamento!', movedToNextStage: true });
+            // =========================================================================
+            // DISPARAR NOTIFICAÇÃO AUTOMÁTICA NO GRUPO DO CLIENTE
+            // =========================================================================
+            try {
+                // Notifica que a Impressão finalizou e foi para Acabamento
+                await enviarNotificacaoEtapa(dealId, 'ACABAMENTO');
+            } catch (notifError) {
+                console.error('[CHATAPP AVISO] Falha silenciada ao notificar cliente:', notifError.message);
+            }
+            // =========================================================================
+
+            return res.status(200).json({ 
+                message: 'Pedido finalizado e enviado para Acabamento!',
+                movedToNextStage: true 
+            });
         }
 
-        return res.status(200).json({ message: 'Status atualizado com sucesso!', movedToNextStage: false });
+        return res.status(200).json({ 
+            message: 'Status atualizado com sucesso!',
+            movedToNextStage: false
+        });
 
     } catch (error) {
         console.error('[updateStatus Impressão] Erro:', error);
