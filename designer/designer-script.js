@@ -1,4 +1,4 @@
-﻿// /designer/designer-script.js - VERSÃO COMPLETA E ATUALIZADA
+﻿// /designer/designer-script.js - VERSÃO COM NOTIFICAÇÕES (POLLING)
 (function () {
     const sessionToken = localStorage.getItem('designerToken');
     const path = window.location.pathname;
@@ -291,6 +291,12 @@
             renderizarMercado(data.mercado);
             carregarHistoricoAcertos();
 
+            // INICIA VERIFICAÇÃO DE NOTIFICAÇÕES (NOVO)
+            if(data.meusPedidos && data.meusPedidos.length > 0) {
+                const ativosIds = data.meusPedidos.map(p => p.id);
+                iniciarVerificacaoNotificacoes(ativosIds);
+            }
+
         } catch (error) {
             console.error('[DASHBOARD] Falha ao carregar os dados:', error);
             window.mostrarErro('Falha ao carregar os dados do painel.');
@@ -479,6 +485,7 @@
         }
     }
 
+    // LISTAGEM DE TRABALHOS (AGORA COM OS SPANS DE NOTIFICAÇÃO - BADGES)
     function renderizarMeusTrabalhos(pedidos) {
         const container = document.getElementById('atendimentos-list');
         if (!container) return;
@@ -499,8 +506,17 @@
                 <div style="font-weight:700; color:var(--success);">${formatarMoeda(p.valor_designer)}</div>
                 
                 <div style="text-align: right; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
-                    <button onclick="abrirChatEmbutido(${p.id}, '${p.titulo}', 'cliente')" class="btn-action" style="background:#25D366; padding: 6px 10px;"><i class="fab fa-whatsapp"></i> Cliente</button>
-                    <button onclick="abrirChatEmbutido(${p.id}, '${p.titulo}', 'interno')" class="btn-action" style="background:#4f46e5; padding: 6px 10px;"><i class="fas fa-building"></i> Gráfica</button>
+                    
+                    <div class="btn-chat-wrapper">
+                        <button onclick="abrirChatEmbutido(${p.id}, '${p.titulo}', 'cliente')" class="btn-action" style="background:#25D366; padding: 6px 10px;"><i class="fab fa-whatsapp"></i> Cliente</button>
+                        <span id="badge-cliente-${p.id}" class="badge-notif"></span>
+                    </div>
+
+                    <div class="btn-chat-wrapper">
+                        <button onclick="abrirChatEmbutido(${p.id}, '${p.titulo}', 'interno')" class="btn-action" style="background:#4f46e5; padding: 6px 10px;"><i class="fas fa-building"></i> Gráfica</button>
+                        <span id="badge-interno-${p.id}" class="badge-notif"></span>
+                    </div>
+
                     <button onclick="prepararFinalizacao(${p.id})" class="btn-action" style="padding: 6px 10px;">Finalizar</button>
                 </div>
             </div>
@@ -637,7 +653,6 @@
         return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1)));
     };
 
-    // CSS DO CHAT ATUALIZADO (REMOVIDO scroll-behavior: smooth para rolar instantaneamente pro fundo)
     const chatStyle = document.createElement('style');
     chatStyle.textContent = `
         .chat-container { flex: 1; overflow-y: auto; padding: 15px; background: #efeae2; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; height: 60vh; }
@@ -654,14 +669,84 @@
     const fecharGavetaOriginal = window.fecharGaveta;
     window.fecharGaveta = () => {
         if (window.chatInterval) {
-            console.log('[CHAT] Limpando intervalo de atualização do chat.');
+            console.log('[CHAT] Limpando intervalo de atualização do chat aberto.');
             clearInterval(window.chatInterval);
         }
         fecharGavetaOriginal();
     };
 
+    // --- SISTEMA DE NOTIFICAÇÕES (POLLING) ---
+    window.notifInterval = null;
+    window.chatAbertoAtual = { pedidoId: null, tipoChat: null }; // Para não notificar chat que está aberto
+
+    function iniciarVerificacaoNotificacoes(pedidosIds) {
+        if(window.notifInterval) clearInterval(window.notifInterval);
+        if(!pedidosIds || pedidosIds.length === 0) return;
+
+        const check = async () => {
+            console.log('[NOTIFICAÇÕES] Checando novas mensagens para os pedidos ativos...');
+            try {
+                const fd = new FormData();
+                fd.append('action', 'check_all');
+                fd.append('pedidos', JSON.stringify(pedidosIds)); // Passa array como JSON
+
+                const res = await fetch('/api/designer/chat', { method: 'POST', body: fd });
+                const data = await res.json();
+
+                if (res.ok && data.latestMessages) {
+                    for (const [pId, msgs] of Object.entries(data.latestMessages)) {
+                        
+                        // Verifica Cliente
+                        if(msgs.cliente) {
+                            const lidoId = localStorage.getItem(`lastRead_${pId}_cliente`);
+                            const badge = document.getElementById(`badge-cliente-${pId}`);
+                            
+                            // Se a ultima mensagem do servidor for diferente da lida, e foi enviada pelo outro lado (in)
+                            // E O CHAT NÃO ESTÁ ABERTO AGORA
+                            const chatNaoAberto = !(window.chatAbertoAtual.pedidoId == pId && window.chatAbertoAtual.tipoChat === 'cliente');
+
+                            if (msgs.cliente.id !== lidoId && msgs.cliente.side === 'in' && chatNaoAberto) {
+                                if(badge) badge.style.display = 'flex';
+                            } else {
+                                if(badge) badge.style.display = 'none';
+                            }
+                        }
+
+                        // Verifica Interno (Gráfica)
+                        if(msgs.interno) {
+                            const lidoId = localStorage.getItem(`lastRead_${pId}_interno`);
+                            const badge = document.getElementById(`badge-interno-${pId}`);
+                            
+                            const chatNaoAberto = !(window.chatAbertoAtual.pedidoId == pId && window.chatAbertoAtual.tipoChat === 'interno');
+
+                            if (msgs.interno.id !== lidoId && msgs.interno.side === 'in' && chatNaoAberto) {
+                                if(badge) badge.style.display = 'flex';
+                            } else {
+                                if(badge) badge.style.display = 'none';
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('[NOTIFICAÇÕES] Falha ao checar:', err);
+            }
+        };
+
+        check(); // Executa a primeira vez logo de cara
+        window.notifInterval = setInterval(check, 20000); // 20 segundos
+    }
+    // -----------------------------------------
+
     window.abrirChatEmbutido = async (pedidoId, pedidoTitulo, tipoChat = 'cliente') => {
         console.log(`[CHAT] Abrindo chat (${tipoChat}) para o pedido ID: ${pedidoId}`);
+        
+        // Marca que estamos com este chat aberto
+        window.chatAbertoAtual = { pedidoId: pedidoId, tipoChat: tipoChat };
+
+        // Some com a notificação visual na hora
+        const badgeElement = document.getElementById(`badge-${tipoChat}-${pedidoId}`);
+        if(badgeElement) badgeElement.style.display = 'none';
+
         const corpo = `
             <div class="chat-container" id="chat-msgs-container">
                 <p style="text-align:center; color:#888; margin-top: 20px;"><i class="fas fa-spinner fa-spin"></i> Conectando...</p>
@@ -681,6 +766,14 @@
         
         const tituloGaveta = tipoChat === 'interno' ? `Chat Gráfica: ${pedidoId}` : `Chat Cliente: ${pedidoId}`;
         window.abrirGaveta(tituloGaveta, corpo, "");
+
+        // Quando fechar a gaveta do chat atual, limpa o registro
+        const gavetaOverlay = document.getElementById('drawer-overlay');
+        const onclickOriginal = gavetaOverlay.onclick;
+        gavetaOverlay.onclick = () => {
+            window.chatAbertoAtual = { pedidoId: null, tipoChat: null };
+            if(onclickOriginal) onclickOriginal();
+        }
 
         const container = document.getElementById('chat-msgs-container');
         const input = document.getElementById('chat-texto-input');
@@ -705,6 +798,14 @@
                     console.log(`[CHAT] Novas mensagens identificadas. Renderizando. Total: ${data.mensagens.length}`);
                     totalMensagensCache = data.mensagens.length;
                     
+                    // --- GRAVAÇÃO DA ÚLTIMA MENSAGEM LIDA NO LOCAL STORAGE ---
+                    if (data.mensagens.length > 0) {
+                        const lastMsg = data.mensagens[data.mensagens.length - 1];
+                        localStorage.setItem(`lastRead_${pedidoId}_${tipoChat}`, lastMsg.id);
+                        console.log(`[CHAT] Última mensagem marcada como lida: ${lastMsg.id}`);
+                    }
+                    // ---------------------------------------------------------
+
                     container.innerHTML = data.mensagens.map(m => {
                         let msgHtml = m.texto;
                         if (m.type === 'image' && m.file) {
@@ -730,8 +831,6 @@
                         `;
                     }).join('');
                     
-                    // LÓGICA DE SCROLL ATUALIZADA (Padrão WhatsApp)
-                    // Garante que a rolagem aconteça após o DOM injetar o HTML
                     setTimeout(() => {
                         if (container) {
                             console.log('[CHAT] Forçando rolagem para o fim da conversa.');
@@ -739,7 +838,6 @@
                         }
                     }, 100);
 
-                    // Adiciona um listener para forçar o scroll novamente caso alguma imagem termine de carregar
                     const images = container.querySelectorAll('img');
                     images.forEach(img => {
                         img.addEventListener('load', () => {
@@ -786,7 +884,6 @@
                 
                 await carregarMensagens();
 
-                // Força rolagem logo depois de enviar
                 setTimeout(() => {
                     if (container) container.scrollTop = container.scrollHeight;
                 }, 100);
@@ -804,7 +901,6 @@
         });
         btnEnviar.onclick = enviarMensagem;
 
-        // Inicia carregamento
         await carregarMensagens();
         window.chatInterval = setInterval(carregarMensagens, 5000);
     };

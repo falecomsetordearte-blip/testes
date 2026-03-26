@@ -350,6 +350,32 @@
             font-weight: 600;
         }
 
+        /* --- CSS NOVO PARA O BADGE DE NOTIFICAÇÃO DO CHAT --- */
+        .btn-chat-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .badge-notif {
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.65rem;
+            font-weight: bold;
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            display: none; /* Escondido por padrão, o JS ativa */
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            border: 2px solid white;
+            z-index: 10;
+        }
+        /* --------------------------------------------------- */
+
         .drawer-overlay {
             position: fixed;
             top: 0;
@@ -596,9 +622,8 @@
         <div class="drawer-footer" id="drawer-footer"></div>
     </div>
 
-    <!-- ADICIONADO TIMESTAMP PARA EVITAR CACHE -->
     <script src="https://unpkg.com/imask"></script>
-    <script src="designer-script.js?v=2.0"></script>
+    <script src="designer-script.js?v=2.2"></script>
     <script>
         document.querySelectorAll('.tab-btn').forEach(button => {
             button.addEventListener('click', () => {
