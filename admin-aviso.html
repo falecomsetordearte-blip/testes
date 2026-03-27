@@ -176,10 +176,7 @@
                     </select>
                 </div>
 
-                <div class="form-group">
-                    <label>Senha Admin</label>
-                    <input type="password" id="senha" required placeholder="Sua senha de administrador">
-                </div>
+
 
                 <button type="submit" class="btn">
                     <i class="fa-solid fa-paper-plane"></i> PUBLICAR PARA TODOS
@@ -213,8 +210,7 @@
             const data = {
                 titulo: document.getElementById('titulo').value,
                 mensagem: document.getElementById('mensagem').value,
-                tipo: document.getElementById('tipo').value,
-                senha_admin: document.getElementById('senha').value
+                tipo: document.getElementById('tipo').value
             };
 
             try {
@@ -278,18 +274,11 @@
         }
 
         async function toggleStatus(id, makeActive) {
-            const senha = document.getElementById('senha').value;
-            if (!senha) {
-                alert("Digite a Senha Admin no formulário ao lado para poder alterar status.");
-                document.getElementById('senha').focus();
-                return;
-            }
-
             try {
                 const res = await fetch('/api/toggleGlobalNotification', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ id: id, ativa: makeActive, senha_admin: senha })
+                    body: JSON.stringify({ id: id, ativa: makeActive })
                 });
 
                 if (res.ok) {

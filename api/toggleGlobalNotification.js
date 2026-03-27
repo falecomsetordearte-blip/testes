@@ -12,11 +12,7 @@ module.exports = async (req, res) => {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
 
-    const { id, ativa, senha_admin } = req.body;
-
-    if (senha_admin !== 'admin123') {
-        return res.status(403).json({ message: 'Senha de administrador incorreta.' });
-    }
+    const { id, ativa } = req.body;
 
     try {
         const updated = await prisma.notificacaoGlobal.update({
