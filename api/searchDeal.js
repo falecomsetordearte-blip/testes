@@ -97,7 +97,7 @@ module.exports = async (req, res) => {
         for (const crm of crmResults) {
             results.push({
                 id: crm.id,
-                titulo: crm.titulo || \`Oportunidade #\${crm.id}\`,
+                titulo: crm.titulo || `Oportunidade #${crm.id}`,
                 nome_cliente: crm.nome_cliente,
                 telefone: crm.telefone,
                 cor_setor: '#3b82f6', // cor Azul escuro (CRM)
@@ -133,7 +133,7 @@ module.exports = async (req, res) => {
 
             results.push({
                 id: ped.id,
-                titulo: ped.titulo || \`Pedido #\${ped.id}\`,
+                titulo: ped.titulo || `Pedido #${ped.id}`,
                 nome_cliente: ped.nome_cliente,
                 telefone: ped.telefone,
                 cor_setor: corSetor,
