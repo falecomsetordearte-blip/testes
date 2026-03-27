@@ -1,11 +1,6 @@
 // globalSearch.js - Sistema de Busca Centralizado (Neon DB)
 
-document.addEventListener("DOMContentLoaded", () => {
-    console.log("[GlobalSearch] Script carregado e aguardando inicialização...");
-    inicializarBuscaGlobal();
-});
-
-function inicializarBuscaGlobal() {
+window.inicializarBuscaGlobal = function() {
     console.log("[GlobalSearch] Inicializando DOM do modal de busca...");
     // 1. CSS + HTML DO MODAL
     const modalHTML = `

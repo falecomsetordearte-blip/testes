@@ -132,7 +132,18 @@ document.addEventListener("DOMContentLoaded", async () => {
             const searchScript = document.createElement("script");
             searchScript.id = "script-busca-global";
             searchScript.src = "/globalSearch.js"; // Caminho do seu arquivo globalSearch.js na pasta public
+            
+            searchScript.onload = () => {
+                if(typeof window.inicializarBuscaGlobal === 'function') {
+                    window.inicializarBuscaGlobal();
+                }
+            };
+            
             document.body.appendChild(searchScript);
+        } else {
+            if(typeof window.inicializarBuscaGlobal === 'function') {
+                window.inicializarBuscaGlobal();
+            }
         }
     }
 
