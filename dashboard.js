@@ -103,51 +103,100 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 3. CARREGAR MINI CARTEIRA (Artes à Pagar)
-    async function loadMiniCarteira() {
+    // 3. CARREGAR GRÁFICO DE ECONOMIA (Substitui o Artes a Pagar)
+    async function loadGraficoEconomia() {
         try {
-            const res = await fetch('/api/carteira/extrato', {
+            // Usa a rota de dados da carteira para saber quanto ele já gastou esse mês
+            const res = await fetch('/api/carteira/dados', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionToken: sessionToken })
             });
             const data = await res.json();
-            const listEl = document.getElementById('mini-carteira-list');
+            const container = document.getElementById('modulo-economia');
 
-            // Filtra apenas o que não for PAGO
-            const pendentes = (data.extrato || []).filter(i => i.status !== 'PAGO');
+            // Calcula tudo que foi gerado no mês (pago + pendente + atrasado)
+            const totalGasto = (data.pago_mes || 0) + (data.saldo_pendente || 0) + (data.saldo_atrasado || 0);
 
-            if (pendentes.length === 0) {
-                listEl.innerHTML = '<p class="empty-state"><i class="fa-solid fa-check-double" style="font-size:2rem; color:#cbd5e1; display:block; margin-bottom:10px;"></i>Nenhuma arte pendente de pagamento!</p>';
-                return;
+            // --- REGRA DE NEGÓCIO DA ECONOMIA ---
+            // Custo base de um CLT (Salário 2.5k + Encargos + Assinatura Adobe + Luz/Equipamento)
+            const custoCLTBase = 5800.00;
+
+            let custoCLTCalculado = custoCLTBase;
+            let labelCLT = "Custo Fixo (1 CLT)";
+            let disclaimer = "*Cálculo base: Salário + Férias + 13º + FGTS + Licença Adobe + Equipamentos.";
+
+            // SE O CLIENTE GASTAR MUITO COM FREELA (Ex: 6 mil reais), um funcionário só não daria conta.
+            // Para não deixar o gráfico negativo, escalamos o "Custo CLT" para simular uma EQUIPE.
+            if (totalGasto >= (custoCLTBase * 0.8)) {
+                custoCLTCalculado = totalGasto * 1.6; // Força o CLT a ser sempre ~60% mais caro
+                labelCLT = "Custo de Equipe Equivalente";
+                disclaimer = "*Baseado no volume de demanda, que exigiria múltiplos profissionais contratados.";
             }
 
-            const html = pendentes.slice(0, 5).map(i => {
-                const isAguardando = i.status === 'AGUARDANDO_CONFIRMACAO';
-                return `
-                    <div class="dash-list-item" onclick="window.location.href='/carteira.html'">
-                        <div>
-                            <div class="dash-item-title">${i.descricao}</div>
-                            <div class="dash-item-subtitle"><i class="fa-solid fa-palette"></i> ${i.designer || 'Designer'}</div>
+            const economia = custoCLTCalculado - totalGasto;
+
+            // Cálculos percentuais para as barras do gráfico
+            // A maior barra (CLT) será sempre 100%
+            const pctCLT = 100;
+            const pctFreela = (totalGasto / custoCLTCalculado) * 100;
+
+            const html = `
+                <div class="economy-widget">
+                    
+                    <div class="economy-header">
+                        <p>Você já economizou</p>
+                        <div class="economy-value">+ ${fmtMoeda(economia)}</div>
+                    </div>
+
+                    <div style="margin-top: 15px;">
+                        <!-- BARRA 1: CLT -->
+                        <div class="bar-container">
+                            <div class="bar-labels">
+                                <span><i class="fa-solid fa-building-user"></i> ${labelCLT}</span>
+                                <span>${fmtMoeda(custoCLTCalculado)}</span>
+                            </div>
+                            <div class="bar-track">
+                                <div class="bar-fill fill-clt" style="width: 0%;" data-target="${pctCLT}%"></div>
+                            </div>
                         </div>
-                        <div>
-                            ${isAguardando ? `<span class="badge-status st-entregue" style="font-size:0.6rem;">Analisando Comprovante</span>` : `<span class="badge-status st-pendente-pg" style="font-size:0.6rem;">Fazer PIX</span>`}
-                        </div>
-                        <div style="text-align:right; font-weight:700; color:#1e293b;">
-                            ${fmtMoeda(i.valor)}
+
+                        <!-- BARRA 2: FREELA (Setor de Arte) -->
+                        <div class="bar-container" style="margin-top: 12px;">
+                            <div class="bar-labels">
+                                <span style="color:#2ecc71;"><i class="fa-solid fa-check-circle"></i> Gastos na Plataforma</span>
+                                <span style="color:#2ecc71;">${fmtMoeda(totalGasto)}</span>
+                            </div>
+                            <div class="bar-track">
+                                <div class="bar-fill fill-freela" style="width: 0%;" data-target="${pctFreela}%"></div>
+                            </div>
                         </div>
                     </div>
-                `;
-            }).join('');
-            listEl.innerHTML = html;
+
+                    <div class="economy-disclaimer">
+                        ${disclaimer}
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+
+            // Animação das barras (delay pequeno para o CSS rodar macio)
+            setTimeout(() => {
+                const barras = container.querySelectorAll('.bar-fill');
+                barras.forEach(barra => {
+                    barra.style.width = barra.getAttribute('data-target');
+                });
+            }, 100);
 
         } catch (e) {
-            document.getElementById('mini-carteira-list').innerHTML = `<p class="empty-state" style="color:red;">Erro ao buscar contas.</p>`;
+            console.error(e);
+            document.getElementById('modulo-economia').innerHTML = `<p class="empty-state" style="color:red;">Erro ao calcular economia.</p>`;
         }
     }
 
-    // Dispara as 3 chamadas simultaneamente para carregamento mais rápido
+    // Dispara as 3 chamadas
     loadAtividadeRecente();
     loadMiniExpedicao();
-    loadMiniCarteira();
+    loadGraficoEconomia();
 });

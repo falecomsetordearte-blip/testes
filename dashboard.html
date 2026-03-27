@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Setor de Arte</title>
 
+    <!-- Ícone e CSS padronizados -->
     <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
     <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
@@ -13,6 +14,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
+        /* --- CSS DO DASHBOARD --- */
+
         .app-content .container {
             max-width: 100% !important;
             padding: 0 2rem;
@@ -85,7 +88,7 @@
             flex: 1;
         }
 
-        /* Itens das Listas (Expedição, Carteira e Recentes) */
+        /* Itens das Listas (Expedição, Recentes) */
         .dash-list-item {
             display: grid;
             grid-template-columns: 2fr 1fr auto;
@@ -159,7 +162,91 @@
             color: #64748b;
         }
 
-        /* Badges de Status (Reaproveitadas do sistema) */
+        /* --- GRÁFICO DE ECONOMIA (CSS PURO) --- */
+        .economy-widget {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .economy-header {
+            text-align: center;
+            background: #f0fdf4;
+            border: 1px dashed #bbf7d0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+        }
+
+        .economy-header p {
+            margin: 0;
+            color: #166534;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .economy-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #22c55e;
+            line-height: 1;
+            margin-top: 5px;
+        }
+
+        .bar-container {
+            margin-bottom: 10px;
+        }
+
+        .bar-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #475569;
+        }
+
+        .bar-labels span:last-child {
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .bar-track {
+            width: 100%;
+            height: 14px;
+            background: #f1f5f9;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .fill-clt {
+            background: #cbd5e1;
+        }
+
+        /* Cinza neutro para parecer "caro/antigo" */
+        .fill-freela {
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+        }
+
+        /* Gradiente vivo */
+
+        .economy-disclaimer {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            text-align: center;
+            margin-top: 5px;
+            line-height: 1.3;
+        }
+
+        /* Badges de Status */
         .badge-status {
             padding: 4px 10px;
             border-radius: 20px;
@@ -179,7 +266,23 @@
             color: #15803d;
         }
 
-        .st-pendente-pg {
+        /* Status do Kanban (reaproveitado) */
+        .status-aprovado {
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
+        .status-pagamento {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .status-andamento {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .status-cancelado {
             background: #fef2f2;
             color: #b91c1c;
         }
@@ -227,6 +330,10 @@
                 text-align: left !important;
                 margin-top: 5px;
             }
+
+            .app-content .container {
+                padding: 0 1rem;
+            }
         }
     </style>
 </head>
@@ -244,7 +351,7 @@
 
                     <h1 class="page-title"><i class="fa-solid fa-chart-pie"></i> Visão Geral</h1>
 
-                    <!-- LINHA 1: Expedição e Carteira -->
+                    <!-- LINHA 1: Expedição e Economia -->
                     <section class="dashboard-bicolumn">
 
                         <!-- MÓDULO: MATERIAIS PRONTOS (Mini Expedição) -->
@@ -258,14 +365,13 @@
                             </div>
                         </div>
 
-                        <!-- MÓDULO: ARTES À PAGAR (Mini Carteira) -->
+                        <!-- MÓDULO: GRÁFICO DE ECONOMIA -->
                         <div class="main-panel">
                             <div class="panel-header">
-                                <h2><i class="fa-solid fa-hand-holding-dollar" style="color:#e74c3c;"></i> Artes à Pagar
-                                </h2>
+                                <h2><i class="fa-solid fa-chart-line" style="color:#22c55e;"></i> Economia do Mês</h2>
                                 <a href="/carteira.html" class="view-all-link">Ver Carteira →</a>
                             </div>
-                            <div class="panel-body" id="mini-carteira-list">
+                            <div class="panel-body" id="modulo-economia">
                                 <div class="spinner"></div>
                             </div>
                         </div>
