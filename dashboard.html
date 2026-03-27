@@ -1,286 +1,201 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Setor de Arte</title>
-    
-    <!-- Ícone e CSS padronizados -->
+
     <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
     <link rel="stylesheet" href="/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
-        /* --- CSS INLINE DE MODERNIZAÇÃO --- */
-        
-        /* 1. Maximização da Largura */
         .app-content .container {
-            max-width: 100% !important; 
-            padding: 0 2rem; 
+            max-width: 100% !important;
+            padding: 0 2rem;
             box-sizing: border-box;
         }
 
-        /* 2. Header de Boas-vindas Moderno */
-        .dashboard-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #fff;
-            padding: 1.5rem 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        /* Título da Página */
+        .page-title {
             margin-bottom: 2rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .welcome-message h1 {
-            font-size: 1.8rem;
             color: #2c3e50;
-            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
             font-weight: 700;
-        }
-
-        .welcome-message p {
-            color: #7f8c8d;
-            font-size: 1rem;
-            margin: 0;
-        }
-
-        /* Botões de Ação */
-        .acoes-box {
             display: flex;
-            gap: 1rem;
-        }
-
-        .btn-modern {
-            padding: 0.8rem 1.5rem;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            display: inline-flex;
             align-items: center;
-            gap: 8px;
-            transition: transform 0.2s, box-shadow 0.2s;
+            gap: 10px;
         }
 
-        .btn-outline {
-            background: transparent;
-            border: 2px solid #e0e0e0;
-            color: #555;
-        }
-
-        .btn-outline:hover {
-            border-color: #bdc3c7;
-            background: #f9f9f9;
-            color: #333;
-        }
-
-        .btn-cta {
-            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-            color: white;
-            border: none;
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
-        }
-
-        .btn-cta:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
-        }
-
-        /* 3. Grid de Métricas (KPIs) */
-        .dashboard-grid {
+        /* Grid Bicoluna para os Módulos */
+        .dashboard-bicolumn {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: 1fr 1fr;
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
 
-        .kpi-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.3s ease;
-        }
-
-        .kpi-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 6px;
-        }
-
-        .kpi-green::before { background-color: #27ae60; }
-        .kpi-blue::before { background-color: #3498db; }
-
-        .kpi-content { z-index: 1; }
-
-        .kpi-label {
-            display: block;
-            color: #7f8c8d;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-
-        .kpi-value {
-            display: block;
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #2c3e50;
-        }
-
-        .kpi-icon {
-            font-size: 3.5rem;
-            opacity: 0.15;
-        }
-        
-        .kpi-green .kpi-icon { color: #27ae60; }
-        .kpi-blue .kpi-icon { color: #3498db; }
-
-        /* 4. Painel de Atividade Recente (Full Width) */
+        /* Estilo dos Painéis Base */
         .main-panel {
             background: white;
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
             padding: 0;
             overflow: hidden;
-            width: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
         .panel-header {
-            padding: 1.5rem 2rem;
+            padding: 1.5rem;
             border-bottom: 1px solid #ecf0f1;
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        /* 5. Bloco de Atualizações (System Updates) */
-        .updates-panel {
-            background: linear-gradient(to bottom right, #f8f9fa, #ffffff);
-            border: 1px solid #e0e6ed;
-            border-radius: 12px;
-            padding: 1.5rem 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .updates-panel::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background: #9b59b6; /* Cor roxa para destacar */
-        }
-
-        .updates-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 1rem;
-        }
-
-        .updates-header h2 {
-            margin: 0;
-            font-size: 1.25rem;
-            color: #2c3e50;
-        }
-
-        .version-badge {
-            background: #f3e5f5;
-            color: #8e44ad;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 700;
-        }
-
-        .updates-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .updates-list li {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            margin-bottom: 0.8rem;
-            font-size: 0.95rem;
-            color: #555;
-            line-height: 1.4;
-        }
-
-        .updates-list li:last-child {
-            margin-bottom: 0;
-        }
-
-        .update-icon {
-            font-size: 1rem;
-            flex-shrink: 0;
-            margin-top: 2px;
+            background: #fdfdfd;
         }
 
         .panel-header h2 {
             margin: 0;
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             color: #2c3e50;
             display: flex;
             align-items: center;
             gap: 10px;
+            font-weight: 600;
         }
 
         .view-all-link {
             color: #3498db;
             text-decoration: none;
             font-weight: 500;
-            font-size: 0.9rem;
-        }
-        
-        /* Ajuste do container da lista */
-        #recentes-pedidos-list {
-            padding: 1rem;
-            min-height: 200px;
+            font-size: 0.85rem;
+            transition: 0.2s;
         }
 
-        /* Estilos para garantir que a tabela gerada pelo JS fique bonita */
-        /* Assumindo que o JS cria uma <table> ou divs com classes padrão */
-        #recentes-pedidos-list table {
-            width: 100%;
-            border-collapse: collapse;
+        .view-all-link:hover {
+            text-decoration: underline;
         }
-        
-        #recentes-pedidos-list th, 
-        #recentes-pedidos-list td {
+
+        .panel-body {
+            padding: 1rem;
+            flex: 1;
+        }
+
+        /* Itens das Listas (Expedição, Carteira e Recentes) */
+        .dash-list-item {
+            display: grid;
+            grid-template-columns: 2fr 1fr auto;
+            align-items: center;
             padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 6px;
+        }
+
+        .dash-list-item:hover {
+            background-color: #f8fafc;
+            transform: translateX(4px);
+        }
+
+        .dash-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .dash-item-title {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.9rem;
+        }
+
+        .dash-item-subtitle {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        /* Tutoriais */
+        .tutorial-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            text-decoration: none;
+            color: #334155;
+            transition: 0.2s;
+        }
+
+        .tutorial-item:hover {
+            border-color: #3498db;
+            background: #f0f8ff;
+        }
+
+        .tutorial-icon {
+            background: #e0f2fe;
+            color: #0284c7;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .tutorial-text strong {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+        }
+
+        .tutorial-text span {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        /* Badges de Status (Reaproveitadas do sistema) */
+        .badge-status {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .st-aguardando {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+        .st-entregue {
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
+        .st-pendente-pg {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+        /* Estados Vazios e Loading */
+        .empty-state {
+            text-align: center;
+            color: #94a3b8;
+            padding: 2rem 1rem;
+            font-size: 0.9rem;
         }
 
         .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 36px;
-            height: 36px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             border-left-color: #3498db;
             animation: spin 1s linear infinite;
@@ -288,28 +203,34 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
-        @media (max-width: 768px) {
-            .dashboard-header {
-                flex-direction: column;
-                align-items: flex-start;
+        /* Responsividade */
+        @media (max-width: 992px) {
+            .dashboard-bicolumn {
+                grid-template-columns: 1fr;
             }
-            .acoes-box {
-                width: 100%;
+
+            .dash-list-item {
+                grid-template-columns: 1fr;
+                gap: 5px;
             }
-            .btn-modern {
-                flex: 1;
-                justify-content: center;
-            }
-            .app-content .container {
-                padding: 0 1rem;
+
+            .dash-list-item>div:last-child {
+                text-align: left !important;
+                margin-top: 5px;
             }
         }
     </style>
 </head>
+
 <body>
 
     <div class="app-layout-grid">
@@ -320,79 +241,87 @@
 
             <main class="app-content">
                 <div class="container">
-                    
-                    <!-- Header -->
-                    <section class="dashboard-header">
-                        <div class="welcome-message">
-                            <h1 id="welcome-user-name">Olá...</h1>
-                            <p>Visão geral do seu painel de criação.</p>
-                        </div>
-                        <div class="acoes-box">
-                            <a href="painel.html" class="btn-modern btn-outline">
-                                <i class="fa-solid fa-list-ul"></i> Meus Pedidos
-                            </a>
-                            <!-- Botão Novo Pedido removido -->
-                        </div>
-                    </section>
 
-                    <!-- Grid KPIs -->
-                    <section class="dashboard-grid">
-                        <div class="kpi-card kpi-green">
-                            <div class="kpi-content">
-                                <span class="kpi-label">Saldo Disponível</span>
-                                <span class="kpi-value" id="saldo-valor-dash">R$ --</span>
-                            </div>
-                            <i class="fa-solid fa-wallet kpi-icon"></i>
-                        </div>
+                    <h1 class="page-title"><i class="fa-solid fa-chart-pie"></i> Visão Geral</h1>
 
-                        <div class="kpi-card kpi-blue">
-                            <div class="kpi-content">
-                                <span class="kpi-label">Em Produção</span>
-                                <span class="kpi-value" id="pedidos-andamento-dash">--</span>
-                            </div>
-                            <i class="fa-solid fa-layer-group kpi-icon"></i>
-                        </div>
-                    </section>
+                    <!-- LINHA 1: Expedição e Carteira -->
+                    <section class="dashboard-bicolumn">
 
-                    <!-- Bloco de Atualizações -->
-                    <section class="updates-panel">
-                        <div class="updates-header">
-                            <h2><i class="fa-solid fa-bullhorn" style="color:#8e44ad;"></i> Novidades do Sistema</h2>
-                            <span class="version-badge">v1.0.1</span>
-                        </div>
-                        <ul class="updates-list">
-                            <li>
-                                <span class="update-icon">✨</span>
-                                <div><strong>Melhoria:</strong> Padronização do salvamento de links de arquivos aprovados.</div>
-                            </li>
-                            <li>
-                                <span class="update-icon">🚀</span>
-                                <div><strong>Novo:</strong> Adicionamos o painel de novidades na tela inicial.</div>
-                            </li>
-                            <li>
-                                <span class="update-icon">🔧</span>
-                                <div><strong>Correção:</strong> Ajustes internos de estabilidade no Kanban.</div>
-                            </li>
-                        </ul>
-                    </section>
-
-                    <!-- IMPORTANTE: Elementos ocultos para evitar erro no Javascript (Legacy Support) -->
-                    <div style="display: none !important;">
-                        <!-- O JS tenta preencher isso, se não achar, ele trava o carregamento da lista -->
-                        <span id="pedidos-concluidos-dash">0</span>
-                    </div>
-
-                    <!-- Lista Recente -->
-                    <section class="dashboard-columns">
+                        <!-- MÓDULO: MATERIAIS PRONTOS (Mini Expedição) -->
                         <div class="main-panel">
                             <div class="panel-header">
-                                <h2><i class="fa-solid fa-clock-rotate-left"></i> Atividade Recente</h2>
-                                <a href="painel.html" class="view-all-link">Ver histórico completo →</a>
+                                <h2><i class="fa-solid fa-truck-fast" style="color:#2ecc71;"></i> Materiais Prontos</h2>
+                                <a href="/expedicao/" class="view-all-link">Ir para Expedição →</a>
                             </div>
-                            <div id="recentes-pedidos-list">
-                                <div class="loading-pedidos"><div class="spinner"></div></div>
+                            <div class="panel-body" id="mini-expedicao-list">
+                                <div class="spinner"></div>
                             </div>
                         </div>
+
+                        <!-- MÓDULO: ARTES À PAGAR (Mini Carteira) -->
+                        <div class="main-panel">
+                            <div class="panel-header">
+                                <h2><i class="fa-solid fa-hand-holding-dollar" style="color:#e74c3c;"></i> Artes à Pagar
+                                </h2>
+                                <a href="/carteira.html" class="view-all-link">Ver Carteira →</a>
+                            </div>
+                            <div class="panel-body" id="mini-carteira-list">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+
+                    </section>
+
+                    <!-- LINHA 2: Atividades Recentes e Tutoriais -->
+                    <section class="dashboard-bicolumn">
+
+                        <!-- MÓDULO: ATIVIDADE RECENTE -->
+                        <div class="main-panel">
+                            <div class="panel-header">
+                                <h2><i class="fa-solid fa-clock-rotate-left" style="color:#3498db;"></i> Atividade
+                                    Recente</h2>
+                                <a href="/painel.html" class="view-all-link">Ver painel completo →</a>
+                            </div>
+                            <div class="panel-body" id="recentes-pedidos-list">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+
+                        <!-- MÓDULO: TUTORIAIS -->
+                        <div class="main-panel">
+                            <div class="panel-header">
+                                <h2><i class="fa-solid fa-graduation-cap" style="color:#9b59b6;"></i> Central de
+                                    Tutoriais</h2>
+                            </div>
+                            <div class="panel-body">
+
+                                <a href="#" class="tutorial-item">
+                                    <div class="tutorial-icon"><i class="fa-solid fa-play"></i></div>
+                                    <div class="tutorial-text">
+                                        <strong>Como abrir um novo pedido</strong>
+                                        <span>Aprenda a preencher o briefing corretamente.</span>
+                                    </div>
+                                </a>
+
+                                <a href="#" class="tutorial-item">
+                                    <div class="tutorial-icon"><i class="fa-solid fa-check-double"></i></div>
+                                    <div class="tutorial-text">
+                                        <strong>Como aprovar ou reprovar artes</strong>
+                                        <span>Veja como enviar feedbacks para o designer.</span>
+                                    </div>
+                                </a>
+
+                                <a href="#" class="tutorial-item">
+                                    <div class="tutorial-icon"><i class="fa-solid fa-wallet"></i></div>
+                                    <div class="tutorial-text">
+                                        <strong>Realizando pagamentos (Carteira)</strong>
+                                        <span>Como anexar comprovantes de PIX.</span>
+                                    </div>
+                                </a>
+
+                            </div>
+                        </div>
+
                     </section>
 
                 </div>
@@ -401,11 +330,10 @@
             <div id="footer-placeholder"></div>
         </div>
     </div>
-    
+
     <script src="/layout.js"></script>
-    <script src="https://unpkg.com/imask"></script> 
-    <script src="/script.js"></script> 
     <script src="/dashboard.js"></script>
 
 </body>
+
 </html>

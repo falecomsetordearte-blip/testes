@@ -2,114 +2,152 @@
 
 document.addEventListener("DOMContentLoaded", () => {
     const sessionToken = localStorage.getItem("sessionToken");
-    const userName = localStorage.getItem("userName");
 
     if (!sessionToken) {
         window.location.href = "/login.html";
         return;
     }
-    
-    // Preenche o nome do usuário
-    const welcomeUserName = document.getElementById('welcome-user-name');
-    if (welcomeUserName && userName) {
-        welcomeUserName.textContent = `Olá, ${userName}!`;
-    }
 
-    // --- NOVA LÓGICA DE STATUS (SEM BITRIX) ---
+    // --- LÓGICA DE CORES DO STATUS (Para os recentes) ---
     function getStatusInfo(etapa) {
         if (!etapa) return { texto: 'Aguardando', classe: 'status-pagamento' };
-
         const etapaUpper = etapa.toUpperCase();
-
-        // Mapeamento de Cores
         if (etapaUpper.includes("ATENDIMENTO") || etapaUpper.includes("NOVOS")) {
-            return { texto: etapa, classe: 'status-pagamento' }; // Amarelo/Laranja
+            return { texto: etapa, classe: 'status-pagamento' };
         } else if (etapaUpper.includes("CONCLUÍDO") || etapaUpper.includes("ENTREGUE") || etapaUpper.includes("EXPEDIÇÃO")) {
-            return { texto: etapa, classe: "status-aprovado" }; // Verde
+            return { texto: etapa, classe: "status-aprovado" };
         } else if (etapaUpper.includes("CANCELADO")) {
-            return { texto: etapa, classe: 'status-cancelado' }; // Vermelho
+            return { texto: etapa, classe: 'status-cancelado' };
         } else {
-            return { texto: etapa, classe: 'status-andamento' }; // Azul (Arte, Impressão, etc)
+            return { texto: etapa, classe: 'status-andamento' };
         }
     }
 
-    async function loadDashboardData() {
+    // Formatação de Moeda
+    const fmtMoeda = (valor) => parseFloat(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    // 1. CARREGAR ATIVIDADE RECENTE
+    async function loadAtividadeRecente() {
         try {
             const response = await fetch('/api/getPanelData', {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ token: sessionToken })
             });
-
             const data = await response.json();
-            
-            if (!response.ok) {
-                if (response.status === 401) {
-                    alert("Sessão expirada. Faça login novamente.");
-                    window.location.href = "/login.html";
-                    return;
-                }
-                throw new Error(data.message || "Erro ao buscar dados.");
-            }
+            const listEl = document.getElementById("recentes-pedidos-list");
 
-            // 1. Atualizar Saldo
-            const saldoEl = document.getElementById("saldo-valor-dash");
-            saldoEl.textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.saldo || 0);
+            if (!response.ok) throw new Error(data.message);
 
-            // 2. Calcular Métricas
-            const pedidos = data.pedidos || [];
-            const andamentoEl = document.getElementById("pedidos-andamento-dash");
-            const concluidosEl = document.getElementById("pedidos-concluidos-dash"); // Elemento oculto mas existente
+            const pedidosRecentes = (data.pedidos || []).slice(0, 5);
 
-            // Conta como concluído se tiver essas palavras
-            const totalConcluidos = pedidos.filter(p => {
-                const s = (p.STAGE_ID || '').toUpperCase();
-                return s.includes('EXPEDIÇÃO') || s.includes('ENTREGUE') || s.includes('CONCLUÍDO');
-            }).length;
-
-            const totalAndamento = pedidos.length - totalConcluidos;
-
-            andamentoEl.textContent = totalAndamento;
-            // Atualiza o contador oculto caso queira exibir no futuro
-            if(concluidosEl) concluidosEl.textContent = totalConcluidos;
-
-            // 3. Lista Recente
-            const recentesListEl = document.getElementById("recentes-pedidos-list");
-            const pedidosRecentes = pedidos.slice(0, 5); // Pega os 5 primeiros
-            
             if (pedidosRecentes.length > 0) {
-                recentesListEl.innerHTML = `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Título</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${pedidosRecentes.map(pedido => {
-                                const status = getStatusInfo(pedido.STAGE_ID);
-                                return `
-                                    <tr onclick="window.location.href='pedido.html?id=${pedido.ID}'" style="cursor:pointer">
-                                        <td>#${pedido.ID}</td>
-                                        <td>${pedido.TITLE}</td>
-                                        <td><span class="status-badge ${status.classe}">${status.texto}</span></td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                `;
+                listEl.innerHTML = pedidosRecentes.map(pedido => {
+                    const status = getStatusInfo(pedido.STAGE_ID);
+                    return `
+                        <div class="dash-list-item" onclick="window.location.href='pedido.html?id=${pedido.ID}'">
+                            <div>
+                                <div class="dash-item-title">${pedido.TITLE}</div>
+                                <div class="dash-item-subtitle">Pedido #${pedido.ID}</div>
+                            </div>
+                            <div></div>
+                            <div style="text-align:right;">
+                                <span class="badge-status ${status.classe}" style="font-size: 0.65rem;">${status.texto}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             } else {
-                recentesListEl.innerHTML = `<p class="empty-state">Nenhum pedido encontrado.</p>`;
+                listEl.innerHTML = `<p class="empty-state"><i class="fa-solid fa-folder-open" style="font-size:2rem; color:#cbd5e1; display:block; margin-bottom:10px;"></i>Nenhum pedido recente.</p>`;
             }
-
         } catch (error) {
-            console.error("Erro dashboard:", error);
-            document.getElementById("recentes-pedidos-list").innerHTML = `<p style="color:red; text-align:center">Erro ao carregar dados.</p>`;
+            document.getElementById("recentes-pedidos-list").innerHTML = `<p class="empty-state" style="color:red;">Erro ao carregar recentes.</p>`;
         }
     }
-    
-    loadDashboardData();
+
+    // 2. CARREGAR MINI EXPEDIÇÃO (Materiais Prontos)
+    async function loadMiniExpedicao() {
+        try {
+            const res = await fetch('/api/expedicao/listar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionToken: sessionToken, query: '' })
+            });
+            const data = await res.json();
+            const listEl = document.getElementById('mini-expedicao-list');
+
+            if (!data.deals || data.deals.length === 0) {
+                listEl.innerHTML = '<p class="empty-state"><i class="fa-solid fa-box-open" style="font-size:2rem; color:#cbd5e1; display:block; margin-bottom:10px;"></i>Nenhum material aguardando expedição no momento.</p>';
+                return;
+            }
+
+            const html = data.deals.slice(0, 5).map(p => {
+                const isEntregue = p.status_expedicao === 'Entregue';
+                return `
+                    <div class="dash-list-item" onclick="window.location.href='/expedicao/'">
+                        <div>
+                            <div class="dash-item-title">${p.titulo}</div>
+                            <div class="dash-item-subtitle">${p.nome_cliente || 'Sem cliente vinculado'}</div>
+                        </div>
+                        <div></div>
+                        <div style="text-align:right;">
+                            <span class="badge-status ${isEntregue ? 'st-entregue' : 'st-aguardando'}">${p.status_expedicao || 'Aguardando'}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            listEl.innerHTML = html;
+
+        } catch (e) {
+            document.getElementById('mini-expedicao-list').innerHTML = `<p class="empty-state" style="color:red;">Erro ao buscar materiais.</p>`;
+        }
+    }
+
+    // 3. CARREGAR MINI CARTEIRA (Artes à Pagar)
+    async function loadMiniCarteira() {
+        try {
+            const res = await fetch('/api/carteira/extrato', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionToken: sessionToken })
+            });
+            const data = await res.json();
+            const listEl = document.getElementById('mini-carteira-list');
+
+            // Filtra apenas o que não for PAGO
+            const pendentes = (data.extrato || []).filter(i => i.status !== 'PAGO');
+
+            if (pendentes.length === 0) {
+                listEl.innerHTML = '<p class="empty-state"><i class="fa-solid fa-check-double" style="font-size:2rem; color:#cbd5e1; display:block; margin-bottom:10px;"></i>Nenhuma arte pendente de pagamento!</p>';
+                return;
+            }
+
+            const html = pendentes.slice(0, 5).map(i => {
+                const isAguardando = i.status === 'AGUARDANDO_CONFIRMACAO';
+                return `
+                    <div class="dash-list-item" onclick="window.location.href='/carteira.html'">
+                        <div>
+                            <div class="dash-item-title">${i.descricao}</div>
+                            <div class="dash-item-subtitle"><i class="fa-solid fa-palette"></i> ${i.designer || 'Designer'}</div>
+                        </div>
+                        <div>
+                            ${isAguardando ? `<span class="badge-status st-entregue" style="font-size:0.6rem;">Analisando Comprovante</span>` : `<span class="badge-status st-pendente-pg" style="font-size:0.6rem;">Fazer PIX</span>`}
+                        </div>
+                        <div style="text-align:right; font-weight:700; color:#1e293b;">
+                            ${fmtMoeda(i.valor)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            listEl.innerHTML = html;
+
+        } catch (e) {
+            document.getElementById('mini-carteira-list').innerHTML = `<p class="empty-state" style="color:red;">Erro ao buscar contas.</p>`;
+        }
+    }
+
+    // Dispara as 3 chamadas simultaneamente para carregamento mais rápido
+    loadAtividadeRecente();
+    loadMiniExpedicao();
+    loadMiniCarteira();
 });
