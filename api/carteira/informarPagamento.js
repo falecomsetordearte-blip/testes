@@ -6,29 +6,31 @@ const { IncomingForm } = require('formidable');
 const fs = require('fs');
 
 export const config = {
-    api: {
-        bodyParser: false, // Necessário para Formidable
-    },
+    api: { bodyParser: false },
 };
 
 module.exports = async (req, res) => {
+    console.log('[API Informar Pagamento] Iniciando...');
     if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido' });
 
     const form = new IncomingForm();
-    
+
     form.parse(req, async (err, fields, files) => {
         if (err) {
-            console.error("Erro parsing form:", err);
+            console.error("[ERRO] Parsing form:", err);
             return res.status(500).json({ message: "Erro ao processar formulário." });
         }
 
         const sessionToken = Array.isArray(fields.sessionToken) ? fields.sessionToken[0] : fields.sessionToken;
-        const acertoIdsRaw = Array.isArray(fields.acertoIds) ? fields.acertoIds[0] : fields.acertoIds;
+        const designerIdRaw = Array.isArray(fields.designerId) ? fields.designerId[0] : fields.designerId;
+        const valorRaw = Array.isArray(fields.valor) ? fields.valor[0] : fields.valor;
         let comprovanteUrl = Array.isArray(fields.comprovanteUrl) ? fields.comprovanteUrl[0] : fields.comprovanteUrl;
         const comprovanteFile = files.comprovanteFile ? (Array.isArray(files.comprovanteFile) ? files.comprovanteFile[0] : files.comprovanteFile) : null;
 
-        if (!sessionToken || !acertoIdsRaw) {
-            return res.status(400).json({ message: 'Dados incompletos.' });
+        console.log(`[DADOS] Designer: ${designerIdRaw}, Valor: ${valorRaw}, Tem Arquivo: ${!!comprovanteFile}, Tem Link: ${!!comprovanteUrl}`);
+
+        if (!sessionToken || !designerIdRaw || !valorRaw) {
+            return res.status(400).json({ message: 'Dados incompletos (Token, Designer ou Valor).' });
         }
 
         try {
@@ -37,46 +39,40 @@ module.exports = async (req, res) => {
                 SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
             `, `%${sessionToken}%`);
 
-            if (empresas.length === 0) {
-                return res.status(403).json({ message: 'Sessão inválida.' });
-            }
-
+            if (empresas.length === 0) return res.status(403).json({ message: 'Sessão inválida.' });
             const empresaId = empresas[0].id;
 
-            // 2. Upload para Vercel Blob se houver arquivo
+            // 2. Upload do Comprovante (se houver arquivo físico)
             if (comprovanteFile) {
+                console.log('[UPLOAD] Enviando comprovante para Vercel Blob...');
                 try {
                     const fileStream = fs.createReadStream(comprovanteFile.filepath);
                     const blob = await put(`comprovantes/${Date.now()}-${comprovanteFile.originalFilename}`, fileStream, {
                         access: 'public',
                     });
                     comprovanteUrl = blob.url;
+                    console.log('[UPLOAD] Sucesso:', comprovanteUrl);
                 } catch (uploadError) {
-                    console.error("Erro upload Vercel Blob:", uploadError);
-                    // Continua sem o upload se falhar? Ou erro? Vamos retornar erro para garantir o comprovante.
+                    console.error("[ERRO] Upload Vercel Blob:", uploadError);
                     return res.status(500).json({ message: "Erro ao salvar arquivo de comprovante." });
                 }
             }
 
-            // 3. Atualizar os Acertos
-            const ids = acertoIdsRaw.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-            
-            if (ids.length === 0) {
-                return res.status(400).json({ message: "IDs inválidos." });
-            }
+            // 3. Criar a linha de "Pagamento Genérico" (Conta Corrente)
+            const valorEnviado = parseFloat(valorRaw.replace(',', '.'));
+            const desId = parseInt(designerIdRaw);
 
+            console.log(`[BANCO] Inserindo pagamento de R$${valorEnviado} na carteira...`);
             await prisma.$executeRawUnsafe(`
-                UPDATE acertos_contas 
-                SET status = 'AGUARDANDO_CONFIRMACAO', 
-                    pago_em = NOW(), 
-                    comprovante_url = $1 
-                WHERE id = ANY($2::int[]) AND empresa_id = $3
-            `, comprovanteUrl || null, ids, empresaId);
+                INSERT INTO acertos_contas (empresa_id, designer_id, pedido_id, valor, status, comprovante_url, criado_em, pago_em)
+                VALUES ($1, $2, NULL, $3, 'AGUARDANDO_CONFIRMACAO', $4, NOW(), NOW())
+            `, empresaId, desId, valorEnviado, comprovanteUrl || null);
 
-            return res.status(200).json({ success: true, message: 'Pagamento informado com sucesso!', comprovanteUrl });
+            console.log('[API Informar Pagamento] Finalizado com sucesso!');
+            return res.status(200).json({ success: true, message: 'Pagamento enviado ao designer para confirmação!', comprovanteUrl });
 
         } catch (error) {
-            console.error("Erro ao informar pagamento:", error);
+            console.error("[ERRO] Informar pagamento:", error);
             return res.status(500).json({ message: 'Erro interno ao processar pagamento.' });
         }
     });
