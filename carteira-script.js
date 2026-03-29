@@ -1,14 +1,7 @@
-// carteira-script.js
+// carteira-script.js - VERSÃO CONTA CORRENTE (LEDGER)
 
 document.addEventListener('DOMContentLoaded', () => {
-    const hoje = new Date();
-    const passado = new Date();
-    passado.setDate(passado.getDate() - 30);
-    const inputFim = document.getElementById('filtro-fim');
-    const inputInicio = document.getElementById('filtro-inicio');
-    if (inputFim) inputFim.valueAsDate = hoje;
-    if (inputInicio) inputInicio.valueAsDate = passado;
-
+    console.log('[INIT] Carteira carregada.');
     carregarAcertosGrafica();
 });
 
@@ -19,106 +12,130 @@ async function carregarAcertosGrafica() {
     if (!token) return window.location.href = '/login.html';
 
     try {
-        // 1. Carregar Totais
+        console.log('[API] Buscando Totais...');
         const resDados = await fetch('/api/carteira/dados', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sessionToken: token })
         });
         const d = await resDados.json();
+
+        // Atualiza os Cards do Topo
         document.getElementById('val-andamento').innerText = fmtMoeda(d.saldo_pendente);
-        document.getElementById('val-pagar').innerText = fmtMoeda(d.saldo_atrasado);
+        document.getElementById('val-pagar').innerText = fmtMoeda(d.saldo_em_analise);
         document.getElementById('val-saldo').innerText = fmtMoeda(d.pago_mes);
 
-        // 2. Carregar Lista
-        const dataInicio = document.getElementById('filtro-inicio').value;
-        const dataFim = document.getElementById('filtro-fim').value;
+        console.log('[API] Buscando Extrato Detalhado...');
         const lista = document.getElementById('lista-historico');
-        lista.innerHTML = '<li style="text-align:center; padding:20px; color:#94a3b8;">Buscando...</li>';
+        lista.innerHTML = '<li style="text-align:center; padding:20px; color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Carregando extrato...</li>';
 
         const resExtrato = await fetch('/api/carteira/extrato', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionToken: token, dataInicio, dataFim })
+            body: JSON.stringify({ sessionToken: token })
         });
         const data = await resExtrato.json();
         lista.innerHTML = '';
 
         if (!data.extrato || data.extrato.length === 0) {
-            lista.innerHTML = '<li style="text-align:center; padding:20px;">Nenhum acerto pendente ou pago no período.</li>';
+            lista.innerHTML = '<li style="text-align:center; padding:20px; color:#94a3b8;">Nenhum débito ou movimentação recente.</li>';
             return;
         }
 
-        // --- LÓGICA DE AGRUPAMENTO POR DESIGNER ---
+        // --- LÓGICA DE AGRUPAMENTO (CONTA CORRENTE) ---
         const grupos = {};
+
         data.extrato.forEach(item => {
-            if (!grupos[item.designer]) {
-                grupos[item.designer] = {
+            const desId = item.designer_id;
+            if (!grupos[desId]) {
+                grupos[desId] = {
+                    id: desId,
                     nome: item.designer,
                     pix: item.pix,
-                    totalPendente: 0,
+                    totalPendente: 0, // Dívida Real
+                    totalEmAnalise: 0, // Pagamentos esperando aprovação
                     itens: []
                 };
             }
-            grupos[item.designer].itens.push(item);
-            if (item.status !== 'PAGO') {
-                grupos[item.designer].totalPendente += item.valor;
+
+            grupos[desId].itens.push(item);
+
+            // Artes que ainda não foram pagas entram como Dívida (+)
+            if (item.status === 'PENDENTE' && !item.is_pagamento) {
+                grupos[desId].totalPendente += item.valor;
+            }
+            // Pagamentos enviados que o designer não clicou em Confirmar ainda (-)
+            if (item.status === 'AGUARDANDO_CONFIRMACAO' && item.is_pagamento) {
+                grupos[desId].totalEmAnalise += item.valor;
             }
         });
 
+        // Renderiza cada Designer como um "Banco"
         Object.values(grupos).forEach((grupo, idx) => {
-            const designerId = `designer-${idx}`;
+            const designerIdStr = `designer-${grupo.id}`;
             const li = document.createElement('li');
             li.style.cssText = "border-bottom: 1px solid #f1f5f9; list-style: none;";
-            
-            const itensPendentes = grupo.itens.filter(i => i.status === 'PENDENTE');
-            const itensAguardando = grupo.itens.filter(i => i.status === 'AGUARDANDO_CONFIRMACAO');
-            const todosPagos = grupo.itens.every(i => i.status === 'PAGO');
+
+            // Calcula o Saldo Líquido que a gráfica ainda deve a ele
+            let dividaRestante = grupo.totalPendente - grupo.totalEmAnalise;
+            if (dividaRestante < 0) dividaRestante = 0; // Crédito extra não exibe negativo na tela da gráfica
 
             let bgStyle = "background: #fff;";
-            let statusHtml = "";
             let acaoHtml = "-";
 
-            if (todosPagos) {
-                statusHtml = `<span class="badge-status badge-finalizado">PAGO</span>`;
-                acaoHtml = `<span style="color:#27ae60; font-size:0.75rem;"><i class="fas fa-check"></i> OK</span>`;
-            } else if (itensAguardando.length > 0 && itensPendentes.length === 0) {
-                bgStyle = "background: #dcfce7;"; // Verde claro
-                statusHtml = `<span class="badge-status" style="background:#16a34a; color:#fff;">AGUARDANDO DESIGNER</span>`;
-                acaoHtml = `<span style="font-size:0.7rem; color:#16a34a;">Aguardando...</span>`;
+            if (dividaRestante > 0) {
+                bgStyle = "background: #fffcf8;"; // Fundo laranjinha fraco
+                acaoHtml = `<button onclick="abrirModalPagamento(${grupo.id}, '${grupo.nome}', '${grupo.pix}', ${dividaRestante})" class="btn-add-mini" style="background:#2ecc71; margin: 0 auto;">ENVIAR PIX</button>`;
+            } else if (grupo.totalEmAnalise > 0) {
+                bgStyle = "background: #f0fdf4;"; // Fundo verde fraco
+                acaoHtml = `<span style="font-size:0.75rem; color:#16a34a; font-weight:700;"><i class="fas fa-clock"></i> AGUARDANDO DESIGNER</span>`;
             } else {
-                statusHtml = `<span class="badge-status badge-producao">PENDENTE</span>`;
-                const idsPendenes = grupo.itens.filter(i => i.status !== 'PAGO').map(i => i.id).join(',');
-                acaoHtml = `<button onclick="abrirModalPagamento('${idsPendenes}', '${grupo.nome}', '${grupo.pix}', ${grupo.totalPendente})" class="btn-add-mini" style="background:#2ecc71; font-size:0.7rem;">ANEXAR COMPROVANTE</button>`;
+                acaoHtml = `<span style="color:#27ae60; font-size:0.8rem; font-weight:700;"><i class="fas fa-check-double"></i> QUITE</span>`;
             }
 
             li.innerHTML = `
-                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 10px; padding: 15px 10px; align-items: center; cursor:pointer; ${bgStyle}" onclick="toggleDetalhes('${designerId}')">
+                <div style="display: grid; grid-template-columns: 2.5fr 1fr 1fr 1fr 1.5fr; gap: 10px; padding: 15px 10px; align-items: center; cursor:pointer; ${bgStyle}" onclick="toggleDetalhes('${designerIdStr}')">
                     <div>
-                        <div style="font-weight:700; color: #1e293b;"><i class="fas fa-chevron-right" id="icon-${designerId}" style="margin-right:8px; transition: 0.2s;"></i> ${grupo.nome}</div>
-                        <div style="font-size:0.75rem; color:#888;">${grupo.itens.length} pedido(s) no período</div>
+                        <div style="font-weight:700; color: #1e293b; font-size: 0.95rem;">
+                            <i class="fas fa-chevron-right" id="icon-${designerIdStr}" style="margin-right:8px; transition: 0.2s; color:#94a3b8;"></i> ${grupo.nome}
+                        </div>
                     </div>
-                    <div><div style="font-size:0.7rem; color:#2980b9;">PIX: ${grupo.pix || 'Não informado'}</div></div>
-                    <div>${statusHtml}</div>
-                    <div style="text-align:right; font-weight:700;">${fmtMoeda(grupo.totalPendente || grupo.itens.reduce((acc, i) => acc + i.valor, 0))}</div>
+                    <div><div style="font-size:0.75rem; color:#2980b9; font-weight: 600; word-break: break-all;">${grupo.pix || 'N/A'}</div></div>
+                    <div style="text-align:right; font-weight:800; color:#c0392b;">${fmtMoeda(dividaRestante)}</div>
+                    <div style="text-align:right; font-weight:700; color:#f39c12;">${fmtMoeda(grupo.totalEmAnalise)}</div>
                     <div style="text-align:center;" onclick="event.stopPropagation()">${acaoHtml}</div>
                 </div>
-                <div id="detalhes-${designerId}" style="display:none; background: #f8fafc; padding: 10px 10px 10px 40px; border-top: 1px solid #edf2f7;">
-                    ${grupo.itens.map(item => `
-                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; font-size:0.85rem; align-items: center;">
-                            <div><span style="font-weight:600;">#${item.id}</span> - ${item.descricao}</div>
-                            <div style="color:#888;">${new Date(item.data).toLocaleDateString()}</div>
-                            <div>
-                                ${item.status === 'AGUARDANDO_CONFIRMACAO' 
-                                    ? `<span class="badge-status" style="background:#16a34a; color:#fff; font-size:0.6rem;">AGUARDANDO</span>` 
-                                    : `<span class="badge-status ${item.status === 'PAGO' ? 'badge-finalizado' : 'badge-entrada'}" style="font-size:0.65rem;">${item.status}</span>`}
+                
+                <div id="detalhes-${designerIdStr}" style="display:none; background: #f8fafc; padding: 15px 20px 15px 40px; border-top: 1px solid #edf2f7; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 10px; text-transform: uppercase;">Extrato de Movimentações (Ativas)</div>
+                    ${grupo.itens.map(item => {
+                let rowColor = item.is_pagamento ? "color: #27ae60;" : "color: #c0392b;"; // Verde para pagamentos, Vermelho para dívidas de artes
+                let prefixoValor = item.is_pagamento ? "- " : "+ ";
+                let statusBadge = "";
+
+                if (item.status === 'PENDENTE') statusBadge = `<span class="badge-status badge-producao">A PAGAR</span>`;
+                else if (item.status === 'AGUARDANDO_CONFIRMACAO') statusBadge = `<span class="badge-status badge-analise">AGUARDANDO APROVAÇÃO</span>`;
+                else if (item.status === 'RECUSADO') statusBadge = `<span class="badge-status badge-producao">RECUSADO PELO DESIGNER</span>`;
+                else statusBadge = `<span class="badge-status badge-finalizado">${item.status}</span>`;
+
+                return `
+                            <div style="display: grid; grid-template-columns: 2.5fr 1fr 1fr 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px dashed #e2e8f0; font-size:0.85rem; align-items: center;">
+                                <div>
+                                    <span style="font-weight:600; color:#334155;">${item.descricao}</span>
+                                    ${item.comprovante_url ? `<a href="${item.comprovante_url}" target="_blank" style="margin-left:8px; color:#3498db; font-size:0.75rem;"><i class="fas fa-file-invoice"></i> Ver Recibo</a>` : ''}
+                                </div>
+                                <div style="color:#888;">${new Date(item.data).toLocaleDateString()}</div>
+                                <div>${statusBadge}</div>
+                                <div style="text-align:right; font-weight:700; ${rowColor}">${prefixoValor}${fmtMoeda(item.valor)}</div>
                             </div>
-                            <div style="text-align:right; font-weight:600;">${fmtMoeda(item.valor)}</div>
-                        </div>
-                    `).join('')}
+                        `;
+            }).join('')}
                 </div>
             `;
             lista.appendChild(li);
         });
-    } catch (err) { console.error(err); }
+
+    } catch (err) {
+        console.error('[ERRO] Falha ao renderizar carteira:', err);
+    }
 }
 
 window.toggleDetalhes = (id) => {
@@ -136,71 +153,94 @@ window.toggleDetalhes = (id) => {
 window.abrirModal = (id) => document.getElementById(id).classList.add('active');
 window.fecharModal = (id) => document.getElementById(id).classList.remove('active');
 
-window.abrirModalPagamento = (ids, designer, pix, valor) => {
-    document.getElementById('modal-pag-titulo').innerText = `Anexar Comprovante - ${designer}`;
-    
+// Modal para informar um pagamento Avulso
+window.abrirModalPagamento = (designerId, designerNome, pix, valorSugerido) => {
+    console.log(`[PAGAMENTO] Abrindo modal para Designer ${designerId} - Sugestão: ${valorSugerido}`);
+    document.getElementById('modal-pag-titulo').innerText = `Enviar Pagamento para ${designerNome}`;
+
     const corpo = `
-        <div style="text-align:center; padding: 10px;">
-            <p style="margin-bottom:15px; color:#444;">Transfira via <strong>PIX</strong> direto para o designer abaixo:</p>
-            <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:20px;">
-                <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">DESIGNER:</div>
-                <div style="font-weight:700; font-size:1.1rem; color:#1e293b; margin-bottom:10px;">${designer}</div>
-                <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">CHAVE PIX:</div>
-                <div style="font-weight:800; font-size:1.2rem; color:#2980b9; word-break:break-all;">${pix || 'NÃO CADASTRADA'}</div>
+        <div style="text-align:center; padding: 10px 0;">
+            <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:20px; text-align: left;">
+                <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px; font-weight: 600;">CHAVE PIX DO DESIGNER:</div>
+                <div style="font-weight:800; font-size:1.1rem; color:#2980b9; word-break:break-all;">${pix || 'NÃO CADASTRADA'}</div>
             </div>
-            <div style="font-size:1.5rem; font-weight:800; color:#27ae60; margin-bottom:20px;">${fmtMoeda(valor)}</div>
-            <hr>
-            <p style="font-size:0.85rem; color:#666; margin-top:15px;">Já fez o pagamento? Anexe o comprovante (Opcional):</p>
-            <input type="file" id="arquivo-comprovante" class="form-control" style="margin-top:10px;" accept="image/*,application/pdf">
-            <p style="font-size:0.85rem; color:#666; margin-top:10px;">Ou informe o link (ex: Drive/Imgur):</p>
-            <input type="url" id="link-comprovante" class="form-control" placeholder="Link do comprovante..." style="margin-top:5px;">
+            
+            <div style="text-align: left; margin-bottom: 15px;">
+                <label style="font-size:0.85rem; font-weight:600; color:#475569;">Valor da Transferência (R$):</label>
+                <input type="text" id="input-valor-pix" class="form-control input-moeda" value="${valorSugerido.toFixed(2).replace('.', ',')}" style="font-size: 1.2rem; font-weight: 700; color: #27ae60;">
+                <small style="color:#94a3b8; font-size: 0.75rem;">Você pode apagar e informar um valor parcial se preferir.</small>
+            </div>
+
+            <div style="text-align: left;">
+                <label style="font-size:0.85rem; font-weight:600; color:#475569;">Anexe o Comprovante (Imagem/PDF):</label>
+                <input type="file" id="arquivo-comprovante" class="form-control" style="margin-top:5px; padding: 8px;" accept="image/*,application/pdf">
+            </div>
         </div>
     `;
-    const rodape = `<button onclick="confirmarPagamentoMultiplo('${ids}')" id="btn-confirmar-pag" class="btn-submit btn-pay">MARCAR COMO PAGO</button>`;
-    
+
+    const rodape = `<button onclick="confirmarEnvioPagamento('${designerId}')" id="btn-confirmar-pag" class="btn-submit btn-pay"><i class="fas fa-paper-plane"></i> INFORMAR PAGAMENTO</button>`;
+
     document.getElementById('modal-pag-corpo').innerHTML = corpo;
     document.getElementById('modal-pag-rodape').innerHTML = rodape;
-    
+
+    // Aplica a máscara de moeda no input
+    IMask(document.getElementById('input-valor-pix'), {
+        mask: Number, scale: 2, thousandsSeparator: '.', padFractionalZeros: true, normalizeZeros: true, radix: ',', mapToRadix: ['.']
+    });
+
     abrirModal('modal-pagamento');
 }
 
-async function confirmarPagamentoMultiplo(ids) {
-    const link = document.getElementById('link-comprovante').value;
+window.confirmarEnvioPagamento = async (designerId) => {
+    const inputValor = document.getElementById('input-valor-pix').value.trim();
     const arquivo = document.getElementById('arquivo-comprovante').files[0];
-    
-    if(!link && !arquivo) {
-        if(!confirm("Deseja marcar como pago sem anexar comprovante?")) return;
+
+    if (!inputValor || inputValor === '0,00') return alert('Informe um valor válido maior que zero.');
+    if (!arquivo) {
+        if (!confirm("Tem certeza que deseja avisar o designer sem anexar o comprovante? Ele poderá recusar o pagamento.")) return;
     }
 
     const btn = document.getElementById('btn-confirmar-pag');
     btn.disabled = true;
-    btn.innerText = "Processando...";
-    
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Enviando...`;
+
     const token = localStorage.getItem('sessionToken');
     const formData = new FormData();
     formData.append('sessionToken', token);
-    formData.append('acertoIds', ids);
-    if(link) formData.append('comprovanteUrl', link);
-    if(arquivo) formData.append('comprovanteFile', arquivo);
+    formData.append('designerId', designerId);
+    formData.append('valor', inputValor);
+    if (arquivo) formData.append('comprovanteFile', arquivo);
 
     try {
+        console.log(`[PAGAMENTO] Disparando requisição para salvar PIX de R$${inputValor}...`);
         const res = await fetch('/api/carteira/informarPagamento', {
             method: 'POST',
             body: formData
         });
         const data = await res.json();
-        if(res.ok) {
-            alert("Pagamento registrado com sucesso!");
-            if(window.fecharGaveta) window.fecharGaveta();
+
+        if (res.ok) {
+            console.log('[PAGAMENTO] Sucesso!');
+            fecharModal('modal-pagamento');
+
+            // Exibe notificação suave
+            const div = document.createElement('div');
+            div.style.cssText = "position:fixed; top:20px; right:20px; background:#2ecc71; color:white; padding:15px 25px; border-radius:8px; font-weight:600; box-shadow:0 4px 15px rgba(0,0,0,0.2); z-index:99999;";
+            div.innerText = "Pagamento enviado para aprovação do Designer!";
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 4000);
+
+            // Recarrega a tela
             carregarAcertosGrafica();
         } else {
             alert("Erro: " + data.message);
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fas fa-paper-plane"></i> INFORMAR PAGAMENTO`;
         }
-    } catch(e) { 
+    } catch (e) {
         console.error(e);
-        alert("Erro ao informar pagamento."); 
-    } finally {
+        alert("Erro na conexão ao informar pagamento.");
         btn.disabled = false;
-        btn.innerText = "MARCAR COMO PAGO";
+        btn.innerHTML = `<i class="fas fa-paper-plane"></i> INFORMAR PAGAMENTO`;
     }
 }

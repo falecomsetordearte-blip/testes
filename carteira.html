@@ -68,10 +68,12 @@
 
         .card-pagar {
             border-bottom: 4px solid #e74c3c;
+            background: linear-gradient(to bottom right, #fff, #fef2f2);
         }
 
         .card-andamento {
-            border-bottom: 4px solid #3498db;
+            border-bottom: 4px solid #f39c12;
+            background: linear-gradient(to bottom right, #fff, #fdf6e3);
         }
 
         .card-saldo .wallet-value {
@@ -80,6 +82,10 @@
 
         .card-pagar .wallet-value {
             color: #c0392b;
+        }
+
+        .card-andamento .wallet-value {
+            color: #d35400;
         }
 
         .btn-add-mini {
@@ -101,46 +107,6 @@
         .btn-add-mini:hover {
             background: #27ae60;
             transform: scale(1.05);
-        }
-
-        .credit-status {
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .status-prepaid {
-            background: #ebf5fb;
-            color: #2980b9;
-            border: 1px solid #3498db;
-        }
-
-        .status-postpaid {
-            background: #eafaf1;
-            color: #27ae60;
-            border: 1px solid #2ecc71;
-        }
-
-        .status-analyzing {
-            background: #fff7ed;
-            color: #c2410c;
-            border: 1px solid #f97316;
-        }
-
-        .btn-credito {
-            background: #2c3e50;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: 0.2s;
         }
 
         .modal-overlay {
@@ -195,45 +161,35 @@
             cursor: pointer;
         }
 
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #475569;
-            font-size: 0.9rem;
-        }
-
         .form-control {
             width: 100%;
             padding: 12px;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
             font-size: 1rem;
+            font-family: 'Poppins', sans-serif;
         }
 
         .btn-submit {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             border: none;
             border-radius: 8px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
-            margin-top: 10px;
+            margin-top: 15px;
             font-size: 1rem;
+            font-family: 'Poppins', sans-serif;
         }
 
         .btn-pay {
             background: #2ecc71;
             color: white;
+            transition: 0.2s;
         }
 
-        .btn-send {
-            background: #3498db;
-            color: white;
+        .btn-pay:hover {
+            background: #27ae60;
         }
 
         .filter-bar {
@@ -254,12 +210,12 @@
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 0.75rem;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .badge-producao {
-            background: #e0f2fe;
-            color: #0284c7;
+            background: #fee2e2;
+            color: #b91c1c;
         }
 
         .badge-finalizado {
@@ -267,38 +223,9 @@
             color: #166534;
         }
 
-        .badge-entrada {
-            background: #f3f4f6;
-            color: #4b5563;
-        }
-
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10010;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .toast {
-            background: white;
-            padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
-            border-left: 5px solid #ccc;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .toast.success {
-            border-left-color: #2ecc71;
-        }
-
-        .toast.error {
-            border-left-color: #e74c3c;
+        .badge-analise {
+            background: #fef3c7;
+            color: #b45309;
         }
     </style>
 </head>
@@ -312,30 +239,33 @@
                 <div class="container">
 
                     <div style="margin-bottom: 1.5rem;">
-                        <h2 style="margin:0; color: #2d3748;"><i class="fa-solid fa-hand-holding-dollar"
-                                style="color: #3498db; margin-right: 8px;"></i> Acerto de Contas (SaaS)</h2>
+                        <h2 style="margin:0; color: #2d3748;"><i class="fa-solid fa-file-invoice-dollar"
+                                style="color: #3498db; margin-right: 8px;"></i> Conta Corrente (Designers)</h2>
                     </div>
 
                     <div class="wallet-grid">
-                        <div class="wallet-card card-andamento">
-                            <div>
-                                <h3>Total Pendente (No Prazo)</h3>
-                                <div class="wallet-value" id="val-andamento">R$ 0,00</div>
-                                <div style="font-size: 0.85rem; color: #64748b;">Aguardando vencimento</div>
-                            </div><i class="fas fa-clock wallet-icon"></i>
-                        </div>
                         <div class="wallet-card card-pagar">
                             <div>
-                                <h3>Total em Atraso</h3>
-                                <div class="wallet-value" id="val-pagar" style="color: #e74c3c;">R$ 0,00</div>
-                                <div style="font-size: 0.85rem; color: #64748b;">Vencido - Necessário PIX</div>
-                            </div><i class="fas fa-exclamation-triangle wallet-icon"></i>
+                                <h3>Total Devedor (Pendente)</h3>
+                                <div class="wallet-value" id="val-andamento">R$ 0,00</div>
+                                <div style="font-size: 0.85rem; color: #64748b;">Soma das artes entregues e não pagas
+                                </div>
+                            </div><i class="fas fa-exclamation-circle wallet-icon"></i>
+                        </div>
+                        <div class="wallet-card card-andamento">
+                            <div>
+                                <h3>Pagamentos em Análise</h3>
+                                <div class="wallet-value" id="val-pagar">R$ 0,00</div>
+                                <div style="font-size: 0.85rem; color: #64748b;">Aguardando designer confirmar o PIX
+                                </div>
+                            </div><i class="fas fa-clock wallet-icon"></i>
                         </div>
                         <div class="wallet-card card-saldo">
                             <div>
                                 <h3>Pago este Mês</h3>
                                 <div class="wallet-value" id="val-saldo">R$ 0,00</div>
-                                <div style="font-size: 0.85rem; color: #64748b;">Transferências confirmadas</div>
+                                <div style="font-size: 0.85rem; color: #64748b;">Transferências confirmadas pelos
+                                    designers</div>
                             </div><i class="fas fa-check-circle wallet-icon"></i>
                         </div>
                     </div>
@@ -344,78 +274,46 @@
                         style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.04);">
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-                            <h4 style="margin:0; color: #4a5568;">Histórico de Acertos e Dívidas</h4>
+                            <h4 style="margin:0; color: #4a5568;">Extrato por Designer</h4>
                             <div class="filter-bar">
-                                <input type="date" id="filtro-inicio" class="filter-input">
-                                <span style="color: #aaa; font-size: 0.9rem;">até</span>
-                                <input type="date" id="filtro-fim" class="filter-input">
                                 <button onclick="carregarAcertosGrafica()" class="btn-action-sm"
                                     style="background: #2c3e50; padding: 9px 15px; color:white; border:none; border-radius:6px; cursor:pointer;"><i
-                                        class="fas fa-filter"></i> Filtrar</button>
+                                        class="fas fa-sync-alt"></i> Atualizar</button>
                             </div>
                         </div>
 
                         <div
-                            style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-weight: 600; color: #64748b; font-size: 0.9rem; margin-bottom: 10px;">
-                            <div>Arte / Pedido</div>
-                            <div>Designer / PIX</div>
-                            <div>Status / Venc.</div>
-                            <div style="text-align: right;">Valor</div>
-                            <div style="text-align: center;">Ações</div>
+                            style="display: grid; grid-template-columns: 2.5fr 1fr 1fr 1fr 1.5fr; gap: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-weight: 600; color: #64748b; font-size: 0.85rem; margin-bottom: 10px; text-transform: uppercase;">
+                            <div>Designer</div>
+                            <div>Chave PIX</div>
+                            <div style="text-align: right;">Dívida Atual</div>
+                            <div style="text-align: right;">Em Análise</div>
+                            <div style="text-align: center;">Ação</div>
                         </div>
 
                         <ul class="history-list" id="lista-historico" style="list-style:none; padding:0;">
-                            <li style="text-align:center; padding:20px; color:#94a3b8;">Carregando acertos...</li>
+                            <li style="text-align:center; padding:20px; color:#94a3b8;"><i
+                                    class="fas fa-spinner fa-spin"></i> Carregando extrato...</li>
                         </ul>
-                    </div>        </div>
+                    </div>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- Modais omitidos para brevidade (mantém os mesmos) -->
+    <!-- Modal Pagamento Avulso (Conta Corrente) -->
     <div class="modal-overlay" id="modal-pagamento">
         <div class="modal-content">
             <button class="close-modal" onclick="fecharModal('modal-pagamento')">×</button>
-            <h3 style="margin-top:0;" id="modal-pag-titulo">Anexar Comprovante</h3>
+            <h3 style="margin-top:0;" id="modal-pag-titulo">Informar Pagamento</h3>
             <div id="modal-pag-corpo"></div>
-            <div id="modal-pag-rodape" style="margin-top:20px;"></div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="modal-recarga">
-        <div class="modal-content"><button class="close-modal" onclick="fecharModal('modal-recarga')">×</button>
-            <h3 style="margin-top:0;">Adicionar Saldo</h3>
-            <form id="form-recarga">
-                <div class="form-group"><label>Valor (R$)</label><input type="text" id="input-valor-recarga"
-                        class="form-control" placeholder="0,00" required></div><button type="submit"
-                    class="btn-submit btn-pay" id="btn-submit-recarga">Gerar Pagamento</button>
-            </form>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="modal-analise">
-        <div class="modal-content"><button class="close-modal" onclick="fecharModal('modal-analise')">×</button>
-            <h3 style="margin-top:0;">Análise de Crédito</h3>
-            <form id="form-analise">
-                <div class="form-group"><label>Razão Social</label><input type="text" name="razaoSocial"
-                        class="form-control" required></div>
-                <div class="form-group"><label>CNPJ</label><input type="text" name="cnpj" id="input-cnpj"
-                        class="form-control" required></div>
-                <div class="form-group"><label>Faturamento</label><input type="text" name="faturamento"
-                        id="input-faturamento" class="form-control" required></div>
-                <div class="form-group"><label>Atividade</label><select name="tempoAtividade" class="form-control">
-                        <option>+1 ano</option>
-                    </select></div>
-                <div class="form-group"><label>Obs</label><textarea name="obs" class="form-control"></textarea></div>
-                <button type="submit" class="btn-submit btn-send" id="btn-submit-analise">Enviar</button>
-            </form>
+            <div id="modal-pag-rodape" style="margin-top:10px;"></div>
         </div>
     </div>
 
     <script src="https://unpkg.com/imask"></script>
     <script src="/layout.js"></script>
-    <script src="/carteira-script.js"></script>
+    <script src="/carteira-script.js?v=3.0"></script>
 </body>
 
 </html>
