@@ -1,70 +1,77 @@
-﻿// /designer/designer-script.js - VERSÃO COM CONTA CORRENTE (LEDGER)
+﻿// /designer/designer-script.js - VERSÃO COM CONTA CORRENTE E MODAIS CUSTOMIZADOS
 (function () {
     const sessionToken = localStorage.getItem('designerToken');
     const path = window.location.pathname;
-
-    console.log('[INIT] Verificando sessão na rota:', path);
 
     const paginasPublicas = ['login.html', 'cadastro.html', 'esqueci-senha.html', 'redefinir-senha.html'];
     const ehPaginaPublica = paginasPublicas.some(pg => path.includes(pg));
 
     if (!sessionToken && !ehPaginaPublica) {
-        console.warn('[AUTH] Usuário não autenticado. Redirecionando para login.');
         window.location.href = 'login.html';
         return;
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('[DOM] DOM completamente carregado.');
+    // --- UTILITÁRIOS GLOBAIS DE ALERT/CONFIRM ---
+    window.customAlert = (mensagem, isError = false) => {
+        const id = 'alert-' + Date.now();
+        const cor = isError ? '#ef4444' : '#10b981';
+        const icone = isError ? 'fa-times-circle' : 'fa-check-circle';
+        const titulo = isError ? 'Erro' : 'Sucesso';
+        const html = `
+            <div id="${id}" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(2px);">
+                <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:350px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); animation: popIn 0.3s ease;">
+                    <div style="font-size:3rem; color:${cor}; margin-bottom:15px;"><i class="fas ${icone}"></i></div>
+                    <h3 style="margin:0 0 10px 0; color:#1e293b; font-family:'Poppins', sans-serif;">${titulo}</h3>
+                    <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5; font-family:'Poppins', sans-serif;">${mensagem}</p>
+                    <button onclick="document.getElementById('${id}').remove()" style="width:100%; padding:12px; border:none; border-radius:8px; background:${cor}; color:white; font-weight:600; cursor:pointer; font-family:'Poppins', sans-serif;">Entendi</button>
+                </div>
+            </div>
+            <style>@keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }</style>
+        `;
+        document.body.insertAdjacentHTML('beforeend', html);
+    };
 
-        if (document.querySelector('main.main-painel')) {
-            console.log('[PAINEL] Inicializando Dashboard do Designer...');
-            carregarDashboardDesigner();
-        }
+    window.customConfirm = (mensagem, callbackSim) => {
+        const id = 'confirm-' + Date.now();
+        const html = `
+            <div id="${id}" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(2px);">
+                <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:400px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); animation: popIn 0.3s ease;">
+                    <div style="font-size:3rem; color:#f59e0b; margin-bottom:15px;"><i class="fas fa-exclamation-triangle"></i></div>
+                    <h3 style="margin:0 0 10px 0; color:#1e293b; font-family:'Poppins', sans-serif;">Atenção</h3>
+                    <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5; font-family:'Poppins', sans-serif;">${mensagem}</p>
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="document.getElementById('${id}').remove()" style="flex:1; padding:12px; border:none; border-radius:8px; background:#f1f5f9; color:#475569; font-weight:600; cursor:pointer; font-family:'Poppins', sans-serif;">Cancelar</button>
+                        <button id="btn-sim-${id}" style="flex:1; padding:12px; border:none; border-radius:8px; background:#10b981; color:white; font-weight:600; cursor:pointer; font-family:'Poppins', sans-serif;">Sim, Confirmar</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', html);
+        document.getElementById(`btn-sim-${id}`).onclick = () => {
+            document.getElementById(id).remove();
+            callbackSim();
+        };
+    };
+    // ------------------------------------------
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (document.querySelector('main.main-painel')) carregarDashboardDesigner();
 
         const logoutBtn = document.getElementById('logout-button');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
-                console.log('[AUTH] Realizando logout...');
                 localStorage.clear();
                 window.location.href = 'login.html';
             });
         }
-
-        // --- Form Functions (Login, Cadastro, etc) omitidos por brevidade caso não mudem ---
-        // Se precisar eu coloco todos os blocos de Form aqui, mas eles não afetam a lógica principal.
-        // Vou manter os originais abaixo para o código não quebrar.
-
-        const loginForm = document.getElementById('designer-login-form');
-        if (loginForm) {
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('email').value;
-                const senha = document.getElementById('senha').value;
-                const btnSubmit = loginForm.querySelector('button[type="submit"]');
-                const feedback = document.getElementById('form-error-feedback');
-                btnSubmit.disabled = true; btnSubmit.textContent = 'Entrando...'; feedback.classList.add('hidden');
-                try {
-                    const res = await fetch('/api/designer/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, senha }) });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.message || 'Erro ao fazer login.');
-                    localStorage.setItem('designerToken', data.token);
-                    localStorage.setItem('designerInfo', JSON.stringify({ name: data.nome, nivel: data.nivel }));
-                    window.location.href = 'painel.html';
-                } catch (error) { feedback.textContent = error.message; feedback.classList.remove('hidden'); btnSubmit.disabled = false; btnSubmit.textContent = 'Entrar'; }
-            });
-        }
-
-        // ... Os blocos de cadastro e redefinir senha permanecem iguais ao original ...
     });
 
-    // GAVETA (DRAWER) GLOBAL FUNCTIONS
     window.fecharGaveta = () => {
         const overlay = document.getElementById('drawer-overlay');
         const panel = document.getElementById('drawer-panel');
         if (overlay) overlay.classList.remove('active');
         if (panel) panel.classList.remove('active');
-        if (window.chatInterval) clearInterval(window.chatInterval); // Limpa chat se fechar gaveta
+        if (window.chatInterval) clearInterval(window.chatInterval);
     };
 
     window.abrirGaveta = (titulo, htmlCorpo, htmlRodape = '') => {
@@ -75,14 +82,9 @@
         document.getElementById('drawer-panel').classList.add('active');
     };
 
-    window.mostrarErro = (mensagem) => {
-        const corpo = `<div style="color: #e11d48; background: #fff1f2; padding: 15px; border-radius: 8px; border: 1px solid #fda4af;"><i class="fas fa-exclamation-circle"></i> <strong>Erro:</strong> ${mensagem}</div>`;
-        window.abrirGaveta("Ops! Algo deu errado", corpo, `<button onclick="fecharGaveta()" class="btn-full btn-secondary">Entendi</button>`);
-    };
+    window.mostrarErro = (mensagem) => customAlert(mensagem, true);
 
-    // DASHBOARD PRINCIPAL
     async function carregarDashboardDesigner() {
-        console.log('[DASHBOARD] Buscando dados do painel...');
         const designerInfo = JSON.parse(localStorage.getItem('designerInfo'));
         if (designerInfo) document.getElementById('designer-greeting').textContent = `Olá, ${designerInfo.name}!`;
 
@@ -97,7 +99,6 @@
                 throw new Error(data.message);
             }
 
-            console.log('[DASHBOARD] Sucesso.');
             document.getElementById('designer-faturamento-mes').textContent = formatarMoeda(data.designer.faturamento_mes);
             document.getElementById('designer-acertos-pendentes').textContent = formatarMoeda(data.designer.acertos_pendentes);
             document.getElementById('designer-pedidos-ativos').textContent = data.meusPedidos.length;
@@ -114,19 +115,16 @@
 
             renderizarMeusTrabalhos(data.meusPedidos);
             renderizarMercado(data.mercado);
-            carregarHistoricoAcertos(); // Carrega o Extrato/Ledger
+            carregarHistoricoAcertos();
 
             if (data.meusPedidos && data.meusPedidos.length > 0) {
                 const ativosIds = data.meusPedidos.map(p => p.id);
                 iniciarVerificacaoNotificacoes(ativosIds);
             }
-
         } catch (error) { window.mostrarErro('Falha ao carregar os dados do painel.'); }
     }
 
-    // --- NOVA LÓGICA DE EXTRATO (CONTA CORRENTE) ---
     async function carregarHistoricoAcertos() {
-        console.log('[HISTORICO] Buscando extrato do banco...');
         const container = document.getElementById('saques-list');
         if (!container) return;
 
@@ -135,14 +133,11 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: sessionToken })
             });
             const data = await res.json();
-
             if (!res.ok) throw new Error(data.message);
 
             window.acertosCache = data.acertos;
-            renderizarHistoricoFiltrado('TODOS'); // Renderiza agrupado
-
+            renderizarHistoricoFiltrado('TODOS');
         } catch (error) {
-            console.error('[HISTORICO] Erro:', error);
             container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--danger);">Erro ao carregar extrato.</p>`;
         }
     }
@@ -155,42 +150,27 @@
         const filtrados = statusFiltro === 'TODOS' ? acertos : acertos.filter(a => a.status === statusFiltro);
 
         if (filtrados.length === 0) {
-            container.innerHTML = `
-                ${renderizarControlesFiltro(statusFiltro)}
-                <p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhuma movimentação encontrada.</p>
-            `;
+            container.innerHTML = `${renderizarControlesFiltro(statusFiltro)}<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhuma movimentação encontrada.</p>`;
             if (badgeNotif) badgeNotif.style.display = 'none';
             return;
         }
 
-        // Agrupando por Empresa (Gráfica)
         const grupos = {};
         let pagamentosAguardando = 0;
 
         filtrados.forEach(a => {
             const empId = a.empresa_id;
-            if (!grupos[empId]) {
-                grupos[empId] = { nome: a.empresa, id: empId, totalDivida: 0, totalAnalise: 0, itens: [] };
-            }
+            if (!grupos[empId]) grupos[empId] = { nome: a.empresa, id: empId, totalDivida: 0, totalAnalise: 0, itens: [] };
             grupos[empId].itens.push(a);
 
-            // Dívida bruta (Artes ainda não pagas)
-            if (a.status === 'PENDENTE' && !a.is_pagamento) {
-                grupos[empId].totalDivida += a.valor;
-            }
-            // Pagamentos que a gráfica enviou e você não aprovou ainda
-            if (a.status === 'AGUARDANDO_CONFIRMACAO' && a.is_pagamento) {
-                grupos[empId].totalAnalise += a.valor;
-                pagamentosAguardando++;
-            }
+            if (a.status === 'PENDENTE' && !a.is_pagamento) grupos[empId].totalDivida += a.valor;
+            if (a.status === 'AGUARDANDO_CONFIRMACAO' && a.is_pagamento) { grupos[empId].totalAnalise += a.valor; pagamentosAguardando++; }
         });
 
-        // Sinal vermelho na ABA se houver pagamento aguardando aprovação
         if (badgeNotif) badgeNotif.style.display = pagamentosAguardando > 0 ? 'inline-flex' : 'none';
 
         const htmlGrupos = Object.values(grupos).map((grupo, idx) => {
             const empIdStr = `emp-${idx}`;
-
             let bgStyle = "background: #fff;";
             let acaoIcone = "";
 
@@ -214,8 +194,6 @@
                     
                     <div id="detalhes-${empIdStr}" style="display:none; background: #f8fafc; padding: 15px 20px 15px 40px; border-top: 1px solid #edf2f7; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
                         ${grupo.itens.map(item => {
-
-                // BLOCO ESPECIAL DE PAGAMENTO AGUARDANDO CONFIRMAÇÃO
                 if (item.is_pagamento && item.status === 'AGUARDANDO_CONFIRMACAO') {
                     return `
                                     <div style="background: white; border: 2px dashed #f59e0b; padding: 15px; border-radius: 12px; margin: 10px 0;">
@@ -225,15 +203,14 @@
                                         </div>
                                         <div style="font-size: 0.85rem; color: #475569; margin-bottom: 15px;">A gráfica informou que transferiu este valor para sua conta. Verifique o comprovante e confirme o recebimento para dar baixa nas suas artes pendentes.</div>
                                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                                            <button onclick="responderPagamento(${item.id}, 'CONFIRMAR')" class="btn-action" style="background:#10b981;"><i class="fas fa-check"></i> Recebi o Valor</button>
-                                            <button onclick="responderPagamento(${item.id}, 'RECUSAR')" class="btn-action" style="background:#ef4444;"><i class="fas fa-times"></i> Recusar (Não recebi)</button>
+                                            <button id="btn-conf-${item.id}" onclick="responderPagamento(${item.id}, 'CONFIRMAR')" class="btn-action" style="background:#10b981;"><i class="fas fa-check"></i> Recebi o Valor</button>
+                                            <button id="btn-rec-${item.id}" onclick="responderPagamento(${item.id}, 'RECUSAR')" class="btn-action" style="background:#ef4444;"><i class="fas fa-times"></i> Recusar (Não recebi)</button>
                                             ${item.comprovante_url ? `<a href="${item.comprovante_url}" target="_blank" class="btn-outline-sm" style="display:inline-flex; align-items:center; gap:5px; margin-top:0;"><i class="fas fa-external-link-alt"></i> Ver Comprovante</a>` : ''}
                                         </div>
                                     </div>
                                 `;
                 }
 
-                // LINHA NORMAL DE EXTRATO
                 let statusHtml = `<span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">${item.status}</span>`;
                 if (item.status === 'PAGO') statusHtml = `<span style="background:#d1fae5; color:#065f46; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">${item.is_pagamento ? 'APROVADO' : 'RECEBIDO'}</span>`;
                 else if (item.status === 'RECUSADO') statusHtml = `<span style="background:#fee2e2; color:#b91c1c; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">RECUSADO</span>`;
@@ -258,10 +235,7 @@
             `;
         }).join('');
 
-        container.innerHTML = `
-            ${renderizarControlesFiltro(statusFiltro)}
-            ${htmlGrupos}
-        `;
+        container.innerHTML = `${renderizarControlesFiltro(statusFiltro)}${htmlGrupos}`;
     }
 
     function renderizarControlesFiltro(selecionado) {
@@ -286,39 +260,43 @@
         else { el.style.display = 'none'; icon.style.transform = 'rotate(0deg)'; }
     }
 
-    // --- NOVA FUNÇÃO DE CONFIRMAR/RECUSAR O PIX ---
-    window.responderPagamento = async (pagamentoId, acao) => {
-        if (acao === 'CONFIRMAR') {
-            if (!confirm("Atenção! Você conferiu a sua conta e o dinheiro realmente caiu? Ao confirmar, as suas artes receberão baixa.")) return;
-        } else {
-            if (!confirm("Tem certeza que deseja RECUSAR este comprovante? A gráfica será notificada.")) return;
-        }
+    // --- RESPONDER PAGAMENTO SEM ALERT/CONFIRM ---
+    window.responderPagamento = (pagamentoId, acao) => {
+        const msg = acao === 'CONFIRMAR'
+            ? "Você conferiu a sua conta bancária e o dinheiro realmente caiu? Ao confirmar, as suas artes correspondentes receberão baixa automática."
+            : "Tem certeza que deseja RECUSAR este comprovante? A gráfica será notificada que o dinheiro não entrou.";
 
-        console.log(`[PAGAMENTO] Processando ação: ${acao} para ID: ${pagamentoId}`);
+        customConfirm(msg, async () => {
+            // Desabilita os botões para evitar duplo clique e manda requisição
+            const btnC = document.getElementById(`btn-conf-${pagamentoId}`);
+            const btnR = document.getElementById(`btn-rec-${pagamentoId}`);
+            if (btnC) btnC.disabled = true;
+            if (btnR) btnR.disabled = true;
 
-        try {
-            const res = await fetch('/api/designer/confirmarPagamento', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: sessionToken, pagamentoId, acao })
-            });
-            const data = await res.json();
+            try {
+                const res = await fetch('/api/designer/confirmarPagamento', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: sessionToken, pagamentoId, acao })
+                });
+                const data = await res.json();
 
-            if (res.ok) {
-                console.log('[PAGAMENTO] Sucesso:', data.message);
-                alert(data.message);
-                carregarDashboardDesigner(); // Recarrega tudo (atualiza os contadores e a lista)
-            } else {
-                alert("Erro: " + data.message);
+                if (res.ok) {
+                    customAlert(data.message);
+                    carregarDashboardDesigner();
+                } else {
+                    customAlert(data.message, true);
+                    if (btnC) btnC.disabled = false;
+                    if (btnR) btnR.disabled = false;
+                }
+            } catch (e) {
+                customAlert("Erro de comunicação com o servidor.", true);
+                if (btnC) btnC.disabled = false;
+                if (btnR) btnR.disabled = false;
             }
-        } catch (e) {
-            console.error('[ERRO] Ao responder pagamento:', e);
-            alert("Erro de comunicação com o servidor.");
-        }
+        });
     }
 
-
-    // --- FUNÇÕES DA MESA DE TRABALHO E CHAT (MANTIDAS INTACTAS) ---
+    // --- FUNÇÕES DA MESA DE TRABALHO ---
     function renderizarMeusTrabalhos(pedidos) {
         const container = document.getElementById('atendimentos-list');
         if (!container) return;
@@ -360,38 +338,46 @@
     };
 
     window.confirmarAssumir = (id) => {
-        window.abrirGaveta("Confirmar Atendimento", `<p style="font-size:1rem; color:var(--text-main);">Deseja assumir este pedido?</p>`, `<button id="btn-exec-assumir" class="btn-full btn-primary">SIM, ATENDER</button><button onclick="fecharGaveta()" class="btn-full btn-secondary">Cancelar</button>`);
-        document.getElementById('btn-exec-assumir').onclick = async () => {
-            const btn = document.getElementById('btn-exec-assumir'); btn.disabled = true; btn.textContent = 'Aguarde...';
+        customConfirm("Deseja assumir este pedido? Você será responsável pela comunicação e entrega da arte no prazo.", async () => {
             try {
                 const res = await fetch('/api/designer/assumirPedido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: sessionToken, pedidoId: id }) });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message);
-                fecharGaveta(); carregarDashboardDesigner();
-            } catch (e) { fecharGaveta(); setTimeout(() => window.mostrarErro(e.message), 300); }
-        };
+                customAlert("Pedido assumido com sucesso!");
+                carregarDashboardDesigner();
+            } catch (e) { customAlert(e.message, true); }
+        });
     };
 
     window.prepararFinalizacao = (id) => {
         const corpo = `<span class="drawer-label">Link Layout</span><input type="url" id="f-layout" class="drawer-input" required><span class="drawer-label">Link Arquivo Final</span><input type="url" id="f-impressao" class="drawer-input" required>`;
         window.abrirGaveta("Entregar Trabalho", corpo, `<button id="btn-exec-finalizar" class="btn-full btn-primary">FINALIZAR E RECEBER</button><button onclick="fecharGaveta()" class="btn-full btn-secondary">Voltar</button>`);
+
         document.getElementById('btn-exec-finalizar').onclick = async () => {
             const linkLayout = document.getElementById('f-layout').value.trim(); const linkImpressao = document.getElementById('f-impressao').value.trim();
-            if (!linkLayout || !linkImpressao) return alert("Preencha os dois links.");
+            if (!linkLayout || !linkImpressao) {
+                customAlert("Preencha os dois links para finalizar.", true);
+                return;
+            }
             const btn = document.getElementById('btn-exec-finalizar'); btn.disabled = true; btn.textContent = 'Enviando...';
             try {
                 const res = await fetch('/api/designer/finalizarPedido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: sessionToken, pedidoId: id, linkLayout, linkImpressao }) });
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.message || "Erro.");
-                fecharGaveta(); setTimeout(() => { window.abrirGaveta("Sucesso!", `<p style="color:var(--success); text-align:center;">${data.message}</p>`, `<button onclick="fecharGaveta()" class="btn-full btn-primary">Ok!</button>`); carregarDashboardDesigner(); }, 300);
-            } catch (e) { fecharGaveta(); setTimeout(() => window.mostrarErro(e.message), 300); }
+                if (!res.ok) throw new Error(data.message || "Erro ao finalizar.");
+                fecharGaveta();
+                customAlert(data.message);
+                carregarDashboardDesigner();
+            } catch (e) {
+                fecharGaveta();
+                customAlert(e.message, true);
+            }
         };
     };
 
     function formatarMoeda(valor) { return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor || 0); }
     window.b64EncodeUnicode = (str) => { return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1))); };
 
-    // Chat Logic Intact
+    // Chat Logic
     window.chatAbertoAtual = { pedidoId: null, tipoChat: null };
     window.notifInterval = null;
 
@@ -417,7 +403,7 @@
                         }
                     }
                 }
-            } catch (err) { console.error('[NOTIFICAÇÕES] Falha:', err); }
+            } catch (err) { console.error(err); }
         };
         check(); window.notifInterval = setInterval(check, 20000);
     }
@@ -483,7 +469,7 @@
                 input.value = ''; fileInput.value = ''; document.getElementById('chat-file-preview').style.setProperty('display', 'none', 'important');
                 await carregarMensagens();
                 setTimeout(() => { if (container) container.scrollTop = container.scrollHeight; }, 100);
-            } catch (err) { alert('Erro ao enviar a mensagem.'); } finally { btnEnviar.disabled = false; input.disabled = false; input.focus(); }
+            } catch (err) { customAlert('Erro ao enviar a mensagem.', true); } finally { btnEnviar.disabled = false; input.disabled = false; input.focus(); }
         };
         input.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensagem(); }); btnEnviar.onclick = enviarMensagem;
         await carregarMensagens(); window.chatInterval = setInterval(carregarMensagens, 5000);

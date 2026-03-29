@@ -18,12 +18,15 @@ module.exports = async (req, res) => {
         if (designers.length === 0) return res.status(403).json({ message: 'Sessão inválida.' });
         const designerId = designers[0].designer_id;
 
-        // 2. Buscar o registro do Pagamento
+        // 2. Buscar o registro do Pagamento COM TRAVA (Só processa se estiver AGUARDANDO_CONFIRMACAO)
         const pagamentos = await prisma.$queryRawUnsafe(`
-            SELECT * FROM acertos_contas WHERE id = $1 AND designer_id = $2 AND pedido_id IS NULL LIMIT 1
+            SELECT * FROM acertos_contas 
+            WHERE id = $1 AND designer_id = $2 AND pedido_id IS NULL AND status = 'AGUARDANDO_CONFIRMACAO' LIMIT 1
         `, parseInt(pagamentoId), designerId);
 
-        if (pagamentos.length === 0) return res.status(404).json({ message: 'Registro de pagamento não encontrado.' });
+        // Se clicar duas vezes, a segunda vez cai aqui e não duplica!
+        if (pagamentos.length === 0) return res.status(400).json({ message: 'Este pagamento já foi processado anteriormente ou não existe.' });
+
         const pagamento = pagamentos[0];
 
         if (acao === 'RECUSAR') {
@@ -35,7 +38,6 @@ module.exports = async (req, res) => {
         if (acao === 'CONFIRMAR') {
             console.log(`[PAGAMENTO] Designer confirmou R$${pagamento.valor}. Iniciando baixa (FIFO)...`);
 
-            // A. Pega todas as artes pendentes dessa gráfica para esse designer
             const artesPendentes = await prisma.$queryRawUnsafe(`
                 SELECT id, valor FROM acertos_contas 
                 WHERE designer_id = $1 AND empresa_id = $2 AND pedido_id IS NOT NULL AND status IN ('PENDENTE', 'LANCADO')
@@ -44,21 +46,16 @@ module.exports = async (req, res) => {
 
             let montanteRestante = parseFloat(pagamento.valor);
 
-            // B. Roda o FIFO para dar baixa nas artes
             for (const arte of artesPendentes) {
                 if (montanteRestante <= 0) break;
 
                 const valorArte = parseFloat(arte.valor);
 
                 if (montanteRestante >= valorArte) {
-                    console.log(`- Quitando arte ID ${arte.id} completa (R$${valorArte})`);
                     await prisma.$executeRawUnsafe(`UPDATE acertos_contas SET status = 'PAGO', pago_em = NOW() WHERE id = $1`, arte.id);
                     montanteRestante -= valorArte;
                 } else {
-                    console.log(`- Quitando parcial arte ID ${arte.id}. Abatendo R$${montanteRestante} de R$${valorArte}`);
-                    // Atualiza a arte atual com o valor que SOBROU devendo
                     await prisma.$executeRawUnsafe(`UPDATE acertos_contas SET valor = $1 WHERE id = $2`, (valorArte - montanteRestante), arte.id);
-                    // Insere o pedaço que foi pago
                     await prisma.$executeRawUnsafe(`
                         INSERT INTO acertos_contas (empresa_id, designer_id, pedido_id, valor, status, pago_em, criado_em)
                         VALUES ($1, $2, $3, $4, 'PAGO', NOW(), NOW())
@@ -67,11 +64,11 @@ module.exports = async (req, res) => {
                 }
             }
 
-            // C. Marca o comprovante principal como APROVADO
+            // Marca o comprovante principal como APROVADO
             await prisma.$executeRawUnsafe(`UPDATE acertos_contas SET status = 'PAGO', pago_em = NOW() WHERE id = $1`, pagamento.id);
             console.log('[API Confirmar Pagamento Ledger] Sucesso!');
 
-            return res.status(200).json({ success: true, message: 'Recebimento confirmado e dívidas abatidas!' });
+            return res.status(200).json({ success: true, message: 'Recebimento confirmado com sucesso!' });
         }
 
     } catch (error) {
