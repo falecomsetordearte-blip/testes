@@ -1,6 +1,6 @@
 // /api/upload/blob.js
 // Endpoint para upload de arquivos via Vercel Blob (client uploads - sem limite de tamanho)
-const { handleUpload } = require('@vercel/blob');
+const { handleUpload } = require('@vercel/blob/client');
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
