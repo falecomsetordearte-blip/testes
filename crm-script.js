@@ -752,9 +752,39 @@ window.atualizarContadorArquivos = function (bloco) {
     const contador = document.getElementById(`count-${bloco}`);
     if (!input || !contador) return;
     const n = input.files.length;
-    if (n === 0) contador.textContent = 'Nenhum arquivo selecionado';
+    if (n === 0) contador.textContent = '';
     else if (n === 1) contador.textContent = `1 arquivo: ${input.files[0].name}`;
     else contador.textContent = `${n} arquivos selecionados`;
+};
+
+// Upload automático ao selecionar arquivos — sem botão extra
+window.uploadAutomatico = async function (bloco) {
+    const input = document.getElementById(`input-file-${bloco}`);
+    if (!input || !input.files.length) return;
+
+    // Atualiza contador
+    atualizarContadorArquivos(bloco);
+
+    // Mostra spinner no label
+    const label = document.getElementById(`label-upload-${bloco}`);
+    if (label) {
+        label.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Enviando...</span>';
+        label.style.pointerEvents = 'none';
+    }
+
+    // Chama o upload
+    await uploadParaGoogleDrive(bloco);
+
+    // Restaura label com check verde se sucesso, ou volta ao normal
+    if (label) {
+        const linkHidden = document.getElementById(`link-arquivo-drive-${bloco}`);
+        if (linkHidden && linkHidden.value) {
+            label.innerHTML = '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span>Anexado! Clique para trocar</span>';
+        } else {
+            label.innerHTML = '<i class="fas fa-paperclip"></i> <span>Clique para anexar arquivo(s)</span>';
+        }
+        label.style.pointerEvents = '';
+    }
 };
 
 window.uploadParaGoogleDrive = async function (bloco) {
@@ -771,30 +801,83 @@ window.uploadParaGoogleDrive = async function (bloco) {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
+    const uploadedUrls = [];
+
     try {
-        const formData = new FormData();
-        formData.append('sessionToken', sessionToken);
-        formData.append('tituloPedido', tituloPedido);
-        for (const file of input.files) formData.append('files', file);
+        for (let i = 0; i < input.files.length; i++) {
+            const file = input.files[i];
+            const safeTitle = (tituloPedido || 'pedido').replace(/[^a-zA-Z0-9_-]/g, '_');
+            const pathname = `uploads/${safeTitle}/${Date.now()}-${file.name}`;
 
-        const res = await fetch('/api/upload/google-drive', { method: 'POST', body: formData });
-        const data = await res.json();
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Enviando ${i + 1}/${input.files.length}...`;
 
-        if (res.ok && data.link) {
-            linkUrl.href = data.link;
-            linkUrl.textContent = data.link.length > 60 ? data.link.substring(0, 60) + '...' : data.link;
-            linkResult.style.display = 'flex';
-            if (linkHidden) linkHidden.value = data.link;
-            if (bloco === 'arquivo') {
-                const el = document.getElementById('link-arquivo');
-                if (el && !el.value) el.value = data.link;
+            // Passo 1: Solicita token de upload ao servidor
+            const tokenRes = await fetch('/api/upload/blob', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'blob.generate-client-token',
+                    payload: {
+                        pathname: pathname,
+                        callbackUrl: `${window.location.origin}/api/upload/blob`,
+                        clientPayload: JSON.stringify({ sessionToken: sessionToken }),
+                        multipart: false
+                    }
+                })
+            });
+
+            const tokenData = await tokenRes.json();
+
+            if (!tokenRes.ok || !tokenData.clientToken) {
+                throw new Error(tokenData.message || 'Falha ao obter token de upload.');
             }
-            showToast(`${data.arquivos} arquivo(s) enviados com sucesso!`, 'success');
-        } else {
-            showToast(data.message || 'Erro no upload.', 'error');
+
+            // Passo 2: Extrai store URL do token e faz upload direto
+            // Token format: vercel_blob_client_<storeId>_<jwt>
+            const tokenParts = tokenData.clientToken.split('_');
+            // storeId is between 'client' and the last part (JWT)
+            // Format: vercel_blob_client_STOREID_jwt...
+            // We need to find the storeId
+            const storeId = tokenParts.slice(3, -1).join('_');
+            const blobUploadUrl = `https://${storeId}.public.blob.vercel-storage.com/${pathname}`;
+
+            const uploadRes = await fetch(blobUploadUrl, {
+                method: 'PUT',
+                headers: {
+                    'x-api-blob-token': tokenData.clientToken,
+                    'x-content-type': file.type || 'application/octet-stream'
+                },
+                body: file
+            });
+
+            if (!uploadRes.ok) {
+                throw new Error(`Erro ao enviar arquivo: ${file.name}`);
+            }
+
+            const blobData = await uploadRes.json();
+            uploadedUrls.push(blobData.url);
         }
+
+        // Sucesso — monta o link final
+        const finalLink = uploadedUrls.length === 1
+            ? uploadedUrls[0]
+            : uploadedUrls.join(' | ');
+
+        linkUrl.href = uploadedUrls[0];
+        linkUrl.textContent = uploadedUrls.length === 1
+            ? (uploadedUrls[0].length > 60 ? uploadedUrls[0].substring(0, 60) + '...' : uploadedUrls[0])
+            : `${uploadedUrls.length} arquivos enviados`;
+        linkResult.style.display = 'flex';
+        if (linkHidden) linkHidden.value = finalLink;
+        if (bloco === 'arquivo') {
+            const el = document.getElementById('link-arquivo');
+            if (el && !el.value) el.value = finalLink;
+        }
+        showToast(`${uploadedUrls.length} arquivo(s) enviados com sucesso!`, 'success');
+
     } catch (e) {
-        showToast('Erro de conexao ao fazer upload.', 'error');
+        console.error('[Upload Blob] Erro:', e);
+        showToast(e.message || 'Erro de conexão ao fazer upload.', 'error');
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-arrow-up"></i> Enviar Arquivos';
