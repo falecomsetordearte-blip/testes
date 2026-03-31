@@ -1,20 +1,45 @@
-﻿// /designer/designer-script.js - VERSÃO COM CONTA CORRENTE, MODAIS CUSTOMIZADOS E LÓGICA DE LOGIN (Atualizado para painel.html)
+﻿// /designer/designer-script.js - VERSÃO COM CONTA CORRENTE, MODAIS, LOGIN, CADASTRO E TRAVA DE ASSINATURA
 (function () {
-    console.log('[INIT] -> Verificando sessão do designer...');
+    console.log('[INIT] -> Iniciando verificação de sessão e rotas do designer...');
     const sessionToken = localStorage.getItem('designerToken');
     const path = window.location.pathname;
 
     const paginasPublicas = ['login.html', 'cadastro.html', 'esqueci-senha.html', 'redefinir-senha.html'];
     const ehPaginaPublica = paginasPublicas.some(pg => path.includes(pg));
+    const ehPaginaAssinatura = path.includes('assinatura.html');
 
+    // 1. Bloqueio de usuário não logado
     if (!sessionToken && !ehPaginaPublica) {
         console.warn('[AUTH] -> Sem token de sessão. Redirecionando para login.html');
         window.location.href = 'login.html';
         return;
     }
 
+    // 2. Trava de Assinatura Inativa
     if (sessionToken) {
-        console.log('[AUTH] -> Token de sessão encontrado. Acesso permitido à página atual.');
+        console.log('[AUTH] -> Token de sessão encontrado. Verificando status da assinatura...');
+        try {
+            const infoStr = localStorage.getItem('designerInfo');
+            if (infoStr) {
+                const info = JSON.parse(infoStr);
+
+                // Se o status for INATIVO, ele não pode acessar o painel, apenas a tela de assinatura ou telas públicas
+                if (info.assinaturaStatus === 'INATIVO' && !ehPaginaAssinatura && !ehPaginaPublica) {
+                    console.warn('[AUTH_BLOCK] -> Assinatura consta como INATIVA. Acesso ao painel bloqueado. Redirecionando para assinatura.html');
+                    window.location.href = 'assinatura.html';
+                    return; // Para a execução do script aqui para não carregar o painel por trás
+                }
+
+                // Se o status for ACTIVE e ele estiver na tela de assinatura, manda pro painel
+                if (info.assinaturaStatus === 'ACTIVE' && ehPaginaAssinatura) {
+                    console.log('[AUTH_REDIRECT] -> Assinatura ATIVA. Saindo da tela de assinatura para o painel.html');
+                    window.location.href = 'painel.html';
+                    return;
+                }
+            }
+        } catch (e) {
+            console.error('[AUTH] -> Erro ao ler designerInfo do cache', e);
+        }
     }
 
     // --- UTILITÁRIOS GLOBAIS DE ALERT/CONFIRM ---
@@ -66,28 +91,28 @@
     document.addEventListener('DOMContentLoaded', () => {
         console.log('[DOM] -> DOMContentLoaded acionado.');
 
-        // --- LÓGICA DE LOGIN INSERIDA AQUI ---
+        // ==========================================
+        // LÓGICA DE LOGIN
+        // ==========================================
         const loginForm = document.getElementById('designer-login-form');
         if (loginForm) {
-            console.log('[DOM] -> Formulário de login encontrado, adicionando ouvinte de submit.');
+            console.log('[DOM] -> Formulário de login detectado.');
 
             loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault(); // IMPEDE O REFRESH E O "?" NA URL
-                console.log('[LOGIN] -> Formulário submetido. Interceptando...');
+                e.preventDefault();
+                console.log('[LOGIN] -> Interceptando form de login...');
 
                 const email = document.getElementById('email').value.trim();
                 const senha = document.getElementById('senha').value.trim();
                 const btnSubmit = loginForm.querySelector('button[type="submit"]');
 
                 if (!email || !senha) {
-                    console.warn('[LOGIN] -> Campos vazios.');
                     window.customAlert('Por favor, preencha e-mail e senha.', true);
                     return;
                 }
 
                 btnSubmit.disabled = true;
                 btnSubmit.textContent = 'Aguarde...';
-                console.log(`[LOGIN] -> Enviando requisição de login para: ${email}`);
 
                 try {
                     const response = await fetch('/api/designer/login', {
@@ -95,11 +120,10 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email, senha })
                     });
-
                     const data = await response.json();
 
                     if (response.ok) {
-                        console.log('[LOGIN] -> Sucesso na resposta da API. Salvando token no LocalStorage.');
+                        console.log('[LOGIN] -> Sucesso. Salvando dados de sessão no cache.');
                         localStorage.setItem('designerToken', data.token);
                         localStorage.setItem('designerInfo', JSON.stringify({
                             name: data.nome,
@@ -107,24 +131,87 @@
                             assinaturaStatus: data.assinaturaStatus
                         }));
 
-                        console.log('[LOGIN] -> Redirecionando para o painel de controle (painel.html)...');
-                        // Redireciona para o painel.html (painel principal do designer)
-                        window.location.href = 'painel.html';
+                        // TRAVA NO EXATO MOMENTO DO LOGIN
+                        if (data.assinaturaStatus === 'INATIVO') {
+                            console.warn('[LOGIN] -> Assinatura INATIVA. Direcionando para pagamento.');
+                            window.location.href = 'assinatura.html';
+                        } else {
+                            console.log('[LOGIN] -> Assinatura ATIVA. Direcionando para painel.');
+                            window.location.href = 'painel.html';
+                        }
                     } else {
-                        console.error('[LOGIN] -> Falha no login retornada pela API:', data.message);
                         window.customAlert(data.message || 'Erro ao fazer login.', true);
                         btnSubmit.disabled = false;
                         btnSubmit.textContent = 'Entrar';
                     }
                 } catch (error) {
-                    console.error('[LOGIN] -> Erro fatal de requisição HTTP (Servidor fora do ar ou sem internet):', error);
-                    window.customAlert('Erro de conexão com o servidor. Tente novamente.', true);
+                    console.error('[LOGIN] -> Erro HTTP:', error);
+                    window.customAlert('Erro de conexão com o servidor.', true);
                     btnSubmit.disabled = false;
                     btnSubmit.textContent = 'Entrar';
                 }
             });
         }
-        // -------------------------------------
+
+        // ==========================================
+        // LÓGICA DE CADASTRO 
+        // ==========================================
+        const cadastroForm = document.getElementById('designer-cadastro-form');
+        if (cadastroForm) {
+            console.log('[DOM] -> Formulário de CADASTRO detectado.');
+
+            cadastroForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                console.log('[CADASTRO] -> Interceptando form de cadastro...');
+
+                const nome = document.getElementById('nome').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const chave_pix = document.getElementById('chave_pix').value.trim();
+                const senha = document.getElementById('senha').value.trim();
+                const confSenha = document.getElementById('confirmar-senha').value.trim();
+                const btnSubmit = cadastroForm.querySelector('button[type="submit"]');
+
+                if (senha !== confSenha) {
+                    window.customAlert('As senhas não conferem. Digite novamente.', true);
+                    return;
+                }
+
+                btnSubmit.disabled = true;
+                btnSubmit.textContent = 'Criando conta...';
+
+                try {
+                    const response = await fetch('/api/designer/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nome, email, senha, chave_pix })
+                    });
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        console.log('[CADASTRO] -> Sucesso. Conta criada!');
+                        // Salva dados no cache. Todo novo cadastro nasce INATIVO.
+                        localStorage.setItem('designerToken', data.token);
+                        localStorage.setItem('designerInfo', JSON.stringify({
+                            name: data.nome,
+                            nivel: data.nivel,
+                            assinaturaStatus: 'INATIVO' // Força inativo
+                        }));
+
+                        console.warn('[CADASTRO] -> Redirecionando nova conta para página de assinatura.');
+                        window.location.href = 'assinatura.html';
+                    } else {
+                        window.customAlert(data.message || 'Erro ao realizar o cadastro.', true);
+                        btnSubmit.disabled = false;
+                        btnSubmit.textContent = 'Cadastrar e Entrar';
+                    }
+                } catch (error) {
+                    console.error('[CADASTRO] -> Erro HTTP:', error);
+                    window.customAlert('Erro de conexão com o servidor. Tente novamente.', true);
+                    btnSubmit.disabled = false;
+                    btnSubmit.textContent = 'Cadastrar e Entrar';
+                }
+            });
+        }
 
         if (document.querySelector('main.main-painel')) {
             console.log('[DOM] -> Painel detectado. Carregando dados do Dashboard...');
@@ -134,7 +221,7 @@
         const logoutBtn = document.getElementById('logout-button');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
-                console.log('[LOGOUT] -> Botão de logout clicado. Limpando sessão e redirecionando...');
+                console.log('[LOGOUT] -> Limpando sessão...');
                 localStorage.clear();
                 window.location.href = 'login.html';
             });
@@ -142,7 +229,6 @@
     });
 
     window.fecharGaveta = () => {
-        console.log('[GAVETA] -> Fechando gaveta lateral.');
         const overlay = document.getElementById('drawer-overlay');
         const panel = document.getElementById('drawer-panel');
         if (overlay) overlay.classList.remove('active');
@@ -151,7 +237,6 @@
     };
 
     window.abrirGaveta = (titulo, htmlCorpo, htmlRodape = '') => {
-        console.log(`[GAVETA] -> Abrindo gaveta lateral: "${titulo}"`);
         document.getElementById('drawer-title').innerText = titulo;
         document.getElementById('drawer-content').innerHTML = htmlCorpo;
         document.getElementById('drawer-footer').innerHTML = htmlRodape;
@@ -164,21 +249,17 @@
     async function carregarDashboardDesigner() {
         const designerInfo = JSON.parse(localStorage.getItem('designerInfo'));
         if (designerInfo) {
-            console.log(`[DASHBOARD] -> Saudação montada para o designer: ${designerInfo.name}`);
             document.getElementById('designer-greeting').textContent = `Olá, ${designerInfo.name}!`;
         }
 
         try {
-            console.log('[DASHBOARD] -> Buscando dados financeiros e pedidos na API...');
             const res = await fetch('/api/designer/getDashboard', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: sessionToken })
             });
             const data = await res.json();
 
             if (!res.ok) {
-                console.error('[DASHBOARD] -> Erro ao buscar dashboard:', data.message);
                 if (res.status === 401 || res.status === 403) {
-                    console.warn('[DASHBOARD] -> Token expirado ou inválido. Deslogando...');
                     localStorage.clear();
                     window.location.href = 'login.html';
                     return;
@@ -186,7 +267,22 @@
                 throw new Error(data.message);
             }
 
-            console.log('[DASHBOARD] -> Dados recebidos com sucesso. Atualizando interface...');
+            // ATUALIZA O CACHE DE ASSINATURA CASO TENHA MUDADO NO BANCO POR WEBHOOK
+            if (data.designer && data.designer.assinatura_status) {
+                if (designerInfo && designerInfo.assinaturaStatus !== data.designer.assinatura_status) {
+                    console.log(`[DASHBOARD] -> Atualizando cache de assinatura de ${designerInfo.assinaturaStatus} para ${data.designer.assinatura_status}`);
+                    designerInfo.assinaturaStatus = data.designer.assinatura_status;
+                    localStorage.setItem('designerInfo', JSON.stringify(designerInfo));
+
+                    // Se no meio do uso a assinatura expirou:
+                    if (data.designer.assinatura_status === 'INATIVO') {
+                        console.warn('[DASHBOARD] -> Detectada assinatura expirada pela API. Bloqueando e redirecionando...');
+                        window.location.href = 'assinatura.html';
+                        return;
+                    }
+                }
+            }
+
             document.getElementById('designer-faturamento-mes').textContent = formatarMoeda(data.designer.faturamento_mes);
             document.getElementById('designer-acertos-pendentes').textContent = formatarMoeda(data.designer.acertos_pendentes);
             document.getElementById('designer-pedidos-ativos').textContent = data.meusPedidos.length;
@@ -201,13 +297,11 @@
             const valPontos = document.getElementById('val-pontos');
             if (valPontos) valPontos.textContent = data.designer.pontuacao;
 
-            console.log('[DASHBOARD] -> Renderizando componentes visuais da mesa de trabalho e mercado...');
             renderizarMeusTrabalhos(data.meusPedidos);
             renderizarMercado(data.mercado);
             carregarHistoricoAcertos();
 
             if (data.meusPedidos && data.meusPedidos.length > 0) {
-                console.log(`[DASHBOARD] -> Iniciando listener de notificações para ${data.meusPedidos.length} pedidos ativos.`);
                 const ativosIds = data.meusPedidos.map(p => p.id);
                 iniciarVerificacaoNotificacoes(ativosIds);
             }
@@ -221,7 +315,6 @@
         const container = document.getElementById('saques-list');
         if (!container) return;
 
-        console.log('[HISTORICO] -> Solicitando dados de acertos/extratos...');
         try {
             const res = await fetch('/api/designer/getAcertos', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: sessionToken })
@@ -229,17 +322,14 @@
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            console.log(`[HISTORICO] -> ${data.acertos.length} registros recebidos.`);
             window.acertosCache = data.acertos;
             renderizarHistoricoFiltrado('TODOS');
         } catch (error) {
-            console.error('[HISTORICO] -> Erro ao carregar extrato:', error);
             container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--danger);">Erro ao carregar extrato.</p>`;
         }
     }
 
     window.renderizarHistoricoFiltrado = (statusFiltro) => {
-        console.log(`[HISTORICO_FILTRO] -> Aplicando filtro: ${statusFiltro}`);
         const container = document.getElementById('saques-list');
         const acertos = window.acertosCache || [];
         const badgeNotif = document.getElementById('notif-pagamentos');
@@ -247,7 +337,6 @@
         const filtrados = statusFiltro === 'TODOS' ? acertos : acertos.filter(a => a.status === statusFiltro);
 
         if (filtrados.length === 0) {
-            console.log('[HISTORICO_FILTRO] -> Nenhum dado encontrado para o filtro aplicado.');
             container.innerHTML = `${renderizarControlesFiltro(statusFiltro)}<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhuma movimentação encontrada.</p>`;
             if (badgeNotif) badgeNotif.style.display = 'none';
             return;
@@ -352,23 +441,19 @@
     }
 
     window.toggleDetalhesEmpresa = (id) => {
-        console.log(`[TOGGLE_EMPRESA] -> Alternando visibilidade dos detalhes da empresa (ID: ${id})`);
         const el = document.getElementById(`detalhes-${id}`);
         const icon = document.getElementById(`icon-${id}`);
         if (el.style.display === 'none') { el.style.display = 'block'; icon.style.transform = 'rotate(90deg)'; }
         else { el.style.display = 'none'; icon.style.transform = 'rotate(0deg)'; }
     }
 
-    // --- RESPONDER PAGAMENTO SEM ALERT/CONFIRM ---
+    // --- RESPONDER PAGAMENTO ---
     window.responderPagamento = (pagamentoId, acao) => {
-        console.log(`[PAGAMENTO] -> Iniciando resposta a pagamento (ID: ${pagamentoId}) | Ação: ${acao}`);
         const msg = acao === 'CONFIRMAR'
             ? "Você conferiu a sua conta bancária e o dinheiro realmente caiu? Ao confirmar, as suas artes correspondentes receberão baixa automática."
             : "Tem certeza que deseja RECUSAR este comprovante? A gráfica será notificada que o dinheiro não entrou.";
 
         customConfirm(msg, async () => {
-            console.log(`[PAGAMENTO] -> Executando chamada para /api/designer/confirmarPagamento...`);
-            // Desabilita os botões para evitar duplo clique e manda requisição
             const btnC = document.getElementById(`btn-conf-${pagamentoId}`);
             const btnR = document.getElementById(`btn-rec-${pagamentoId}`);
             if (btnC) btnC.disabled = true;
@@ -382,17 +467,14 @@
                 const data = await res.json();
 
                 if (res.ok) {
-                    console.log(`[PAGAMENTO] -> Sucesso. Ação ${acao} concluída.`);
                     customAlert(data.message);
                     carregarDashboardDesigner();
                 } else {
-                    console.warn(`[PAGAMENTO] -> Falha. API retornou erro:`, data.message);
                     customAlert(data.message, true);
                     if (btnC) btnC.disabled = false;
                     if (btnR) btnR.disabled = false;
                 }
             } catch (e) {
-                console.error(`[PAGAMENTO] -> Erro fatal de conexão HTTP:`, e);
                 customAlert("Erro de comunicação com o servidor.", true);
                 if (btnC) btnC.disabled = false;
                 if (btnR) btnR.disabled = false;
@@ -402,7 +484,6 @@
 
     // --- FUNÇÕES DA MESA DE TRABALHO ---
     function renderizarMeusTrabalhos(pedidos) {
-        console.log(`[MESA_TRABALHO] -> Renderizando ${pedidos.length} trabalhos ativos do designer.`);
         const container = document.getElementById('atendimentos-list');
         if (!container) return;
         if (pedidos.length === 0) { container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhum atendimento ativo.</p>`; return; }
@@ -423,7 +504,6 @@
     }
 
     function renderizarMercado(pedidos) {
-        console.log(`[MERCADO] -> Renderizando ${pedidos.length} pedidos disponíveis.`);
         const container = document.getElementById('mercado-list');
         if (!container) return;
         if (pedidos.length === 0) { container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhum pedido disponível.</p>`; return; }
@@ -439,56 +519,46 @@
     }
 
     window.verBriefing = (b64) => {
-        console.log('[BRIEFING] -> Descriptografando texto base64 e abrindo modal.');
         const texto = decodeURIComponent(Array.prototype.map.call(atob(b64), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
         window.abrirGaveta("Briefing do Pedido", `<span class="drawer-label">Instruções</span><div class="briefing-box">${texto}</div>`, `<button onclick="fecharGaveta()" class="btn-full btn-secondary">Fechar</button>`);
     };
 
     window.confirmarAssumir = (id) => {
-        console.log(`[MERCADO] -> Designer deseja assumir pedido ID: ${id}. Solicitando confirmação.`);
         customConfirm("Deseja assumir este pedido? Você será responsável pela comunicação e entrega da arte no prazo.", async () => {
-            console.log(`[MERCADO] -> Requisição enviada para assumir o pedido ID: ${id}`);
             try {
                 const res = await fetch('/api/designer/assumirPedido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: sessionToken, pedidoId: id }) });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message);
 
-                console.log(`[MERCADO] -> Pedido assumido com sucesso.`);
                 customAlert("Pedido assumido com sucesso!");
                 carregarDashboardDesigner();
             } catch (e) {
-                console.error(`[MERCADO] -> Erro ao assumir pedido:`, e);
                 customAlert(e.message, true);
             }
         });
     };
 
     window.prepararFinalizacao = (id) => {
-        console.log(`[FINALIZAR] -> Abrindo painel de finalização para o pedido ID: ${id}`);
         const corpo = `<span class="drawer-label">Link Layout</span><input type="url" id="f-layout" class="drawer-input" required><span class="drawer-label">Link Arquivo Final</span><input type="url" id="f-impressao" class="drawer-input" required>`;
         window.abrirGaveta("Entregar Trabalho", corpo, `<button id="btn-exec-finalizar" class="btn-full btn-primary">FINALIZAR E RECEBER</button><button onclick="fecharGaveta()" class="btn-full btn-secondary">Voltar</button>`);
 
         document.getElementById('btn-exec-finalizar').onclick = async () => {
             const linkLayout = document.getElementById('f-layout').value.trim(); const linkImpressao = document.getElementById('f-impressao').value.trim();
             if (!linkLayout || !linkImpressao) {
-                console.warn('[FINALIZAR] -> Links obrigatórios não preenchidos.');
                 customAlert("Preencha os dois links para finalizar.", true);
                 return;
             }
 
-            console.log(`[FINALIZAR] -> Enviando requisição de finalização para pedido ID: ${id}`);
             const btn = document.getElementById('btn-exec-finalizar'); btn.disabled = true; btn.textContent = 'Enviando...';
             try {
                 const res = await fetch('/api/designer/finalizarPedido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: sessionToken, pedidoId: id, linkLayout, linkImpressao }) });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message || "Erro ao finalizar.");
 
-                console.log('[FINALIZAR] -> Pedido finalizado com sucesso.');
                 fecharGaveta();
                 customAlert(data.message);
                 carregarDashboardDesigner();
             } catch (e) {
-                console.error('[FINALIZAR] -> Erro ao finalizar:', e);
                 fecharGaveta();
                 customAlert(e.message, true);
             }
@@ -506,7 +576,6 @@
         if (window.notifInterval) clearInterval(window.notifInterval);
         if (!pedidosIds || pedidosIds.length === 0) return;
 
-        console.log(`[CHAT_NOTIF] -> Ativando pool de checagem para os pedidos: ${pedidosIds.join(', ')}`);
         const check = async () => {
             try {
                 const fd = new FormData(); fd.append('action', 'check_all'); fd.append('pedidos', JSON.stringify(pedidosIds));
@@ -526,7 +595,7 @@
                         }
                     }
                 }
-            } catch (err) { console.error('[CHAT_NOTIF] -> Falha silenciosa na checagem de mensagens.', err); }
+            } catch (err) { }
         };
         check(); window.notifInterval = setInterval(check, 20000);
     }
@@ -536,7 +605,6 @@
     document.head.appendChild(chatStyle);
 
     window.abrirChatEmbutido = async (pedidoId, pedidoTitulo, tipoChat = 'cliente') => {
-        console.log(`[CHAT_OPEN] -> Abrindo Chat Tipo: ${tipoChat} | Pedido ID: ${pedidoId}`);
         window.chatAbertoAtual = { pedidoId: pedidoId, tipoChat: tipoChat };
         const badgeElement = document.getElementById(`badge-${tipoChat}-${pedidoId}`);
         if (badgeElement) badgeElement.style.display = 'none';
@@ -568,7 +636,6 @@
                 const fd = new FormData(); fd.append('action', 'get'); fd.append('pedidoId', pedidoId); fd.append('tipoChat', tipoChat);
                 const res = await fetch('/api/designer/chat', { method: 'POST', body: fd }); const data = await res.json();
                 if (res.ok && data.mensagens.length !== totalMensagensCache) {
-                    console.log(`[CHAT_LOAD] -> Sincronizando novas mensagens (${data.mensagens.length - totalMensagensCache} novas)`);
                     totalMensagensCache = data.mensagens.length;
                     if (data.mensagens.length > 0) localStorage.setItem(`lastRead_${pedidoId}_${tipoChat}`, data.mensagens[data.mensagens.length - 1].id);
                     container.innerHTML = data.mensagens.map(m => {
@@ -580,13 +647,12 @@
                     }).join('');
                     setTimeout(() => { if (container) container.scrollTop = container.scrollHeight; }, 100);
                 }
-            } catch (err) { console.error('[CHAT_LOAD] -> Erro ao carregar mensagens:', err); clearInterval(window.chatInterval); }
+            } catch (err) { clearInterval(window.chatInterval); }
         };
 
         const enviarMensagem = async () => {
             const texto = input.value; const arquivo = fileInput.files[0];
             if (!texto.trim() && !arquivo) return;
-            console.log(`[CHAT_SEND] -> Enviando mensagem para Chat: ${tipoChat} (Pedido ID: ${pedidoId})`);
             btnEnviar.disabled = true; input.disabled = true;
             try {
                 const fd = new FormData(); fd.append('action', 'send'); fd.append('pedidoId', pedidoId); fd.append('tipoChat', tipoChat);
@@ -596,7 +662,6 @@
                 await carregarMensagens();
                 setTimeout(() => { if (container) container.scrollTop = container.scrollHeight; }, 100);
             } catch (err) {
-                console.error('[CHAT_SEND] -> Erro ao enviar a mensagem:', err);
                 customAlert('Erro ao enviar a mensagem.', true);
             } finally { btnEnviar.disabled = false; input.disabled = false; input.focus(); }
         };
