@@ -1,4 +1,4 @@
-// /designer/designer-script.js - VERSÃO INTEGRAL COMPLETA COM TRAVA DE TRIAL E CHAT
+﻿// /designer/designer-script.js - VERSÃO INTEGRAL COMPLETA COM TRAVA DE TRIAL E CHAT
 (function () {
     console.log('[INIT] -> Iniciando sistema do designer com logs detalhados...');
     const sessionToken = localStorage.getItem('designerToken');
@@ -447,6 +447,7 @@
                 btn.innerHTML = 'Aguarde...';
                 btn.disabled = true;
 
+
                 try {
                     const res = await fetch('/api/designer/login', {
                         method: 'POST',
@@ -484,7 +485,7 @@
                 const senha = document.getElementById('senha').value;
                 const confirm = document.getElementById('confirmar-senha').value;
                 const feedback = document.getElementById('form-error-feedback');
-                
+
                 if (senha !== confirm) {
                     feedback.textContent = 'As senhas não coincidem.';
                     feedback.classList.remove('hidden');
@@ -504,7 +505,7 @@
                         senha: senha
                     };
                     const pix = document.getElementById('chave_pix')?.value;
-                    if(pix) { payload.chave_pix = pix; }
+                    if (pix) { payload.chave_pix = pix; }
 
                     const res = await fetch('/api/designer/register', {
                         method: 'POST',
