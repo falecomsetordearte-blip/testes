@@ -63,6 +63,10 @@ function formatarTelefone(telefone) {
 // -------------------------------------------------------------
 async function criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, nomeCliente = 'Cliente', nomeEmpresa = 'nossa gráfica', retry = true) {
     console.log(`[CHATAPP-PRODUCAO] Iniciando criarGrupoProducao - Titulo: ${titulo}`);
+
+    // Log para verificar se o link do Drive chegou dentro do briefing
+    console.log(`[CHATAPP-PRODUCAO] Briefing recebido para o grupo: \n"${briefing}"`);
+
     const token = await getChatAppToken(!retry);
     if (!token) {
         console.error('[CHATAPP-PRODUCAO] Falha ao obter token. Abortando.');
@@ -107,10 +111,14 @@ async function criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, n
         await new Promise(r => setTimeout(r, 2000));
 
         if (chatId1) {
-            console.log(`[CHATAPP-PRODUCAO] Enviando mensagem inicial no GRUPO 1...`);
+            console.log(`[CHATAPP-PRODUCAO] Enviando briefing inicial no GRUPO 1...`);
+            const textoMensagem = `🚀 *NOVO PEDIDO INICIADO*\n\n*Serviço:* ${titulo}\n\n*Briefing de Arte:* \n${briefing}\n\n---`;
+
             await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId1}/messages/text`, {
-                text: `🚀 *NOVO PEDIDO INICIADO*\n\n*Serviço:* ${titulo}\n\n*Briefing de Arte:* \n${briefing}\n\n---`
+                text: textoMensagem
             }, { headers });
+
+            console.log(`[CHATAPP-PRODUCAO] Briefing enviado com sucesso no GRUPO 1.`);
         }
 
         // GRUPO 2 (INTERNO)

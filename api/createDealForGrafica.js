@@ -18,7 +18,10 @@ module.exports = async (req, res) => {
         // Log para ver se o token está chegando do frontend
         console.log(`[DEBUG] Token Recebido: "${sessionToken ? sessionToken.substring(0, 15) + '...' : 'NULL'}"`);
 
-        // 1. Identificar Empresa (Voltamos para o LIKE para garantir a compatibilidade)
+        // Log para investigar TODAS as variáveis que o frontend está mandando
+        console.log(`[DEBUG] Dados brutos recebidos (formData):`, JSON.stringify(formData));
+
+        // 1. Identificar Empresa
         const empresas = await prisma.$queryRawUnsafe(
             `SELECT * FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`,
             `%${sessionToken}%`
@@ -37,10 +40,17 @@ module.exports = async (req, res) => {
         console.log(`[DEBUG] Arte selecionada: "${arte}" (Normalizada: "${arteNormalizada}")`);
 
         let etapaDestino = (arteNormalizada === 'arquivo do cliente') ? 'IMPRESSÃO' : 'ARTE';
+
+        // Normaliza a busca do link (pega de qualquer variação que o frontend possa enviar)
+        const linkParaAnexo = formData.linkArquivoDrive || formData.linkArquivo || formData.linkDrive || formData.link || null;
+        console.log(`[DEBUG] Link de anexo identificado: ${linkParaAnexo ? linkParaAnexo : 'NENHUM LINK ENCONTRADO'}`);
+
+        // Montando o Briefing Final
         let briefingFinal = `${formData.briefingFormatado || 'Sem briefing'}\n\nEntrega: ${tipoEntrega ? tipoEntrega.toUpperCase() : 'NÃO INFORMADA'}`;
 
-        if (formData.linkArquivoDrive) {
-            briefingFinal += `\n\n📎 Arquivos de Referência: ${formData.linkArquivoDrive}`;
+        if (linkParaAnexo) {
+            briefingFinal += `\n\n📎 Arquivos de Referência: ${linkParaAnexo}`;
+            console.log(`[DEBUG] Link de anexo injetado no briefing com sucesso.`);
         }
 
         const valorParaSalvar = parseFloat(valorDesigner || 0);
@@ -70,7 +80,7 @@ module.exports = async (req, res) => {
             briefingFinal,
             etapaDestino,
             valorParaSalvar,
-            formData.linkArquivo || formData.linkArquivoDrive || null,
+            linkParaAnexo, // Usamos a variável normalizada aqui também
             deveNotificar
         );
 
@@ -85,7 +95,7 @@ module.exports = async (req, res) => {
                     formData.titulo,
                     formData.wppCliente,
                     supervisaoWpp,
-                    briefingFinal,
+                    briefingFinal, // O link anexado já vai dentro desta variável
                     formData.nomeCliente || 'Cliente',
                     empresa.nome_fantasia || 'nossa gráfica'
                 );
