@@ -1,5 +1,6 @@
-﻿// /designer/designer-script.js - VERSÃO COM CONTA CORRENTE E MODAIS CUSTOMIZADOS
+﻿// /designer/designer-script.js - VERSÃO COM CONTA CORRENTE E MODAIS CUSTOMIZADOS E LÓGICA DE LOGIN
 (function () {
+    console.log('[INIT] -> Verificando sessão do designer...');
     const sessionToken = localStorage.getItem('designerToken');
     const path = window.location.pathname;
 
@@ -7,12 +8,18 @@
     const ehPaginaPublica = paginasPublicas.some(pg => path.includes(pg));
 
     if (!sessionToken && !ehPaginaPublica) {
+        console.warn('[AUTH] -> Sem token de sessão. Redirecionando para login.html');
         window.location.href = 'login.html';
         return;
     }
 
+    if (sessionToken) {
+        console.log('[AUTH] -> Token de sessão encontrado. Acesso permitido à página atual.');
+    }
+
     // --- UTILITÁRIOS GLOBAIS DE ALERT/CONFIRM ---
     window.customAlert = (mensagem, isError = false) => {
+        console.log(`[UI_ALERT] -> Exibindo Alerta: "${mensagem}" (Erro: ${isError})`);
         const id = 'alert-' + Date.now();
         const cor = isError ? '#ef4444' : '#10b981';
         const icone = isError ? 'fa-times-circle' : 'fa-check-circle';
@@ -32,6 +39,7 @@
     };
 
     window.customConfirm = (mensagem, callbackSim) => {
+        console.log(`[UI_CONFIRM] -> Solicitando confirmação: "${mensagem}"`);
         const id = 'confirm-' + Date.now();
         const html = `
             <div id="${id}" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(2px);">
@@ -48,6 +56,7 @@
         `;
         document.body.insertAdjacentHTML('beforeend', html);
         document.getElementById(`btn-sim-${id}`).onclick = () => {
+            console.log(`[UI_CONFIRM] -> Confirmação aceita pelo usuário.`);
             document.getElementById(id).remove();
             callbackSim();
         };
@@ -55,11 +64,77 @@
     // ------------------------------------------
 
     document.addEventListener('DOMContentLoaded', () => {
-        if (document.querySelector('main.main-painel')) carregarDashboardDesigner();
+        console.log('[DOM] -> DOMContentLoaded acionado.');
+
+        // --- LÓGICA DE LOGIN INSERIDA AQUI ---
+        const loginForm = document.getElementById('designer-login-form');
+        if (loginForm) {
+            console.log('[DOM] -> Formulário de login encontrado, adicionando ouvinte de submit.');
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault(); // IMPEDE O REFRESH E O "?" NA URL
+                console.log('[LOGIN] -> Formulário submetido. Interceptando...');
+
+                const email = document.getElementById('email').value.trim();
+                const senha = document.getElementById('senha').value.trim();
+                const btnSubmit = loginForm.querySelector('button[type="submit"]');
+
+                if (!email || !senha) {
+                    console.warn('[LOGIN] -> Campos vazios.');
+                    window.customAlert('Por favor, preencha e-mail e senha.', true);
+                    return;
+                }
+
+                btnSubmit.disabled = true;
+                btnSubmit.textContent = 'Aguarde...';
+                console.log(`[LOGIN] -> Enviando requisição de login para: ${email}`);
+
+                try {
+                    const response = await fetch('/api/designer/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, senha })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        console.log('[LOGIN] -> Sucesso na resposta da API. Salvando token no LocalStorage.');
+                        localStorage.setItem('designerToken', data.token);
+                        localStorage.setItem('designerInfo', JSON.stringify({
+                            name: data.nome,
+                            nivel: data.nivel,
+                            assinaturaStatus: data.assinaturaStatus
+                        }));
+
+                        console.log('[LOGIN] -> Redirecionando para o painel de controle (index.html)...');
+                        // Redireciona para o index.html (painel principal do designer)
+                        window.location.href = 'index.html';
+                    } else {
+                        console.error('[LOGIN] -> Falha no login retornada pela API:', data.message);
+                        window.customAlert(data.message || 'Erro ao fazer login.', true);
+                        btnSubmit.disabled = false;
+                        btnSubmit.textContent = 'Entrar';
+                    }
+                } catch (error) {
+                    console.error('[LOGIN] -> Erro fatal de requisição HTTP (Servidor fora do ar ou sem internet):', error);
+                    window.customAlert('Erro de conexão com o servidor. Tente novamente.', true);
+                    btnSubmit.disabled = false;
+                    btnSubmit.textContent = 'Entrar';
+                }
+            });
+        }
+        // -------------------------------------
+
+        if (document.querySelector('main.main-painel')) {
+            console.log('[DOM] -> Painel detectado. Carregando dados do Dashboard...');
+            carregarDashboardDesigner();
+        }
 
         const logoutBtn = document.getElementById('logout-button');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
+                console.log('[LOGOUT] -> Botão de logout clicado. Limpando sessão e redirecionando...');
                 localStorage.clear();
                 window.location.href = 'login.html';
             });
@@ -67,6 +142,7 @@
     });
 
     window.fecharGaveta = () => {
+        console.log('[GAVETA] -> Fechando gaveta lateral.');
         const overlay = document.getElementById('drawer-overlay');
         const panel = document.getElementById('drawer-panel');
         if (overlay) overlay.classList.remove('active');
@@ -75,6 +151,7 @@
     };
 
     window.abrirGaveta = (titulo, htmlCorpo, htmlRodape = '') => {
+        console.log(`[GAVETA] -> Abrindo gaveta lateral: "${titulo}"`);
         document.getElementById('drawer-title').innerText = titulo;
         document.getElementById('drawer-content').innerHTML = htmlCorpo;
         document.getElementById('drawer-footer').innerHTML = htmlRodape;
@@ -86,19 +163,30 @@
 
     async function carregarDashboardDesigner() {
         const designerInfo = JSON.parse(localStorage.getItem('designerInfo'));
-        if (designerInfo) document.getElementById('designer-greeting').textContent = `Olá, ${designerInfo.name}!`;
+        if (designerInfo) {
+            console.log(`[DASHBOARD] -> Saudação montada para o designer: ${designerInfo.name}`);
+            document.getElementById('designer-greeting').textContent = `Olá, ${designerInfo.name}!`;
+        }
 
         try {
+            console.log('[DASHBOARD] -> Buscando dados financeiros e pedidos na API...');
             const res = await fetch('/api/designer/getDashboard', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: sessionToken })
             });
             const data = await res.json();
 
             if (!res.ok) {
-                if (res.status === 401 || res.status === 403) { localStorage.clear(); window.location.href = 'login.html'; return; }
+                console.error('[DASHBOARD] -> Erro ao buscar dashboard:', data.message);
+                if (res.status === 401 || res.status === 403) {
+                    console.warn('[DASHBOARD] -> Token expirado ou inválido. Deslogando...');
+                    localStorage.clear();
+                    window.location.href = 'login.html';
+                    return;
+                }
                 throw new Error(data.message);
             }
 
+            console.log('[DASHBOARD] -> Dados recebidos com sucesso. Atualizando interface...');
             document.getElementById('designer-faturamento-mes').textContent = formatarMoeda(data.designer.faturamento_mes);
             document.getElementById('designer-acertos-pendentes').textContent = formatarMoeda(data.designer.acertos_pendentes);
             document.getElementById('designer-pedidos-ativos').textContent = data.meusPedidos.length;
@@ -113,21 +201,27 @@
             const valPontos = document.getElementById('val-pontos');
             if (valPontos) valPontos.textContent = data.designer.pontuacao;
 
+            console.log('[DASHBOARD] -> Renderizando componentes visuais da mesa de trabalho e mercado...');
             renderizarMeusTrabalhos(data.meusPedidos);
             renderizarMercado(data.mercado);
             carregarHistoricoAcertos();
 
             if (data.meusPedidos && data.meusPedidos.length > 0) {
+                console.log(`[DASHBOARD] -> Iniciando listener de notificações para ${data.meusPedidos.length} pedidos ativos.`);
                 const ativosIds = data.meusPedidos.map(p => p.id);
                 iniciarVerificacaoNotificacoes(ativosIds);
             }
-        } catch (error) { window.mostrarErro('Falha ao carregar os dados do painel.'); }
+        } catch (error) {
+            console.error('[DASHBOARD] -> Falha na renderização do painel:', error);
+            window.mostrarErro('Falha ao carregar os dados do painel.');
+        }
     }
 
     async function carregarHistoricoAcertos() {
         const container = document.getElementById('saques-list');
         if (!container) return;
 
+        console.log('[HISTORICO] -> Solicitando dados de acertos/extratos...');
         try {
             const res = await fetch('/api/designer/getAcertos', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: sessionToken })
@@ -135,14 +229,17 @@
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
+            console.log(`[HISTORICO] -> ${data.acertos.length} registros recebidos.`);
             window.acertosCache = data.acertos;
             renderizarHistoricoFiltrado('TODOS');
         } catch (error) {
+            console.error('[HISTORICO] -> Erro ao carregar extrato:', error);
             container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--danger);">Erro ao carregar extrato.</p>`;
         }
     }
 
     window.renderizarHistoricoFiltrado = (statusFiltro) => {
+        console.log(`[HISTORICO_FILTRO] -> Aplicando filtro: ${statusFiltro}`);
         const container = document.getElementById('saques-list');
         const acertos = window.acertosCache || [];
         const badgeNotif = document.getElementById('notif-pagamentos');
@@ -150,6 +247,7 @@
         const filtrados = statusFiltro === 'TODOS' ? acertos : acertos.filter(a => a.status === statusFiltro);
 
         if (filtrados.length === 0) {
+            console.log('[HISTORICO_FILTRO] -> Nenhum dado encontrado para o filtro aplicado.');
             container.innerHTML = `${renderizarControlesFiltro(statusFiltro)}<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhuma movimentação encontrada.</p>`;
             if (badgeNotif) badgeNotif.style.display = 'none';
             return;
@@ -254,6 +352,7 @@
     }
 
     window.toggleDetalhesEmpresa = (id) => {
+        console.log(`[TOGGLE_EMPRESA] -> Alternando visibilidade dos detalhes da empresa (ID: ${id})`);
         const el = document.getElementById(`detalhes-${id}`);
         const icon = document.getElementById(`icon-${id}`);
         if (el.style.display === 'none') { el.style.display = 'block'; icon.style.transform = 'rotate(90deg)'; }
@@ -262,11 +361,13 @@
 
     // --- RESPONDER PAGAMENTO SEM ALERT/CONFIRM ---
     window.responderPagamento = (pagamentoId, acao) => {
+        console.log(`[PAGAMENTO] -> Iniciando resposta a pagamento (ID: ${pagamentoId}) | Ação: ${acao}`);
         const msg = acao === 'CONFIRMAR'
             ? "Você conferiu a sua conta bancária e o dinheiro realmente caiu? Ao confirmar, as suas artes correspondentes receberão baixa automática."
             : "Tem certeza que deseja RECUSAR este comprovante? A gráfica será notificada que o dinheiro não entrou.";
 
         customConfirm(msg, async () => {
+            console.log(`[PAGAMENTO] -> Executando chamada para /api/designer/confirmarPagamento...`);
             // Desabilita os botões para evitar duplo clique e manda requisição
             const btnC = document.getElementById(`btn-conf-${pagamentoId}`);
             const btnR = document.getElementById(`btn-rec-${pagamentoId}`);
@@ -281,14 +382,17 @@
                 const data = await res.json();
 
                 if (res.ok) {
+                    console.log(`[PAGAMENTO] -> Sucesso. Ação ${acao} concluída.`);
                     customAlert(data.message);
                     carregarDashboardDesigner();
                 } else {
+                    console.warn(`[PAGAMENTO] -> Falha. API retornou erro:`, data.message);
                     customAlert(data.message, true);
                     if (btnC) btnC.disabled = false;
                     if (btnR) btnR.disabled = false;
                 }
             } catch (e) {
+                console.error(`[PAGAMENTO] -> Erro fatal de conexão HTTP:`, e);
                 customAlert("Erro de comunicação com o servidor.", true);
                 if (btnC) btnC.disabled = false;
                 if (btnR) btnR.disabled = false;
@@ -298,6 +402,7 @@
 
     // --- FUNÇÕES DA MESA DE TRABALHO ---
     function renderizarMeusTrabalhos(pedidos) {
+        console.log(`[MESA_TRABALHO] -> Renderizando ${pedidos.length} trabalhos ativos do designer.`);
         const container = document.getElementById('atendimentos-list');
         if (!container) return;
         if (pedidos.length === 0) { container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhum atendimento ativo.</p>`; return; }
@@ -318,6 +423,7 @@
     }
 
     function renderizarMercado(pedidos) {
+        console.log(`[MERCADO] -> Renderizando ${pedidos.length} pedidos disponíveis.`);
         const container = document.getElementById('mercado-list');
         if (!container) return;
         if (pedidos.length === 0) { container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-muted);">Nenhum pedido disponível.</p>`; return; }
@@ -333,41 +439,56 @@
     }
 
     window.verBriefing = (b64) => {
+        console.log('[BRIEFING] -> Descriptografando texto base64 e abrindo modal.');
         const texto = decodeURIComponent(Array.prototype.map.call(atob(b64), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
         window.abrirGaveta("Briefing do Pedido", `<span class="drawer-label">Instruções</span><div class="briefing-box">${texto}</div>`, `<button onclick="fecharGaveta()" class="btn-full btn-secondary">Fechar</button>`);
     };
 
     window.confirmarAssumir = (id) => {
+        console.log(`[MERCADO] -> Designer deseja assumir pedido ID: ${id}. Solicitando confirmação.`);
         customConfirm("Deseja assumir este pedido? Você será responsável pela comunicação e entrega da arte no prazo.", async () => {
+            console.log(`[MERCADO] -> Requisição enviada para assumir o pedido ID: ${id}`);
             try {
                 const res = await fetch('/api/designer/assumirPedido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: sessionToken, pedidoId: id }) });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message);
+
+                console.log(`[MERCADO] -> Pedido assumido com sucesso.`);
                 customAlert("Pedido assumido com sucesso!");
                 carregarDashboardDesigner();
-            } catch (e) { customAlert(e.message, true); }
+            } catch (e) {
+                console.error(`[MERCADO] -> Erro ao assumir pedido:`, e);
+                customAlert(e.message, true);
+            }
         });
     };
 
     window.prepararFinalizacao = (id) => {
+        console.log(`[FINALIZAR] -> Abrindo painel de finalização para o pedido ID: ${id}`);
         const corpo = `<span class="drawer-label">Link Layout</span><input type="url" id="f-layout" class="drawer-input" required><span class="drawer-label">Link Arquivo Final</span><input type="url" id="f-impressao" class="drawer-input" required>`;
         window.abrirGaveta("Entregar Trabalho", corpo, `<button id="btn-exec-finalizar" class="btn-full btn-primary">FINALIZAR E RECEBER</button><button onclick="fecharGaveta()" class="btn-full btn-secondary">Voltar</button>`);
 
         document.getElementById('btn-exec-finalizar').onclick = async () => {
             const linkLayout = document.getElementById('f-layout').value.trim(); const linkImpressao = document.getElementById('f-impressao').value.trim();
             if (!linkLayout || !linkImpressao) {
+                console.warn('[FINALIZAR] -> Links obrigatórios não preenchidos.');
                 customAlert("Preencha os dois links para finalizar.", true);
                 return;
             }
+
+            console.log(`[FINALIZAR] -> Enviando requisição de finalização para pedido ID: ${id}`);
             const btn = document.getElementById('btn-exec-finalizar'); btn.disabled = true; btn.textContent = 'Enviando...';
             try {
                 const res = await fetch('/api/designer/finalizarPedido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: sessionToken, pedidoId: id, linkLayout, linkImpressao }) });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message || "Erro ao finalizar.");
+
+                console.log('[FINALIZAR] -> Pedido finalizado com sucesso.');
                 fecharGaveta();
                 customAlert(data.message);
                 carregarDashboardDesigner();
             } catch (e) {
+                console.error('[FINALIZAR] -> Erro ao finalizar:', e);
                 fecharGaveta();
                 customAlert(e.message, true);
             }
@@ -384,6 +505,8 @@
     function iniciarVerificacaoNotificacoes(pedidosIds) {
         if (window.notifInterval) clearInterval(window.notifInterval);
         if (!pedidosIds || pedidosIds.length === 0) return;
+
+        console.log(`[CHAT_NOTIF] -> Ativando pool de checagem para os pedidos: ${pedidosIds.join(', ')}`);
         const check = async () => {
             try {
                 const fd = new FormData(); fd.append('action', 'check_all'); fd.append('pedidos', JSON.stringify(pedidosIds));
@@ -403,7 +526,7 @@
                         }
                     }
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) { console.error('[CHAT_NOTIF] -> Falha silenciosa na checagem de mensagens.', err); }
         };
         check(); window.notifInterval = setInterval(check, 20000);
     }
@@ -413,6 +536,7 @@
     document.head.appendChild(chatStyle);
 
     window.abrirChatEmbutido = async (pedidoId, pedidoTitulo, tipoChat = 'cliente') => {
+        console.log(`[CHAT_OPEN] -> Abrindo Chat Tipo: ${tipoChat} | Pedido ID: ${pedidoId}`);
         window.chatAbertoAtual = { pedidoId: pedidoId, tipoChat: tipoChat };
         const badgeElement = document.getElementById(`badge-${tipoChat}-${pedidoId}`);
         if (badgeElement) badgeElement.style.display = 'none';
@@ -444,6 +568,7 @@
                 const fd = new FormData(); fd.append('action', 'get'); fd.append('pedidoId', pedidoId); fd.append('tipoChat', tipoChat);
                 const res = await fetch('/api/designer/chat', { method: 'POST', body: fd }); const data = await res.json();
                 if (res.ok && data.mensagens.length !== totalMensagensCache) {
+                    console.log(`[CHAT_LOAD] -> Sincronizando novas mensagens (${data.mensagens.length - totalMensagensCache} novas)`);
                     totalMensagensCache = data.mensagens.length;
                     if (data.mensagens.length > 0) localStorage.setItem(`lastRead_${pedidoId}_${tipoChat}`, data.mensagens[data.mensagens.length - 1].id);
                     container.innerHTML = data.mensagens.map(m => {
@@ -455,12 +580,13 @@
                     }).join('');
                     setTimeout(() => { if (container) container.scrollTop = container.scrollHeight; }, 100);
                 }
-            } catch (err) { clearInterval(window.chatInterval); }
+            } catch (err) { console.error('[CHAT_LOAD] -> Erro ao carregar mensagens:', err); clearInterval(window.chatInterval); }
         };
 
         const enviarMensagem = async () => {
             const texto = input.value; const arquivo = fileInput.files[0];
             if (!texto.trim() && !arquivo) return;
+            console.log(`[CHAT_SEND] -> Enviando mensagem para Chat: ${tipoChat} (Pedido ID: ${pedidoId})`);
             btnEnviar.disabled = true; input.disabled = true;
             try {
                 const fd = new FormData(); fd.append('action', 'send'); fd.append('pedidoId', pedidoId); fd.append('tipoChat', tipoChat);
@@ -469,7 +595,10 @@
                 input.value = ''; fileInput.value = ''; document.getElementById('chat-file-preview').style.setProperty('display', 'none', 'important');
                 await carregarMensagens();
                 setTimeout(() => { if (container) container.scrollTop = container.scrollHeight; }, 100);
-            } catch (err) { customAlert('Erro ao enviar a mensagem.', true); } finally { btnEnviar.disabled = false; input.disabled = false; input.focus(); }
+            } catch (err) {
+                console.error('[CHAT_SEND] -> Erro ao enviar a mensagem:', err);
+                customAlert('Erro ao enviar a mensagem.', true);
+            } finally { btnEnviar.disabled = false; input.disabled = false; input.focus(); }
         };
         input.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensagem(); }); btnEnviar.onclick = enviarMensagem;
         await carregarMensagens(); window.chatInterval = setInterval(carregarMensagens, 5000);
