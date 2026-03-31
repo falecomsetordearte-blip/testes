@@ -1,6 +1,6 @@
-﻿// /designer/designer-script.js - VERSÃO COM CONTA CORRENTE, MODAIS, LOGIN, CADASTRO E TRAVA DE ASSINATURA
+﻿// /designer/designer-script.js - VERSÃO INTEGRAL COMPLETA COM TRAVA DE TRIAL E CHAT
 (function () {
-    console.log('[INIT] -> Iniciando verificação de sessão e rotas do designer...');
+    console.log('[INIT] -> Iniciando sistema do designer com logs detalhados...');
     const sessionToken = localStorage.getItem('designerToken');
     const path = window.location.pathname;
 
@@ -10,52 +10,70 @@
 
     // 1. Bloqueio de usuário não logado
     if (!sessionToken && !ehPaginaPublica) {
-        console.warn('[AUTH] -> Sem token de sessão. Redirecionando para login.html');
+        console.warn('[AUTH] -> Sessão não encontrada. Redirecionando para login.');
         window.location.href = 'login.html';
         return;
     }
 
-    // 2. Trava de Assinatura Inativa
-    if (sessionToken) {
-        console.log('[AUTH] -> Token de sessão encontrado. Verificando status da assinatura...');
+    // 2. Trava de Segurança Híbrida (Trial 13 dias + Assinatura ACTIVE/ATIVO)
+    async function validarAcessoDesigner() {
+        if (ehPaginaPublica) return;
+
+        console.log('[SECURITY] -> Validando permissão de acesso no servidor...');
         try {
-            const infoStr = localStorage.getItem('designerInfo');
-            if (infoStr) {
-                const info = JSON.parse(infoStr);
+            const res = await fetch('/api/trial-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: sessionToken, type: 'DESIGNER' })
+            });
+            const data = await res.json();
 
-                // Se o status for INATIVO, ele não pode acessar o painel, apenas a tela de assinatura ou telas públicas
-                if (info.assinaturaStatus === 'INATIVO' && !ehPaginaAssinatura && !ehPaginaPublica) {
-                    console.warn('[AUTH_BLOCK] -> Assinatura consta como INATIVA. Acesso ao painel bloqueado. Redirecionando para assinatura.html');
+            if (!res.ok) {
+                console.error('[SECURITY] -> Falha na resposta da API de segurança.');
+                return;
+            }
+
+            console.log(`[SECURITY] -> Status: ${data.status_atual} | Trial Ativo: ${data.is_active}`);
+
+            // Sincroniza o status no cache local
+            const info = JSON.parse(localStorage.getItem('designerInfo') || '{}');
+            info.assinaturaStatus = data.status_atual;
+            localStorage.setItem('designerInfo', JSON.stringify(info));
+
+            // Verifica se deve bloquear (Se o trial acabou E não está ATIVO/ACTIVE)
+            const statusPagos = ['ACTIVE', 'ATIVO', 'CONFIRMED', 'PAGO', 'ASSINADO'];
+            const temAssinaturaPaga = statusPagos.includes(data.status_atual.toUpperCase());
+
+            if (!data.is_active && !temAssinaturaPaga) {
+                console.warn('[SECURITY] -> Acesso negado. Redirecionando para assinatura.');
+                if (!ehPaginaAssinatura) {
                     window.location.href = 'assinatura.html';
-                    return; // Para a execução do script aqui para não carregar o painel por trás
                 }
-
-                // Se o status for ACTIVE e ele estiver na tela de assinatura, manda pro painel
-                if (info.assinaturaStatus === 'ACTIVE' && ehPaginaAssinatura) {
-                    console.log('[AUTH_REDIRECT] -> Assinatura ATIVA. Saindo da tela de assinatura para o painel.html');
+            } else {
+                console.log('[SECURITY] -> Acesso permitido.');
+                if (ehPaginaAssinatura) {
                     window.location.href = 'painel.html';
-                    return;
                 }
             }
-        } catch (e) {
-            console.error('[AUTH] -> Erro ao ler designerInfo do cache', e);
+        } catch (error) {
+            console.error('[SECURITY] -> Erro ao validar trial/assinatura:', error);
         }
     }
 
-    // --- UTILITÁRIOS GLOBAIS DE ALERT/CONFIRM ---
+    if (!ehPaginaPublica) validarAcessoDesigner();
+
+    // --- UTILITÁRIOS GLOBAIS DE INTERFACE ---
     window.customAlert = (mensagem, isError = false) => {
-        console.log(`[UI_ALERT] -> Exibindo Alerta: "${mensagem}" (Erro: ${isError})`);
+        console.log(`[UI_ALERT] -> ${mensagem}`);
         const id = 'alert-' + Date.now();
         const cor = isError ? '#ef4444' : '#10b981';
-        const icone = isError ? 'fa-times-circle' : 'fa-check-circle';
-        const titulo = isError ? 'Erro' : 'Sucesso';
         const html = `
             <div id="${id}" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(2px);">
                 <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:350px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); animation: popIn 0.3s ease;">
-                    <div style="font-size:3rem; color:${cor}; margin-bottom:15px;"><i class="fas ${icone}"></i></div>
-                    <h3 style="margin:0 0 10px 0; color:#1e293b; font-family:'Poppins', sans-serif;">${titulo}</h3>
-                    <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5; font-family:'Poppins', sans-serif;">${mensagem}</p>
-                    <button onclick="document.getElementById('${id}').remove()" style="width:100%; padding:12px; border:none; border-radius:8px; background:${cor}; color:white; font-weight:600; cursor:pointer; font-family:'Poppins', sans-serif;">Entendi</button>
+                    <div style="font-size:3rem; color:${cor}; margin-bottom:15px;"><i class="fas ${isError ? 'fa-times-circle' : 'fa-check-circle'}"></i></div>
+                    <h3 style="margin:0 0 10px 0; color:#1e293b;">${isError ? 'Erro' : 'Sucesso'}</h3>
+                    <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5;">${mensagem}</p>
+                    <button onclick="document.getElementById('${id}').remove()" style="width:100%; padding:12px; border:none; border-radius:8px; background:${cor}; color:white; font-weight:600; cursor:pointer;">Entendi</button>
                 </div>
             </div>
             <style>@keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }</style>
@@ -64,193 +82,33 @@
     };
 
     window.customConfirm = (mensagem, callbackSim) => {
-        console.log(`[UI_CONFIRM] -> Solicitando confirmação: "${mensagem}"`);
+        console.log(`[UI_CONFIRM] -> ${mensagem}`);
         const id = 'confirm-' + Date.now();
         const html = `
             <div id="${id}" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(2px);">
-                <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:400px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); animation: popIn 0.3s ease;">
+                <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:400px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
                     <div style="font-size:3rem; color:#f59e0b; margin-bottom:15px;"><i class="fas fa-exclamation-triangle"></i></div>
-                    <h3 style="margin:0 0 10px 0; color:#1e293b; font-family:'Poppins', sans-serif;">Atenção</h3>
-                    <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5; font-family:'Poppins', sans-serif;">${mensagem}</p>
+                    <h3 style="margin:0 0 10px 0; color:#1e293b;">Atenção</h3>
+                    <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5;">${mensagem}</p>
                     <div style="display:flex; gap:10px;">
-                        <button onclick="document.getElementById('${id}').remove()" style="flex:1; padding:12px; border:none; border-radius:8px; background:#f1f5f9; color:#475569; font-weight:600; cursor:pointer; font-family:'Poppins', sans-serif;">Cancelar</button>
-                        <button id="btn-sim-${id}" style="flex:1; padding:12px; border:none; border-radius:8px; background:#10b981; color:white; font-weight:600; cursor:pointer; font-family:'Poppins', sans-serif;">Sim, Confirmar</button>
+                        <button onclick="document.getElementById('${id}').remove()" style="flex:1; padding:12px; border:none; border-radius:8px; background:#f1f5f9; color:#475569; font-weight:600; cursor:pointer;">Cancelar</button>
+                        <button id="btn-sim-${id}" style="flex:1; padding:12px; border:none; border-radius:8px; background:#10b981; color:white; font-weight:600; cursor:pointer;">Sim, Confirmar</button>
                     </div>
                 </div>
             </div>
         `;
         document.body.insertAdjacentHTML('beforeend', html);
         document.getElementById(`btn-sim-${id}`).onclick = () => {
-            console.log(`[UI_CONFIRM] -> Confirmação aceita pelo usuário.`);
             document.getElementById(id).remove();
             callbackSim();
         };
     };
-    // ------------------------------------------
 
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('[DOM] -> DOMContentLoaded acionado.');
-
-        // ==========================================
-        // LÓGICA DE LOGIN
-        // ==========================================
-        const loginForm = document.getElementById('designer-login-form');
-        if (loginForm) {
-            console.log('[DOM] -> Formulário de login detectado.');
-
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                console.log('[LOGIN] -> Interceptando form de login...');
-
-                const email = document.getElementById('email').value.trim();
-                const senha = document.getElementById('senha').value.trim();
-                const btnSubmit = loginForm.querySelector('button[type="submit"]');
-
-                if (!email || !senha) {
-                    window.customAlert('Por favor, preencha e-mail e senha.', true);
-                    return;
-                }
-
-                btnSubmit.disabled = true;
-                btnSubmit.textContent = 'Aguarde...';
-
-                try {
-                    const response = await fetch('/api/designer/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, senha })
-                    });
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        console.log('[LOGIN] -> Sucesso. Salvando dados de sessão no cache.');
-                        localStorage.setItem('designerToken', data.token);
-                        localStorage.setItem('designerInfo', JSON.stringify({
-                            name: data.nome,
-                            nivel: data.nivel,
-                            assinaturaStatus: data.assinaturaStatus
-                        }));
-
-                        // TRAVA NO EXATO MOMENTO DO LOGIN
-                        if (data.assinaturaStatus === 'INATIVO') {
-                            console.warn('[LOGIN] -> Assinatura INATIVA. Direcionando para pagamento.');
-                            window.location.href = 'assinatura.html';
-                        } else {
-                            console.log('[LOGIN] -> Assinatura ATIVA. Direcionando para painel.');
-                            window.location.href = 'painel.html';
-                        }
-                    } else {
-                        window.customAlert(data.message || 'Erro ao fazer login.', true);
-                        btnSubmit.disabled = false;
-                        btnSubmit.textContent = 'Entrar';
-                    }
-                } catch (error) {
-                    console.error('[LOGIN] -> Erro HTTP:', error);
-                    window.customAlert('Erro de conexão com o servidor.', true);
-                    btnSubmit.disabled = false;
-                    btnSubmit.textContent = 'Entrar';
-                }
-            });
-        }
-
-        // ==========================================
-        // LÓGICA DE CADASTRO 
-        // ==========================================
-        const cadastroForm = document.getElementById('designer-cadastro-form');
-        if (cadastroForm) {
-            console.log('[DOM] -> Formulário de CADASTRO detectado.');
-
-            cadastroForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                console.log('[CADASTRO] -> Interceptando form de cadastro...');
-
-                const nome = document.getElementById('nome').value.trim();
-                const email = document.getElementById('email').value.trim();
-                const chave_pix = document.getElementById('chave_pix').value.trim();
-                const senha = document.getElementById('senha').value.trim();
-                const confSenha = document.getElementById('confirmar-senha').value.trim();
-                const btnSubmit = cadastroForm.querySelector('button[type="submit"]');
-
-                if (senha !== confSenha) {
-                    window.customAlert('As senhas não conferem. Digite novamente.', true);
-                    return;
-                }
-
-                btnSubmit.disabled = true;
-                btnSubmit.textContent = 'Criando conta...';
-
-                try {
-                    const response = await fetch('/api/designer/register', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ nome, email, senha, chave_pix })
-                    });
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        console.log('[CADASTRO] -> Sucesso. Conta criada!');
-                        // Salva dados no cache. Todo novo cadastro nasce INATIVO.
-                        localStorage.setItem('designerToken', data.token);
-                        localStorage.setItem('designerInfo', JSON.stringify({
-                            name: data.nome,
-                            nivel: data.nivel,
-                            assinaturaStatus: 'INATIVO' // Força inativo
-                        }));
-
-                        console.warn('[CADASTRO] -> Redirecionando nova conta para página de assinatura.');
-                        window.location.href = 'assinatura.html';
-                    } else {
-                        window.customAlert(data.message || 'Erro ao realizar o cadastro.', true);
-                        btnSubmit.disabled = false;
-                        btnSubmit.textContent = 'Cadastrar e Entrar';
-                    }
-                } catch (error) {
-                    console.error('[CADASTRO] -> Erro HTTP:', error);
-                    window.customAlert('Erro de conexão com o servidor. Tente novamente.', true);
-                    btnSubmit.disabled = false;
-                    btnSubmit.textContent = 'Cadastrar e Entrar';
-                }
-            });
-        }
-
-        if (document.querySelector('main.main-painel')) {
-            console.log('[DOM] -> Painel detectado. Carregando dados do Dashboard...');
-            carregarDashboardDesigner();
-        }
-
-        const logoutBtn = document.getElementById('logout-button');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                console.log('[LOGOUT] -> Limpando sessão...');
-                localStorage.clear();
-                window.location.href = 'login.html';
-            });
-        }
-    });
-
-    window.fecharGaveta = () => {
-        const overlay = document.getElementById('drawer-overlay');
-        const panel = document.getElementById('drawer-panel');
-        if (overlay) overlay.classList.remove('active');
-        if (panel) panel.classList.remove('active');
-        if (window.chatInterval) clearInterval(window.chatInterval);
-    };
-
-    window.abrirGaveta = (titulo, htmlCorpo, htmlRodape = '') => {
-        document.getElementById('drawer-title').innerText = titulo;
-        document.getElementById('drawer-content').innerHTML = htmlCorpo;
-        document.getElementById('drawer-footer').innerHTML = htmlRodape;
-        document.getElementById('drawer-overlay').classList.add('active');
-        document.getElementById('drawer-panel').classList.add('active');
-    };
-
-    window.mostrarErro = (mensagem) => customAlert(mensagem, true);
-
+    // --- DASHBOARD E MESA DE TRABALHO ---
     async function carregarDashboardDesigner() {
+        console.log('[DASHBOARD] -> Buscando dados do painel...');
         const designerInfo = JSON.parse(localStorage.getItem('designerInfo'));
-        if (designerInfo) {
-            document.getElementById('designer-greeting').textContent = `Olá, ${designerInfo.name}!`;
-        }
+        if (designerInfo) document.getElementById('designer-greeting').textContent = `Olá, ${designerInfo.name}!`;
 
         try {
             const res = await fetch('/api/designer/getDashboard', {
@@ -259,30 +117,11 @@
             const data = await res.json();
 
             if (!res.ok) {
-                if (res.status === 401 || res.status === 403) {
-                    localStorage.clear();
-                    window.location.href = 'login.html';
-                    return;
-                }
+                if (res.status === 401 || res.status === 403) { localStorage.clear(); window.location.href = 'login.html'; return; }
                 throw new Error(data.message);
             }
 
-            // ATUALIZA O CACHE DE ASSINATURA CASO TENHA MUDADO NO BANCO POR WEBHOOK
-            if (data.designer && data.designer.assinatura_status) {
-                if (designerInfo && designerInfo.assinaturaStatus !== data.designer.assinatura_status) {
-                    console.log(`[DASHBOARD] -> Atualizando cache de assinatura de ${designerInfo.assinaturaStatus} para ${data.designer.assinatura_status}`);
-                    designerInfo.assinaturaStatus = data.designer.assinatura_status;
-                    localStorage.setItem('designerInfo', JSON.stringify(designerInfo));
-
-                    // Se no meio do uso a assinatura expirou:
-                    if (data.designer.assinatura_status === 'INATIVO') {
-                        console.warn('[DASHBOARD] -> Detectada assinatura expirada pela API. Bloqueando e redirecionando...');
-                        window.location.href = 'assinatura.html';
-                        return;
-                    }
-                }
-            }
-
+            // Atualização dos Cards
             document.getElementById('designer-faturamento-mes').textContent = formatarMoeda(data.designer.faturamento_mes);
             document.getElementById('designer-acertos-pendentes').textContent = formatarMoeda(data.designer.acertos_pendentes);
             document.getElementById('designer-pedidos-ativos').textContent = data.meusPedidos.length;
@@ -292,11 +131,15 @@
             const badgeNivel = document.getElementById('badge-nivel');
             const niveis = { 1: { t: 'Ouro', c: 'lvl-1' }, 2: { t: 'Prata', c: 'lvl-2' }, 3: { t: 'Bronze', c: 'lvl-3' } };
             const n = niveis[data.designer.nivel] || niveis[3];
-            if (badgeNivel) { badgeNivel.innerHTML = `<i class="fas fa-medal"></i> Nível ${n.t}`; badgeNivel.className = `stat-badge ${n.c}`; }
+            if (badgeNivel) {
+                badgeNivel.innerHTML = `<i class="fas fa-medal"></i> Nível ${n.t}`;
+                badgeNivel.className = `stat-badge ${n.c}`;
+            }
 
             const valPontos = document.getElementById('val-pontos');
             if (valPontos) valPontos.textContent = data.designer.pontuacao;
 
+            // Renderizações de listas
             renderizarMeusTrabalhos(data.meusPedidos);
             renderizarMercado(data.mercado);
             carregarHistoricoAcertos();
@@ -306,15 +149,16 @@
                 iniciarVerificacaoNotificacoes(ativosIds);
             }
         } catch (error) {
-            console.error('[DASHBOARD] -> Falha na renderização do painel:', error);
+            console.error('[DASHBOARD] -> Erro fatal:', error);
             window.mostrarErro('Falha ao carregar os dados do painel.');
         }
     }
-
+    // --- HISTÓRICO E EXTRATO DETALHADO ---
     async function carregarHistoricoAcertos() {
         const container = document.getElementById('saques-list');
         if (!container) return;
 
+        console.log('[HISTORICO] -> Solicitando extrato de movimentações...');
         try {
             const res = await fetch('/api/designer/getAcertos', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: sessionToken })
@@ -322,14 +166,17 @@
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
+            console.log(`[HISTORICO] -> ${data.acertos.length} registros encontrados.`);
             window.acertosCache = data.acertos;
             renderizarHistoricoFiltrado('TODOS');
         } catch (error) {
+            console.error('[HISTORICO] -> Erro ao carregar extrato:', error);
             container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--danger);">Erro ao carregar extrato.</p>`;
         }
     }
 
     window.renderizarHistoricoFiltrado = (statusFiltro) => {
+        console.log(`[HISTORICO_FILTRO] -> Filtrando por: ${statusFiltro}`);
         const container = document.getElementById('saques-list');
         const acertos = window.acertosCache || [];
         const badgeNotif = document.getElementById('notif-pagamentos');
@@ -379,7 +226,7 @@
                         </div>
                     </div>
                     
-                    <div id="detalhes-${empIdStr}" style="display:none; background: #f8fafc; padding: 15px 20px 15px 40px; border-top: 1px solid #edf2f7; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                    <div id="detalhes-${empIdStr}" style="display:none; background: #f8fafc; padding: 15px 20px 15px 40px; border-top: 1px solid #edf2f7;">
                         ${grupo.itens.map(item => {
                 if (item.is_pagamento && item.status === 'AGUARDANDO_CONFIRMACAO') {
                     return `
@@ -388,38 +235,27 @@
                                             <div style="font-weight: 700; color: #b45309;"><i class="fas fa-hand-holding-usd"></i> PIX Informado pela Gráfica</div>
                                             <div style="font-size: 1.2rem; font-weight: 800; color: #27ae60;">+ ${formatarMoeda(item.valor)}</div>
                                         </div>
-                                        <div style="font-size: 0.85rem; color: #475569; margin-bottom: 15px;">A gráfica informou que transferiu este valor para sua conta. Verifique o comprovante e confirme o recebimento para dar baixa nas suas artes pendentes.</div>
+                                        <p style="font-size:0.85rem; color:#475569; margin-bottom:15px;">Confirme se o valor caiu em sua conta bancária.</p>
                                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                                            <button id="btn-conf-${item.id}" onclick="responderPagamento(${item.id}, 'CONFIRMAR')" class="btn-action" style="background:#10b981;"><i class="fas fa-check"></i> Recebi o Valor</button>
-                                            <button id="btn-rec-${item.id}" onclick="responderPagamento(${item.id}, 'RECUSAR')" class="btn-action" style="background:#ef4444;"><i class="fas fa-times"></i> Recusar (Não recebi)</button>
-                                            ${item.comprovante_url ? `<a href="${item.comprovante_url}" target="_blank" class="btn-outline-sm" style="display:inline-flex; align-items:center; gap:5px; margin-top:0;"><i class="fas fa-external-link-alt"></i> Ver Comprovante</a>` : ''}
+                                            <button onclick="responderPagamento(${item.id}, 'CONFIRMAR')" class="btn-action" style="background:#10b981;"><i class="fas fa-check"></i> Recebi o Valor</button>
+                                            <button onclick="responderPagamento(${item.id}, 'RECUSAR')" class="btn-action" style="background:#ef4444;"><i class="fas fa-times"></i> Recusar</button>
+                                            ${item.comprovante_url ? `<a href="${item.comprovante_url}" target="_blank" class="btn-outline-sm"><i class="fas fa-external-link-alt"></i> Ver Comprovante</a>` : ''}
                                         </div>
-                                    </div>
-                                `;
+                                    </div>`;
                 }
-
                 let statusHtml = `<span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">${item.status}</span>`;
-                if (item.status === 'PAGO') statusHtml = `<span style="background:#d1fae5; color:#065f46; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">${item.is_pagamento ? 'APROVADO' : 'RECEBIDO'}</span>`;
-                else if (item.status === 'RECUSADO') statusHtml = `<span style="background:#fee2e2; color:#b91c1c; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">RECUSADO</span>`;
-
-                let linkDoc = item.comprovante_url ? `<a href="${item.comprovante_url}" target="_blank" title="Ver Comprovante" style="color:var(--primary-color);"><i class="fas fa-file-invoice-dollar"></i></a>` : '-';
-                let iconAcao = item.is_pagamento ? `<i class="fas fa-arrow-down" style="color:#27ae60;"></i>` : `<i class="fas fa-palette" style="color:#3498db;"></i>`;
-                let prefixo = item.is_pagamento ? `+ ` : ``;
-                let corValor = item.is_pagamento ? `color: #27ae60;` : `color: #1e293b;`;
-
+                if (item.status === 'PAGO') statusHtml = `<span style="background:#d1fae5; color:#065f46; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">PAGO</span>`;
                 return `
                                 <div style="display: grid; grid-template-columns: 0.5fr 2fr 1fr 1fr 0.5fr; gap: 10px; padding: 10px 0; border-bottom: 1px dashed #e2e8f0; font-size:0.85rem; align-items: center;">
                                     <div style="color:var(--text-muted); font-size:0.75rem;">${new Date(item.data).toLocaleDateString()}</div>
-                                    <div style="font-weight:500;">${iconAcao} ${item.descricao}</div>
+                                    <div style="font-weight:500;">${item.is_pagamento ? '↓ PIX Recebido' : '🎨 ' + item.descricao}</div>
                                     <div>${statusHtml}</div>
-                                    <div style="font-weight:700; text-align:right; ${corValor}">${prefixo}${formatarMoeda(item.valor)}</div>
-                                    <div style="text-align:right;">${linkDoc}</div>
-                                </div>
-                            `;
+                                    <div style="font-weight:700; text-align:right; color: ${item.is_pagamento ? '#27ae60' : '#1e293b'}">${item.is_pagamento ? '+' : ''}${formatarMoeda(item.valor)}</div>
+                                    <div style="text-align:right;">${item.comprovante_url ? `<a href="${item.comprovante_url}" target="_blank"><i class="fas fa-file-invoice-dollar"></i></a>` : '-'}</div>
+                                </div>`;
             }).join('')}
                     </div>
-                </div>
-            `;
+                </div>`;
         }).join('');
 
         container.innerHTML = `${renderizarControlesFiltro(statusFiltro)}${htmlGrupos}`;
@@ -428,16 +264,14 @@
     function renderizarControlesFiltro(selecionado) {
         return `
             <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px; background: #fff; padding: 15px; border-radius: 12px; box-shadow: var(--shadow-sm);">
-                <span style="font-weight:600; font-size:0.9rem; color:var(--secondary-color);">Filtro de Extrato:</span>
-                <select onchange="renderizarHistoricoFiltrado(this.value)" style="padding: 8px 15px; border-radius: 8px; border: 1px solid #e2e8f0; font-family: 'Poppins'; outline:none; cursor:pointer;">
-                    <option value="TODOS" ${selecionado === 'TODOS' ? 'selected' : ''}>Todas as Movimentações</option>
+                <span style="font-weight:600; font-size:0.9rem;">Filtro:</span>
+                <select onchange="renderizarHistoricoFiltrado(this.value)" style="padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0; font-family: 'Poppins';">
+                    <option value="TODOS" ${selecionado === 'TODOS' ? 'selected' : ''}>Tudo</option>
                     <option value="PENDENTE" ${selecionado === 'PENDENTE' ? 'selected' : ''}>Artes a Receber</option>
                     <option value="AGUARDANDO_CONFIRMACAO" ${selecionado === 'AGUARDANDO_CONFIRMACAO' ? 'selected' : ''}>Pagamentos em Análise</option>
-                    <option value="PAGO" ${selecionado === 'PAGO' ? 'selected' : ''}>Quitados / Aprovados</option>
+                    <option value="PAGO" ${selecionado === 'PAGO' ? 'selected' : ''}>Quitados</option>
                 </select>
-            </div>
-            <style>@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }</style>
-        `;
+            </div>`;
     }
 
     window.toggleDetalhesEmpresa = (id) => {
@@ -447,42 +281,22 @@
         else { el.style.display = 'none'; icon.style.transform = 'rotate(0deg)'; }
     }
 
-    // --- RESPONDER PAGAMENTO ---
     window.responderPagamento = (pagamentoId, acao) => {
-        const msg = acao === 'CONFIRMAR'
-            ? "Você conferiu a sua conta bancária e o dinheiro realmente caiu? Ao confirmar, as suas artes correspondentes receberão baixa automática."
-            : "Tem certeza que deseja RECUSAR este comprovante? A gráfica será notificada que o dinheiro não entrou.";
-
-        customConfirm(msg, async () => {
-            const btnC = document.getElementById(`btn-conf-${pagamentoId}`);
-            const btnR = document.getElementById(`btn-rec-${pagamentoId}`);
-            if (btnC) btnC.disabled = true;
-            if (btnR) btnR.disabled = true;
-
+        const msg = acao === 'CONFIRMAR' ? "Confirma que o dinheiro caiu na sua conta?" : "Recusar este comprovante?";
+        window.customConfirm(msg, async () => {
+            console.log(`[PAGAMENTO] -> Respondendo: ${acao} para ID: ${pagamentoId}`);
             try {
                 const res = await fetch('/api/designer/confirmarPagamento', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: sessionToken, pagamentoId, acao })
                 });
-                const data = await res.json();
-
-                if (res.ok) {
-                    customAlert(data.message);
-                    carregarDashboardDesigner();
-                } else {
-                    customAlert(data.message, true);
-                    if (btnC) btnC.disabled = false;
-                    if (btnR) btnR.disabled = false;
-                }
-            } catch (e) {
-                customAlert("Erro de comunicação com o servidor.", true);
-                if (btnC) btnC.disabled = false;
-                if (btnR) btnR.disabled = false;
-            }
+                if (res.ok) { window.customAlert("Sucesso!"); carregarDashboardDesigner(); }
+                else { window.customAlert("Erro ao processar.", true); }
+            } catch (e) { console.error(e); }
         });
     }
 
-    // --- FUNÇÕES DA MESA DE TRABALHO ---
+    // --- MESA DE TRABALHO RENDER ---
     function renderizarMeusTrabalhos(pedidos) {
         const container = document.getElementById('atendimentos-list');
         if (!container) return;
@@ -494,13 +308,12 @@
                 <div><div style="font-weight:600;">${p.titulo}</div><button onclick="verBriefing('${b64EncodeUnicode(p.briefing_completo || '')}')" class="btn-outline-sm">LER BRIEFING</button></div>
                 <div><span style="background:#fef3c7; color:#b45309; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">PRODUÇÃO</span></div>
                 <div style="font-weight:700; color:var(--success);">${formatarMoeda(p.valor_designer)}</div>
-                <div style="text-align: right; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
-                    <div class="btn-chat-wrapper"><button onclick="abrirChatEmbutido(${p.id}, '${p.titulo}', 'cliente')" class="btn-action" style="background:#25D366; padding: 6px 10px;"><i class="fab fa-whatsapp"></i> Cliente</button><span id="badge-cliente-${p.id}" class="badge-notif"></span></div>
-                    <div class="btn-chat-wrapper"><button onclick="abrirChatEmbutido(${p.id}, '${p.titulo}', 'interno')" class="btn-action" style="background:#4f46e5; padding: 6px 10px;"><i class="fas fa-building"></i> Gráfica</button><span id="badge-interno-${p.id}" class="badge-notif"></span></div>
-                    <button onclick="prepararFinalizacao(${p.id})" class="btn-action" style="padding: 6px 10px;">Finalizar</button>
+                <div style="text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
+                    <div class="btn-chat-wrapper"><button onclick="abrirChatEmbutido(${p.id}, '${p.titulo}', 'cliente')" class="btn-action" style="background:#25D366; padding: 6px 10px;"><i class="fab fa-whatsapp"></i></button><span id="badge-cliente-${p.id}" class="badge-notif"></span></div>
+                    <div class="btn-chat-wrapper"><button onclick="abrirChatEmbutido(${p.id}, '${p.titulo}', 'interno')" class="btn-action" style="background:#4f46e5; padding: 6px 10px;"><i class="fas fa-building"></i></button><span id="badge-interno-${p.id}" class="badge-notif"></span></div>
+                    <button onclick="prepararFinalizacao(${p.id})" class="btn-action">Finalizar</button>
                 </div>
-            </div>
-        `).join('');
+            </div>`).join('');
     }
 
     function renderizarMercado(pedidos) {
@@ -514,158 +327,113 @@
                 <div><div style="font-weight:600;">${p.titulo}</div><button onclick="verBriefing('${b64EncodeUnicode(p.briefing_completo || '')}')" class="btn-outline-sm">LER BRIEFING</button></div>
                 <div style="font-weight:700; color:var(--success); font-size:1.1rem;">${formatarMoeda(p.valor_designer)}</div>
                 <div style="text-align: right;"><button onclick="confirmarAssumir(${p.id})" class="btn-action" style="padding:10px 20px;">ATENDER</button></div>
-            </div>
-        `).join('');
+            </div>`).join('');
     }
 
     window.verBriefing = (b64) => {
         const texto = decodeURIComponent(Array.prototype.map.call(atob(b64), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-        window.abrirGaveta("Briefing do Pedido", `<span class="drawer-label">Instruções</span><div class="briefing-box">${texto}</div>`, `<button onclick="fecharGaveta()" class="btn-full btn-secondary">Fechar</button>`);
+        window.abrirGaveta("Briefing do Pedido", `<div class="briefing-box">${texto}</div>`, `<button onclick="fecharGaveta()" class="btn-full btn-secondary">Fechar</button>`);
     };
 
     window.confirmarAssumir = (id) => {
-        customConfirm("Deseja assumir este pedido? Você será responsável pela comunicação e entrega da arte no prazo.", async () => {
+        window.customConfirm("Deseja assumir este pedido?", async () => {
             try {
                 const res = await fetch('/api/designer/assumirPedido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: sessionToken, pedidoId: id }) });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message);
-
-                customAlert("Pedido assumido com sucesso!");
-                carregarDashboardDesigner();
-            } catch (e) {
-                customAlert(e.message, true);
-            }
+                if (res.ok) { window.customAlert("Pedido assumido!"); carregarDashboardDesigner(); }
+                else { const d = await res.json(); window.customAlert(d.message, true); }
+            } catch (e) { console.error(e); }
         });
     };
 
     window.prepararFinalizacao = (id) => {
-        const corpo = `<span class="drawer-label">Link Layout</span><input type="url" id="f-layout" class="drawer-input" required><span class="drawer-label">Link Arquivo Final</span><input type="url" id="f-impressao" class="drawer-input" required>`;
-        window.abrirGaveta("Entregar Trabalho", corpo, `<button id="btn-exec-finalizar" class="btn-full btn-primary">FINALIZAR E RECEBER</button><button onclick="fecharGaveta()" class="btn-full btn-secondary">Voltar</button>`);
-
-        document.getElementById('btn-exec-finalizar').onclick = async () => {
-            const linkLayout = document.getElementById('f-layout').value.trim(); const linkImpressao = document.getElementById('f-impressao').value.trim();
-            if (!linkLayout || !linkImpressao) {
-                customAlert("Preencha os dois links para finalizar.", true);
-                return;
-            }
-
-            const btn = document.getElementById('btn-exec-finalizar'); btn.disabled = true; btn.textContent = 'Enviando...';
+        const corpo = `<span class="drawer-label">Link Layout</span><input type="url" id="f-layout" class="drawer-input" required><span class="drawer-label">Link Impressão</span><input type="url" id="f-impressao" class="drawer-input" required>`;
+        window.abrirGaveta("Finalizar Pedido", corpo, `<button id="btn-finalizar-exec" class="btn-full btn-primary">ENVIAR TRABALHO</button>`);
+        document.getElementById('btn-finalizar-exec').onclick = async () => {
+            const l1 = document.getElementById('f-layout').value;
+            const l2 = document.getElementById('f-impressao').value;
+            if (!l1 || !l2) return window.customAlert("Preencha os links", true);
             try {
-                const res = await fetch('/api/designer/finalizarPedido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: sessionToken, pedidoId: id, linkLayout, linkImpressao }) });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message || "Erro ao finalizar.");
-
-                fecharGaveta();
-                customAlert(data.message);
-                carregarDashboardDesigner();
-            } catch (e) {
-                fecharGaveta();
-                customAlert(e.message, true);
-            }
+                const res = await fetch('/api/designer/finalizarPedido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: sessionToken, pedidoId: id, linkLayout: l1, linkImpressao: l2 }) });
+                if (res.ok) { window.fecharGaveta(); window.customAlert("Trabalho entregue!"); carregarDashboardDesigner(); }
+                else { const d = await res.json(); window.customAlert(d.message, true); }
+            } catch (e) { console.error(e); }
         };
     };
+
+    // --- CHAT E GAVETA ---
+    window.abrirGaveta = (titulo, htmlCorpo, htmlRodape = '') => {
+        console.log(`[GAVETA] -> Abrindo: ${titulo}`);
+        document.getElementById('drawer-title').innerText = titulo;
+        document.getElementById('drawer-content').innerHTML = htmlCorpo;
+        document.getElementById('drawer-footer').innerHTML = htmlRodape;
+        document.getElementById('drawer-overlay').classList.add('active');
+        document.getElementById('drawer-panel').classList.add('active');
+    };
+
+    window.fecharGaveta = () => {
+        document.getElementById('drawer-overlay').classList.remove('active');
+        document.getElementById('drawer-panel').classList.remove('active');
+        if (window.chatInterval) clearInterval(window.chatInterval);
+    };
+
+    window.abrirChatEmbutido = async (pedidoId, pedidoTitulo, tipoChat = 'cliente') => {
+        console.log(`[CHAT] -> Abrindo chat ${tipoChat} para pedido ${pedidoId}`);
+        window.chatAbertoAtual = { pedidoId, tipoChat };
+        const corpo = `
+            <div id="chat-msgs-container" style="height:60vh; overflow-y:auto; background:#f1f5f9; padding:15px; border-radius:8px; display:flex; flex-direction:column; gap:10px;"></div>
+            <div class="chat-input-row" style="display:flex; gap:10px; margin-top:15px;">
+                <input type="text" id="chat-texto-input" class="drawer-input" placeholder="Escreva aqui..." style="flex:1; margin:0;">
+                <button id="btn-enviar-chat" class="btn-action" style="padding:10px 20px;"><i class="fas fa-paper-plane"></i></button>
+            </div>`;
+        window.abrirGaveta(tipoChat === 'interno' ? `Chat Gráfica: ${pedidoId}` : `Chat Cliente: ${pedidoId}`, corpo, "");
+
+        const container = document.getElementById('chat-msgs-container');
+        const input = document.getElementById('chat-texto-input');
+
+        const carregar = async () => {
+            const fd = new FormData(); fd.append('action', 'get'); fd.append('pedidoId', pedidoId); fd.append('tipoChat', tipoChat);
+            const res = await fetch('/api/designer/chat', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (res.ok) {
+                container.innerHTML = data.mensagens.map(m => `
+                    <div style="align-self: ${m.lado === 'in' ? 'flex-start' : 'flex-end'}; background: ${m.lado === 'in' ? '#fff' : '#dcf8c6'}; padding:10px; border-radius:8px; max-width:80%; font-size:0.9rem;">
+                        <small style="display:block; font-weight:700; color:#4f46e5;">${m.remetente}</small>
+                        ${m.texto}
+                    </div>`).join('');
+                container.scrollTop = container.scrollHeight;
+            }
+        };
+        document.getElementById('btn-enviar-chat').onclick = async () => {
+            if (!input.value) return;
+            const fd = new FormData(); fd.append('action', 'send'); fd.append('pedidoId', pedidoId); fd.append('tipoChat', tipoChat); fd.append('texto', input.value);
+            await fetch('/api/designer/chat', { method: 'POST', body: fd });
+            input.value = ''; carregar();
+        };
+        carregar(); window.chatInterval = setInterval(carregar, 5000);
+    };
+
+    function iniciarVerificacaoNotificacoes(ids) {
+        console.log('[CHAT_POOL] -> Iniciando monitoramento de mensagens.');
+        setInterval(async () => {
+            const fd = new FormData(); fd.append('action', 'check_all'); fd.append('pedidos', JSON.stringify(ids));
+            const res = await fetch('/api/designer/chat', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (res.ok && data.latestMessages) {
+                Object.entries(data.latestMessages).forEach(([pId, msgs]) => {
+                    if (msgs.cliente && msgs.cliente.side === 'in') document.getElementById(`badge-cliente-${pId}`).style.display = 'flex';
+                    if (msgs.interno && msgs.interno.side === 'in') document.getElementById(`badge-interno-${pId}`).style.display = 'flex';
+                });
+            }
+        }, 30000);
+    }
 
     function formatarMoeda(valor) { return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor || 0); }
     window.b64EncodeUnicode = (str) => { return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1))); };
 
-    // Chat Logic
-    window.chatAbertoAtual = { pedidoId: null, tipoChat: null };
-    window.notifInterval = null;
+    document.addEventListener('DOMContentLoaded', () => {
+        if (document.querySelector('main.main-painel')) carregarDashboardDesigner();
+        const logoutBtn = document.getElementById('logout-button');
+        if (logoutBtn) logoutBtn.onclick = () => { localStorage.clear(); window.location.href = 'login.html'; };
+    });
 
-    function iniciarVerificacaoNotificacoes(pedidosIds) {
-        if (window.notifInterval) clearInterval(window.notifInterval);
-        if (!pedidosIds || pedidosIds.length === 0) return;
-
-        const check = async () => {
-            try {
-                const fd = new FormData(); fd.append('action', 'check_all'); fd.append('pedidos', JSON.stringify(pedidosIds));
-                const res = await fetch('/api/designer/chat', { method: 'POST', body: fd });
-                const data = await res.json();
-                if (res.ok && data.latestMessages) {
-                    for (const [pId, msgs] of Object.entries(data.latestMessages)) {
-                        if (msgs.cliente) {
-                            const lidoId = localStorage.getItem(`lastRead_${pId}_cliente`); const badge = document.getElementById(`badge-cliente-${pId}`);
-                            const chatNaoAberto = !(window.chatAbertoAtual.pedidoId == pId && window.chatAbertoAtual.tipoChat === 'cliente');
-                            if (msgs.cliente.id !== lidoId && msgs.cliente.side === 'in' && chatNaoAberto) { if (badge) badge.style.display = 'flex'; } else { if (badge) badge.style.display = 'none'; }
-                        }
-                        if (msgs.interno) {
-                            const lidoId = localStorage.getItem(`lastRead_${pId}_interno`); const badge = document.getElementById(`badge-interno-${pId}`);
-                            const chatNaoAberto = !(window.chatAbertoAtual.pedidoId == pId && window.chatAbertoAtual.tipoChat === 'interno');
-                            if (msgs.interno.id !== lidoId && msgs.interno.side === 'in' && chatNaoAberto) { if (badge) badge.style.display = 'flex'; } else { if (badge) badge.style.display = 'none'; }
-                        }
-                    }
-                }
-            } catch (err) { }
-        };
-        check(); window.notifInterval = setInterval(check, 20000);
-    }
-
-    const chatStyle = document.createElement('style');
-    chatStyle.textContent = `.chat-container { flex: 1; overflow-y: auto; padding: 15px; background: #efeae2; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; height: 60vh; } .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; position: relative; word-wrap: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.1); } .chat-in { background: #ffffff; align-self: flex-start; border-top-left-radius: 0; } .chat-out { background: #dcf8c6; align-self: flex-end; border-top-right-radius: 0; } .chat-sender { font-size: 0.7rem; font-weight: 700; color: #075e54; margin-bottom: 4px; display: block; } .chat-time { font-size: 0.65rem; color: #999; text-align: right; display: block; margin-top: 5px; } .chat-input-row { display: flex; gap: 10px; margin-top: 15px; align-items: center; }`;
-    document.head.appendChild(chatStyle);
-
-    window.abrirChatEmbutido = async (pedidoId, pedidoTitulo, tipoChat = 'cliente') => {
-        window.chatAbertoAtual = { pedidoId: pedidoId, tipoChat: tipoChat };
-        const badgeElement = document.getElementById(`badge-${tipoChat}-${pedidoId}`);
-        if (badgeElement) badgeElement.style.display = 'none';
-
-        const corpo = `
-            <div class="chat-container" id="chat-msgs-container"><p style="text-align:center; color:#888; margin-top: 20px;"><i class="fas fa-spinner fa-spin"></i> Conectando...</p></div>
-            <div id="chat-file-preview" style="display:none; padding:10px; background:#f1f5f9; border-radius:8px; margin-top:10px; font-size:0.8rem; display:flex; justify-content:space-between; align-items:center;">
-                <span id="chat-file-name" style="color:var(--primary-color); font-weight:600;"></span><button onclick="document.getElementById('chat-file-input').value=''; document.getElementById('chat-file-preview').style.setProperty('display', 'none', 'important');" style="border:none; background:none; color:red; cursor:pointer;">&times;</button>
-            </div>
-            <div class="chat-input-row" style="position:relative;">
-                <input type="file" id="chat-file-input" style="display:none;" onchange="const f=this.files[0]; if(f){ document.getElementById('chat-file-name').innerText=f.name; document.getElementById('chat-file-preview').style.setProperty('display', 'flex', 'important'); }">
-                <button onclick="document.getElementById('chat-file-input').click()" class="btn-action" style="padding: 10px 15px; background:#64748b; font-size: 1.1rem; border-radius: 8px;" title="Anexar Arquivo"><i class="fas fa-paperclip"></i></button>
-                <input type="text" id="chat-texto-input" class="drawer-input" style="margin:0; flex:1;" placeholder="Escreva..." autocomplete="off">
-                <button id="btn-enviar-chat" class="btn-action" style="padding: 14px 20px; font-size: 1.2rem; border-radius: 8px;"><i class="fas fa-paper-plane"></i></button>
-            </div>
-        `;
-        const designerNome = document.getElementById('designer-greeting')?.innerText.replace('Olá, ', '').split('!')[0] || 'Designer';
-        window.abrirGaveta(tipoChat === 'interno' ? `Chat Gráfica: ${pedidoId}` : `Chat Cliente: ${pedidoId}`, corpo, "");
-
-        const gavetaOverlay = document.getElementById('drawer-overlay');
-        const onclickOriginal = gavetaOverlay.onclick;
-        gavetaOverlay.onclick = () => { window.chatAbertoAtual = { pedidoId: null, tipoChat: null }; if (onclickOriginal) onclickOriginal(); }
-
-        const container = document.getElementById('chat-msgs-container'); const input = document.getElementById('chat-texto-input'); const btnEnviar = document.getElementById('btn-enviar-chat'); const fileInput = document.getElementById('chat-file-input');
-        let totalMensagensCache = 0;
-
-        const carregarMensagens = async () => {
-            try {
-                const fd = new FormData(); fd.append('action', 'get'); fd.append('pedidoId', pedidoId); fd.append('tipoChat', tipoChat);
-                const res = await fetch('/api/designer/chat', { method: 'POST', body: fd }); const data = await res.json();
-                if (res.ok && data.mensagens.length !== totalMensagensCache) {
-                    totalMensagensCache = data.mensagens.length;
-                    if (data.mensagens.length > 0) localStorage.setItem(`lastRead_${pedidoId}_${tipoChat}`, data.mensagens[data.mensagens.length - 1].id);
-                    container.innerHTML = data.mensagens.map(m => {
-                        let msgHtml = m.texto;
-                        if (m.type === 'image' && m.file) msgHtml = `<img src="${m.file.link}" style="max-width:100%; border-radius:8px; cursor:pointer; margin-bottom:5px;" onclick="window.open('${m.file.link}', '_blank')"><br><small>${m.texto}</small>`;
-                        else if ((m.type === 'audio' || m.type === 'voice') && m.file) msgHtml = `<audio src="${m.file.link}" controls style="max-width:100%; height:32px;"></audio><br><small>${m.texto}</small>`;
-                        else if (m.file) msgHtml = `<div style="background:rgba(0,0,0,0.05); padding:10px; border-radius:8px; display:flex; align-items:center; gap:10px;"><i class="fas fa-file-alt" style="font-size:1.2rem;"></i><div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.75rem;">${m.file.name}</div><a href="${m.file.link}" target="_blank" style="color:var(--primary-color);"><i class="fas fa-download"></i></a></div><small>${m.texto}</small>`;
-                        return `<div class="chat-bubble ${m.lado === 'in' ? 'chat-in' : 'chat-out'}"><span class="chat-sender">${m.remetente}</span>${msgHtml}<span class="chat-time">${new Date(m.hora * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>`;
-                    }).join('');
-                    setTimeout(() => { if (container) container.scrollTop = container.scrollHeight; }, 100);
-                }
-            } catch (err) { clearInterval(window.chatInterval); }
-        };
-
-        const enviarMensagem = async () => {
-            const texto = input.value; const arquivo = fileInput.files[0];
-            if (!texto.trim() && !arquivo) return;
-            btnEnviar.disabled = true; input.disabled = true;
-            try {
-                const fd = new FormData(); fd.append('action', 'send'); fd.append('pedidoId', pedidoId); fd.append('tipoChat', tipoChat);
-                if (texto) fd.append('texto', texto); if (arquivo) fd.append('file', arquivo); fd.append('designerNome', designerNome);
-                await fetch('/api/designer/chat', { method: 'POST', body: fd });
-                input.value = ''; fileInput.value = ''; document.getElementById('chat-file-preview').style.setProperty('display', 'none', 'important');
-                await carregarMensagens();
-                setTimeout(() => { if (container) container.scrollTop = container.scrollHeight; }, 100);
-            } catch (err) {
-                customAlert('Erro ao enviar a mensagem.', true);
-            } finally { btnEnviar.disabled = false; input.disabled = false; input.focus(); }
-        };
-        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensagem(); }); btnEnviar.onclick = enviarMensagem;
-        await carregarMensagens(); window.chatInterval = setInterval(carregarMensagens, 5000);
-    };
 })();
