@@ -1,4 +1,4 @@
-﻿// /designer/designer-script.js - VERSÃO INTEGRAL COMPLETA COM TRAVA DE TRIAL E CHAT
+// /designer/designer-script.js - VERSÃO INTEGRAL COMPLETA COM TRAVA DE TRIAL E CHAT
 (function () {
     console.log('[INIT] -> Iniciando sistema do designer com logs detalhados...');
     const sessionToken = localStorage.getItem('designerToken');
@@ -434,6 +434,102 @@
         if (document.querySelector('main.main-painel')) carregarDashboardDesigner();
         const logoutBtn = document.getElementById('logout-button');
         if (logoutBtn) logoutBtn.onclick = () => { localStorage.clear(); window.location.href = 'login.html'; };
+
+        // Lógica de Login
+        const loginForm = document.getElementById('designer-login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = loginForm.querySelector('.btn-submit');
+                const feedback = document.getElementById('form-error-feedback');
+                feedback.classList.add('hidden');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = 'Aguarde...';
+                btn.disabled = true;
+
+                try {
+                    const res = await fetch('/api/designer/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: document.getElementById('email').value,
+                            senha: document.getElementById('senha').value
+                        })
+                    });
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        localStorage.setItem('designerToken', data.token);
+                        localStorage.setItem('designerInfo', JSON.stringify({ name: data.nome, id: data.id }));
+                        window.location.href = 'painel.html';
+                    } else {
+                        feedback.textContent = data.message || 'Erro ao realizar login.';
+                        feedback.classList.remove('hidden');
+                    }
+                } catch (e) {
+                    feedback.textContent = 'Erro de conexão. Tente novamente.';
+                    feedback.classList.remove('hidden');
+                } finally {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            });
+        }
+
+        // Lógica de Cadastro
+        const cadastroForm = document.getElementById('designer-cadastro-form');
+        if (cadastroForm) {
+            cadastroForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const senha = document.getElementById('senha').value;
+                const confirm = document.getElementById('confirmar-senha').value;
+                const feedback = document.getElementById('form-error-feedback');
+                
+                if (senha !== confirm) {
+                    feedback.textContent = 'As senhas não coincidem.';
+                    feedback.classList.remove('hidden');
+                    return;
+                }
+
+                const btn = cadastroForm.querySelector('.btn-submit');
+                feedback.classList.add('hidden');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = 'Aguarde...';
+                btn.disabled = true;
+
+                try {
+                    const payload = {
+                        nome: document.getElementById('nome').value,
+                        email: document.getElementById('email').value,
+                        senha: senha
+                    };
+                    const pix = document.getElementById('chave_pix')?.value;
+                    if(pix) { payload.chave_pix = pix; }
+
+                    const res = await fetch('/api/designer/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        localStorage.setItem('designerToken', data.token);
+                        localStorage.setItem('designerInfo', JSON.stringify({ name: data.nome, id: data.id }));
+                        window.location.href = 'painel.html';
+                    } else {
+                        feedback.textContent = data.message || 'Erro no cadastro.';
+                        feedback.classList.remove('hidden');
+                    }
+                } catch (e) {
+                    feedback.textContent = 'Erro de rede. Tente novamente.';
+                    feedback.classList.remove('hidden');
+                } finally {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            });
+        }
     });
 
 })();

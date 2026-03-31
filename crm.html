@@ -319,14 +319,9 @@
                         </div>
                         <div id="gdrive-block-arquivo" class="gdrive-section">
                             <div id="gdrive-header-arquivo">
-                                <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px;"><i class="fab fa-google-drive" style="color:#4285f4;"></i> <strong>Upload via Google Drive</strong> — Envie o arquivo de impressão direto para o seu Drive</p>
-                                <button type="button" class="gdrive-connect-btn" onclick="conectarGoogleDrive('arquivo')" id="btn-connect-arquivo">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/d/da/Google_Drive_logo.png" alt="Drive">
-                                    Conectar Google Drive
-                                </button>
-                                <span class="gdrive-status-badge" id="badge-arquivo" style="display:none"><i class="fas fa-check-circle"></i> Drive Conectado</span>
+                                <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px;"><i class="fab fa-google-drive" style="color:#4285f4;"></i> <strong>Upload Direto</strong> — Envie o arquivo de impressão</p>
                             </div>
-                            <div class="gdrive-upload-area" id="upload-area-arquivo" style="display:none">
+                            <div class="gdrive-upload-area" id="upload-area-arquivo">
                                 <label class="gdrive-file-label" for="input-file-arquivo">
                                     <i class="fas fa-cloud-upload-alt"></i>
                                     <span>Clique ou arraste o(s) arquivo(s) aqui</span>
@@ -334,12 +329,12 @@
                                 <input type="file" id="input-file-arquivo" multiple style="display:none" onchange="atualizarContadorArquivos('arquivo')">
                                 <p class="gdrive-file-count" id="count-arquivo">Nenhum arquivo selecionado</p>
                                 <button type="button" class="gdrive-upload-btn" onclick="uploadParaGoogleDrive('arquivo')" id="btn-upload-arquivo">
-                                    <i class="fab fa-google-drive"></i> Enviar para o Drive
+                                    <i class="fas fa-arrow-up"></i> Enviar Arquivo(s)
                                 </button>
                             </div>
                             <div class="gdrive-link-result" id="link-result-arquivo">
                                 <i class="fas fa-folder-open" style="color:#16a34a; font-size:1.2rem;"></i>
-                                <div><strong>Link gerado:</strong><br><a id="link-url-arquivo" href="#" target="_blank">Ver no Drive</a></div>
+                                <div><strong>Link gerado:</strong><br><a id="link-url-arquivo" href="#" target="_blank">Ver Arquivo</a></div>
                             </div>
                         </div>
                         <input type="hidden" id="link-arquivo-drive-arquivo">
@@ -363,12 +358,7 @@
 
                         <div id="gdrive-block-setor" class="gdrive-section" style="margin-top:15px;">
                             <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px;"><i class="fab fa-google-drive" style="color:#4285f4;"></i> <strong>Arquivos de Referência (Opcional)</strong> — Envie logos, fotos ou arquivos para o freelancer</p>
-                            <button type="button" class="gdrive-connect-btn" onclick="conectarGoogleDrive('setor')" id="btn-connect-setor">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/d/da/Google_Drive_logo.png" alt="Drive">
-                                Conectar Google Drive
-                            </button>
-                            <span class="gdrive-status-badge" id="badge-setor" style="display:none"><i class="fas fa-check-circle"></i> Drive Conectado</span>
-                            <div class="gdrive-upload-area" id="upload-area-setor" style="display:none">
+                            <div class="gdrive-upload-area" id="upload-area-setor">
                                 <label class="gdrive-file-label" for="input-file-setor">
                                     <i class="fas fa-cloud-upload-alt"></i>
                                     <span>Clique ou arraste os arquivos de referência</span>
@@ -376,12 +366,12 @@
                                 <input type="file" id="input-file-setor" multiple style="display:none" onchange="atualizarContadorArquivos('setor')">
                                 <p class="gdrive-file-count" id="count-setor">Nenhum arquivo selecionado</p>
                                 <button type="button" class="gdrive-upload-btn" onclick="uploadParaGoogleDrive('setor')" id="btn-upload-setor">
-                                    <i class="fab fa-google-drive"></i> Enviar para o Drive
+                                    <i class="fas fa-arrow-up"></i> Enviar Arquivos
                                 </button>
                             </div>
                             <div class="gdrive-link-result" id="link-result-setor">
                                 <i class="fas fa-folder-open" style="color:#16a34a; font-size:1.2rem;"></i>
-                                <div><strong>Link gerado:</strong><br><a id="link-url-setor" href="#" target="_blank">Ver no Drive</a></div>
+                                <div><strong>Link gerado:</strong><br><a id="link-url-setor" href="#" target="_blank">Ver Arquivos</a></div>
                             </div>
                         </div>
                         <input type="hidden" id="link-arquivo-drive-setor">
@@ -390,12 +380,7 @@
                     <div id="designer-proprio-fields" class="hidden">
                         <div id="gdrive-block-proprio" class="gdrive-section">
                             <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px;"><i class="fab fa-google-drive" style="color:#4285f4;"></i> <strong>Arquivo para o Designer</strong> — Envie logos, fotos ou arquivos para o seu designer</p>
-                            <button type="button" class="gdrive-connect-btn" onclick="conectarGoogleDrive('proprio')" id="btn-connect-proprio">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/d/da/Google_Drive_logo.png" alt="Drive">
-                                Conectar Google Drive
-                            </button>
-                            <span class="gdrive-status-badge" id="badge-proprio" style="display:none"><i class="fas fa-check-circle"></i> Drive Conectado</span>
-                            <div class="gdrive-upload-area" id="upload-area-proprio" style="display:none">
+                            <div class="gdrive-upload-area" id="upload-area-proprio">
                                 <label class="gdrive-file-label" for="input-file-proprio">
                                     <i class="fas fa-cloud-upload-alt"></i>
                                     <span>Clique ou arraste os arquivos aqui</span>
@@ -403,12 +388,12 @@
                                 <input type="file" id="input-file-proprio" multiple style="display:none" onchange="atualizarContadorArquivos('proprio')">
                                 <p class="gdrive-file-count" id="count-proprio">Nenhum arquivo selecionado</p>
                                 <button type="button" class="gdrive-upload-btn" onclick="uploadParaGoogleDrive('proprio')" id="btn-upload-proprio">
-                                    <i class="fab fa-google-drive"></i> Enviar para o Drive
+                                    <i class="fas fa-arrow-up"></i> Enviar Arquivos
                                 </button>
                             </div>
                             <div class="gdrive-link-result" id="link-result-proprio">
                                 <i class="fas fa-folder-open" style="color:#16a34a; font-size:1.2rem;"></i>
-                                <div><strong>Link gerado:</strong><br><a id="link-url-proprio" href="#" target="_blank">Ver no Drive</a></div>
+                                <div><strong>Link gerado:</strong><br><a id="link-url-proprio" href="#" target="_blank">Ver Arquivos</a></div>
                             </div>
                         </div>
                         <input type="hidden" id="link-arquivo-drive-proprio">

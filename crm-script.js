@@ -1,4 +1,4 @@
-﻿// crm-script.js - LÓGICA DE META DIÁRIA AJUSTADA E LANÇAMENTO RÁPIDO COM VALIDAÇÕES EXTRAS
+// crm-script.js - LÓGICA DE META DIÁRIA AJUSTADA E LANÇAMENTO RÁPIDO COM VALIDAÇÕES EXTRAS
 
 let currentStep = 1;
 const totalSteps = 3;
@@ -342,7 +342,6 @@ window.selectCard = function (group, value, element) {
         if (fileFields) fileFields.classList.toggle('hidden', value !== 'Arquivo do Cliente');
         if (setorFields) setorFields.classList.toggle('hidden', value !== 'Setor de Arte');
         if (proprioFields) proprioFields.classList.toggle('hidden', value !== 'Designer Próprio');
-        checkGoogleDriveStatus();
     }
 };
 
@@ -440,7 +439,7 @@ window.produzirCardDireto = function (cardId, btnElement, event) {
             wppCliente: card.wpp_cliente,
             tipoEntrega: extras.tipo_entrega,
             briefingFormatado: txt,
-            linkArquivo: extras.link_arquivo,
+            linkArquivo: extras.link_arquivo_drive || extras.link_arquivo || "",
             supervisaoWpp: extras.supervisao_wpp,
             valorDesigner: extras.valor_designer,
             formato: extras.formato,
@@ -625,7 +624,6 @@ window.abrirPanelNovo = function () {
     adicionarMaterialNoForm();
     document.getElementById('slide-overlay').classList.add('active');
     document.getElementById('slide-panel').classList.add('active');
-    checkGoogleDriveStatus();
 };
 
 window.fecharPanel = function () {
@@ -749,76 +747,6 @@ function configurarMascaras() {
     }
 }
 
-let gDriveConectado = false;
-window.checkGoogleDriveStatus = async function () {
-    const sessionToken = localStorage.getItem('sessionToken');
-    if (!sessionToken) return;
-    try {
-        const res = await fetch('/api/auth/google-drive/status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionToken })
-        });
-        const data = await res.json();
-        gDriveConectado = data.conectado || false;
-        atualizarUIGDrive();
-    } catch (e) { gDriveConectado = false; }
-};
-
-function atualizarUIGDrive() {
-    ['arquivo', 'setor', 'proprio'].forEach(bloco => {
-        const btnConnect = document.getElementById(`btn-connect-${bloco}`);
-        const badge = document.getElementById(`badge-${bloco}`);
-        const uploadArea = document.getElementById(`upload-area-${bloco}`);
-        const gdSection = document.getElementById(`gdrive-block-${bloco}`);
-        if (gDriveConectado) {
-            if (btnConnect) btnConnect.style.display = 'none';
-            if (badge) badge.style.display = 'inline-flex';
-            if (uploadArea) uploadArea.style.display = 'block';
-            if (gdSection) gdSection.classList.add('conectado');
-        } else {
-            if (btnConnect) btnConnect.style.display = 'inline-flex';
-            if (badge) badge.style.display = 'none';
-            if (uploadArea) uploadArea.style.display = 'none';
-            if (gdSection) gdSection.classList.remove('conectado');
-        }
-    });
-}
-
-window.conectarGoogleDrive = async function (bloco) {
-    const sessionToken = localStorage.getItem('sessionToken');
-    if (!sessionToken) return showToast('Faca login primeiro.', 'error');
-    try {
-        const res = await fetch('/api/auth/google-drive/connect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionToken })
-        });
-        const data = await res.json();
-        if (!data.authUrl) return showToast('Erro ao gerar link de autorizacao.', 'error');
-
-        const popup = window.open(data.authUrl, 'google-drive-auth', 'width=500,height=620,top=100,left=300');
-
-        const onMessage = (event) => {
-            if (event.data && event.data.type === 'GOOGLE_DRIVE_AUTH') {
-                window.removeEventListener('message', onMessage);
-                if (event.data.sucesso) {
-                    gDriveConectado = true;
-                    atualizarUIGDrive();
-                    showToast('Google Drive conectado com sucesso!', 'success');
-                } else {
-                    showToast('Falha ao conectar o Drive. Tente novamente.', 'error');
-                }
-                if (!popup.closed) popup.close();
-            }
-        };
-        window.addEventListener('message', onMessage);
-        const checkPopup = setInterval(() => {
-            if (popup.closed) { clearInterval(checkPopup); window.removeEventListener('message', onMessage); }
-        }, 1000);
-    } catch (e) { showToast('Erro de conexao.', 'error'); }
-};
-
 window.atualizarContadorArquivos = function (bloco) {
     const input = document.getElementById(`input-file-${bloco}`);
     const contador = document.getElementById(`count-${bloco}`);
@@ -861,11 +789,7 @@ window.uploadParaGoogleDrive = async function (bloco) {
                 const el = document.getElementById('link-arquivo');
                 if (el && !el.value) el.value = data.link;
             }
-            showToast(`${data.arquivos} arquivo(s) enviados para o Drive!`, 'success');
-        } else if (data.needsAuth) {
-            gDriveConectado = false;
-            atualizarUIGDrive();
-            showToast('Autorizacao do Drive expirou. Reconecte.', 'error');
+            showToast(`${data.arquivos} arquivo(s) enviados com sucesso!`, 'success');
         } else {
             showToast(data.message || 'Erro no upload.', 'error');
         }
@@ -873,6 +797,6 @@ window.uploadParaGoogleDrive = async function (bloco) {
         showToast('Erro de conexao ao fazer upload.', 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fab fa-google-drive"></i> Enviar para o Drive';
+        btn.innerHTML = '<i class="fas fa-arrow-up"></i> Enviar Arquivos';
     }
 };

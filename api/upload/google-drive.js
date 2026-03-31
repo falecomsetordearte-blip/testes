@@ -53,9 +53,9 @@ module.exports = async (req, res) => {
             }
 
             try {
-                // 1. Busca os tokens do Drive desta empresa
+                // 1. Verifica sessão (apenas para assegurar segurança do endpoint)
                 const empresas = await prisma.$queryRawUnsafe(
-                    `SELECT id, gdrive_access_token, gdrive_refresh_token FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`,
+                    `SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`,
                     `%${sessionToken}%`
                 );
 
@@ -64,37 +64,21 @@ module.exports = async (req, res) => {
                     return resolve();
                 }
 
-                const empresa = empresas[0];
-
-                if (!empresa.gdrive_refresh_token) {
-                    res.status(403).json({ message: 'Google Drive não conectado. Autorize primeiro.', needsAuth: true });
+                // 2. Cria o cliente via Service Account
+                if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+                    res.status(500).json({ message: 'Chaves de Service Account não configuradas (Vercel ENV).' });
                     return resolve();
                 }
 
-                // 2. Cria o cliente OAuth2 e define os tokens
-                const oauth2Client = new google.auth.OAuth2(
-                    process.env.GOOGLE_CLIENT_ID,
-                    process.env.GOOGLE_CLIENT_SECRET,
-                    process.env.GOOGLE_REDIRECT_URI
-                );
-
-                oauth2Client.setCredentials({
-                    access_token: empresa.gdrive_access_token,
-                    refresh_token: empresa.gdrive_refresh_token
+                const auth = new google.auth.GoogleAuth({
+                    credentials: {
+                        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+                        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
+                    },
+                    scopes: ['https://www.googleapis.com/auth/drive']
                 });
 
-                // Atualiza o access_token no banco se renovado
-                oauth2Client.on('tokens', async (newTokens) => {
-                    if (newTokens.access_token) {
-                        await prisma.$executeRawUnsafe(
-                            `UPDATE empresas SET gdrive_access_token = $1 WHERE id = $2`,
-                            newTokens.access_token,
-                            empresa.id
-                        );
-                    }
-                });
-
-                const drive = google.drive({ version: 'v3', auth: oauth2Client });
+                const drive = google.drive({ version: 'v3', auth });
 
                 // 3. Cria (ou reutiliza) a pasta "Setor de Arte" no Drive raiz
                 const nomePasta = `Setor de Arte${tituloPedido ? ' - ' + tituloPedido : ''}`;
@@ -164,18 +148,7 @@ module.exports = async (req, res) => {
 
             } catch (error) {
                 console.error('[GDrive Upload] Erro:', error.message);
-                
-                // Detecta token expirado / revogado
-                if (error.message?.includes('invalid_grant') || error.code === 401) {
-                    // Limpa os tokens para forçar nova autorização
-                    await prisma.$executeRawUnsafe(
-                        `UPDATE empresas SET gdrive_access_token = NULL, gdrive_refresh_token = NULL WHERE session_tokens LIKE $1`,
-                        `%${fields.sessionToken}%`
-                    ).catch(() => {});
-                    res.status(401).json({ message: 'Autorização do Google Drive expirada. Reconecte.', needsAuth: true });
-                } else {
-                    res.status(500).json({ message: 'Erro no upload: ' + error.message });
-                }
+                res.status(500).json({ message: 'Erro interno no upload: ' + error.message });
                 resolve();
             }
         });
