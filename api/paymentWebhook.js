@@ -1,71 +1,56 @@
-// /api/paymentWebhook.js
-
+// /api/paymentWebhook.js (ou /api/asaas/webhook.js)
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const axios = require('axios');
-
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
-const ASAAS_WEBHOOK_TOKEN = process.env.ASAAS_WEBHOOK_TOKEN;
-const ASAAS_CUSTOMER_ID_FIELD = 'UF_CRM_1748911653';
 
 module.exports = async (req, res) => {
-    if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido' });
+    console.log(`[WEBHOOK ASAAS] ---> Recebendo requisição <---`);
+
+    if (req.method !== 'POST') {
+        console.log(`[WEBHOOK ASAAS] Erro: Método ${req.method} não permitido.`);
+        return res.status(405).json({ message: 'Método não permitido' });
+    }
 
     try {
-        const receivedToken = req.headers['asaas-access-token'];
-        if (!ASAAS_WEBHOOK_TOKEN || receivedToken !== ASAAS_WEBHOOK_TOKEN) {
-            return res.status(401).send('Acesso não autorizado.');
+        const event = req.body;
+        console.log(`[WEBHOOK ASAAS] Evento recebido: ${event.event}`);
+        console.log(`[WEBHOOK ASAAS] Dados do Payload:`, JSON.stringify(event));
+
+        if (!event.payment || !event.payment.subscription) {
+            console.log(`[WEBHOOK ASAAS] Ignorado: Evento não possui dados de pagamento ou não pertence a uma assinatura recorrente.`);
+            return res.status(200).json({ received: true, message: 'Ignorado - Não é assinatura' });
         }
 
-        const { event, payment } = req.body;
+        const subId = event.payment.subscription;
+        console.log(`[WEBHOOK ASAAS] ID da Assinatura (Subscription): ${subId}`);
 
-        if (event === 'PAYMENT_RECEIVED' && payment) {
+        // Se o pagamento foi confirmado ou recebido
+        if (['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED'].includes(event.event)) {
+            console.log(`[WEBHOOK ASAAS] Ação: ATIVAR assinatura ${subId}`);
 
-            if (payment.externalReference === 'Créditos') {
-                const asaasCustomerId = payment.customer;
-                const valorRecebido = parseFloat(payment.value);
+            // Ativa em ambas as tabelas (o ID é único)
+            const resEmpresa = await prisma.$executeRawUnsafe(`UPDATE empresas SET assinatura_status = 'ACTIVE' WHERE asaas_subscription_id = $1`, subId);
+            const resDesigner = await prisma.$executeRawUnsafe(`UPDATE designers_financeiro SET assinatura_status = 'ACTIVE' WHERE asaas_subscription_id = $1`, subId);
 
-                const contactResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-                    filter: { [ASAAS_CUSTOMER_ID_FIELD]: asaasCustomerId },
-                    select: ['ID', 'COMPANY_ID']
-                });
-                
-                const contact = contactResponse.data.result ? contactResponse.data.result[0] : null;
-
-                if (contact && contact.COMPANY_ID) {
-                    await prisma.$executeRawUnsafe(
-                        `UPDATE empresas 
-                         SET saldo = COALESCE(saldo, 0) + $1 
-                         WHERE bitrix_company_id = $2`,
-                        valorRecebido,
-                        parseInt(contact.COMPANY_ID)
-                    );
-
-                    const empresas = await prisma.$queryRawUnsafe(`SELECT id FROM empresas WHERE bitrix_company_id = $1`, parseInt(contact.COMPANY_ID));
-                    if (empresas.length > 0) {
-                        // CORREÇÃO AQUI: Usando 'titulo'
-                        await prisma.$executeRawUnsafe(
-                            `INSERT INTO historico_financeiro (empresa_id, valor, tipo, deal_id, titulo, data)
-                             VALUES ($1, $2, 'ENTRADA', 'RECARGA', 'Recarga de Saldo (Pix/Cartão)', NOW())`,
-                            empresas[0].id,
-                            valorRecebido
-                        );
-                    }
-                }
-            }
-            else if (payment.externalReference && payment.externalReference.startsWith('Pedido ')) {
-                const dealId = payment.externalReference.replace('Pedido ', '');
-                await axios.post(`${BITRIX24_API_URL}crm.deal.update.json`, {
-                    id: dealId,
-                    fields: { 'STAGE_ID': 'C17:UC_2OEE24' }
-                });
-            }
+            console.log(`[WEBHOOK ASAAS] Resultado Update: Empresas afetadas: ${resEmpresa} | Designers afetados: ${resDesigner}`);
         }
 
-        return res.status(200).send('OK');
+        // Se a assinatura foi cancelada ou venceu
+        else if (['PAYMENT_OVERDUE', 'PAYMENT_DELETED', 'SUBSCRIPTION_DELETED'].includes(event.event)) {
+            console.log(`[WEBHOOK ASAAS] Ação: INATIVAR assinatura ${subId}`);
 
+            const resEmpresa = await prisma.$executeRawUnsafe(`UPDATE empresas SET assinatura_status = 'INATIVO' WHERE asaas_subscription_id = $1`, subId);
+            const resDesigner = await prisma.$executeRawUnsafe(`UPDATE designers_financeiro SET assinatura_status = 'INATIVO' WHERE asaas_subscription_id = $1`, subId);
+
+            console.log(`[WEBHOOK ASAAS] Resultado Update: Empresas afetadas: ${resEmpresa} | Designers afetados: ${resDesigner}`);
+        } else {
+            console.log(`[WEBHOOK ASAAS] Evento ${event.event} mapeado, mas nenhuma ação de alteração de status necessária.`);
+        }
+
+        console.log(`[WEBHOOK ASAAS] Processamento concluído com sucesso.`);
+        return res.status(200).json({ success: true });
     } catch (error) {
-        console.error('Erro Webhook:', error.message);
-        return res.status(200).send('Erro processado.');
+        console.error("[WEBHOOK ASAAS] ERRO GRAVE:", error.message);
+        console.error(error.stack);
+        return res.status(500).json({ message: 'Erro interno no webhook.' });
     }
 };
