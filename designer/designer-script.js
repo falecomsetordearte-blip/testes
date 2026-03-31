@@ -1,4 +1,4 @@
-﻿// /designer/designer-script.js - VERSÃO COM CONTA CORRENTE E MODAIS CUSTOMIZADOS E LÓGICA DE LOGIN
+﻿// /designer/designer-script.js - VERSÃO COM CONTA CORRENTE, MODAIS CUSTOMIZADOS E LÓGICA DE LOGIN (Atualizado para painel.html)
 (function () {
     console.log('[INIT] -> Verificando sessão do designer...');
     const sessionToken = localStorage.getItem('designerToken');
@@ -107,9 +107,9 @@
                             assinaturaStatus: data.assinaturaStatus
                         }));
 
-                        console.log('[LOGIN] -> Redirecionando para o painel de controle (index.html)...');
-                        // Redireciona para o index.html (painel principal do designer)
-                        window.location.href = 'index.html';
+                        console.log('[LOGIN] -> Redirecionando para o painel de controle (painel.html)...');
+                        // Redireciona para o painel.html (painel principal do designer)
+                        window.location.href = 'painel.html';
                     } else {
                         console.error('[LOGIN] -> Falha no login retornada pela API:', data.message);
                         window.customAlert(data.message || 'Erro ao fazer login.', true);
