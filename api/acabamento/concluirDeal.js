@@ -29,16 +29,17 @@ module.exports = async (req, res) => {
         if (!empresaId) return res.status(401).json({ message: 'Sessão inválida.' });
 
         // 2. Buscar o pedido
-        const pedidos = await prisma.$queryRawUnsafe(`SELECT id, tipo_entrega FROM pedidos WHERE id = $1`, parseInt(dealId));
+        const pedidos = await prisma.$queryRawUnsafe(`SELECT id, tipo_entrega, briefing_completo FROM pedidos WHERE id = $1`, parseInt(dealId));
         if (pedidos.length === 0) return res.status(404).json({ message: 'Pedido não encontrado.' });
         
         const pedido = pedidos[0];
-        const entrega = (pedido.tipo_entrega || '').toUpperCase();
+        // Junta o que vier na coluna de entrega com o briefing para garantir que vamos achar a palavra-chave
+        const entregaText = ((pedido.tipo_entrega || '') + ' ' + (pedido.briefing_completo || '')).toUpperCase();
 
         // 3. Lógica de Destino
         let novaEtapa = 'EXPEDIÇÃO';
-        if (entrega.includes('EXTERNA')) novaEtapa = 'INSTALAÇÃO EXTERNA';
-        else if (entrega.includes('LOJA')) novaEtapa = 'INSTALAÇÃO NA LOJA';
+        if (entregaText.includes('EXTERNA')) novaEtapa = 'INSTALAÇÃO EXTERNA';
+        else if (entregaText.includes('LOJA')) novaEtapa = 'INSTALAÇÃO NA LOJA';
 
         // 4. Atualizar
         await prisma.$executeRawUnsafe(`UPDATE pedidos SET etapa = $1, updated_at = NOW() WHERE id = $2`, novaEtapa, parseInt(dealId));
