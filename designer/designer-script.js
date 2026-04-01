@@ -1,4 +1,4 @@
-﻿// /designer/designer-script.js - VERSÃO INTEGRAL COMPLETA COM TRAVA DE TRIAL E CHAT
+// /designer/designer-script.js - VERSÃO INTEGRAL COMPLETA COM TRAVA DE TRIAL E CHAT
 (function () {
     console.log('[INIT] -> Iniciando sistema do designer com logs detalhados...');
     const sessionToken = localStorage.getItem('designerToken');
@@ -381,7 +381,13 @@
         window.chatAbertoAtual = { pedidoId, tipoChat };
         const corpo = `
             <div id="chat-msgs-container" style="height:60vh; overflow-y:auto; background:#f1f5f9; padding:15px; border-radius:8px; display:flex; flex-direction:column; gap:10px;"></div>
-            <div class="chat-input-row" style="display:flex; gap:10px; margin-top:15px;">
+            <div id="chat-file-preview" style="display:none; background:#e0e7ff; padding:8px 12px; border-radius:8px; margin-top:10px; font-size:0.82rem; color:#4f46e5; display:flex; align-items:center; gap:8px;">
+                <i class='fas fa-file'></i> <span id="chat-file-nome"></span>
+                <button onclick="document.getElementById('chat-file-input').value=''; document.getElementById('chat-file-preview').style.display='none';" style="background:none; border:none; cursor:pointer; color:#ef4444; font-size:1rem; margin-left:auto;"><i class='fas fa-times'></i></button>
+            </div>
+            <div class="chat-input-row" style="display:flex; gap:10px; margin-top:10px; align-items:center;">
+                <input type="file" id="chat-file-input" style="display:none;">
+                <button id="btn-clip-chat" title="Anexar arquivo" style="background:#e0e7ff; border:none; border-radius:8px; padding:10px 12px; cursor:pointer; color:#4f46e5; font-size:1rem; flex-shrink:0;"><i class="fas fa-paperclip"></i></button>
                 <input type="text" id="chat-texto-input" class="drawer-input" placeholder="Escreva aqui..." style="flex:1; margin:0;">
                 <button id="btn-enviar-chat" class="btn-action" style="padding:10px 20px;"><i class="fas fa-paper-plane"></i></button>
             </div>`;
@@ -395,19 +401,59 @@
             const res = await fetch('/api/designer/chat', { method: 'POST', body: fd });
             const data = await res.json();
             if (res.ok) {
-                container.innerHTML = data.mensagens.map(m => `
-                    <div style="align-self: ${m.lado === 'in' ? 'flex-start' : 'flex-end'}; background: ${m.lado === 'in' ? '#fff' : '#dcf8c6'}; padding:10px; border-radius:8px; max-width:80%; font-size:0.9rem;">
-                        <small style="display:block; font-weight:700; color:#4f46e5;">${m.remetente}</small>
-                        ${m.texto}
-                    </div>`).join('');
+                container.innerHTML = data.mensagens.map(m => {
+                    const isIn = m.lado === 'in';
+                    const bg = isIn ? '#fff' : '#dcf8c6';
+                    let conteudo = '';
+                    if (m.file) {
+                        const isImagem = m.file.contentType && m.file.contentType.startsWith('image/');
+                        if (isImagem) {
+                            conteudo = `<a href="${m.file.link}" target="_blank"><img src="${m.file.link}" alt="${m.file.name}" style="max-width:200px; border-radius:6px; display:block; margin-bottom:4px;"></a>`;
+                        } else {
+                            conteudo = `<a href="${m.file.link}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:#e0e7ff; padding:6px 10px; border-radius:6px; color:#4f46e5; font-weight:600; text-decoration:none; font-size:0.82rem;"><i class='fas fa-file'></i> ${m.file.name}</a>`;
+                        }
+                    }
+                    if (m.texto) conteudo += `<span>${m.texto}</span>`;
+                    return `<div style="align-self: ${isIn ? 'flex-start' : 'flex-end'}; background: ${bg}; padding:10px; border-radius:8px; max-width:80%; font-size:0.9rem;">
+                        <small style="display:block; font-weight:700; color:#4f46e5; margin-bottom:4px;">${m.remetente}</small>
+                        ${conteudo}
+                    </div>`;
+                }).join('');
                 container.scrollTop = container.scrollHeight;
             }
         };
+        const fileInput = document.getElementById('chat-file-input');
+        const filePreview = document.getElementById('chat-file-preview');
+        const fileNomeEl = document.getElementById('chat-file-nome');
+
+        document.getElementById('btn-clip-chat').onclick = () => fileInput.click();
+        fileInput.onchange = () => {
+            if (fileInput.files && fileInput.files[0]) {
+                fileNomeEl.textContent = fileInput.files[0].name;
+                filePreview.style.display = 'flex';
+            } else {
+                filePreview.style.display = 'none';
+            }
+        };
+
+        const designerInfo = JSON.parse(localStorage.getItem('designerInfo') || '{}');
+        const designerNome = designerInfo.name || 'Designer';
+
         document.getElementById('btn-enviar-chat').onclick = async () => {
-            if (!input.value) return;
-            const fd = new FormData(); fd.append('action', 'send'); fd.append('pedidoId', pedidoId); fd.append('tipoChat', tipoChat); fd.append('texto', input.value);
+            const temArquivo = fileInput.files && fileInput.files[0];
+            if (!input.value && !temArquivo) return;
+            const fd = new FormData();
+            fd.append('action', 'send');
+            fd.append('pedidoId', pedidoId);
+            fd.append('tipoChat', tipoChat);
+            fd.append('designerNome', designerNome);
+            if (input.value) fd.append('texto', input.value);
+            if (temArquivo) fd.append('file', fileInput.files[0]);
             await fetch('/api/designer/chat', { method: 'POST', body: fd });
-            input.value = ''; carregar();
+            input.value = '';
+            fileInput.value = '';
+            filePreview.style.display = 'none';
+            carregar();
         };
         carregar(); window.chatInterval = setInterval(carregar, 5000);
     };
