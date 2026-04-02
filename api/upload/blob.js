@@ -1,9 +1,9 @@
 // /api/upload/blob.js
 // Endpoint para upload de arquivos via Vercel Blob (client uploads - sem limite de tamanho)
 const { handleUpload } = require('@vercel/blob/client');
-const { PrismaClient } = require('@prisma/client');
+const { Client } = require('pg');
 
-const prisma = new PrismaClient();
+const DATABASE_URL = process.env.DATABASE_URL;
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -27,12 +27,18 @@ module.exports = async (req, res) => {
 
                 const sessionToken = parsed.sessionToken;
                 if (sessionToken) {
-                    const empresas = await prisma.$queryRawUnsafe(
-                        `SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`,
-                        `%${sessionToken}%`
-                    );
-                    if (empresas.length === 0) {
-                        throw new Error('Sessão inválida.');
+                    const client = new Client({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
+                    try {
+                        await client.connect();
+                        const checkRes = await client.query(
+                            'SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1',
+                            [`%${sessionToken}%`]
+                        );
+                        if (checkRes.rows.length === 0) {
+                            throw new Error('Sessão inválida.');
+                        }
+                    } finally {
+                        await client.end();
                     }
                 }
 
