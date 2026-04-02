@@ -120,29 +120,30 @@
         .toast.success { border-left-color: #2ecc71; }
         .toast.error { border-left-color: #e74c3c; }
 
-        /* --- COMPONENTE DE METAS --- */
-        .metas-widget {
-            background: #fff; border-radius: 12px; padding: 15px 25px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.07); margin-bottom: 25px;
-            display: flex; align-items: center; gap: 20px;
-            border: 1px solid #e2e8f0;
-        }
-        .metas-controls { display: flex; align-items: center; gap: 10px; min-width: 250px; flex-wrap: wrap; }
-        .metas-controls select { padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: 600; color: #334155; outline: none; cursor: pointer; width: 100%; font-size: 0.85rem; }
-        
-        .quick-sale-wrapper { display: flex; align-items: center; gap: 5px; border-left: 2px solid #e2e8f0; padding-left: 15px; margin-left: 5px; }
-        .quick-sale-wrapper input { width: 90px; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem; outline: none; transition: 0.2s; }
-        .quick-sale-wrapper input:focus { border-color: #3498db; }
-        .quick-sale-wrapper button { background: #27ae60; color: white; border: none; border-radius: 6px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
-        .quick-sale-wrapper button:hover { background: #219653; transform: scale(1.05); }
-
-        .metas-progress-wrapper { flex-grow: 1; display: flex; flex-direction: column; gap: 8px; }
-        .metas-info { display: flex; justify-content: space-between; align-items: flex-end; font-size: 0.9rem; font-weight: 700; color: #334155; }
-        .metas-premio { color: #f39c12; font-size: 0.75rem; background: #fdf2e9; padding: 3px 10px; border-radius: 6px; display: none; }
-        .metas-premio.active { display: inline-block; }
-        .progress-bg { width: 100%; height: 24px; background: #f1f5f9; border-radius: 12px; overflow: hidden; position: relative; box-shadow: inset 0 2px 4px rgba(0,0,0,0.08); }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, #3498db, #2ecc71); width: 0%; transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); border-radius: 12px; }
-        .progress-fill.danger { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+        /* --- COMPONENTE DE METAS (OCULTO) ---
+124:         .metas-widget {
+125:             background: #fff; border-radius: 12px; padding: 15px 25px;
+126:             box-shadow: 0 4px 6px rgba(0,0,0,0.07); margin-bottom: 25px;
+127:             display: flex; align-items: center; gap: 20px;
+128:             border: 1px solid #e2e8f0;
+129:         }
+130:         .metas-controls { display: flex; align-items: center; gap: 10px; min-width: 250px; flex-wrap: wrap; }
+131:         .metas-controls select { padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: 600; color: #334155; outline: none; cursor: pointer; width: 100%; font-size: 0.85rem; }
+132:         
+133:         .quick-sale-wrapper { display: flex; align-items: center; gap: 5px; border-left: 2px solid #e2e8f0; padding-left: 15px; margin-left: 5px; }
+134:         .quick-sale-wrapper input { width: 90px; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem; outline: none; transition: 0.2s; }
+135:         .quick-sale-wrapper input:focus { border-color: #3498db; }
+136:         .quick-sale-wrapper button { background: #27ae60; color: white; border: none; border-radius: 6px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+137:         .quick-sale-wrapper button:hover { background: #219653; transform: scale(1.05); }
+138: 
+139:         .metas-progress-wrapper { flex-grow: 1; display: flex; flex-direction: column; gap: 8px; }
+140:         .metas-info { display: flex; justify-content: space-between; align-items: flex-end; font-size: 0.9rem; font-weight: 700; color: #334155; }
+141:         .metas-premio { color: #f39c12; font-size: 0.75rem; background: #fdf2e9; padding: 3px 10px; border-radius: 6px; display: none; }
+142:         .metas-premio.active { display: inline-block; }
+143:         .progress-bg { width: 100%; height: 24px; background: #f1f5f9; border-radius: 12px; overflow: hidden; position: relative; box-shadow: inset 0 2px 4px rgba(0,0,0,0.08); }
+144:         .progress-fill { height: 100%; background: linear-gradient(90deg, #3498db, #2ecc71); width: 0%; transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); border-radius: 12px; }
+145:         .progress-fill.danger { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+146:         */
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
@@ -182,6 +183,7 @@
                         </button>
                     </div>
 
+                    <!-- WIDGET DE METAS OCULTO
                     <div class="metas-widget" id="metas-widget-container" style="display:none;">
                         <div class="metas-controls">
                             <i class="fas fa-bullseye" style="color:#e74c3c; font-size:1.4rem;"></i>
@@ -211,6 +213,7 @@
                             </div>
                         </div>
                     </div>
+                    -->
 
                     <!-- KANBAN BOARD -->
                     <div class="kanban-board">

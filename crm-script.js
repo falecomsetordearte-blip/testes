@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarMascaras();
 
     carregarKanban();
-    carregarMetasCRM();
+    // carregarMetasCRM(); // Desativado a pedido do usuário
 
     configurarBuscaCliente();
 
@@ -93,6 +93,7 @@ window.lancarVendaRapida = async function () {
 
 async function carregarMetasCRM() {
     const container = document.getElementById('metas-widget-container');
+    if (!container) return; // Evita erros se o widget for removido do HTML
     try {
         const res = await fetch('/api/crm/getMetas', {
             method: 'POST',
