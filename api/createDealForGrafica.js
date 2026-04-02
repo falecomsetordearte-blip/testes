@@ -2,6 +2,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { criarGrupoProducao, criarGrupoNotificacoes, definirAvatarGrupo } = require('./helpers/chatapp');
+const { syncContactToGoogle } = require('./helpers/google-contacts');
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -172,6 +173,15 @@ module.exports = async (req, res) => {
                 VALUES ($1, $2, 'SAIDA', $3, $4, NOW())
             `, empresa.id, valorParaSalvar, String(newPedidoId), `Produção: ${formData.titulo}`);
             console.log(`[FINANCEIRO] Lógica financeira aplicada com sucesso.`);
+        }
+
+        // --- 6. SINCRONIZAÇÃO GLOBAL DE CONTATOS (AGENDA GOOGLE) ---
+        // Isso rodará de forma independente da empresa, se houver o Master Refresh Token configurado
+        if (formData.nomeCliente && formData.wppCliente) {
+            console.log(`[GOOGLE-CONTACTS] Disparando sincronização para ${formData.nomeCliente}...`);
+            syncContactToGoogle(formData.nomeCliente, formData.wppCliente).catch(e => {
+                console.error("[GOOGLE-CONTACTS] Erro de rede/API na sincronização:", e.message);
+            });
         }
 
         console.log(`[OK] Processo de pedido finalizado com sucesso. Retornando dealId: ${newPedidoId}`);
