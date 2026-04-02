@@ -864,3 +864,44 @@ a.btn-ver-pedido:hover { text-decoration: underline; color: #2c89c8; }
     border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s;
 }
 .global-news-close-btn:hover { background: #1d4ed8; }
+
+/* --- ESTILOS DA BARRA DE PROGRESSO DE UPLOAD (SOLICITADO PELO USUÁRIO) --- */
+.upload-progress-wrapper {
+    margin-top: 12px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px;
+    display: none; /* Escondido por padrão, ativado pelo JS */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.progress-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #3498db, #2ecc71);
+    border-radius: 4px;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-percent {
+    color: #3498db;
+}

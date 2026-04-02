@@ -788,6 +788,25 @@ window.uploadAutomatico = async function (bloco) {
     }
 };
 
+// Função para atualizar a barra de progresso (Adicionado a pedido do usuário)
+window.updateProgressBar = function (bloco, percent) {
+    const container = document.getElementById(`progress-container-${bloco}`);
+    const fill = document.getElementById(`progress-fill-${bloco}`);
+    const text = document.getElementById(`progress-text-${bloco}`);
+
+    if (container) container.style.display = 'block';
+    if (fill) fill.style.width = percent + '%';
+    if (text) text.innerText = percent + '%';
+
+    // Se chegar em 100, aguarda um pouco e oculta
+    if (percent >= 100) {
+        setTimeout(() => {
+            if (container) container.style.display = 'none';
+            if (fill) fill.style.width = '0%';
+        }, 3000);
+    }
+};
+
 window.uploadParaGoogleDrive = async function (bloco) {
     const input = document.getElementById(`input-file-${bloco}`);
     const btn = document.getElementById(`btn-upload-${bloco}`);
@@ -800,7 +819,10 @@ window.uploadParaGoogleDrive = async function (bloco) {
 
     const tituloPedido = document.getElementById('crm-titulo-manual') ? document.getElementById('crm-titulo-manual').value : 'Pedido';
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+    // btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+    
+    // Inicia a barra de progresso
+    updateProgressBar(bloco, 0);
 
     const uploadedUrls = [];
 
@@ -815,10 +837,10 @@ window.uploadParaGoogleDrive = async function (bloco) {
             // Arquivo único — envia diretamente
             fileToUpload = input.files[0];
             uploadPathname = `uploads/${safeTitle}/${Date.now()}-${fileToUpload.name}`;
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Enviando arquivo...`;
+            // btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Enviando arquivo...`;
         } else {
             // Múltiplos arquivos — compacta em ZIP antes de enviar
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Compactando ${input.files.length} arquivos...`;
+            // btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Compactando ${input.files.length} arquivos...`;
             const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default;
             const zip = new JSZip();
 
@@ -831,13 +853,16 @@ window.uploadParaGoogleDrive = async function (bloco) {
             const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
             fileToUpload = new File([zipBlob], `${safeTitle}-anexos.zip`, { type: 'application/zip' });
             uploadPathname = `uploads/${safeTitle}/${Date.now()}-${safeTitle}-anexos.zip`;
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Enviando ZIP...`;
+            // btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Enviando ZIP...`;
         }
 
         const blob = await upload(uploadPathname, fileToUpload, {
             access: 'public',
             handleUploadUrl: '/api/upload/blob',
-            clientPayload: JSON.stringify({ sessionToken: sessionToken })
+            clientPayload: JSON.stringify({ sessionToken: sessionToken }),
+            onUploadProgress: (progress) => {
+                updateProgressBar(bloco, progress.percentage);
+            }
         });
 
         uploadedUrls.push(blob.url);
