@@ -362,7 +362,20 @@ async function definirAvatarGrupo(chatId, url, retry = true) {
     // Pequeno delay para garantir que o grupo recém-criado já esteja propagado nos servidores da ChatApp
     await new Promise(r => setTimeout(r, 3000));
 
-    console.log(`[CHATAPP-AVATAR] Definindo avatar para ${chatId}...`);
+    console.log(`[CHATAPP-AVATAR] Baixando a imagem do link para conversão em formato Base64: ${url}`);
+    let base64ImageString = '';
+    
+    try {
+        const imageResponse = await axios.get(url, { responseType: 'arraybuffer' });
+        const mimeType = imageResponse.headers['content-type'] || 'image/jpeg';
+        const base64Data = Buffer.from(imageResponse.data).toString('base64');
+        base64ImageString = `data:${mimeType};base64,${base64Data}`;
+    } catch (error) {
+        console.error(`[CHATAPP-AVATAR] Erro ao tentar baixar a imagem da url. Interrompendo upload do avatar. Detalhe:`, error.message);
+        return; // Retorna pois sem imagem formatada não é possível atualizar o grupo
+    }
+
+    console.log(`[CHATAPP-AVATAR] Sucesso na conversão da imagem. Definindo avatar para o chat ID: ${chatId}...`);
     const token = await getChatAppToken(!retry);
     if (!token) return;
 
@@ -370,33 +383,20 @@ async function definirAvatarGrupo(chatId, url, retry = true) {
     const L_ID = process.env.CHATAPP_LICENSE_ID || '59808';
     const L_MSG = 'grWhatsApp';
 
-    // Alguns servidores exigem que o ID esteja URL-Encoded por causa do '@g.us'
     const encodedId = encodeURIComponent(chatId);
 
     try {
-        // Tenta o endpoint padrão /chats/{id}/avatar
-        await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${encodedId}/avatar`, {
-            url: url
+        // Envia requisição PATCH para a raiz do chat, atualizando o campo 'imageDetail' com o Base64
+        await axios.patch(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${encodedId}`, {
+            imageDetail: base64ImageString
         }, { headers });
-        console.log(`[CHATAPP-AVATAR] Avatar definido com sucesso no endpoint /chats/`);
+        
+        console.log(`[CHATAPP-AVATAR] Avatar atualizado com sucesso via método PATCH /chats!`);
     } catch (error) {
-        // Se der 404, tenta o endpoint alternativo /groups/{id}/avatar
-        if (error.response?.status === 404) {
-            console.log(`[CHATAPP-AVATAR] Endpoint /chats/ não encontrado, tentando /groups/...`);
-            try {
-                await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/groups/${encodedId}/avatar`, {
-                    url: url
-                }, { headers });
-                console.log(`[CHATAPP-AVATAR] Avatar definido com sucesso no endpoint /groups/`);
-                return;
-            } catch (err2) {
-                console.error(`[CHATAPP-AVATAR] Falha em todos os endpoints conhecidos:`, err2.response?.data || err2.message);
-            }
-        } else {
-            console.error(`[CHATAPP-AVATAR] Erro ao definir avatar (não é 404):`, error.response?.data || error.message);
-        }
+        console.error(`[CHATAPP-AVATAR] Erro ao atualizar o avatar via API ChatApp:`, error.response?.data || error.message);
 
         if ((error.response?.data?.error?.code === "ApiInvalidTokenError" || error.response?.status === 401) && retry) {
+            console.log(`[CHATAPP-AVATAR] Token inválido reportado. Limpando cache e tentando novamente...`);
             await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => { });
             return await definirAvatarGrupo(chatId, url, false);
         }
