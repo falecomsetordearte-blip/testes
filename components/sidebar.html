@@ -59,38 +59,6 @@
         display: block;
     }
 
-    /* Submenu Styles */
-    .app-sidebar .has-submenu > a {
-        display: flex;
-        align-items: center;
-    }
-    .app-sidebar .submenu {
-        display: none;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        background-color: rgba(0, 0, 0, 0.15); /* Fundo um pouco mais escuro para diferenciar */
-    }
-    .app-sidebar .submenu li a {
-        padding-top: 0.8rem;
-        padding-bottom: 0.8rem;
-        padding-left: 3.5rem !important;
-        font-size: 0.9em;
-        opacity: 0.9;
-    }
-    .app-sidebar .submenu li a:hover {
-        opacity: 1;
-        background-color: rgba(255, 255, 255, 0.05);
-    }
-    .app-sidebar .has-submenu .chevron {
-        margin-left: auto;
-        margin-right: 15px;
-        transition: transform 0.3s ease;
-        font-size: 0.8em;
-    }
-    .app-sidebar .has-submenu.open .chevron {
-        transform: rotate(180deg);
-    }
 </style>
 
 <aside class="app-sidebar">
@@ -173,27 +141,12 @@
                 </a>
             </li>
 
-            <!-- Ajustes -->
-            <li class="has-submenu">
-                <a href="#" onclick="toggleSidebarSubmenu(event, 'ajustesSubmenu')">
-                    <i class="fas fa-sliders-h"></i>
-                    <span>Ajustes</span>
-                    <i class="fas fa-chevron-down chevron"></i>
+            <!-- Configurações -->
+            <li>
+                <a href="/admin-configuracoes.html">
+                    <i class="fas fa-cogs"></i>
+                    <span>Configurações</span>
                 </a>
-                <ul id="ajustesSubmenu" class="submenu">
-                    <li>
-                        <a href="/admin-configuracoes.html">
-                            <i class="fas fa-cogs"></i>
-                            <span>Sistema</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/meus-dados.html">
-                            <i class="fas fa-user-circle"></i>
-                            <span>Meu Perfil</span>
-                        </a>
-                    </li>
-                </ul>
             </li>
 
             <!-- Expedição -->
@@ -209,7 +162,12 @@
     <!-- Rodapé da Sidebar -->
     <div class="sidebar-footer">
         <ul>
-
+            <li>
+                <a href="/meus-dados.html">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Meu Perfil</span>
+                </a>
+            </li>
             <li>
                 <a href="/assinatura.html">
                     <i class="fas fa-gem" style="color: #f1c40f;"></i>

@@ -2,22 +2,6 @@
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("[Layout] Iniciando carregamento do layout...");
 
-    // Função global para controle do Submenu da Sidebar
-    window.toggleSidebarSubmenu = function(event, submenuId) {
-        event.preventDefault();
-        const submenu = document.getElementById(submenuId);
-        if (!submenu) return;
-        const parentLi = submenu.parentElement;
-        
-        if (submenu.style.display === 'block') {
-            submenu.style.display = 'none';
-            parentLi.classList.remove('open');
-        } else {
-            submenu.style.display = 'block';
-            parentLi.classList.add('open');
-        }
-    };
-
     // Função genérica para carregar um componente HTML
     async function loadComponent(componentPath) {
         try {
