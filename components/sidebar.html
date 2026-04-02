@@ -224,20 +224,4 @@
             </li>
         </ul>
     </div>
-</aside>
-
-<script>
-function toggleSidebarSubmenu(event, submenuId) {
-    event.preventDefault();
-    const submenu = document.getElementById(submenuId);
-    const parentLi = submenu.parentElement;
-    
-    if (submenu.style.display === 'block') {
-        submenu.style.display = 'none';
-        parentLi.classList.remove('open');
-    } else {
-        submenu.style.display = 'block';
-        parentLi.classList.add('open');
-    }
-}
-</script>
+</aside>
