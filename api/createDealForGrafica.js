@@ -1,7 +1,7 @@
 // /api/createDealForGrafica.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const { criarGrupoProducao, criarGrupoNotificacoes } = require('./helpers/chatapp');
+const { criarGrupoProducao, criarGrupoNotificacoes, definirAvatarGrupo } = require('./helpers/chatapp');
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -109,6 +109,16 @@ module.exports = async (req, res) => {
                             chatapp_chat_intern_id = $3
                         WHERE id = $4
                     `, automacao.chatId, automacao.groupLink, automacao.chatIdInterno, newPedidoId);
+                    
+                    // --- NOVA LÓGICA: DEFINIR AVATAR DO GRUPO ---
+                    if (empresa.logo_id && empresa.logo_id.startsWith('http')) {
+                        console.log(`[CHATAPP-AVATAR] Disparando atualização de foto de perfil...`);
+                        await definirAvatarGrupo(automacao.chatId, empresa.logo_id);
+                        if (automacao.chatIdInterno) {
+                            await definirAvatarGrupo(automacao.chatIdInterno, empresa.logo_id);
+                        }
+                    }
+
                     console.log(`[CHATAPP] Grupos criados e vinculados! Cliente ID: ${automacao.chatId} | Interno ID: ${automacao.chatIdInterno}`);
                 } else {
                     console.error(`[CHATAPP] FALHA: A função criarGrupoProducao não retornou um ID de chat. Verifique os logs do helper chatapp.js.`);
@@ -136,6 +146,12 @@ module.exports = async (req, res) => {
                     await prisma.$executeRawUnsafe(`
                         UPDATE pedidos SET chatapp_chat_notificacoes_id = $1 WHERE id = $2
                     `, grupoNotif.chatId, newPedidoId);
+                    
+                    // --- NOVA LÓGICA: DEFINIR AVATAR DO GRUPO ---
+                    if (empresa.logo_id && empresa.logo_id.startsWith('http')) {
+                        await definirAvatarGrupo(grupoNotif.chatId, empresa.logo_id);
+                    }
+
                     console.log(`[NOTIF-GROUP] Grupo de notificações vinculado com sucesso! ID: ${grupoNotif.chatId}`);
                 } else {
                     console.error(`[NOTIF-GROUP] FALHA: Não retornou ID do grupo de notificações.`);
@@ -165,5 +181,7 @@ module.exports = async (req, res) => {
         console.error("[ERRO GERAL NO ENDPOINT]:", error.message);
         console.error(error.stack);
         return res.status(500).json({ message: "Erro interno no servidor: " + error.message });
+    } finally {
+        await prisma.$disconnect();
     }
 };

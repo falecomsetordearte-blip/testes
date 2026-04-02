@@ -356,4 +356,28 @@ async function enviarNotificacaoEtapa(pedidoId, novaEtapa, retry = true) {
     }
 }
 
-module.exports = { criarGrupoProducao, criarGrupoNotificacoes, enviarNotificacaoEtapa, getChatAppToken };
+async function definirAvatarGrupo(chatId, url, retry = true) {
+    if (!chatId || !url || !url.startsWith('http')) return;
+    console.log(`[CHATAPP-AVATAR] Definindo avatar para ${chatId}...`);
+    const token = await getChatAppToken(!retry);
+    if (!token) return;
+
+    const headers = { 'Authorization': token, 'Content-Type': 'application/json', 'Lang': 'pt' };
+    const L_ID = process.env.CHATAPP_LICENSE_ID || '59808';
+    const L_MSG = 'grWhatsApp';
+
+    try {
+        await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/avatar`, {
+            url: url
+        }, { headers });
+        console.log(`[CHATAPP-AVATAR] Avatar definido com sucesso para ${chatId}`);
+    } catch (error) {
+        console.error(`[CHATAPP-AVATAR] Erro ao definir avatar:`, error.response?.data || error.message);
+        if ((error.response?.data?.error?.code === "ApiInvalidTokenError" || error.response?.status === 401) && retry) {
+            await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => { });
+            return await definirAvatarGrupo(chatId, url, false);
+        }
+    }
+}
+
+module.exports = { criarGrupoProducao, criarGrupoNotificacoes, enviarNotificacaoEtapa, getChatAppToken, definirAvatarGrupo };
