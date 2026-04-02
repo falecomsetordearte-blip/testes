@@ -812,51 +812,17 @@ window.uploadParaGoogleDrive = async function (bloco) {
 
             btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Enviando ${i + 1}/${input.files.length}...`;
 
-            // Passo 1: Solicita token de upload ao servidor
-            const tokenRes = await fetch('/api/upload/blob', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'blob.generate-client-token',
-                    payload: {
-                        pathname: pathname,
-                        callbackUrl: `${window.location.origin}/api/upload/blob`,
-                        clientPayload: JSON.stringify({ sessionToken: sessionToken }),
-                        multipart: false
-                    }
-                })
+            // Carrega dinamicamente a biblioteca oficial do Vercel para Client Uploads no navegador
+            const { upload } = await import('https://esm.sh/@vercel/blob@2.3.1/client');
+
+            // Usa a biblioteca nativa, que gerencia as chaves e a rota de PUT sozinha sem dar erro de CORS
+            const blob = await upload(pathname, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/blob', // Conecta automaticamente com a sua rota do back-end
+                clientPayload: JSON.stringify({ sessionToken: sessionToken })
             });
 
-            const tokenData = await tokenRes.json();
-
-            if (!tokenRes.ok || !tokenData.clientToken) {
-                throw new Error(tokenData.message || 'Falha ao obter token de upload.');
-            }
-
-            // Passo 2: Extrai store URL do token e faz upload direto
-            // Token format: vercel_blob_client_<storeId>_<jwt>
-            const tokenParts = tokenData.clientToken.split('_');
-            // storeId is between 'client' and the last part (JWT)
-            // Format: vercel_blob_client_STOREID_jwt...
-            // We need to find the storeId
-            const storeId = tokenParts.slice(3, -1).join('_');
-            const blobUploadUrl = `https://${storeId}.public.blob.vercel-storage.com/${pathname}`;
-
-            const uploadRes = await fetch(blobUploadUrl, {
-                method: 'PUT',
-                headers: {
-                    'x-api-blob-token': tokenData.clientToken,
-                    'x-content-type': file.type || 'application/octet-stream'
-                },
-                body: file
-            });
-
-            if (!uploadRes.ok) {
-                throw new Error(`Erro ao enviar arquivo: ${file.name}`);
-            }
-
-            const blobData = await uploadRes.json();
-            uploadedUrls.push(blobData.url);
+            uploadedUrls.push(blob.url);
         }
 
         // Sucesso — monta o link final
