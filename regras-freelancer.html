@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Como Funciona - Freelancer</title>
+    
+    <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f1f5f9;
+            color: #334155;
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #0f172a;
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 15px;
+            line-height: 1.3;
+        }
+        h2 {
+            color: #1e293b;
+            font-size: 1.35rem;
+            margin-top: 40px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        p {
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin-bottom: 25px;
+        }
+        ul li {
+            position: relative;
+            padding-left: 32px;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+        ul li i {
+            position: absolute;
+            left: 0;
+            top: 4px;
+            font-size: 1.1rem;
+            color: #3b82f6;
+        }
+        .emoji-icon {
+            font-style: normal;
+        }
+        .highlight-box {
+            background-color: #fff8f1;
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+        .highlight-box.danger {
+            background-color: #fef2f2;
+            border-left-color: #ef4444;
+        }
+        .highlight-box.info {
+            background-color: #eff6ff;
+            border-left-color: #3b82f6;
+        }
+        .highlight-box h3 {
+            margin-top: 0;
+            color: #b45309;
+            font-size: 1.15rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .highlight-box.danger h3 {
+            color: #b91c1c;
+        }
+        .highlight-box.info h3 {
+            color: #1d4ed8;
+        }
+        .important-text {
+            font-weight: 600;
+            color: #0f172a;
+            padding: 10px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 25px;
+            color: #64748b;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+        .btn-back:hover {
+            color: #3b82f6;
+        }
+        
+        @media (max-width: 600px) {
+            .container { padding: 25px; }
+            h1 { font-size: 1.5rem; }
+            h2 { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="btn-back"><i class="fas fa-arrow-left"></i> Voltar</a>
+
+    <h1>Como funciona o envio de demandas para designers freelancers</h1>
+    
+    <p>Nosso sistema conecta gráficas a designers freelancers, permitindo que você publique demandas de criação de forma rápida e prática.</p>
+
+    <h2><span class="emoji-icon">🧩</span> Publicação da demanda</h2>
+    <p>Quando a gráfica envia uma demanda, ela fica disponível em uma área onde os designers cadastrados podem visualizar:</p>
+    <ul>
+        <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">📄</span> <strong>Briefing completo</strong> (o que precisa ser feito)</li>
+        <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">💰</span> <strong>Valor oferecido</strong> pelo serviço</li>
+        <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">⏱️</span> <strong>Prazo de entrega</strong></li>
+        <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">📎</span> <strong>Possíveis anexos</strong> (referências, arquivos, instruções)</li>
+    </ul>
+
+    <h2><span class="emoji-icon">👨‍🎨</span> Como os designers escolhem as demandas</h2>
+    <p>Os designers <strong>não são obrigados a aceitar nenhuma demanda</strong>.</p>
+    <p>Cada profissional avalia individualmente se deseja ou não assumir o trabalho, considerando fatores como:</p>
+    <ul>
+        <li><i class="fas fa-check-circle" style="color:#10b981;"></i> Disponibilidade no momento</li>
+        <li><i class="fas fa-check-circle" style="color:#10b981;"></i> Complexidade da demanda</li>
+        <li><i class="fas fa-check-circle" style="color:#10b981;"></i> Valor oferecido</li>
+        <li><i class="fas fa-check-circle" style="color:#10b981;"></i> Prazo solicitado</li>
+        <li><i class="fas fa-check-circle" style="color:#10b981;"></i> Afinidade com o tipo de projeto</li>
+    </ul>
+    
+    <p class="important-text"><span class="emoji-icon">👉</span> Ou seja: a escolha de pegar ou não o serviço é totalmente do designer.</p>
+
+    <div class="highlight-box danger">
+        <h3><span class="emoji-icon">⚠️</span> Importante: não há garantia de aceite</h3>
+        <p>Ao publicar uma demanda, é importante entender que:</p>
+        <ul style="margin-bottom:0;">
+            <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">❌</span> Não é garantido que um designer irá aceitar</li>
+            <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">❌</span> Pode acontecer de nenhum profissional assumir o pedido</li>
+            <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">⏳</span> O tempo de resposta pode variar dependendo da demanda</li>
+        </ul>
+    </div>
+
+    <h2><span class="emoji-icon">💡</span> Dicas para aumentar as chances de aceite</h2>
+    <p>Para melhorar a taxa de aceitação das suas demandas, recomendamos:</p>
+    <ul>
+        <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">💰</span> <strong>Oferecer um valor compatível</strong> com o mercado</li>
+        <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">📝</span> Criar um <strong>briefing claro</strong> e bem detalhado</li>
+        <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">⏱️</span> Definir <strong>prazos realistas</strong></li>
+        <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">📎</span> Enviar <strong>referências visuais</strong> quando possível</li>
+        <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">📏</span> Ser <strong>objetivo</strong> e evitar informações confusas ou incompletas</li>
+    </ul>
+
+    <h2><span class="emoji-icon">🔄</span> Após o aceite da demanda</h2>
+    <p>Quando um designer aceita:</p>
+    <ul>
+        <li><i class="fas fa-lock" style="color:#64748b;"></i> A demanda deixa de ficar disponível para outros</li>
+        <li><i class="fas fa-user-check" style="color:#64748b;"></i> O designer passa a ser responsável pela entrega</li>
+        <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">💬</span> Toda a comunicação acontece dentro do sistema</li>
+        <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">⏱️</span> O prazo começa a contar oficialmente</li>
+    </ul>
+
+    <h2><span class="emoji-icon">🚫</span> Caso ninguém aceite</h2>
+    <p>Se nenhuma pessoa aceitar a demanda, você pode:</p>
+    <ul>
+        <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">❌</span> <strong>Excluir</strong> a demanda atual</li>
+        <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">🔁</span> <strong>Criar uma nova demanda</strong> com ajustes (como briefing mais claro ou outro valor)</li>
+    </ul>
+    
+    <div class="highlight-box">
+        <h3><span class="emoji-icon">⚠️</span> Importante</h3>
+        <p style="margin-bottom:0;">Não é possível editar o valor ou renegociar diretamente após a publicação.</p>
+    </div>
+
+    <h2><span class="emoji-icon">📊</span> Responsabilidades da gráfica</h2>
+    <p>Ao usar o sistema, a gráfica se compromete a:</p>
+    <ul>
+        <li><i class="fas fa-check" style="color:#8b5cf6;"></i> Fornecer informações claras e completas</li>
+        <li><i class="fas fa-check" style="color:#8b5cf6;"></i> Definir corretamente o valor e prazo antes da publicação</li>
+        <li><i class="fas fa-check" style="color:#8b5cf6;"></i> Respeitar o escopo definido inicialmente</li>
+        <li><i class="fas fa-check" style="color:#8b5cf6;"></i> Efetuar o pagamento conforme acordado</li>
+        <li><i class="fas fa-check" style="color:#8b5cf6;"></i> Dar feedback dentro do prazo</li>
+    </ul>
+
+    <h2><span class="emoji-icon">📊</span> Responsabilidades do designer</h2>
+    <p>Ao aceitar uma demanda, o designer se compromete a:</p>
+    <ul>
+        <li><i class="fas fa-check" style="color:#ec4899;"></i> Cumprir o prazo estabelecido</li>
+        <li><i class="fas fa-check" style="color:#ec4899;"></i> Seguir o briefing enviado</li>
+        <li><i class="fas fa-check" style="color:#ec4899;"></i> Manter comunicação clara dentro do sistema</li>
+        <li><i class="fas fa-check" style="color:#ec4899;"></i> Entregar o material conforme combinado</li>
+    </ul>
+
+    <div class="highlight-box info">
+        <h3><span class="emoji-icon">⚖️</span> Limites de responsabilidade do sistema (Muito importante)</h3>
+        <p>O sistema não atua como prestador de serviços de design e não possui equipe própria de criação.</p>
+        <ul>
+            <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">🚫</span> Não somos uma equipe de arte</li>
+            <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">🚫</span> Não garantimos que haverá designers disponíveis</li>
+            <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">🚫</span> Não somos responsáveis pela execução dos trabalhos</li>
+            <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">🚫</span> Não realizamos intermediação financeira ou pagamentos</li>
+            <li><span class="emoji-icon" style="position: absolute; left: 0; top: 0px; font-size: 1.1rem;">🚫</span> Não participamos de negociações entre gráfica e designer</li>
+        </ul>
+        
+        <p class="important-text" style="background:transparent; padding:0; margin-top:20px;"><span class="emoji-icon">👉</span> O sistema funciona exclusivamente como uma ferramenta tecnológica, facilitando:</p>
+        <ul>
+            <li><i class="fas fa-angle-right" style="color:#1d4ed8;"></i> A publicação de demandas</li>
+            <li><i class="fas fa-angle-right" style="color:#1d4ed8;"></i> A conexão entre gráficas e designers</li>
+            <li><i class="fas fa-angle-right" style="color:#1d4ed8;"></i> A organização das solicitações</li>
+            <li><i class="fas fa-angle-right" style="color:#1d4ed8;"></i> A comunicação entre as partes</li>
+        </ul>
+        <p style="margin-bottom:0;"><strong>Toda a responsabilidade sobre negociação, pagamento, execução e entrega é das partes envolvidas (gráfica e designer).</strong></p>
+    </div>
+
+    <h2><span class="emoji-icon">⚠️</span> Considerações finais</h2>
+    <ul>
+        <li><i class="fas fa-circle" style="color:#94a3b8; font-size:0.5rem; top:10px;"></i> O sistema atua apenas como facilitador</li>
+        <li><i class="fas fa-circle" style="color:#94a3b8; font-size:0.5rem; top:10px;"></i> A qualidade e cumprimento dependem da relação entre gráfica e designer</li>
+        <li><i class="fas fa-circle" style="color:#94a3b8; font-size:0.5rem; top:10px;"></i> Demandas com valores baixos ou prazos muito curtos tendem a ter menor aceitação</li>
+        <li><i class="fas fa-circle" style="color:#94a3b8; font-size:0.5rem; top:10px;"></i> Todas as interações devem ocorrer dentro da plataforma</li>
+    </ul>
+
+</div>
+
+</body>
+</html>
