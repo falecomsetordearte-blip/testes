@@ -43,10 +43,15 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('responsavel').value = data.responsavel || '';
             document.getElementById('email').value = data.email || '';
 
-            // Se tiver logo_id, futuramente podemos buscar a URL real.
-            // Por enquanto, se tiver ID, mantemos a imagem padrão mas sabemos que existe.
+            // Se tiver logo_id, verificar se é uma URL ou ID antigo
             if (data.logo_id) {
-                console.log("Usuário possui logo ID:", data.logo_id);
+                if (data.logo_id.startsWith('http')) {
+                    document.getElementById('current-logo-img').src = data.logo_id;
+                } else {
+                    console.log("Usuário possui logo ID do Bitrix (legado):", data.logo_id);
+                    // Opcionalmente, buscar a URL do Bitrix se necessário, 
+                    // mas como estamos migrando, mantemos o padrão até ele salvar uma nova.
+                }
             }
 
         } catch (error) {
@@ -60,15 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Executa o carregamento
     loadUserProfile();
 
-    // 2. Função Auxiliar: Converter Imagem para Base64
-    const convertBase64 = (file) => {
-        return new Promise((resolve, reject) => {
-            const fileReader = new FileReader();
-            fileReader.readAsDataURL(file);
-            fileReader.onload = () => resolve(fileReader.result);
-            fileReader.onerror = (error) => reject(error);
-        });
-    };
+
 
     // Preview da imagem selecionada
     const fileInput = document.getElementById('new-logo-file');
@@ -105,19 +102,34 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Processar Logo Nova (se houver)
-        let logoData = null;
+        // Processar Logo Nova via Vercel Blob (se houver)
+        let logoUrl = null;
         if (fileInput.files.length > 0) {
             try {
                 const file = fileInput.files[0];
                 if (file.size > 5 * 1024 * 1024) throw new Error("A imagem deve ter no máximo 5MB.");
-                const base64 = await convertBase64(file);
-                logoData = { name: file.name, base64: base64 };
+                
+                btnSubmit.textContent = "Fazendo upload da logo...";
+                
+                // Import dinâmico do SDK do Vercel Blob (igual ao CRM)
+                const { upload } = await import('https://esm.sh/@vercel/blob@2.3.1/client');
+                const empresaNome = document.getElementById('nome_fantasia').value || 'empresa';
+                const safeName = empresaNome.replace(/[^a-zA-Z0-9_-]/g, '_');
+                const fileName = `logos/${safeName}_${Date.now()}_${file.name}`;
+
+                const blob = await upload(fileName, file, {
+                    access: 'public',
+                    handleUploadUrl: '/api/upload/blob',
+                    clientPayload: JSON.stringify({ sessionToken: sessionToken })
+                });
+
+                logoUrl = blob.url;
             } catch (err) {
-                feedbackDiv.textContent = err.message;
+                feedbackDiv.textContent = "Erro no upload da imagem: " + err.message;
                 feedbackDiv.className = "form-feedback error";
                 feedbackDiv.classList.remove('hidden');
                 btnSubmit.disabled = false;
+                btnSubmit.textContent = "Salvar Alterações";
                 return;
             }
         }
@@ -130,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
             responsavel: document.getElementById('responsavel').value,
             email: document.getElementById('email').value,
             new_password: newPassword || null,
-            logo: logoData
+            logo_url: logoUrl // Envia a URL final do Blob
         };
 
         try {
