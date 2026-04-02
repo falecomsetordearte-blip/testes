@@ -805,42 +805,58 @@ window.uploadParaGoogleDrive = async function (bloco) {
     const uploadedUrls = [];
 
     try {
-        for (let i = 0; i < input.files.length; i++) {
-            const file = input.files[i];
-            const safeTitle = (tituloPedido || 'pedido').replace(/[^a-zA-Z0-9_-]/g, '_');
-            const pathname = `uploads/${safeTitle}/${Date.now()}-${file.name}`;
+        const { upload } = await import('https://esm.sh/@vercel/blob@2.3.1/client');
+        const safeTitle = (tituloPedido || 'pedido').replace(/[^a-zA-Z0-9_-]/g, '_');
 
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Enviando ${i + 1}/${input.files.length}...`;
+        let fileToUpload;
+        let uploadPathname;
 
-            // Carrega dinamicamente a biblioteca oficial do Vercel para Client Uploads no navegador
-            const { upload } = await import('https://esm.sh/@vercel/blob@2.3.1/client');
+        if (input.files.length === 1) {
+            // Arquivo único — envia diretamente
+            fileToUpload = input.files[0];
+            uploadPathname = `uploads/${safeTitle}/${Date.now()}-${fileToUpload.name}`;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Enviando arquivo...`;
+        } else {
+            // Múltiplos arquivos — compacta em ZIP antes de enviar
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Compactando ${input.files.length} arquivos...`;
+            const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default;
+            const zip = new JSZip();
 
-            // Usa a biblioteca nativa, que gerencia as chaves e a rota de PUT sozinha sem dar erro de CORS
-            const blob = await upload(pathname, file, {
-                access: 'public',
-                handleUploadUrl: '/api/upload/blob', // Conecta automaticamente com a sua rota do back-end
-                clientPayload: JSON.stringify({ sessionToken: sessionToken })
-            });
+            for (let i = 0; i < input.files.length; i++) {
+                const f = input.files[i];
+                const arrayBuf = await f.arrayBuffer();
+                zip.file(f.name, arrayBuf);
+            }
 
-            uploadedUrls.push(blob.url);
+            const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+            fileToUpload = new File([zipBlob], `${safeTitle}-anexos.zip`, { type: 'application/zip' });
+            uploadPathname = `uploads/${safeTitle}/${Date.now()}-${safeTitle}-anexos.zip`;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Enviando ZIP...`;
         }
 
-        // Sucesso — monta o link final
-        const finalLink = uploadedUrls.length === 1
-            ? uploadedUrls[0]
-            : uploadedUrls.join(' | ');
+        const blob = await upload(uploadPathname, fileToUpload, {
+            access: 'public',
+            handleUploadUrl: '/api/upload/blob',
+            clientPayload: JSON.stringify({ sessionToken: sessionToken })
+        });
 
-        linkUrl.href = uploadedUrls[0];
-        linkUrl.textContent = uploadedUrls.length === 1
-            ? (uploadedUrls[0].length > 60 ? uploadedUrls[0].substring(0, 60) + '...' : uploadedUrls[0])
-            : `${uploadedUrls.length} arquivos enviados`;
+        uploadedUrls.push(blob.url);
+
+        // Sucesso — monta o link final
+        const finalLink = blob.url;
+
+        linkUrl.href = blob.url;
+        linkUrl.textContent = blob.url.length > 60 ? blob.url.substring(0, 60) + '...' : blob.url;
         linkResult.style.display = 'flex';
         if (linkHidden) linkHidden.value = finalLink;
         if (bloco === 'arquivo') {
             const el = document.getElementById('link-arquivo');
             if (el && !el.value) el.value = finalLink;
         }
-        showToast(`${uploadedUrls.length} arquivo(s) enviados com sucesso!`, 'success');
+        const msg = input.files.length === 1
+            ? '1 arquivo enviado com sucesso!'
+            : `${input.files.length} arquivos compactados e enviados com sucesso!`;
+        showToast(msg, 'success');
 
     } catch (e) {
         console.error('[Upload Blob] Erro:', e);

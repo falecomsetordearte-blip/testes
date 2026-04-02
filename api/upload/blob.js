@@ -37,19 +37,6 @@ module.exports = async (req, res) => {
                 }
 
                 return {
-                    allowedContentTypes: [
-                        'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
-                        'application/pdf',
-                        'application/postscript', 'application/illustrator',
-                        'application/x-coreldraw', 'application/cdr',
-                        'application/zip', 'application/x-rar-compressed',
-                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                        'application/octet-stream',
-                        'video/mp4', 'video/quicktime',
-                        'audio/mpeg', 'audio/wav',
-                        'text/plain', 'text/csv'
-                    ],
                     maximumSizeInBytes: 500 * 1024 * 1024, // 500MB
                     tokenPayload: JSON.stringify({ sessionToken }),
                 };
