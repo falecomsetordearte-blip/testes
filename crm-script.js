@@ -103,11 +103,11 @@ async function carregarMetasCRM() {
         globalMetasData = await res.json();
 
         if (globalMetasData && globalMetasData.metas) {
-            container.style.display = 'flex';
+            // container.style.display = 'flex'; // OCULTO - remova o comentário para reexibir
             atualizarLabelsDoSelect(globalMetasData.metas);
             renderizarVisualizacaoMeta();
         } else {
-            container.style.display = 'flex';
+            // container.style.display = 'flex'; // OCULTO - remova o comentário para reexibir
             document.getElementById('meta-text-left').innerHTML = `<span style="color:#e74c3c;"><i class="fas fa-exclamation-triangle"></i> Metas do mês não configuradas.</span>`;
             document.getElementById('meta-text-right').innerHTML = `<a href="/admin-metas.html" style="color:#3498db; font-weight:bold; text-decoration:underline;">⚙️ Configurar</a>`;
         }
