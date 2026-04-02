@@ -128,7 +128,8 @@
             const isFinalizado = (stageId.includes("WON") || stageId === "C17:1" || stageId.includes("C19")); // Replicando a lógica
             let arquivoHtml = '<p class="info-text">O arquivo para download estará disponível aqui quando o pedido for finalizado.</p>';
             if (isFinalizado && linkArquivo) {
-                arquivoHtml = `<a href="${linkArquivo}" target="_blank" class="btn-acao btn-download">Baixar Arquivo</a>`;
+                // arquivoHtml = `<a href="${linkArquivo}" target="_blank" class="btn-acao btn-download">Baixar Arquivo</a>`;
+                arquivoHtml = `<a href="${linkArquivo}" target="_blank" class="btn-acao btn-download" onclick="window.registrarDownload('${linkArquivo}')">Baixar Arquivo</a>`;
             } else if (isFinalizado) {
                 arquivoHtml = '<p class="info-text">O arquivo final ainda não foi disponibilizado.</p>';
             }
@@ -250,3 +251,15 @@
         init();
     });
 })();
+
+// Função global para registrar o download (Adicionado a pedido do usuário)
+window.registrarDownload = async function (url) {
+    if (!url) return;
+    try {
+        await fetch('/api/cron/log-download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ blobUrl: url })
+        });
+    } catch (e) { console.error("Erro ao registrar download:", e); }
+};
