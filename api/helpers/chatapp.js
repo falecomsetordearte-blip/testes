@@ -195,7 +195,7 @@ async function criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, n
 // -------------------------------------------------------------
 // 2. CRIAÇÃO DO GRUPO EXCLUSIVO DE ATUALIZAÇÕES
 // -------------------------------------------------------------
-async function criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, retry = true) {
+async function criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, nomeCliente = 'Cliente', nomeEmpresa = 'nossa gráfica', retry = true) {
     console.log(`[NOTIF-GROUP] Iniciando criação do grupo de notificações para o pedido: ${titulo}`);
     const token = await getChatAppToken(!retry);
     if (!token) {
@@ -233,25 +233,38 @@ async function criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, retry = tr
         }, { headers });
 
         const chatId = resGrupo.data?.data?.id || resGrupo.data?.id;
+        const groupLink = resGrupo.data?.data?.inviteLink || resGrupo.data?.inviteLink || '';
 
         if (chatId) {
-            console.log(`[NOTIF-GROUP] Grupo criado com ID: ${chatId}`);
+            console.log(`[NOTIF-GROUP] Grupo criado com ID: ${chatId} | Link: ${groupLink}`);
             await new Promise(r => setTimeout(r, 2000));
             console.log(`[NOTIF-GROUP] Enviando mensagem de boas vindas no grupo ${chatId}...`);
             await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/messages/text`, {
                 text: `Olá! Criamos este grupo exclusivamente para enviar atualizações automáticas sobre as etapas do seu pedido.\n\nQualquer dúvida, fale com nosso atendimento: ${wppEmpresa || 'no privado'}`
             }, { headers });
+
+            // ENVIAR MENSAGEM NO PV DO CLIENTE AVISANDO SOBRE O GRUPO
+            if (numCliente && groupLink) {
+                console.log(`[NOTIF-GROUP] Enviando PV do link de atualizações para o cliente...`);
+                try {
+                    await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${numCliente}/messages/text`, {
+                        text: `Olá, ${nomeCliente}!\nSeu pedido na ${nomeEmpresa} acabou de ser iniciado.\n\nPara acompanhar o andamento em tempo real e receber notificações de cada etapa concluída, clique no link abaixo para entrar no seu Grupo Exclusivo de Atualizações:\n\n${groupLink}\n\n*Dúvidas? Chamar no contato do atendimento: ${wppEmpresa || '(Não informado)'}*`
+                    }, { headers });
+                } catch (e) {
+                    console.error(`[NOTIF-GROUP] Erro ao enviar PV cliente com o link de atualização:`, e.response?.data || e.message);
+                }
+            }
         } else {
             console.error(`[NOTIF-GROUP] Resposta da API não continha ID do grupo:`, resGrupo.data);
         }
 
-        return { chatId };
+        return { chatId, groupLink };
     } catch (error) {
         console.error(`[NOTIF-GROUP] ERRO na API:`, error.response?.data || error.message);
         if ((error.response?.data?.error?.code === "ApiInvalidTokenError" || error.response?.status === 401) && retry) {
             console.log(`[NOTIF-GROUP] Token inválido. Tentando novamente com novo token...`);
             await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => { });
-            return await criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, false);
+            return await criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, nomeCliente, nomeEmpresa, false);
         }
         return null;
     }

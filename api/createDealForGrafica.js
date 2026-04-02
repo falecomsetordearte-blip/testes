@@ -127,7 +127,9 @@ module.exports = async (req, res) => {
                 const grupoNotif = await criarGrupoNotificacoes(
                     formData.titulo,
                     formData.wppCliente,
-                    empresa.whatsapp
+                    empresa.whatsapp,
+                    formData.nomeCliente || 'Cliente',
+                    empresa.nome_fantasia || 'nossa gráfica'
                 );
                 if (grupoNotif && grupoNotif.chatId) {
                     console.log(`[NOTIF-GROUP] Vinculando grupo de notificações ao pedido ${newPedidoId}...`);
