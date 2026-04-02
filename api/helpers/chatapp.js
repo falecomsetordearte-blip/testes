@@ -358,6 +358,10 @@ async function enviarNotificacaoEtapa(pedidoId, novaEtapa, retry = true) {
 
 async function definirAvatarGrupo(chatId, url, retry = true) {
     if (!chatId || !url || !url.startsWith('http')) return;
+    
+    // Pequeno delay para garantir que o grupo recém-criado já esteja propagado nos servidores da ChatApp
+    await new Promise(r => setTimeout(r, 3000));
+
     console.log(`[CHATAPP-AVATAR] Definindo avatar para ${chatId}...`);
     const token = await getChatAppToken(!retry);
     if (!token) return;
@@ -366,13 +370,32 @@ async function definirAvatarGrupo(chatId, url, retry = true) {
     const L_ID = process.env.CHATAPP_LICENSE_ID || '59808';
     const L_MSG = 'grWhatsApp';
 
+    // Alguns servidores exigem que o ID esteja URL-Encoded por causa do '@g.us'
+    const encodedId = encodeURIComponent(chatId);
+
     try {
-        await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/avatar`, {
+        // Tenta o endpoint padrão /chats/{id}/avatar
+        await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${encodedId}/avatar`, {
             url: url
         }, { headers });
-        console.log(`[CHATAPP-AVATAR] Avatar definido com sucesso para ${chatId}`);
+        console.log(`[CHATAPP-AVATAR] Avatar definido com sucesso no endpoint /chats/`);
     } catch (error) {
-        console.error(`[CHATAPP-AVATAR] Erro ao definir avatar:`, error.response?.data || error.message);
+        // Se der 404, tenta o endpoint alternativo /groups/{id}/avatar
+        if (error.response?.status === 404) {
+            console.log(`[CHATAPP-AVATAR] Endpoint /chats/ não encontrado, tentando /groups/...`);
+            try {
+                await axios.post(`${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/groups/${encodedId}/avatar`, {
+                    url: url
+                }, { headers });
+                console.log(`[CHATAPP-AVATAR] Avatar definido com sucesso no endpoint /groups/`);
+                return;
+            } catch (err2) {
+                console.error(`[CHATAPP-AVATAR] Falha em todos os endpoints conhecidos:`, err2.response?.data || err2.message);
+            }
+        } else {
+            console.error(`[CHATAPP-AVATAR] Erro ao definir avatar (não é 404):`, error.response?.data || error.message);
+        }
+
         if ((error.response?.data?.error?.code === "ApiInvalidTokenError" || error.response?.status === 401) && retry) {
             await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => { });
             return await definirAvatarGrupo(chatId, url, false);
