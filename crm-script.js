@@ -677,7 +677,8 @@ window.planBloqueiosRegistrados = function () {
             'notificacoes-etapas',
             {
                 titulo: 'Notificações WhatsApp — Plano Completo',
-                descricao: 'Ative notificações automáticas por etapa para seus clientes com o plano pago.'
+                descricao: 'Ative para notificar seu cliente a cada etapa.',
+                compacto: true
             }
         );
     }

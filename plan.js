@@ -61,29 +61,55 @@
             if (!document.getElementById(overlayId)) {
                 const overlay = document.createElement('div');
                 overlay.id = overlayId;
+
+                const isCompacto = opcoes.compacto === true;
+
                 overlay.style.cssText = `
                     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-                    background: rgba(248, 250, 252, 0.92);
-                    backdrop-filter: blur(2px);
+                    background: rgba(255, 255, 255, 0.55);
                     display: flex; align-items: center; justify-content: center;
                     z-index: 100; border-radius: inherit; cursor: pointer;
-                    flex-direction: column; gap: 6px; text-align: center; padding: 15px;
+                    flex-direction: ${isCompacto ? 'row' : 'column'}; gap: ${isCompacto ? '10px' : '6px'};
+                    text-align: ${isCompacto ? 'left' : 'center'}; padding: ${isCompacto ? '0 12px' : '15px'};
+                    border: 2px dashed rgba(79, 70, 229, 0.4);
                 `;
-                overlay.innerHTML = `
-                    <div style="font-size: 1.3rem; color: #4f46e5;">
-                        <i class="fas fa-lock"></i>
-                    </div>
-                    <div style="font-weight: 700; color: #1e293b; font-size: 0.9rem;">${titulo}</div>
-                    <div style="color: #64748b; font-size: 0.78rem; line-height: 1.4;">${descricao}</div>
-                    <button onclick="window.location.href='/assinatura.html'" style="
-                        margin-top: 6px; background: #4f46e5; color: white; border: none;
-                        padding: 7px 16px; border-radius: 8px; font-weight: 700;
-                        cursor: pointer; font-size: 0.78rem; font-family: 'Poppins', sans-serif;
-                        transition: 0.2s;
-                    " onmouseover="this.style.background='#6366f1'" onmouseout="this.style.background='#4f46e5'">
-                        <i class="fas fa-crown" style="margin-right:4px;"></i>Assinar e Ativar
-                    </button>
-                `;
+
+                if (isCompacto) {
+                    overlay.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:8px; flex:1;">
+                            <i class="fas fa-lock" style="color:#4f46e5; font-size:1rem;"></i>
+                            <div>
+                                <div style="font-weight:700; color:#1e293b; font-size:0.82rem;">${titulo}</div>
+                                <div style="color:#64748b; font-size:0.72rem;">${descricao}</div>
+                            </div>
+                        </div>
+                        <button onclick="window.location.href='/assinatura.html'" style="
+                            flex-shrink:0; background:#4f46e5; color:white; border:none;
+                            padding:8px 14px; border-radius:8px; font-weight:700;
+                            cursor:pointer; font-size:0.78rem; font-family:'Poppins', sans-serif;
+                            white-space:nowrap; transition:0.2s;
+                        " onmouseover="this.style.background='#6366f1'" onmouseout="this.style.background='#4f46e5'">
+                            <i class="fas fa-crown" style="margin-right:4px;"></i>Assinar
+                        </button>
+                    `;
+                } else {
+                    overlay.innerHTML = `
+                        <div style="font-size: 1.3rem; color: #4f46e5;">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <div style="font-weight: 700; color: #1e293b; font-size: 0.9rem;">${titulo}</div>
+                        <div style="color: #64748b; font-size: 0.78rem; line-height: 1.4;">${descricao}</div>
+                        <button onclick="window.location.href='/assinatura.html'" style="
+                            margin-top: 6px; background: #4f46e5; color: white; border: none;
+                            padding: 7px 16px; border-radius: 8px; font-weight: 700;
+                            cursor: pointer; font-size: 0.78rem; font-family: 'Poppins', sans-serif;
+                            transition: 0.2s;
+                        " onmouseover="this.style.background='#6366f1'" onmouseout="this.style.background='#4f46e5'">
+                            <i class="fas fa-crown" style="margin-right:4px;"></i>Assinar e Ativar
+                        </button>
+                    `;
+                }
+
                 container.appendChild(overlay);
             }
         },
