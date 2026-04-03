@@ -12,6 +12,8 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
+
     try {
         const { sessionToken, orderId } = req.body;
 
@@ -19,30 +21,27 @@ module.exports = async (req, res) => {
             return res.status(400).json({ message: 'Token ou ID do pedido ausentes.' });
         }
 
-        // 1. Identificar Usuário e Empresa do sessionToken (Neon/Postgres)
-        const users = await prisma.$queryRawUnsafe(`
-            SELECT empresa_id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1
-        `, `%${sessionToken}%`);
+        // 1. Autenticar Usuário no Bitrix
+        const authResponse = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
+            filter: { '%UF_CRM_1751824225': sessionToken },
+            select: ['ID', 'COMPANY_ID']
+        });
+        const user = authResponse.data.result ? authResponse.data.result[0] : null;
+        if (!user || !user.COMPANY_ID) return res.status(403).json({ message: 'Acesso negado.' });
 
-        let empresaId = null;
-        if (users.length > 0) {
-            empresaId = users[0].empresa_id;
-        } else {
-            const empresasLegacy = await prisma.$queryRawUnsafe(`
-                SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
-            `, `%${sessionToken}%`);
-            if (empresasLegacy.length > 0) empresaId = empresasLegacy[0].id;
-        }
+        // 2. Buscar ID da empresa no Neon
+        const empresas = await prisma.$queryRaw`SELECT id FROM empresas WHERE bitrix_id = ${user.ID} LIMIT 1`;
+        if (empresas.length === 0) return res.status(403).json({ message: 'Empresa não encontrada.' });
+        const empresaId = empresas[0].id;
 
-        if (!empresaId) return res.status(401).json({ message: 'Sessão inválida.' });
-
-        // 2. Buscar Pedido no Banco de Dados (Garante que o pedido pertence a essa empresa)
-        const pedidos = await prisma.$queryRawUnsafe(`
+        // 3. Buscar Pedido no Banco de Dados (Garante que o pedido pertence a essa empresa)
+        // Usamos queryRaw para garantir compatibilidade imediata
+        const pedidos = await prisma.$queryRaw`
             SELECT * FROM pedidos 
-            WHERE id = $1 
-            AND empresa_id = $2 
+            WHERE bitrix_deal_id = ${parseInt(orderId)} 
+            AND empresa_id = ${empresaId} 
             LIMIT 1
-        `, parseInt(orderId), empresaId);
+        `;
 
         if (pedidos.length === 0) {
             return res.status(404).json({ message: 'Pedido não encontrado ou acesso não autorizado.' });
@@ -50,10 +49,22 @@ module.exports = async (req, res) => {
 
         const pedidoDB = pedidos[0];
 
-        // 3. Retornar tudo
+        // 4. Buscar Status Atualizado no Bitrix
+        let statusAtual = 'Desconhecido';
+        try {
+            const dealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.get.json`, { id: pedidoDB.bitrix_deal_id });
+            if (dealResponse.data.result) {
+                statusAtual = dealResponse.data.result.STAGE_ID;
+            }
+        } catch (error) {
+            console.error("Erro ao buscar status no Bitrix:", error.message);
+        }
+
+        // 5. Retornar tudo
         return res.status(200).json({
             success: true,
-            pedido: pedidoDB
+            pedido: pedidoDB,
+            statusBitrix: statusAtual
         });
 
     } catch (error) {

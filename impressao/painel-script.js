@@ -203,13 +203,7 @@
                     carregarPedidosDeImpressao();
                 });
 
-                // Preenche materiais antes de tentar recuperar do localStorage
-                materialFilterEl.innerHTML = `<option value="">Todos os Materiais</option>`;
-                filters.materiais.forEach(option => { 
-                    materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; 
-                });
-
-                // RECUPERAR ESTADO SALVO (Persistência)
+                // RECUPERAR ESTADO SALVO
                 const lastPrinter = localStorage.getItem('last_printer_filter');
                 const lastMaterial = localStorage.getItem('last_material_filter');
                 if (lastPrinter) {
@@ -218,6 +212,9 @@
                 if (lastMaterial) {
                     materialFilterEl.value = lastMaterial;
                 }
+
+                materialFilterEl.innerHTML = `<option value="">Todos os Materiais</option>`;
+                filters.materiais.forEach(option => { materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
             } catch (error) { 
                 console.error("Erro ao carregar opções de filtro:", error); 
                 showToast("Erro ao carregar filtros", "error");
