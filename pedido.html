@@ -72,6 +72,36 @@
                             <div id="view-status-badge"></div>
                         </div>
 
+                        <!-- PAINEL ADMIN (SÓ VISÍVEL SE PERMISSÃO ADMIN) -->
+                        <div id="admin-panel" class="info-card hidden" style="margin-bottom: 25px; border: 2px solid #e74c3c; background: #fffcfc;">
+                            <h3 style="color: #c0392b; border-bottom: 1px solid #fadbd8;"><i class="fas fa-tools"></i> Ações do Master / Admin</h3>
+                            <p style="color: #7f8c8d; font-size: 0.9rem; margin-bottom: 15px;">Modo avançado: Use com extrema cautela. Ações diretas no banco de dados.</p>
+                            
+                            <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+                                <div style="flex: 1; min-width: 200px;">
+                                    <label class="info-label" style="display: block; margin-bottom: 5px;">Forçar mudança de Etapa</label>
+                                    <select id="admin-stage-select" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+                                        <option value="">Selecione a etapa...</option>
+                                        <option value="ARTE">Arte / Design</option>
+                                        <option value="IMPRESSÃO">Impressão</option>
+                                        <option value="ACABAMENTO">Acabamento</option>
+                                        <option value="INSTALAÇÃO LOJA">Instalação Loja</option>
+                                        <option value="INSTALAÇÃO EXTERNA">Instalação Ext.</option>
+                                        <option value="EXPEDIÇÃO">Expedição</option>
+                                        <option value="CONCLUÍDO">Concluído</option>
+                                        <option value="CANCELADO">Cancelado</option>
+                                    </select>
+                                </div>
+                                <button id="btn-admin-change-stage" style="background:#f39c12; color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer; font-weight:bold;">
+                                    <i class="fas fa-random"></i> Mover
+                                </button>
+
+                                <button id="btn-admin-delete" style="background:#e74c3c; color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer; font-weight:bold; margin-left: auto;">
+                                    <i class="fas fa-trash-alt"></i> Excluir Pedido Permanentemente
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="detalhe-grid">
                             
                             <!-- Coluna Esquerda: Dados Técnicos -->

@@ -36,8 +36,25 @@ function renderizarPedido(pedido, statusBitrix) {
     document.getElementById('loading-screen').classList.add('hidden');
     document.getElementById('conteudo-pedido').classList.remove('hidden');
 
+    // MÁGICA DO PAINEL ADMIN
+    const permissoesArrStr = localStorage.getItem('userPermissoes');
+    if (permissoesArrStr) {
+        try {
+            const permissoesArr = JSON.parse(permissoesArrStr);
+            if (permissoesArr.includes("admin")) {
+                const adminPanel = document.getElementById('admin-panel');
+                if (adminPanel) {
+                    adminPanel.classList.remove('hidden');
+                    configurarEventosAdmin(pedido.id);
+                }
+            }
+        } catch (e) {
+            console.error("Erro ao validar permissões array", e);
+        }
+    }
+
     // 1. Cabeçalho
-    document.getElementById('view-id-topo').textContent = pedido.bitrix_deal_id;
+    document.getElementById('view-id-topo').textContent = pedido.id;
     document.getElementById('view-titulo').textContent = pedido.titulo || 'Sem título';
     
     // Badge de Status
@@ -107,4 +124,71 @@ function mostrarErro(msg) {
     document.getElementById('loading-screen').classList.add('hidden');
     document.getElementById('error-screen').classList.remove('hidden');
     document.getElementById('error-msg').textContent = msg;
+}
+
+function configurarEventosAdmin(dealId) {
+    const btnMover = document.getElementById('btn-admin-change-stage');
+    const selectStage = document.getElementById('admin-stage-select');
+    const btnExcluir = document.getElementById('btn-admin-delete');
+    const sessionToken = localStorage.getItem('sessionToken');
+
+    if (btnMover) {
+        btnMover.addEventListener('click', async () => {
+            const novoEstagio = selectStage.value;
+            if (!novoEstagio) return alert("Selecione a etapa para onde deseja mover o pedido.");
+            
+            if (confirm(`Atenção: Você tem certeza que deseja forçar a ida deste pedido para a etapa selecionada?`)) {
+                btnMover.disabled = true;
+                btnMover.textContent = 'Movendo...';
+                
+                try {
+                    const res = await fetch('/api/admin/forceUpdateStage', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sessionToken, dealId, newStageId: novoEstagio })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message);
+                    
+                    alert("Estágio do pedido alterado com sucesso!");
+                    window.location.reload();
+                } catch (e) {
+                    alert(`Erro ao mover etapa: ${e.message}`);
+                    btnMover.disabled = false;
+                    btnMover.innerHTML = '<i class="fas fa-random"></i> Mover';
+                }
+            }
+        });
+    }
+
+    if (btnExcluir) {
+        btnExcluir.addEventListener('click', async () => {
+            const digitado = prompt(`[ZONA DE PERIGO]\nPara confirmar a exclusão PERMANENTE no banco de dados, digite o ID do pedido: ${dealId}`);
+            
+            if (digitado === String(dealId)) {
+                btnExcluir.disabled = true;
+                btnExcluir.textContent = 'Excluindo...';
+                
+                try {
+                    const res = await fetch('/api/admin/deleteDeal', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sessionToken, dealId })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message);
+                    
+                    alert("Pedido excluído permanentemente da base.");
+                    window.close(); // Fecha a aba ou
+                    window.location.href = '/dashboard.html'; // Redireciona
+                } catch (e) {
+                    alert(`Erro ao excluir: ${e.message}`);
+                    btnExcluir.disabled = false;
+                    btnExcluir.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir Pedido Permanentemente';
+                }
+            } else if (digitado !== null) {
+                alert("ID incorreto. A exclusão foi cancelada.");
+            }
+        });
+    }
 }

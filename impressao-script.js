@@ -143,6 +143,45 @@
                     </button>`;
             }
 
+            // MÁGICA DO PAINEL ADMIN
+            let adminHtml = '';
+            const permissoesArrStr = localStorage.getItem('userPermissoes');
+            if (permissoesArrStr) {
+                try {
+                    const permissoesArr = JSON.parse(permissoesArrStr);
+                    if (permissoesArr.includes("admin")) {
+                        adminHtml = `
+                            <div class="card-detalhe" style="margin-top: 15px; border: 2px solid #e74c3c; background: #fffcfc;">
+                                <h3 style="color: #c0392b; border-bottom: 1px solid #fadbd8;"><i class="fas fa-tools"></i> Ações Master</h3>
+                                <p style="font-size: 0.8rem; color: #7f8c8d; margin-bottom: 10px;">Ações diretas no Banco de Dados</p>
+                                
+                                <label style="font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; display: block;">Forçar Mudança de Etapa</label>
+                                <select id="modal-admin-stage-select" style="width: 100%; padding: 6px; border-radius: 4px; margin-bottom: 10px; border: 1px solid #ccc;">
+                                    <option value="">Selecione a etapa...</option>
+                                    <option value="ARTE">Arte / Design</option>
+                                    <option value="IMPRESSÃO">Impressão</option>
+                                    <option value="ACABAMENTO">Acabamento</option>
+                                    <option value="INSTALAÇÃO LOJA">Instalação Loja</option>
+                                    <option value="INSTALAÇÃO EXTERNA">Instalação Ext.</option>
+                                    <option value="EXPEDIÇÃO">Expedição</option>
+                                    <option value="CONCLUÍDO">Concluído</option>
+                                    <option value="CANCELADO">Cancelado</option>
+                                </select>
+                                <button id="modal-btn-admin-change-stage" class="btn-acao" style="background:#f39c12; margin-bottom: 15px;">
+                                    <i class="fas fa-random"></i> Mover
+                                </button>
+
+                                <button id="modal-btn-admin-delete" class="btn-acao" style="background:#e74c3c; color: white;">
+                                    <i class="fas fa-trash-alt"></i> Excluir Pedido Permanentemente
+                                </button>
+                            </div>
+                        `;
+                    }
+                } catch (e) {
+                    console.error("Erro ao processar permissões no modal", e);
+                }
+            }
+
             modalBody.innerHTML = `
                 <div class="detalhe-layout">
                     <div class="detalhe-col-principal">
@@ -163,6 +202,7 @@
                             <div id="modal-arquivos-box">${arquivoHtml}</div>
                             <div id="modal-verificar-box" style="margin-top: 15px;">${verificarHtml}</div>
                         </div>
+                        ${adminHtml}
                     </div>
                 </div>
             `;
@@ -225,6 +265,71 @@
                         alert(error.message);
                         btnVerificarModal.disabled = false;
                         btnVerificarModal.textContent = 'Marcar como Verificado';
+                    }
+                });
+            }
+
+            // Ações de Admin no Modal
+            const btnAdminMover = document.getElementById('modal-btn-admin-change-stage');
+            const selectAdminStage = document.getElementById('modal-admin-stage-select');
+            const btnAdminExcluir = document.getElementById('modal-btn-admin-delete');
+
+            if (btnAdminMover) {
+                btnAdminMover.addEventListener('click', async () => {
+                    const novoEstagio = selectAdminStage.value;
+                    if (!novoEstagio) return alert("Selecione a etapa para onde deseja mover o pedido.");
+
+                    if (confirm(`Atenção: Deseja forçar este pedido para a etapa selecionada?`)) {
+                        btnAdminMover.disabled = true;
+                        btnAdminMover.textContent = 'Movendo...';
+
+                        try {
+                            const res = await fetch('/api/admin/forceUpdateStage', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ sessionToken, dealId: deal.ID, newStageId: novoEstagio })
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.message);
+
+                            alert("Estágio do pedido alterado com sucesso!");
+                            modal.classList.remove('active');
+                            carregarPedidosDeProducao();
+                        } catch (e) {
+                            alert(`Erro ao mover etapa: ${e.message}`);
+                            btnAdminMover.disabled = false;
+                            btnAdminMover.innerHTML = '<i class="fas fa-random"></i> Mover';
+                        }
+                    }
+                });
+            }
+
+            if (btnAdminExcluir) {
+                btnAdminExcluir.addEventListener('click', async () => {
+                    const digitado = prompt(`[ZONA DE PERIGO]\nPara confirmar exclusão PERMANENTE no banco de dados, digite o ID: ${deal.ID}`);
+                    if (digitado === String(deal.ID)) {
+                        btnAdminExcluir.disabled = true;
+                        btnAdminExcluir.textContent = 'Excluindo...';
+
+                        try {
+                            const res = await fetch('/api/admin/deleteDeal', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ sessionToken, dealId: deal.ID })
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.message);
+
+                            alert("Pedido excluído permanentemente.");
+                            modal.classList.remove('active');
+                            carregarPedidosDeProducao();
+                        } catch (e) {
+                            alert(`Erro ao excluir: ${e.message}`);
+                            btnAdminExcluir.disabled = false;
+                            btnAdminExcluir.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir Pedido Permanentemente';
+                        }
+                    } else if (digitado !== null) {
+                        alert("ID incorreto. A exclusão foi cancelada.");
                     }
                 });
             }
