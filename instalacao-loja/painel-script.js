@@ -56,9 +56,7 @@
             .status-sem-data .column-header { background-color: #95a5a6; }
 
             .column-cards { overflow-y: auto; flex-grow: 1; padding-right: 5px; scrollbar-width: thin; }
-            
-            /* Card Clicável */
-            .kanban-card { 
+                        .kanban-card { 
                 background: var(--bg-card); border-radius: 8px; padding: 15px; margin-bottom: 12px; 
                 box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; 
                 border-left: 5px solid var(--primary); cursor: pointer; position: relative; 
@@ -68,8 +66,9 @@
             .card-id { font-size: 0.75rem; color: var(--text-light); font-weight: 600; margin-bottom: 5px; }
             .card-client-name { font-size: 1rem; font-weight: 600; color: var(--text-dark); margin-bottom: 12px; line-height: 1.4; }
             .card-deadline-tag { display: inline-block; background-color: #f4f6f9; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; color: var(--text-light); margin-bottom: 10px; }
-
+            
             .btn-detalhes-visual { width: 100%; background: #f4f6f9; border: 1px solid #e1e1e1; padding: 8px; border-radius: 4px; color: var(--text-dark); font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 5px; pointer-events: none; }
+}
 
             /* Modal */
             #modal-detalhes-rapidos.modal-overlay { background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); transition: opacity 0.3s; }

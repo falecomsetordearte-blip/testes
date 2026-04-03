@@ -76,9 +76,14 @@
             .status-proxima-semana .column-header { background-color: #8e44ad; }
             .status-sem-data .column-header { background-color: #95a5a6; }
             .column-cards { overflow-y: auto; flex-grow: 1; min-height: 100px; padding-right: 5px; }
-            .kanban-card { background: var(--bg-card); border-radius: 8px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid var(--primary); cursor: pointer; position: relative; transition: transform 0.2s; }
+            .kanban-card { background: var(--bg-card); border-radius: 8px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid var(--primary); cursor: pointer; position: relative; transition: transform 0.2s, box-shadow 0.2s; }
             .kanban-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-            .btn-detalhes-visual { width: 100%; background: #f4f6f9; border: 1px solid #e1e1e1; padding: 5px; border-radius: 4px; text-align: center; font-size: 0.8rem; margin-top: 10px; }
+            
+            .card-id { font-size: 0.75rem; color: #aaa; font-weight: 700; margin-bottom: 5px; }
+            .card-client-name { font-size: 1rem; font-weight: 600; color: #333; margin-bottom: 12px; line-height: 1.4; }
+            .card-deadline-tag { display: inline-block; background-color: #f4f6f9; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; color: #7f8c8d; margin-bottom: 10px; }
+            
+            .btn-detalhes-visual { width: 100%; background: #f4f6f9; border: 1px solid #e1e1e1; padding: 8px; border-radius: 4px; color: var(--text-dark); font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 5px; pointer-events: none; }
 
             /* Calendário */
             .calendar-container { display: flex; height: calc(100vh - 140px); gap: 20px; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.05); border: 1px solid #ddd; }
@@ -231,20 +236,23 @@
                 const isAdmin = localStorage.getItem('userPermissoes')?.includes('"admin"');
                 const adminHtml = isAdmin ? `<div class="btn-master-icon" onclick="event.stopPropagation(); if(window.abrirAdminModal) window.abrirAdminModal('${deal.ID}')" title="Ações Forçadas do Mestre (BD)"><i class="fas fa-ellipsis-v"></i></div>` : '';
 
+                let prazoTagHtml = '';
+                if (prazoFinalStr) {
+                    const dataFormatada = new Date(prazoFinalStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                    prazoTagHtml = `<div class="card-deadline-tag"><i class="far fa-clock"></i> ${dataFormatada}</div>`;
+                }
+
                 const card = document.createElement('div');
                 card.className = 'kanban-card';
-                card.style.position = 'relative';
                 card.dataset.dealId = deal.ID;
                 card.innerHTML = `
                     ${adminHtml}
-                    <div style="font-size:0.75rem; color:#aaa; font-weight:700">#${deal.TITLE || deal.ID}</div>
-                    <div style="font-weight:600; color:#333; margin-bottom:5px;">${deal[NOME_CLIENTE_FIELD] || 'Sem Nome'}</div>
-                    <button class="btn-detalhes-visual"><i class="fa fa-eye"></i> Visualizar</button>
+                    <div class="card-id">#${deal.TITLE || deal.ID}</div>
+                    <div class="card-client-name">${deal[NOME_CLIENTE_FIELD] || 'Sem Nome'}</div>
+                    ${prazoTagHtml}
+                    <div class="btn-detalhes-visual"><i class="fa-solid fa-eye"></i> Visualizar</div>
                 `;
-                card.querySelector('.btn-detalhes-visual').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    openDetailsModal(deal.ID);
-                });
+                card.addEventListener('click', () => openDetailsModal(deal.ID));
                 const col = document.getElementById(`cards-${colunaId}`);
                 if (col) col.appendChild(card);
             });
