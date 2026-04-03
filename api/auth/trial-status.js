@@ -64,11 +64,11 @@ module.exports = async (req, res) => {
         const statusbanco = (usuario.assinatura_status || '').toUpperCase();
         console.log(`[TRIAL_CHECK] -> Status atual no banco de dados: "${statusbanco}"`);
 
-        // Lista de status que liberam o acesso total (pagos)
+        // Status que liberam acesso PAGO total
         const statusAprovados = ['ACTIVE', 'ATIVO', 'CONFIRMED', 'PAGO', 'ASSINADO'];
 
         if (statusAprovados.includes(statusbanco)) {
-            console.log(`[TRIAL_CHECK] -> ACESSO LIBERADO: Assinatura detectada como ${statusbanco}`);
+            console.log(`[TRIAL_CHECK] -> ACESSO LIBERADO: Assinatura paga detectada como ${statusbanco}`);
             return res.status(200).json({
                 is_trial: false,
                 is_active: true,
@@ -77,8 +77,20 @@ module.exports = async (req, res) => {
             });
         }
 
-        // 3. Cálculo do Trial (Se for INATIVO ou pendente)
-        console.log('[TRIAL_CHECK] -> Sem assinatura paga. Calculando dias de Trial...');
+        // Status 'TRIAL' explícito no banco = trial ativo forçado (independe de data)
+        if (statusbanco === 'TRIAL') {
+            console.log(`[TRIAL_CHECK] -> ACESSO LIBERADO: Status TRIAL explícito no banco. Trial ativo forçado.`);
+            return res.status(200).json({
+                is_trial: true,
+                is_active: true,
+                dias_restantes: 5, // Valor simbólico para o banner aparecer
+                expirado: false,
+                status_atual: statusbanco
+            });
+        }
+
+        // 3. Cálculo do Trial por data (para status INATIVO, PENDING, etc)
+        console.log('[TRIAL_CHECK] -> Sem assinatura paga. Calculando dias de Trial por data...');
         const dataCriacao = usuario.criado_em ? new Date(usuario.criado_em) : IMPLEMENTATION_DATE;
         const dataInicioTrial = dataCriacao < IMPLEMENTATION_DATE ? IMPLEMENTATION_DATE : dataCriacao;
 

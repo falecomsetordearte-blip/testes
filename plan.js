@@ -119,18 +119,6 @@
             const token = localStorage.getItem('sessionToken');
             if (!token) return;
 
-            // Se já tem o plano em cache recente, usa o cache
-            const cachedPlano = localStorage.getItem('userPlano');
-            const cachedAt = parseInt(localStorage.getItem('userPlanoAt') || '0');
-            const agora = Date.now();
-            const CACHE_VALIDO = 5 * 60 * 1000; // 5 minutos
-
-            if (cachedPlano && (agora - cachedAt) < CACHE_VALIDO) {
-                this.plano = cachedPlano;
-                this._aplicarBloqueios();
-                return;
-            }
-
             try {
                 const res = await fetch('/api/auth/trial-status', {
                     method: 'POST',
@@ -141,11 +129,14 @@
 
                 // Determina o plano efetivo
                 const statusPagos = ['ACTIVE', 'ATIVO', 'CONFIRMED', 'PAGO', 'ASSINADO'];
+                const statusTrialExplicito = ['TRIAL'];
                 let planoEfetivo = 'FREE';
 
-                if (statusPagos.includes((data.status_atual || '').toUpperCase())) {
+                const statusAtual = (data.status_atual || '').toUpperCase();
+
+                if (statusPagos.includes(statusAtual)) {
                     planoEfetivo = 'PAID';
-                } else if (data.is_trial && data.is_active) {
+                } else if (statusTrialExplicito.includes(statusAtual) || (data.is_trial && data.is_active)) {
                     planoEfetivo = 'TRIAL';
                 } else {
                     planoEfetivo = 'FREE';
@@ -153,14 +144,13 @@
 
                 this.plano = planoEfetivo;
                 localStorage.setItem('userPlano', planoEfetivo);
-                localStorage.setItem('userPlanoAt', agora.toString());
 
-                console.log(`[PLAN] Plano atual: ${planoEfetivo}`);
+                console.log(`[PLAN] Status banco: ${statusAtual} | Plano efetivo: ${planoEfetivo}`);
                 this._aplicarBloqueios();
 
             } catch (e) {
-                console.warn('[PLAN] Erro ao verificar plano, usando cache ou FREE:', e);
-                this.plano = cachedPlano || 'FREE';
+                console.warn('[PLAN] Erro ao verificar plano, usando cache como fallback:', e);
+                this.plano = localStorage.getItem('userPlano') || 'FREE';
                 this._aplicarBloqueios();
             }
         },
