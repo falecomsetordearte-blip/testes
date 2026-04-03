@@ -87,7 +87,7 @@ module.exports = async (req, res) => {
             const sql = `
                 INSERT INTO empresas (
                     cnpj, nome_fantasia, whatsapp, email, responsavel, 
-                    senha, session_tokens, asaas_customer_id, logo_id, created_at
+                    senha, session_tokens, asaas_customer_id, logo, created_at
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
                 RETURNING id;
             `;
