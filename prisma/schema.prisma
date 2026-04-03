@@ -245,3 +245,16 @@ model NotificacaoGlobal {
 
   @@map("notificacoes_globais")
 }
+
+// ---------------------------------------------------------
+// MODELO DE IMPRESSORAS
+// ---------------------------------------------------------
+model Impressora {
+  id         Int      @id @default(autoincrement())
+  empresa_id Int
+  nome       String   @db.VarChar(255)
+  ativo      Boolean  @default(true)
+  criado_em  DateTime @default(now())
+
+  @@map("impressoras")
+}

@@ -195,6 +195,51 @@
         @media(max-width: 768px){
             .msg-grid { grid-template-columns: 1fr; }
         }
+
+        /* Estilos para o Painel de Impressoras */
+        .printer-list {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0 0 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .printer-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+            padding: 10px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+        }
+
+        .printer-item span {
+            font-weight: 500;
+            color: #334155;
+        }
+
+        .btn-delete-printer {
+            background: transparent;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: color 0.2s;
+        }
+
+        .btn-delete-printer:hover {
+            color: #c0392b;
+        }
+
+        #impressoras-feedback {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
     </style>
 </head>
 
@@ -239,6 +284,28 @@
                                     <span class="addon">Horas Úteis</span>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- PAINEL DE IMPRESSORAS - RECURSO PREMIUM -->
+                        <div id="feature-impressoras" class="admin-panel" style="position:relative;">
+                            <div class="panel-toolbar">
+                                <h3><i class="fa-solid fa-print" style="color:#8e44ad;"></i> Cadastro de Impressoras</h3>
+                            </div>
+                            <p class="help-text" style="margin-bottom: 20px;">Cadastre as impressoras que a sua empresa possui. Você poderá vinculá-las aos pedidos no Kanban de Impressão.</p>
+                            
+                            <div class="form-group" style="display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap;">
+                                <div style="flex-grow: 1; min-width: 250px;">
+                                    <input type="text" id="nova_impressora_nome" class="form-control-text" placeholder="Nome da Impressora (ex: Mimaki JV150, Plotter HP...)" style="width: 100%; box-sizing: border-box;">
+                                </div>
+                                <button type="button" class="btn-primary" id="btn-add-impressora" style="padding: 0.8rem 1.5rem;">
+                                    <i class="fa-solid fa-plus"></i> Adicionar
+                                </button>
+                            </div>
+                            <div id="impressoras-feedback"></div>
+
+                            <ul class="printer-list" id="lista-impressoras">
+                                <!-- As impressoras aparecerão aqui -->
+                            </ul>
                         </div>
 
                         <!-- PAINEL DE MENSAGENS DO WHATSAPP - RECURSO PREMIUM -->
@@ -314,6 +381,15 @@
                         descricao: 'Personalize as mensagens automáticas de WhatsApp enviadas a cada etapa do pedido.'
                     }
                 );
+
+                window.PlanManager.bloquear(
+                    'feature-impressoras',
+                    'cadastro-impressoras',
+                    {
+                        titulo: 'Gerenciamento de Impressoras — Plano Completo',
+                        descricao: 'Cadastre suas impressoras e vincule-as aos seus pedidos para organização avançada da produção.'
+                    }
+                );
             }
         };
 
@@ -350,6 +426,118 @@
                 }
             } catch (error) {
                 console.error("Erro carregando configurações:", error);
+            }
+
+            carregarImpressoras();
+        }
+
+        async function carregarImpressoras() {
+            try {
+                const response = await fetch('/api/admin/config/impressoras/list', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    renderizarImpressoras(data.impressoras || []);
+                }
+            } catch (error) {
+                console.error("Erro ao listar impressoras", error);
+            }
+        }
+
+        function renderizarImpressoras(impressoras) {
+            const lista = document.getElementById('lista-impressoras');
+            lista.innerHTML = '';
+            
+            if (impressoras.length === 0) {
+                lista.innerHTML = '<li class="printer-item" style="justify-content:center; color:#94a3b8;">Nenhuma impressora cadastrada.</li>';
+                return;
+            }
+
+            impressoras.forEach(imp => {
+                const li = document.createElement('li');
+                li.className = 'printer-item';
+                li.innerHTML = `
+                    <span>${imp.nome}</span>
+                    <button type="button" class="btn-delete-printer" title="Excluir Impressora" data-id="${imp.id}">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                `;
+                lista.appendChild(li);
+            });
+
+            document.querySelectorAll('.btn-delete-printer').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    deletarImpressora(this.getAttribute('data-id'));
+                });
+            });
+        }
+
+        document.getElementById('btn-add-impressora').addEventListener('click', async () => {
+            const input = document.getElementById('nova_impressora_nome');
+            const nome = input.value.trim();
+            const btn = document.getElementById('btn-add-impressora');
+            
+            if (!nome) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+            try {
+                const res = await fetch('/api/admin/config/impressoras/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), nome })
+                });
+
+                if (!res.ok) throw new Error("Erro ao criar impressora.");
+                
+                input.value = '';
+                await carregarImpressoras();
+            } catch (error) {
+                const fb = document.getElementById('impressoras-feedback');
+                fb.textContent = error.message;
+                fb.style.color = '#e74c3c';
+                fb.style.display = 'block';
+                setTimeout(() => fb.style.display = 'none', 3000);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-plus"></i> Adicionar';
+            }
+        });
+
+        async function deletarImpressora(id) {
+            if (window.adminCustomDialog) {
+                window.adminCustomDialog({
+                    type: 'confirm',
+                    title: 'Excluir Impressora',
+                    message: 'Tem certeza que deseja remover esta impressora? Ela não aparecerá mais nos pedidos novos.',
+                    onConfirm: async () => {
+                        executarDelecaoImpressora(id);
+                    }
+                });
+            } else if (confirm('Tem certeza que deseja remover esta impressora?')) {
+                executarDelecaoImpressora(id);
+            }
+        }
+
+        async function executarDelecaoImpressora(id) {
+            try {
+                const res = await fetch('/api/admin/config/impressoras/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), impressoraId: id })
+                });
+                if (res.ok) {
+                    carregarImpressoras();
+                } else {
+                    throw new Error("Falha ao deletar.");
+                }
+            } catch (error) {
+                alert(error.message);
             }
         }
 

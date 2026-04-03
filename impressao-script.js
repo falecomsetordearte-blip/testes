@@ -19,13 +19,30 @@
 
         async function carregarOpcoesDeFiltro() {
             try {
-                const response = await fetch('/api/getProductionFilters');
+                const response = await fetch('/api/getProductionFilters', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken })
+                });
                 const filters = await response.json();
                 if (!response.ok) throw new Error('Falha ao carregar filtros.');
 
-                filters.impressoras.forEach(option => {
+                const impressorasFiltradas = filters.impressoras || [];
+                window.todasImpressoras = impressorasFiltradas; // Salva para usar no modal de tags
+
+                impressoraFilterEl.innerHTML = '<option value="">Todas as Impressoras</option>';
+                impressorasFiltradas.forEach(option => {
                     impressoraFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`;
                 });
+                impressoraFilterEl.innerHTML += `<option value="cadastrar" style="font-weight: bold; font-style: italic;">+ Cadastrar Impressora</option>`;
+
+                impressoraFilterEl.addEventListener('change', function() {
+                    if (this.value === 'cadastrar') {
+                        window.location.href = 'admin-configuracoes.html';
+                    }
+                });
+
+                materialFilterEl.innerHTML = '<option value="">Todos os Materiais</option>';
                 filters.materiais.forEach(option => {
                     materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`;
                 });
@@ -44,6 +61,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
+                        sessionToken,
                         impressoraFilter: impressoraFilterEl.value,
                         materialFilter: materialFilterEl.value
                     })
@@ -137,6 +155,41 @@
                 arquivoHtml = '<p class="info-text">O arquivo final ainda não foi disponibilizado.</p>';
             }
 
+            // AREA DE IMPRESSORAS DO PEDIDO MULTI-SELECT
+            let tagsHtml = '';
+            const impressorasSelecionadas = deal.impressoras_ids || []; // Array de IDs
+            if (window.todasImpressoras) {
+                window.todasImpressoras.forEach(imp => {
+                    if (impressorasSelecionadas.includes(String(imp.id)) || impressorasSelecionadas.includes(Number(imp.id))) {
+                        tagsHtml += `<span class="impressora-tag" data-id="${imp.id}" style="background: #e2e8f0; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 5px;">${imp.value} <i class="fa-solid fa-xmark remove-tag" style="cursor:pointer; color: #e74c3c;"></i></span>`;
+                    }
+                });
+            }
+
+            let optHtml = '';
+            if (window.todasImpressoras) {
+                window.todasImpressoras.forEach(imp => {
+                    optHtml += `<option value="${imp.id}">${imp.value}</option>`;
+                });
+            }
+
+            let impressorasHtml = `
+                <div class="card-detalhe" style="margin-top: 15px;">
+                    <h3><i class="fa-solid fa-print"></i> Impressoras do Pedido</h3>
+                    <div style="display: flex; gap: 8px; margin-top: 10px;">
+                        <select id="select-add-impressora" style="flex-grow: 1; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+                            <option value="">Selecione para adicionar...</option>
+                            ${optHtml}
+                        </select>
+                        <button id="btn-add-impressora-tag" class="btn-acao" style="padding: 6px 12px;"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                    <div id="tags-impressoras-container" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;">
+                        ${tagsHtml}
+                    </div>
+                    <button id="btn-salvar-impressoras" class="btn-acao btn-salvar-tags" style="margin-top: 10px; width: 100%; display: none; background: #27ae60;">Salvar Impressoras</button>
+                </div>
+            `;
+
             let verificarHtml = '';
             if (isFinalizado) {
                 const isVerificado = stageId === "C17:WON" || stageId.includes("C19");
@@ -205,6 +258,7 @@
                             <div id="modal-arquivos-box">${arquivoHtml}</div>
                             <div id="modal-verificar-box" style="margin-top: 15px;">${verificarHtml}</div>
                         </div>
+                        ${impressorasHtml}
                         ${adminHtml}
                     </div>
                 </div>
@@ -212,6 +266,95 @@
             
             modal.classList.add('active');
             attachModalEventListeners(deal);
+            attachModalImpressorasListeners(deal.ID);
+        }
+
+        function attachModalImpressorasListeners(dealId) {
+            const btnAdd = document.getElementById('btn-add-impressora-tag');
+            const select = document.getElementById('select-add-impressora');
+            const container = document.getElementById('tags-impressoras-container');
+            const btnSalvar = document.getElementById('btn-salvar-impressoras');
+
+            let tagsAlteradas = false;
+
+            function verificarAlteracoes() {
+                tagsAlteradas = true;
+                btnSalvar.style.display = 'block';
+            }
+
+            if (btnAdd) {
+                btnAdd.addEventListener('click', () => {
+                    const idSelected = select.value;
+                    const nomeSelected = select.options[select.selectedIndex]?.text;
+                    
+                    if (!idSelected) return;
+
+                    // Verifica se já existe
+                    let exists = false;
+                    container.querySelectorAll('.impressora-tag').forEach(span => {
+                        if (span.getAttribute('data-id') === idSelected) exists = true;
+                    });
+                    if (exists) return;
+
+                    const span = document.createElement('span');
+                    span.className = 'impressora-tag';
+                    span.setAttribute('data-id', idSelected);
+                    span.style.cssText = 'background: #e2e8f0; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 5px;';
+                    span.innerHTML = `${nomeSelected} <i class="fa-solid fa-xmark remove-tag" style="cursor:pointer; color: #e74c3c;"></i>`;
+                    container.appendChild(span);
+
+                    select.value = '';
+                    verificarAlteracoes();
+                });
+            }
+
+            if (container) {
+                container.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('remove-tag')) {
+                        e.target.closest('.impressora-tag').remove();
+                        verificarAlteracoes();
+                    }
+                });
+            }
+
+            if (btnSalvar) {
+                btnSalvar.addEventListener('click', async () => {
+                    btnSalvar.disabled = true;
+                    btnSalvar.textContent = 'Gravando...';
+
+                    const ids = [];
+                    container.querySelectorAll('.impressora-tag').forEach(span => {
+                        ids.push(Number(span.getAttribute('data-id')));
+                    });
+
+                    try {
+                        const res = await fetch('/api/impressao/savePedidoImpressoras', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ sessionToken, dealId, impressorasIds: ids })
+                        });
+                        if (!res.ok) throw new Error('Erro ao salvar impressoras');
+
+                        btnSalvar.textContent = 'Salvo!';
+                        btnSalvar.style.background = '#2ecc71';
+                        setTimeout(() => {
+                            btnSalvar.style.display = 'none';
+                            btnSalvar.style.background = '#27ae60';
+                            btnSalvar.textContent = 'Salvar Impressoras';
+                            btnSalvar.disabled = false;
+                        }, 2000);
+                        
+                        // Atualiza dado local na memoria
+                        const dealMem = allDealsData.find(d => d.ID == dealId);
+                        if (dealMem) dealMem.impressoras_ids = ids;
+                        
+                    } catch (err) {
+                        window.adminCustomDialog({ type: 'alert', title: 'Erro', message: err.message });
+                        btnSalvar.disabled = false;
+                        btnSalvar.textContent = 'Salvar Impressoras';
+                    }
+                });
+            }
         }
 
         function attachModalEventListeners(deal) {
