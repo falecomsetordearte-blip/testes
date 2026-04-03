@@ -120,7 +120,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             window.location.href = '/login.html';
         });
 
-        checkAceiteTermos('EMPRESA', sessionToken);
+        // checkAceiteTermos('EMPRESA', sessionToken); // DESATIVADO - modal de termos removido
         checkTrialStatus('EMPRESA', sessionToken);
 
         // ==========================================
