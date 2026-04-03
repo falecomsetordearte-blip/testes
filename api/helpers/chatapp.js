@@ -403,4 +403,35 @@ async function definirAvatarGrupo(chatId, url, retry = true) {
     }
 }
 
-module.exports = { criarGrupoProducao, criarGrupoNotificacoes, enviarNotificacaoEtapa, getChatAppToken, definirAvatarGrupo };
+async function enviarMensagemTexto(chatId, texto, retry = true) {
+    if (!chatId || !texto) return null;
+
+    const token = await getChatAppToken(!retry);
+    if (!token) return null;
+
+    const headers = { 'Authorization': token, 'Content-Type': 'application/json', 'Lang': 'pt' };
+    const L_ID = process.env.CHATAPP_LICENSE_ID || '59808';
+    const L_MSG = 'grWhatsApp';
+
+    try {
+        const url = `${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/messages/text`;
+        const result = await axios.post(url, { text: texto }, { headers });
+        return result.data;
+    } catch (error) {
+        console.error(`[CHATAPP-SEND] Erro ao enviar mensagem de texto:`, error.response?.data || error.message);
+        if ((error.response?.data?.error?.code === "ApiInvalidTokenError" || error.response?.status === 401) && retry) {
+            await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => { });
+            return await enviarMensagemTexto(chatId, texto, false);
+        }
+        return null;
+    }
+}
+
+module.exports = { 
+    criarGrupoProducao, 
+    criarGrupoNotificacoes, 
+    enviarNotificacaoEtapa, 
+    getChatAppToken, 
+    definirAvatarGrupo,
+    enviarMensagemTexto
+};

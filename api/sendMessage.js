@@ -1,9 +1,6 @@
-// /api/sendMessage.js - VERSÃO SEGURA E CORRIGIDA
-
-const axios = require('axios');
-
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
-const AUTHOR_ID = 1; // ID do usuário do Bitrix que postará o comentário (ex: Admin/Sistema)
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+const { enviarMensagemTexto } = require('./helpers/chatapp');
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
@@ -13,49 +10,63 @@ module.exports = async (req, res) => {
     try {
         const { sessionToken, dealId, message } = req.body;
 
-        // ETAPA 1: VALIDAR ENTRADAS
         if (!sessionToken || !dealId || !message) {
             return res.status(400).json({ message: 'Token, ID do pedido e mensagem são obrigatórios.' });
         }
 
-        // ETAPA 2: VALIDAR O TOKEN E ENCONTRAR A EMPRESA DO USUÁRIO
-        const userSearch = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-            filter: { '%UF_CRM_1751824225': sessionToken },
-            select: ['COMPANY_ID']
-        });
+        // 1. Identificar Usuário e Empresa do sessionToken (Neon/Postgres)
+        const users = await prisma.$queryRawUnsafe(`
+            SELECT empresa_id, nome FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1
+        `, `%${sessionToken}%`);
 
-        const user = userSearch.data.result[0];
-        if (!user || !user.COMPANY_ID) {
-            return res.status(401).json({ message: 'Sessão inválida ou usuário não associado a uma empresa.' });
-        }
-        const userCompanyId = user.COMPANY_ID;
-        
-        // ETAPA 3: VERIFICAR SE O NEGÓCIO PERTENCE À EMPRESA DO USUÁRIO
-        const dealGetResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.get.json`, { id: dealId });
-        const deal = dealGetResponse.data.result;
+        let empresaId = null;
+        let remetenteNome = 'Atendimento';
 
-        // Verificação de segurança crucial:
-        if (!deal || deal.COMPANY_ID != userCompanyId) {
-            return res.status(403).json({ message: 'Acesso negado. Você não tem permissão para comentar neste pedido.' });
-        }
-        
-        // ETAPA 4: SE A VERIFICAÇÃO PASSOU, ENVIAR A MENSAGEM
-        // A formatação da mensagem foi ajustada para indicar que vem do cliente
-        const formattedComment = `[Mensagem do Cliente]\n--------------------\n${message}`;
-
-        await axios.post(`${BITRIX24_API_URL}crm.timeline.comment.add`, {
-            fields: {
-                ENTITY_ID: dealId,
-                ENTITY_TYPE: 'deal',
-                COMMENT: formattedComment,
-                AUTHOR_ID: AUTHOR_ID // ID do autor do comentário (Sistema)
+        if (users.length > 0) {
+            empresaId = users[0].empresa_id;
+            remetenteNome = users[0].nome;
+        } else {
+            const empresasLegacy = await prisma.$queryRawUnsafe(`
+                SELECT id, nome_fantasia FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+            `, `%${sessionToken}%`);
+            if (empresasLegacy.length > 0) {
+                empresaId = empresasLegacy[0].id;
+                remetenteNome = empresasLegacy[0].nome_fantasia;
             }
-        });
+        }
 
-        return res.status(200).json({ success: true, message: 'Mensagem enviada com sucesso!' });
+        if (!empresaId) {
+            return res.status(401).json({ message: 'Sessão inválida.' });
+        }
+        
+        // 2. Verificar se o pedido pertence à empresa
+        const pedidos = await prisma.$queryRawUnsafe(`
+            SELECT id, chatapp_chat_id, chatapp_chat_notificacoes_id 
+            FROM pedidos 
+            WHERE id = $1 AND empresa_id = $2 LIMIT 1
+        `, parseInt(dealId), empresaId);
+
+        if (pedidos.length === 0) {
+            return res.status(403).json({ message: 'Acesso negado ou pedido não encontrado.' });
+        }
+        
+        const pedido = pedidos[0];
+        
+        // 3. Enviar a mensagem via ChatApp (WhatsApp)
+        // Tentamos enviar no grupo de produção ou no de notificações
+        const chatIdParaEnvio = pedido.chatapp_chat_id || pedido.chatapp_chat_notificacoes_id;
+        
+        if (chatIdParaEnvio) {
+            const formattedComment = `*[${remetenteNome}]*\n${message}`;
+            await enviarMensagemTexto(chatIdParaEnvio, formattedComment);
+        } else {
+            console.warn(`[sendMessage] Pedido ${dealId} não possui canal de chat configurado.`);
+        }
+
+        return res.status(200).json({ success: true, message: 'Mensagem enviada com sucesso localmente!' });
 
     } catch (error) {
-        console.error('Erro ao enviar mensagem:', error.response ? error.response.data : error.message);
-        return res.status(500).json({ message: 'Ocorreu um erro interno. Tente novamente.' });
+        console.error('Erro ao enviar mensagem local:', error.message);
+        return res.status(500).json({ message: 'Ocorreu um erro interno ao processar a mensagem.' });
     }
 };
