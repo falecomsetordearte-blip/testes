@@ -76,33 +76,25 @@
 
                 if (isCompacto) {
                     overlay.innerHTML = `
-                        <div style="display:flex; align-items:center; gap:8px; flex:1;">
-                            <i class="fas fa-lock" style="color:#4f46e5; font-size:1rem;"></i>
-                            <div>
-                                <div style="font-weight:700; color:#1e293b; font-size:0.82rem;">${titulo}</div>
-                                <div style="color:#64748b; font-size:0.72rem;">${descricao}</div>
-                            </div>
-                        </div>
+                        <i class="fas fa-lock" style="color:#4f46e5; font-size:1rem; flex-shrink:0;"></i>
                         <button onclick="window.location.href='/assinatura.html'" style="
                             flex-shrink:0; background:#4f46e5; color:white; border:none;
                             padding:8px 14px; border-radius:8px; font-weight:700;
                             cursor:pointer; font-size:0.78rem; font-family:'Poppins', sans-serif;
-                            white-space:nowrap; transition:0.2s;
+                            white-space:nowrap; transition:0.2s; margin-left:auto;
                         " onmouseover="this.style.background='#6366f1'" onmouseout="this.style.background='#4f46e5'">
                             <i class="fas fa-crown" style="margin-right:4px;"></i>Assinar
                         </button>
                     `;
                 } else {
                     overlay.innerHTML = `
-                        <div style="font-size: 1.3rem; color: #4f46e5;">
+                        <div style="font-size: 1.6rem; color: #4f46e5;">
                             <i class="fas fa-lock"></i>
                         </div>
-                        <div style="font-weight: 700; color: #1e293b; font-size: 0.9rem;">${titulo}</div>
-                        <div style="color: #64748b; font-size: 0.78rem; line-height: 1.4;">${descricao}</div>
                         <button onclick="window.location.href='/assinatura.html'" style="
-                            margin-top: 6px; background: #4f46e5; color: white; border: none;
-                            padding: 7px 16px; border-radius: 8px; font-weight: 700;
-                            cursor: pointer; font-size: 0.78rem; font-family: 'Poppins', sans-serif;
+                            margin-top: 8px; background: #4f46e5; color: white; border: none;
+                            padding: 9px 20px; border-radius: 8px; font-weight: 700;
+                            cursor: pointer; font-size: 0.82rem; font-family: 'Poppins', sans-serif;
                             transition: 0.2s;
                         " onmouseover="this.style.background='#6366f1'" onmouseout="this.style.background='#4f46e5'">
                             <i class="fas fa-crown" style="margin-right:4px;"></i>Assinar e Ativar
