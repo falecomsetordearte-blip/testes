@@ -117,8 +117,12 @@
                 designerHtml = `<div class="designer-badge"><i class="fas fa-user-pen"></i> ${deal.DESIGNER_NOME.split(' ')[0]}</div>`;
             }
 
+            const isAdmin = localStorage.getItem('userPermissoes')?.includes('"admin"');
+            const adminHtml = isAdmin ? `<div class="btn-master-icon" onclick="event.stopPropagation(); if(window.abrirAdminModal) window.abrirAdminModal('${deal.ID}')" title="Ações Forçadas do Mestre (BD)"><i class="fas fa-cog"></i></div>` : '';
+
             return `
-                <div class="kanban-card card-internal-styled" data-deal-id="${deal.ID}" onclick="abrirModal(${deal.ID})">
+                <div class="kanban-card card-internal-styled" data-deal-id="${deal.ID}" onclick="abrirModal(${deal.ID})" style="position: relative;">
+                    ${adminHtml}
                     <div class="card-id">${displayId}</div>
                     
                     ${designerHtml} <!-- Exibe o nome do designer aqui -->

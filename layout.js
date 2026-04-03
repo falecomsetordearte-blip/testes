@@ -145,6 +145,108 @@ document.addEventListener("DOMContentLoaded", async () => {
                 window.inicializarBuscaGlobal();
             }
         }
+
+        // ==========================================
+        // SISTEMA MASTER / ADMIN GLOBAL EM CARDS
+        // ==========================================
+        if (permissoesArr.includes("admin")) {
+            console.log("[Layout] Permissão Admin detectada. Habilitando engrenagens nos cards...");
+            
+            const styleAdmin = document.createElement('style');
+            styleAdmin.innerHTML = `
+                .btn-master-icon { position:absolute; top:8px; right:8px; background:#e74c3c; color:white; padding:4px 7px; border-radius:50%; font-size:0.75rem; cursor:pointer; z-index:100; opacity:0.6; transition:0.2s; box-shadow:0 2px 5px rgba(0,0,0,0.2); }
+                .btn-master-icon:hover { opacity:1; transform:scale(1.1); }
+            `;
+            document.head.appendChild(styleAdmin);
+
+            const mstrModalHtml = `
+            <div id="master-global-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+                <div style="background:#fff; width:90%; max-width:400px; padding:25px; border-radius:12px; border:2px solid #e74c3c; box-shadow:0 15px 30px rgba(0,0,0,0.2);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:15px;">
+                        <h3 style="color:#c0392b; margin:0; font-size:1.1rem;"><i class="fas fa-tools"></i> Mestre: Pedido #<span id="master-global-display-id"></span></h3>
+                        <button onclick="document.getElementById('master-global-modal').classList.add('hidden')" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#777;">&times;</button>
+                    </div>
+                    <input type="hidden" id="master-global-deal-id">
+                    
+                    <label style="font-weight:600; font-size:0.85rem; color:#444; margin-bottom:5px; display:block;">Forçar Estágio do Banco (Neon DB):</label>
+                    <select id="master-global-stage-select" style="width:100%; padding:9px; margin-bottom:15px; border-radius:6px; border:1px solid #ccc; font-size:0.95rem;">
+                        <option value="">Selecione a fase exata...</option>
+                        <option value="ARTE">Arte / Design</option>
+                        <option value="IMPRESSÃO">Impressão</option>
+                        <option value="ACABAMENTO">Acabamento</option>
+                        <option value="INSTALAÇÃO LOJA">Instalação Loja</option>
+                        <option value="INSTALAÇÃO EXTERNA">Instalação Ext.</option>
+                        <option value="EXPEDIÇÃO">Expedição</option>
+                        <option value="CONCLUÍDO">Concluído</option>
+                        <option value="CANCELADO">Cancelado</option>
+                    </select>
+                    <button id="master-global-btn-mover" style="width:100%; background:#f39c12; color:white; border:none; padding:10px; border-radius:6px; margin-bottom:15px; font-weight:bold; cursor:pointer;">Mover Fase</button>
+
+                    <hr style="border:none; border-top:1px dashed #ddd; margin-bottom:15px;" />
+                    <button id="master-global-btn-excluir" style="width:100%; background:#e74c3c; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer;">Deletar do DB Permanente</button>
+                </div>
+            </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', mstrModalHtml);
+
+            document.getElementById('master-global-btn-mover').addEventListener('click', async () => {
+                const dealId = document.getElementById('master-global-deal-id').value;
+                const stage = document.getElementById('master-global-stage-select').value;
+                if (!stage) return alert('Selecione a etapa para mover.');
+                
+                const btn = document.getElementById('master-global-btn-mover');
+                if (confirm('Essa ação afetará o banco no Neon DB forçando as datas e estágios normais. Mover o pedido #' + dealId + ' para ' + stage + '?')) {
+                    btn.disabled = true;
+                    btn.innerText = "Processando...";
+                    try {
+                        const res = await fetch('/api/admin/forceUpdateStage', {
+                            method:'POST', headers:{'Content-Type':'application/json'},
+                            body:JSON.stringify({sessionToken, dealId, newStageId:stage})
+                        });
+                        if (!res.ok) throw new Error((await res.json()).message || 'Falha no endpoint');
+                        document.getElementById('master-global-modal').classList.add('hidden');
+                        alert('Ação Master de mover fase finalizada com sucesso!');
+                        window.location.reload();
+                    } catch(e) { 
+                        alert('Erro Master: ' + e.message); 
+                        btn.disabled = false;
+                        btn.innerText = "Mover Fase";
+                    }
+                }
+            });
+
+            document.getElementById('master-global-btn-excluir').addEventListener('click', async () => {
+                const dealId = document.getElementById('master-global-deal-id').value;
+                const conf = prompt(`[ZONA DE PERIGO]\nEXCLUSÃO DIRETA NO POSTGRES NEON DB!\nPara deletar permanentemente, digite o ID: ${dealId}`);
+                if (conf === dealId) {
+                    const btn = document.getElementById('master-global-btn-excluir');
+                    btn.disabled = true;
+                    btn.innerText = "Deletando...";
+                    try {
+                        const res = await fetch('/api/admin/deleteDeal', {
+                            method:'POST', headers:{'Content-Type':'application/json'},
+                            body:JSON.stringify({sessionToken, dealId})
+                        });
+                        if (!res.ok) throw new Error((await res.json()).message || 'Falha no endpoint');
+                        document.getElementById('master-global-modal').classList.add('hidden');
+                        alert('Pedido DELETADO no servidor de banco de dados.');
+                        window.location.reload();
+                    } catch(e) { 
+                        alert('Erro Master: ' + e.message); 
+                        btn.disabled = false;
+                        btn.innerText = "Deletar do DB Permanente";
+                    }
+                } else if(conf !== null) {
+                    alert('Cancelado: o ID divergente.');
+                }
+            });
+
+            window.abrirAdminModal = function(dealId) {
+                document.getElementById('master-global-deal-id').value = dealId;
+                document.getElementById('master-global-display-id').innerText = dealId;
+                document.getElementById('master-global-modal').classList.remove('hidden');
+            };
+        }
     }
 
     // --- SISTEMA DE TRIAL (PERÍODO DE TESTE) ---

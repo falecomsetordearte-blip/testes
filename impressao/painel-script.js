@@ -260,8 +260,12 @@
                 prazoTagHtml = `<div class="card-deadline-tag"><i class="far fa-clock"></i> ${dataFormatada}</div>`;
             }
 
+            const isAdmin = localStorage.getItem('userPermissoes')?.includes('"admin"');
+            const adminHtml = isAdmin ? `<div class="btn-master-icon" onclick="event.stopPropagation(); if(window.abrirAdminModal) window.abrirAdminModal('${deal.ID}')" title="Ações Forçadas do Mestre (BD)"><i class="fas fa-cog"></i></div>` : '';
+
             return `
-                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}">
+                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}" style="position: relative;">
+                    ${adminHtml}
                     <div class="card-id">${displayId}</div>
                     <div class="card-client-name">${nomeCliente}</div>
                     ${prazoTagHtml}

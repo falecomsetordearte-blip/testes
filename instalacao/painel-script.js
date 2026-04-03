@@ -211,10 +211,15 @@
                     else colunaId = 'PROXIMA_SEMANA';
                 }
 
+                const isAdmin = localStorage.getItem('userPermissoes')?.includes('"admin"');
+                const adminHtml = isAdmin ? `<div class="btn-master-icon" onclick="event.stopPropagation(); if(window.abrirAdminModal) window.abrirAdminModal('${deal.ID}')" title="Ações Forçadas do Mestre (BD)"><i class="fas fa-cog"></i></div>` : '';
+
                 const card = document.createElement('div');
                 card.className = 'kanban-card';
+                card.style.position = 'relative';
                 card.dataset.dealId = deal.ID;
                 card.innerHTML = `
+                    ${adminHtml}
                     <div style="font-size:0.75rem; color:#aaa; font-weight:700">#${deal.TITLE || deal.ID}</div>
                     <div style="font-weight:600; color:#333; margin-bottom:5px;">${deal[NOME_CLIENTE_FIELD] || 'Sem Nome'}</div>
                     <button class="btn-detalhes-visual"><i class="fa fa-eye"></i> Visualizar</button>

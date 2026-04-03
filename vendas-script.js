@@ -66,8 +66,12 @@
         // --- FUNÇÃO PARA RENDERIZAR UM CARD ---
         function createCardHtml(deal) {
             const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(deal.OPPORTUNITY) || 0);
+            const isAdmin = localStorage.getItem('userPermissoes')?.includes('"admin"');
+            const adminHtml = isAdmin ? `<div class="btn-master-icon" onclick="event.stopPropagation(); if(window.abrirAdminModal) window.abrirAdminModal('${deal.ID}')" title="Ações Forçadas do Mestre (BD)"><i class="fas fa-cog"></i></div>` : '';
+
             return `
-                <div class="kanban-card" data-deal-id="${deal.ID}">
+                <div class="kanban-card" data-deal-id="${deal.ID}" style="position: relative;">
+                    ${adminHtml}
                     <div class="card-title">${deal.TITLE}</div>
                     <div class="card-contact">${deal.CONTACT_NAME}</div>
                     <div class="card-footer">

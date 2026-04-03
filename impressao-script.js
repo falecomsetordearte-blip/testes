@@ -95,8 +95,11 @@
 
         function createCardHtml(deal) {
             const linkVerPedido = deal.UF_CRM_1741349861326;
+            const isAdmin = localStorage.getItem('userPermissoes')?.includes('"admin"');
+            const adminHtml = isAdmin ? `<div class="btn-master-icon" onclick="event.stopPropagation(); if(window.abrirAdminModal) window.abrirAdminModal('${deal.ID}')" title="Ações Forçadas do Mestre (BD)"><i class="fas fa-cog"></i></div>` : '';
             return `
-                <div class="kanban-card">
+                <div class="kanban-card" style="position: relative;">
+                    ${adminHtml}
                     <div class="card-title">#${deal.ID} - ${deal.TITLE}</div>
                     <div class="card-actions" style="margin-top: 15px; display: flex; gap: 10px;">
                         ${linkVerPedido ? `<a href="${linkVerPedido}" target="_blank" class="btn-acao btn-verificar">Ver Pedido</a>` : ''}
