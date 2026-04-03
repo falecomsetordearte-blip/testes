@@ -322,18 +322,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     function mostrarModalTermos(type, token) {
         const modalHtml = `
             <div id="modal-termos-lgpd" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
-                <div style="background:white; width:90%; max-width:550px; padding:35px; border-radius:16px; box-shadow:0 20px-25px rgba(0,0,0,0.2); text-align:center;">
-                    <div style="font-size:3rem; color:var(--primary-color); margin-bottom:20px;"><i class="fas fa-file-signature"></i></div>
-                    <h2 style="margin-bottom:15px; color:var(--text-main);">Atualização dos Termos de Uso</h2>
-                    <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:20px;">
+                <div style="background:white; width:90%; max-width:550px; padding:35px; border-radius:16px; box-shadow:0 20px 25px rgba(0,0,0,0.2); text-align:center;">
+                    <div style="font-size:3rem; color:#4f46e5; margin-bottom:20px;"><i class="fas fa-file-signature"></i></div>
+                    <h2 style="margin-bottom:15px; color:#1e293b;">Atualização dos Termos de Uso</h2>
+                    <p style="color:#64748b; font-size:0.95rem; margin-bottom:20px;">
                         Para continuar utilizando o <strong>Setor de Arte</strong>, você precisa ler e aceitar nossos novos termos de uso e política de privacidade (LGPD).
                     </p>
                     <div style="background:#fff7ed; border-left:4px solid #f97316; padding:15px; margin-bottom:25px; text-align:left; font-size:0.9rem; color:#9a3412;">
                         <strong>Aviso Importante:</strong> O Setor de Arte é apenas um facilitador tecnológico. Não nos responsabilizamos por negociações, prazos ou pagamentos entre Designers e Gráficas.
                     </div>
                     <div style="display:flex; flex-direction:column; gap:10px;">
-                        <button id="btn-aceitar-termos" style="background:var(--primary-color); color:white; border:none; padding:16px; border-radius:10px; font-weight:700; cursor:pointer; font-size:1rem;">Li e Concordo com os Termos</button>
-                        <a href="/termos-uso.html" target="_blank" style="color:var(--primary-color); text-decoration:none; font-size:0.85rem; font-weight:600;">Ver Termos Completos</a>
+                        <button id="btn-aceitar-termos" style="background:#4f46e5; color:white; border:none; padding:16px; border-radius:10px; font-weight:700; cursor:pointer; font-size:1rem;">Li e Concordo com os Termos</button>
+                        <a href="/termos-uso.html" target="_blank" style="color:#4f46e5; text-decoration:none; font-size:0.85rem; font-weight:600;">Ver Termos Completos</a>
                     </div>
                 </div>
             </div>
