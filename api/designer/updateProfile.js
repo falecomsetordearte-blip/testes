@@ -7,27 +7,40 @@ module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido.' });
 
     try {
-        const { token, nome, sobrenome, chave_pix, nova_senha } = req.body;
+        const { token, nome, sobrenome, email, chave_pix, nova_senha } = req.body;
 
         // 1. Identificar Designer pelo Token de Sessão
         const designers = await prisma.$queryRawUnsafe(`
-            SELECT designer_id FROM designers_financeiro WHERE session_tokens LIKE $1 LIMIT 1
-        `, `%${token}%`);
+            SELECT designer_id FROM designers_financeiro WHERE session_tokens = $1 LIMIT 1
+        `, token);
 
-        if (designers.length === 0) return res.status(401).json({ message: 'Sessão inválida.' });
+        if (designers.length === 0) return res.status(401).json({ message: 'Sessão inválida ou expirada.' });
         const designerId = designers[0].designer_id;
 
         // 2. Preparar campos para atualização
         let updateParts = [];
         let params = [];
 
-        // Junta Nome e Sobrenome para salvar na coluna 'nome' no Neon
+        // Atualização de Nome/Sobrenome
         if (nome !== undefined || sobrenome !== undefined) {
             const nomeCompleto = `${nome || ''} ${sobrenome || ''}`.trim();
             if (nomeCompleto) {
                 params.push(nomeCompleto);
                 updateParts.push(`nome = $${params.length}`);
             }
+        }
+
+        // Atualização de E-mail com Verificação de Duplicidade
+        if (email) {
+            const checkEmail = await prisma.$queryRawUnsafe(`
+                SELECT designer_id FROM designers_financeiro WHERE email = $1 AND designer_id != $2 LIMIT 1
+            `, email, designerId);
+            
+            if (checkEmail.length > 0) {
+                return res.status(400).json({ message: 'Este e-mail já está sendo usado por outro usuário.' });
+            }
+            params.push(email);
+            updateParts.push(`email = $${params.length}`);
         }
 
         if (chave_pix !== undefined) { 
@@ -41,10 +54,11 @@ module.exports = async (req, res) => {
             updateParts.push(`senha_hash = $${params.length}`);
         }
 
-        if (updateParts.length === 0) return res.status(400).json({ message: 'Nada para atualizar.' });
+        if (updateParts.length === 0) return res.status(400).json({ message: 'Nenhuma alteração detectada.' });
 
+        // 3. Executar Update
         params.push(designerId);
-        const query = `UPDATE designers_financeiro SET ${updateParts.join(', ')} WHERE designer_id = $${params.length}`;
+        const query = `UPDATE designers_financeiro SET ${updateParts.join(', ')}, atualizado_em = CURRENT_TIMESTAMP WHERE designer_id = $${params.length}`;
 
         await prisma.$executeRawUnsafe(query, ...params);
 
@@ -52,6 +66,6 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error("Erro updateProfile:", error);
-        return res.status(500).json({ message: 'Erro ao salvar alterações.' });
+        return res.status(500).json({ message: 'Erro interno ao salvar as alterações.' });
     }
-};
+};

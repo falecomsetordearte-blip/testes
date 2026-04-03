@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
         if (!designerId) return res.status(401).json({ message: 'Token inválido ou expirado.' });
 
         const designers = await prisma.$queryRawUnsafe(`
-            SELECT nome, chave_pix, pontuacao
+            SELECT nome, email, chave_pix, pontuacao
             FROM designers_financeiro 
             WHERE designer_id = $1 LIMIT 1
         `, designerId);
@@ -41,6 +41,7 @@ module.exports = async (req, res) => {
         return res.status(200).json({
             name: name,
             lastName: lastName,
+            email: dbData.email || '',
             avatar: avatarUrl,
             chave_pix: dbData.chave_pix || '',
             pontuacao: dbData.pontuacao || 0
@@ -53,4 +54,4 @@ module.exports = async (req, res) => {
         }
         return res.status(500).json({ message: 'Ocorreu um erro interno ao buscar os dados.' });
     }
-};
+};
