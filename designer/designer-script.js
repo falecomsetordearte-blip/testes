@@ -345,18 +345,182 @@
         });
     };
 
+    // --- UTILITÁRIOS DE UPLOAD BLOB ---
+    window.updateProgressBar = (tipo, percent) => {
+        const container = document.getElementById(`progress-container-${tipo}`);
+        const fill = document.getElementById(`progress-fill-${tipo}`);
+        if (container) container.style.display = 'block';
+        if (fill) fill.style.width = percent + '%';
+        if (percent >= 100) {
+            setTimeout(() => { if (container) container.style.display = 'none'; }, 2000);
+        }
+    };
+
+    window.uploadParaBlob = async (input, tipo, pedidoTitulo = 'pedido') => {
+        if (!input || !input.files.length) return null;
+        const file = input.files[0];
+        const label = document.getElementById(`label-upload-${tipo}`);
+        const originalLabel = label ? label.innerHTML : '';
+
+        // Validações Específicas para Layout
+        if (tipo === 'layout') {
+            if (!file.type.includes('jpeg') && !file.type.includes('jpg')) {
+                window.customAlert("O Layout deve ser um arquivo JPG.", true);
+                input.value = '';
+                return null;
+            }
+            if (file.size > 1024 * 1024) {
+                window.customAlert("O Layout deve ter no máximo 1MB.", true);
+                input.value = '';
+                return null;
+            }
+        }
+
+        if (label) {
+            label.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+            label.style.pointerEvents = 'none';
+        }
+        updateProgressBar(tipo, 0);
+
+        try {
+            const { upload } = await import('https://esm.sh/@vercel/blob@2.3.1/client');
+            const safeTitle = (pedidoTitulo || 'pedido').replace(/[^a-zA-Z0-9_-]/g, '_');
+            const pathname = `uploads/designer/${safeTitle}/${Date.now()}-${file.name}`;
+
+            const blob = await upload(pathname, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/blob',
+                clientPayload: JSON.stringify({ sessionToken: sessionToken }),
+                onUploadProgress: (p) => updateProgressBar(tipo, p.percentage)
+            });
+
+            if (label) label.innerHTML = '<i class="fas fa-check-circle" style="color:#10b981"></i> Arquivo Pronto';
+            return blob.url;
+        } catch (e) {
+            console.error(e);
+            window.customAlert("Erro no upload do arquivo.", true);
+            if (label) label.innerHTML = originalLabel;
+            return null;
+        } finally {
+            if (label) label.style.pointerEvents = '';
+        }
+    };
+
     window.prepararFinalizacao = (id) => {
-        const corpo = `<span class="drawer-label">Link Layout</span><input type="url" id="f-layout" class="drawer-input" required><span class="drawer-label">Link Impressão</span><input type="url" id="f-impressao" class="drawer-input" required>`;
-        window.abrirGaveta("Finalizar Pedido", corpo, `<button id="btn-finalizar-exec" class="btn-full btn-primary">ENVIAR TRABALHO</button>`);
-        document.getElementById('btn-finalizar-exec').onclick = async () => {
-            const l1 = document.getElementById('f-layout').value;
-            const l2 = document.getElementById('f-impressao').value;
-            if (!l1 || !l2) return window.customAlert("Preencha os links", true);
+        const corpo = `
+            <div class="upload-field-container">
+                <span class="drawer-label">1. Upload do Layout (Somente JPG até 1MB)</span>
+                <input type="file" id="input-layout" accept="image/jpeg" style="display:none;" onchange="handleLayoutChange(this)">
+                <label for="input-layout" class="upload-label-card" id="label-upload-layout">
+                    <i class="fas fa-image"></i>
+                    <div>
+                        <div style="font-weight:600;">Subir Layout</div>
+                        <div style="font-size:0.75rem; color:#64748b;">Apenas JPG para prévia do cliente</div>
+                    </div>
+                </label>
+                <div class="progress-container" id="progress-container-layout"><div class="progress-fill" id="progress-fill-layout"></div></div>
+                <input type="url" id="f-layout" class="drawer-input" placeholder="Ou cole o link aqui" style="margin-top:10px;">
+            </div>
+
+            <div class="checklist-container">
+                <span class="drawer-label" style="margin-top:0;">2. Checklist de Qualidade (Obrigatório)</span>
+                <label class="checklist-item"><input type="checkbox" class="chk-item"> Fontes estão em curvas?</label>
+                <label class="checklist-item"><input type="checkbox" class="chk-item"> Cores em CMYK?</label>
+                <label class="checklist-item"><input type="checkbox" class="chk-item"> Sem elementos de sombra?</label>
+                <label class="checklist-item"><input type="checkbox" class="chk-item"> Sem transparências?</label>
+                <label class="checklist-item"><input type="checkbox" class="chk-item"> Linha delimitando tamanho do material?</label>
+            </div>
+
+            <div class="upload-field-container">
+                <span class="drawer-label">3. Arquivo para Impressão</span>
+                <input type="file" id="input-impressao" style="display:none;" onchange="handleImpressaoChange(this)">
+                <label for="input-impressao" class="upload-label-card" id="label-upload-impressao">
+                    <i class="fas fa-file-pdf"></i>
+                    <div>
+                        <div style="font-weight:600;">Selecionar Arquivo Final</div>
+                        <div style="font-size:0.75rem; color:#64748b;">PDF, CDR ou alta resolução</div>
+                    </div>
+                </label>
+                <div class="progress-container" id="progress-container-impressao"><div class="progress-fill" id="progress-fill-impressao"></div></div>
+                <input type="url" id="f-impressao" class="drawer-input" placeholder="Ou cole o link aqui" style="margin-top:10px;">
+            </div>
+        `;
+
+        window.abrirGaveta("Finalizar Pedido", corpo, `
+            <button id="btn-finalizar-blob" class="btn-full btn-primary" style="display:flex; align-items:center; justify-content:center; gap:10px;">
+                <i class="fas fa-upload"></i> SUBIR ARQUIVOS E FINALIZAR
+            </button>
+        `);
+
+        // Funções de manipulação interna
+        window.handleLayoutChange = async (input) => {
+            const url = await window.uploadParaBlob(input, 'layout');
+            if (url) document.getElementById('f-layout').value = url;
+        };
+
+        window.handleImpressaoChange = (input) => {
+            const label = document.getElementById('label-upload-impressao');
+            if (input.files.length > 0) {
+                label.innerHTML = `<i class="fas fa-file-alt"></i> <div><div style="font-weight:600;">${input.files[0].name}</div><div style="font-size:0.75rem; color:#64748b;">Clique para trocar</div></div>`;
+            }
+        };
+
+        document.getElementById('btn-finalizar-blob').onclick = async () => {
+            const btn = document.getElementById('btn-finalizar-blob');
+            const chks = document.querySelectorAll('.chk-item');
+            const allChecked = Array.from(chks).every(c => c.checked);
+
+            if (!allChecked) {
+                return window.customAlert("Você precisa marcar todos os itens do checklist de qualidade.", true);
+            }
+
+            const inputImpressao = document.getElementById('input-impressao');
+            let linkImpressao = document.getElementById('f-impressao').value;
+            let linkLayout = document.getElementById('f-layout').value;
+
+            if (!linkImpressao && inputImpressao.files.length === 0) {
+                return window.customAlert("Selecione o arquivo de impressão ou cole o link.", true);
+            }
+            if (!linkLayout) {
+                return window.customAlert("Faça o upload do layout ou cole o link.", true);
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+
+            // Se tem arquivo físico para impressão, sobe agora
+            if (inputImpressao.files.length > 0) {
+                const uploadedUrl = await window.uploadParaBlob(inputImpressao, 'impressao');
+                if (uploadedUrl) linkImpressao = uploadedUrl;
+                else {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-upload"></i> SUBIR ARQUIVOS E FINALIZAR';
+                    return;
+                }
+            }
+
             try {
-                const res = await fetch('/api/designer/finalizarPedido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: sessionToken, pedidoId: id, linkLayout: l1, linkImpressao: l2 }) });
-                if (res.ok) { window.fecharGaveta(); window.customAlert("Trabalho entregue!"); carregarDashboardDesigner(); }
-                else { const d = await res.json(); window.customAlert(d.message, true); }
-            } catch (e) { console.error(e); }
+                const res = await fetch('/api/designer/finalizarPedido', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: sessionToken, pedidoId: id, linkLayout, linkImpressao })
+                });
+                if (res.ok) {
+                    window.fecharGaveta();
+                    window.customAlert("Trabalho entregue com sucesso!");
+                    carregarDashboardDesigner();
+                } else {
+                    const d = await res.json();
+                    window.customAlert(d.message || "Erro ao finalizar", true);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-upload"></i> SUBIR ARQUIVOS E FINALIZAR';
+                }
+            } catch (e) {
+                console.error(e);
+                window.customAlert("Erro de conexão.", true);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-upload"></i> SUBIR ARQUIVOS E FINALIZAR';
+            }
         };
     };
 

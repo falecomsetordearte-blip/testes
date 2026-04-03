@@ -30,12 +30,22 @@ module.exports = async (req, res) => {
                     const client = new Client({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
                     try {
                         await client.connect();
-                        const checkRes = await client.query(
+                        // 1. Tentar validar como Empresa
+                        const checkEmpresa = await client.query(
                             'SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1',
                             [`%${sessionToken}%`]
                         );
-                        if (checkRes.rows.length === 0) {
-                            throw new Error('Sessão inválida.');
+                        
+                        if (checkEmpresa.rows.length === 0) {
+                            // 2. Tentar validar como Designer
+                            const checkDesigner = await client.query(
+                                'SELECT designer_id FROM designers_financeiro WHERE session_tokens LIKE $1 LIMIT 1',
+                                [`%${sessionToken}%`]
+                            );
+                            
+                            if (checkDesigner.rows.length === 0) {
+                                throw new Error('Sessão inválida.');
+                            }
                         }
                     } finally {
                         await client.end();
