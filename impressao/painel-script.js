@@ -344,7 +344,7 @@
             const linkAtendimento = deal[LINK_ATENDIMENTO_FIELD];
             const briefingTexto = deal[BRIEFING_FIELD] || "Nenhum briefing disponível para este pedido.";
 
-            let actionsHtml = '';
+            let actionsHtml = `<a href="/pedido.html?id=${deal.ID}" target="_blank" class="btn-hub" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; text-align: center; cursor: pointer; border: 1px solid #bae6fd; font-size: 0.9rem; transition: all 0.2s; text-decoration: none; margin-bottom: 8px; background-color: #e0f2fe; color: #0369a1;"><i class="fa-solid fa-circle-info"></i> Ver Detalhes</a>`;
             if (linkArquivo) { actionsHtml += `<a href="${linkArquivo}" target="_blank" class="btn-acao-modal principal"><i class="fas fa-download"></i> Baixar Arquivo</a>`; }
             if (linkAtendimento) { actionsHtml += `<a href="${linkAtendimento}" target="_blank" class="btn-acao-modal secundario"><i class="fab fa-whatsapp"></i> Ver Atendimento</a>`; }
             

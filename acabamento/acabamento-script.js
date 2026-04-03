@@ -309,7 +309,7 @@
                 medidasHtml = `<span class="tag-medidas" style="background-color: ${medidaInfo.cor}; padding: 2px 8px; border-radius:4px; color:white; font-size:0.85rem;">${medidaInfo.nome}</span>`; 
             }
 
-            let actionsHtml = '';
+            let actionsHtml = `<a href="/pedido.html?id=${deal.ID}" target="_blank" class="btn-hub" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; text-align: center; cursor: pointer; border: 1px solid #bae6fd; font-size: 0.9rem; transition: all 0.2s; text-decoration: none; margin-bottom: 8px; background-color: #e0f2fe; color: #0369a1;"><i class="fa-solid fa-circle-info"></i> Ver Detalhes</a>`;
             
             // --- REGRA DE OURO: BOTÃO VISÍVEL SÓ PARA EMPRESAS 4 e 24 ---
             if (deal.TITLE && (currentLocalCompanyId === 4 || currentLocalCompanyId === 24)) {

@@ -585,6 +585,7 @@
                     <div class="detalhe-col-lateral">
                         <h3>${deal[NOME_CLIENTE_FIELD] || 'Cliente'}</h3>
                         <p><strong>Contato:</strong> ${deal[CONTATO_CLIENTE_FIELD] || '-'}</p>
+                        <a href="/pedido.html?id=${deal.ID}" target="_blank" class="btn-hub" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; text-align: center; cursor: pointer; border: 1px solid #bae6fd; font-size: 0.9rem; transition: all 0.2s; text-decoration: none; margin-bottom: 8px; background-color: #e0f2fe; color: #0369a1;"><i class="fa-solid fa-circle-info"></i> Ver Detalhes</a>
                         <hr>
                         <button id="btn-concluir-inst" class="btn-concluir"><i class="fas fa-check"></i> Instalação Realizada</button>
                     </div>

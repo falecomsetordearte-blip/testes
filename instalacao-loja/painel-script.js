@@ -242,7 +242,7 @@
                 imageHtml = `<div class="detalhe-col-principal"><div class="sem-imagem"><i class="fas fa-image"></i><p>Sem layout anexado</p></div></div>`;
             }
 
-            let linksHtml = '';
+            let linksHtml = `<a href="/pedido.html?id=${deal.ID}" target="_blank" class="btn-hub" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; text-align: center; cursor: pointer; border: 1px solid #bae6fd; font-size: 0.9rem; transition: all 0.2s; text-decoration: none; margin-bottom: 8px; background-color: #e0f2fe; color: #0369a1;"><i class="fa-solid fa-circle-info"></i> Ver Detalhes</a>`;
             if(deal[LINK_ARQUIVO_FINAL_FIELD]) linksHtml += `<a href="${deal[LINK_ARQUIVO_FINAL_FIELD]}" target="_blank" class="btn-acao-modal principal"><i class="fas fa-download"></i> Baixar Arquivo</a>`;
             if(deal[LINK_ATENDIMENTO_FIELD]) linksHtml += `<a href="${deal[LINK_ATENDIMENTO_FIELD]}" target="_blank" class="btn-acao-modal secundario"><i class="fab fa-whatsapp"></i> Ver Atendimento</a>`;
 

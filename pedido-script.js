@@ -1,3 +1,4 @@
+// /pedido-script.js - Hub de Detalhes Dinâmico
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const orderId = urlParams.get('id');
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
+        mostrarLoading(true);
         const response = await fetch('/api/getOrderDetails', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -32,96 +34,127 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-function renderizarPedido(pedido, statusBitrix) {
-    document.getElementById('loading-screen').classList.add('hidden');
-    document.getElementById('conteudo-pedido').classList.remove('hidden');
-
-    // MÁGICA DO PAINEL ADMIN
-    const permissoesArrStr = localStorage.getItem('userPermissoes');
-    if (permissoesArrStr) {
-        try {
-            const permissoesArr = JSON.parse(permissoesArrStr);
-            if (permissoesArr.includes("admin")) {
-                const adminPanel = document.getElementById('admin-panel');
-                if (adminPanel) {
-                    adminPanel.classList.remove('hidden');
-                    configurarEventosAdmin(pedido.id);
-                }
-            }
-        } catch (e) {
-            console.error("Erro ao validar permissões array", e);
-        }
+function mostrarLoading(show) {
+    const loader = document.getElementById('loading-screen');
+    const content = document.getElementById('hub-content');
+    if (show) {
+        loader.classList.remove('hidden');
+        content.classList.add('hidden');
+    } else {
+        loader.classList.add('hidden');
+        content.classList.remove('hidden');
     }
+}
 
-    // 1. Cabeçalho
-    document.getElementById('view-id-topo').textContent = pedido.id;
+function renderizarPedido(pedido, statusBitrix) {
+    mostrarLoading(false);
+
+    // 1. Cabeçalho & Status
+    document.getElementById('view-id-badge').textContent = `#${pedido.id}`;
     document.getElementById('view-titulo').textContent = pedido.titulo || 'Sem título';
     
-    // Badge de Status
     const badge = document.getElementById('view-status-badge');
-    const statusInfo = getStatusInfo(statusBitrix);
-    badge.className = `status-badge ${statusInfo.class}`;
+    const statusInfo = getStatusInfo(statusBitrix || pedido.etapa);
     badge.textContent = statusInfo.text;
-    badge.style.fontSize = '1rem';
-    badge.style.padding = '8px 16px';
+    badge.style.backgroundColor = statusInfo.bg;
+    badge.style.color = statusInfo.color;
 
     // 2. Dados do Cliente
-    document.getElementById('view-cliente').textContent = pedido.nome_cliente || '-';
-    document.getElementById('view-wpp-cliente').textContent = pedido.whatsapp_cliente || '-';
-
-    // 3. Ficha Técnica
-    document.getElementById('view-servico').textContent = pedido.servico || '-';
-    document.getElementById('view-tipo-arte').textContent = pedido.tipo_arte || '-';
-    document.getElementById('view-entrega').textContent = pedido.tipo_entrega || '-';
-
-    // 4. Condicionais (Setor de Arte)
-    if (pedido.tipo_arte === 'Setor de Arte') {
-        document.getElementById('container-setor-arte').classList.remove('hidden');
-        document.getElementById('view-supervisao').textContent = pedido.whatsapp_supervisao || '-';
-        
-        const valor = parseFloat(pedido.valor_designer);
-        document.getElementById('view-valor').textContent = valor ? `R$ ${valor.toFixed(2)}` : '-';
-        
-        let formato = pedido.formato || '-';
-        if (pedido.cdr_versao) formato += ` (v${pedido.cdr_versao})`;
-        document.getElementById('view-formato').textContent = formato;
+    document.getElementById('view-cliente').textContent = pedido.nome_cliente || 'Não informado';
+    
+    const wppContainer = document.getElementById('container-whatsapp');
+    if (pedido.whatsapp_cliente) {
+        const cleanWpp = pedido.whatsapp_cliente.replace(/\D/g, '');
+        wppContainer.innerHTML = `
+            <a href="https://wa.me/${cleanWpp}" target="_blank" class="btn-hub btn-hub-whatsapp">
+                <i class="fab fa-whatsapp"></i> ${pedido.whatsapp_cliente}
+            </a>`;
+    } else {
+        wppContainer.innerHTML = '<span class="hub-info-value">---</span>';
     }
 
-    // 5. Links
+    // 3. Ficha Técnica
+    document.getElementById('view-servico').textContent = pedido.servico || '---';
+    document.getElementById('view-tipo-arte').textContent = pedido.tipo_arte || '---';
+    document.getElementById('view-material').textContent = pedido.material_id || 'Padrão';
+    document.getElementById('view-impressora').textContent = pedido.impressoras_ids ? pedido.impressoras_ids.join(', ') : '---';
+    
+    // Data de Entrega
+    const entregaEl = document.getElementById('view-entrega');
+    if (pedido.data_entrega) {
+        const date = new Date(pedido.data_entrega);
+        entregaEl.textContent = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } else {
+        entregaEl.textContent = 'A definir';
+    }
+
+    // 4. Layout Preview ( VPC )
+    const layoutContainer = document.getElementById('container-layout-preview');
+    if (pedido.link_layout) {
+        layoutContainer.innerHTML = `<img src="${pedido.link_layout}" class="layout-preview-img" alt="Layout Image" onerror="this.src='/images/placeholder-error.png'">`;
+    } else {
+        layoutContainer.innerHTML = '<div style="color:#94a3b8; text-align:center;"><i class="fas fa-image fa-3x"></i><p>Sem prévia disponível</p></div>';
+    }
+
+    // 5. Briefing
+    document.getElementById('view-briefing').textContent = pedido.briefing_completo || 'Nenhuma observação técnica registrada.';
+
+    // 6. Arquivos e Links
     const linksContainer = document.getElementById('container-links');
     linksContainer.innerHTML = '';
     
     if (pedido.link_arquivo_impressao) {
         linksContainer.innerHTML += `
-            <a href="${pedido.link_arquivo_impressao}" target="_blank" class="btn-link-externo">
-                <i class="fas fa-print"></i> Arquivo Impressão
-            </a><br>`;
+            <a href="${pedido.link_arquivo_impressao}" target="_blank" class="btn-hub btn-hub-primary">
+                <i class="fas fa-file-download"></i> Arquivo de Impressão
+            </a>`;
     }
     if (pedido.link_arquivo_designer) {
         linksContainer.innerHTML += `
-            <a href="${pedido.link_arquivo_designer}" target="_blank" class="btn-link-externo">
-                <i class="fas fa-layer-group"></i> Referência Designer
+            <a href="${pedido.link_arquivo_designer}" target="_blank" class="btn-hub btn-hub-outline">
+                <i class="fas fa-vector-square"></i> Arquivo do Designer
             </a>`;
     }
+    
     if (linksContainer.innerHTML === '') {
-        linksContainer.innerHTML = '<span style="color:#999; font-size: 0.9rem;">Nenhum link anexado.</span>';
+        linksContainer.innerHTML = '<p style="color:#94a3b8; font-size:0.9rem;">Nenhum arquivo anexado a este pedido.</p>';
     }
 
-    // 6. Briefing
-    document.getElementById('view-briefing').textContent = pedido.briefing_completo || 'Sem descrição.';
+    // 7. Painel Admin
+    const permissoes = JSON.parse(localStorage.getItem('userPermissoes') || '[]');
+    if (permissoes.includes("admin")) {
+        const adminPanel = document.getElementById('admin-panel');
+        adminPanel.classList.remove('hidden');
+        configurarEventosAdmin(pedido.id);
+    }
 }
 
 function getStatusInfo(stageId) {
-    stageId = (stageId || '').toUpperCase();
-    if (stageId.includes("NEW")) return { text: 'Aguardando Pagamento', class: 'status-pagamento' };
-    if (stageId.includes("WON")) return { text: 'Concluído', class: 'status-aprovado' };
-    if (stageId.includes("LOSE")) return { text: 'Cancelado', class: 'status-cancelado' };
-    if (stageId === "C17:UC_2OEE24") return { text: 'Em Análise', class: 'status-analise' }; // Ajuste conforme seu ID de análise real
-    return { text: 'Em Andamento', class: 'status-andamento' };
+    const stage = (stageId || '').toUpperCase();
+    
+    // Mapeamento de cores premium
+    const map = {
+        'ARTE': { text: 'Arte / Design', bg: '#dbeafe', color: '#1e40af' },
+        'IMPRESSÃO': { text: 'Em Impressão', bg: '#fef3c7', color: '#92400e' },
+        'ACABAMENTO': { text: 'No Acabamento', bg: '#e0e7ff', color: '#3730a3' },
+        'INSTALAÇÃO LOJA': { text: 'Instalando na Loja', bg: '#ede9fe', color: '#5b21b6' },
+        'INSTALAÇÃO EXTERNA': { text: 'Instalação Externa', bg: '#fae8ff', color: '#86198f' },
+        'CONCLUÍDO': { text: 'Finalizado', bg: '#d1fae5', color: '#065f46' },
+        'WON': { text: 'Finalizado', bg: '#d1fae5', color: '#065f46' },
+        'CANCELADO': { text: 'Cancelado', bg: '#fee2e2', color: '#991b1b' },
+        'LOSE': { text: 'Cancelado', bg: '#fee2e2', color: '#991b1b' }
+    };
+
+    for (const key in map) {
+        if (stage.includes(key)) return map[key];
+    }
+    
+    return { text: stage || 'Em Processamento', bg: '#f1f5f9', color: '#475569' };
 }
 
 function mostrarErro(msg) {
-    document.getElementById('loading-screen').classList.add('hidden');
+    mostrarLoading(false);
+    document.getElementById('hub-content').classList.add('hidden');
     document.getElementById('error-screen').classList.remove('hidden');
     document.getElementById('error-msg').textContent = msg;
 }
@@ -132,71 +165,39 @@ function configurarEventosAdmin(dealId) {
     const btnExcluir = document.getElementById('btn-admin-delete');
     const sessionToken = localStorage.getItem('sessionToken');
 
-    if (btnMover) {
-        btnMover.addEventListener('click', () => {
-            const novoEstagio = selectStage.value;
-            if (!novoEstagio) return window.adminCustomDialog({ type: 'alert', title: 'Aviso', message: "Selecione a etapa para onde deseja mover o pedido." });
-            
-            window.adminCustomDialog({
-                type: 'confirm',
-                title: 'Confirmar',
-                message: "Atenção: Você tem certeza que deseja forçar a ida deste pedido para a etapa selecionada?",
-                onConfirm: async () => {
-                    btnMover.disabled = true;
-                    btnMover.textContent = 'Movendo...';
-                    
-                    try {
-                        const res = await fetch('/api/admin/forceUpdateStage', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ sessionToken, dealId, newStageId: novoEstagio })
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.message);
-                        
-                        window.adminCustomDialog({ type: 'alert', title: 'Sucesso', message: "Estágio do pedido alterado com sucesso!", onConfirm: () => window.location.reload() });
-                    } catch (e) {
-                        window.adminCustomDialog({ type: 'alert', title: 'Erro', message: `Erro ao mover etapa: ${e.message}` });
-                        btnMover.disabled = false;
-                        btnMover.innerHTML = '<i class="fas fa-random"></i> Mover';
-                    }
-                }
+    btnMover.onclick = async () => {
+        const novoEstagio = selectStage.value;
+        if (!novoEstagio) return alert("Selecione a etapa.");
+        
+        if (!confirm("Deseja forçar a mudança de etapa deste pedido?")) return;
+        
+        btnMover.disabled = true;
+        try {
+            const res = await fetch('/api/admin/forceUpdateStage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionToken, dealId, newStageId: novoEstagio })
             });
-        });
-    }
+            if (res.ok) window.location.reload();
+            else alert("Erro ao mover.");
+        } catch (e) { console.error(e); }
+        btnMover.disabled = false;
+    };
 
-    if (btnExcluir) {
-        btnExcluir.addEventListener('click', () => {
-            window.adminCustomDialog({
-                type: 'prompt',
-                title: 'Zona de Perigo',
-                message: `Para confirmar a exclusão PERMANENTE, digite o ID do pedido: <b>${dealId}</b>`,
-                okText: 'Excluir',
-                onConfirm: async (digitado) => {
-                    if (digitado === String(dealId)) {
-                        btnExcluir.disabled = true;
-                        btnExcluir.textContent = 'Excluindo...';
-                        
-                        try {
-                            const res = await fetch('/api/admin/deleteDeal', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ sessionToken, dealId })
-                            });
-                            const data = await res.json();
-                            if (!res.ok) throw new Error(data.message);
-                            
-                            window.adminCustomDialog({ type: 'alert', title: 'Sucesso', message: "Pedido excluído permanentemente da base.", onConfirm: () => { window.location.href = '/dashboard.html'; } });
-                        } catch (e) {
-                            window.adminCustomDialog({ type: 'alert', title: 'Erro', message: `Erro ao excluir: ${e.message}` });
-                            btnExcluir.disabled = false;
-                            btnExcluir.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir Pedido Permanentemente';
-                        }
-                    } else if (digitado !== null) {
-                        window.adminCustomDialog({ type: 'alert', title: 'Cancelado', message: "ID incorreto. A exclusão foi cancelada." });
-                    }
-                }
+    btnExcluir.onclick = async () => {
+        const confirmId = prompt(`Digite o ID ${dealId} para excluir PERMANENTEMENTE:`);
+        if (confirmId !== String(dealId)) return;
+        
+        btnExcluir.disabled = true;
+        try {
+            const res = await fetch('/api/admin/deleteDeal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionToken, dealId })
             });
-        });
-    }
+            if (res.ok) window.location.href = '/dashboard.html';
+            else alert("Erro ao excluir.");
+        } catch (e) { console.error(e); }
+        btnExcluir.disabled = false;
+    };
 }
