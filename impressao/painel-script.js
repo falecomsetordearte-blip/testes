@@ -190,28 +190,8 @@
                 impressoraFilterEl.innerHTML += `<option value="cadastrar" style="font-weight:bold; font-style:italic;">+ Cadastrar Impressora</option>`;
 
                 impressoraFilterEl.addEventListener('change', function() {
-                    if (this.value === 'cadastrar') {
-                        window.location.href = '../admin-configuracoes.html';
-                        return;
-                    }
-                    localStorage.setItem('last_printer_filter', this.value);
-                    carregarPedidosDeImpressao();
+                    if (this.value === 'cadastrar') window.location.href = '../admin-configuracoes.html';
                 });
-
-                materialFilterEl.addEventListener('change', function() {
-                    localStorage.setItem('last_material_filter', this.value);
-                    carregarPedidosDeImpressao();
-                });
-
-                // RECUPERAR ESTADO SALVO
-                const lastPrinter = localStorage.getItem('last_printer_filter');
-                const lastMaterial = localStorage.getItem('last_material_filter');
-                if (lastPrinter) {
-                    impressoraFilterEl.value = lastPrinter;
-                }
-                if (lastMaterial) {
-                    materialFilterEl.value = lastMaterial;
-                }
 
                 materialFilterEl.innerHTML = `<option value="">Todos os Materiais</option>`;
                 filters.materiais.forEach(option => { materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
