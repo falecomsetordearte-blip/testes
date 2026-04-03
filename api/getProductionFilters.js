@@ -1,11 +1,5 @@
-// /api/getProductionFilters.js
-const axios = require('axios');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
-const FIELD_MATERIAL = 'UF_CRM_1685624742';
-const FIELD_TIPO_ENTREGA = 'UF_CRM_1658492661';
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -27,11 +21,26 @@ module.exports = async (req, res) => {
             }
         }
 
-        const response = await axios.get(`${BITRIX24_API_URL}crm.deal.fields.json`);
-        const allFields = response.data.result;
+        // MATERIAIS PADRÃO (Previamente vindos do Bitrix, agora 100% locais)
+        const materialOptions = [
+            { id: '101', value: 'Adesivo Brilho' },
+            { id: '102', value: 'Adesivo Fosco' },
+            { id: '103', value: 'Adesivo Perfurado' },
+            { id: '104', value: 'Lona 440g' },
+            { id: '105', value: 'Lona 280g' },
+            { id: '106', value: 'Banner' },
+            { id: '107', value: 'Placa PS' },
+            { id: '108', value: 'Backdrop' },
+            { id: '109', value: 'Papel Fotográfico' },
+            { id: '110', value: 'Vinil de Recorte' }
+        ];
 
-        const materialOptions = allFields[FIELD_MATERIAL]?.items || [];
-        const tipoEntregaOptions = allFields[FIELD_TIPO_ENTREGA]?.items || [];
+        const tipoEntregaOptions = [
+            { id: '201', value: 'Retirada no Balcão' },
+            { id: '202', value: 'Entrega / Motoboy' },
+            { id: '203', value: 'Instalação Loja' },
+            { id: '204', value: 'Instalação Externa' }
+        ];
 
         let impressorasLocais = [];
         if (empresaId) {
@@ -43,8 +52,8 @@ module.exports = async (req, res) => {
 
         const filters = {
             impressoras: impressorasLocais,
-            materiais: materialOptions.map(item => ({ id: item.ID, value: item.VALUE })),
-            tiposEntrega: tipoEntregaOptions.map(item => ({ id: item.ID, value: item.VALUE }))
+            materiais: materialOptions,
+            tiposEntrega: tipoEntregaOptions
         };
         
         return res.status(200).json(filters);

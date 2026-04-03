@@ -1,13 +1,7 @@
-// /api/impressao/approveFile.js
 const { PrismaClient } = require('@prisma/client');
-const axios = require('axios');
 const { Decimal } = require('@prisma/client/runtime/library');
 
 const prisma = new PrismaClient();
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
-
-const FIELD_STATUS_PAGAMENTO_DESIGNER = 'UF_CRM_1757789502613';
-const STATUS_PAGO_ID = '2675';
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
@@ -22,48 +16,52 @@ module.exports = async (req, res) => {
 
         console.log(`[approveFile] Iniciando processo de aprovação para o Deal ID: ${dealId}`);
 
-        // --- AÇÃO 1: Atualizar o campo de status de pagamento no Bitrix24 ---
-        await axios.post(`${BITRIX24_API_URL}crm.deal.update`, {
-            id: dealId,
-            fields: {
-                [FIELD_STATUS_PAGAMENTO_DESIGNER]: STATUS_PAGO_ID
-            }
-        });
-        console.log(`[approveFile] Deal ${dealId} atualizado com status de pagamento PAGO.`);
+        // --- AÇÃO 1: Buscar os dados do pedido no banco de dados local ---
+        const pedidos = await prisma.$queryRawUnsafe(`
+            SELECT id, valor_designer, assigned_by_id, etapa 
+            FROM pedidos 
+            WHERE id = $1 LIMIT 1
+        `, parseInt(dealId));
 
-        // --- AÇÃO 2: Processar o pagamento do designer (lógica extraída do webhook) ---
-        
-        // 2a. Buscar os dados do negócio para saber o responsável e o valor
-        const dealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.get.json`, { id: dealId });
-        const deal = dealResponse.data.result;
-        
-        if (!deal) {
-            throw new Error(`Negócio com ID ${dealId} não encontrado no Bitrix24.`);
+        if (pedidos.length === 0) {
+            throw new Error(`Pedido com ID ${dealId} não encontrado no banco de dados local.`);
         }
         
-        const designerId = parseInt(deal.ASSIGNED_BY_ID, 10);
-        const comissao = new Decimal(deal.OPPORTUNITY || 0);
+        const pedido = pedidos[0];
         
-        // 2b. Executar a lógica de pagamento se houver designer e valor
+        // --- AÇÃO 2: Atualizar o status do pedido no banco local ---
+        await prisma.$executeRawUnsafe(`
+            UPDATE pedidos 
+            SET etapa = 'CONCLUÍDO', 
+                status_pagamento_designer = 'PAGO',
+                updated_at = NOW()
+            WHERE id = $1
+        `, pedido.id);
+        console.log(`[approveFile] Pedido ${pedido.id} atualizado localmente.`);
+
+        // --- AÇÃO 3: Processar o pagamento do designer ---
+        const designerId = pedido.assigned_by_id; // Este campo deve estar preenchido se o designer for local
+        const comissao = new Decimal(pedido.valor_designer || 0);
+        
         if (designerId && comissao.gt(0)) {
             await prisma.designerFinanceiro.upsert({
-                where: { designer_id: designerId },
+                where: { designer_id: parseInt(designerId) },
                 update: {
                     saldo_disponivel: {
                         increment: comissao,
                     },
                 },
                 create: {
-                    designer_id: designerId,
+                    designer_id: parseInt(designerId),
                     saldo_disponivel: comissao,
                 },
             });
             console.log(`[approveFile] SUCESSO: Saldo do designer ID ${designerId} incrementado em ${comissao}.`);
         } else {
-            console.warn(`[approveFile] AVISO: Pagamento para Deal ${dealId} não processado. Designer ID: ${designerId}, Comissão: ${comissao}.`);
+            console.warn(`[approveFile] AVISO: Pagamento não processado. Designer ID: ${designerId}, Comissão: ${comissao}.`);
         }
 
-        return res.status(200).json({ message: 'Arquivo aprovado e pagamento processado com sucesso!' });
+        return res.status(200).json({ success: true, message: 'Arquivo aprovado e pagamento processado localmente!' });
 
     } catch (error) {
         console.error("[approveFile] Erro no processo de aprovação e pagamento:", error.response ? error.response.data : error.message);

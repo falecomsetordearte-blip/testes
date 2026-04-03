@@ -1,9 +1,5 @@
-// /api/impressao/requestRevision.js
-const axios = require('axios');
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
-
-// O campo customizado "Revisão Solicitada?" do tipo Sim/Não
-const FIELD_REVISAO_SOLICITADA = 'UF_CRM_1757765731136';
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
@@ -11,24 +7,32 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { dealId } = req.body;
+        const { dealId, motivorevisao } = req.body;
         
         if (!dealId) {
-            return res.status(400).json({ message: 'ID do Negócio é obrigatório.' });
+            return res.status(400).json({ message: 'ID do Pedido é obrigatório.' });
         }
 
-        // Atualiza o campo para '1', que corresponde a "Sim" no Bitrix24
-        await axios.post(`${BITRIX24_API_URL}crm.deal.update`, {
-            id: dealId,
-            fields: {
-                [FIELD_REVISAO_SOLICITADA]: '1' 
-            }
-        });
+        console.log(`[requestRevision] Solicitando revisão para o Pedido ID: ${dealId}`);
 
-        return res.status(200).json({ message: 'Revisão solicitada com sucesso!' });
+        // 1. Atualizar a etapa no banco local para 'ARTE' (em vez de IMPRESSÃO)
+        // E anexar o motivo ao briefing se enviado
+        const updateData = {
+            etapa: 'ARTE',
+            updated_at: new Date()
+        };
+
+        await prisma.$executeRawUnsafe(`
+            UPDATE pedidos 
+            SET etapa = $1, 
+                updated_at = $2
+            WHERE id = $3
+        `, updateData.etapa, updateData.updated_at, parseInt(dealId));
+
+        return res.status(200).json({ success: true, message: 'Revisão solicitada com sucesso! O pedido retornou para o setor de Arte.' });
 
     } catch (error) {
-        console.error('Erro ao solicitar revisão:', error.response ? error.response.data : error.message);
-        return res.status(500).json({ message: 'Ocorreu um erro ao solicitar a revisão.' });
+        console.error('Erro ao solicitar revisão:', error.message);
+        return res.status(500).json({ message: 'Ocorreu um erro ao solicitar a revisão localmente.' });
     }
 };
