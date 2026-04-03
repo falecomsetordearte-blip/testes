@@ -6,7 +6,7 @@
 
     const paginasPublicas = ['login.html', 'cadastro.html', 'esqueci-senha.html', 'redefinir-senha.html'];
     const ehPaginaPublica = paginasPublicas.some(pg => path.includes(pg));
-    const ehPaginaAssinatura = path.includes('assinatura.html');
+    const ehPaginaAssinatura = path.includes('/assinatura.html');
 
     // 1. Bloqueio de usuário não logado
     if (!sessionToken && !ehPaginaPublica) {
@@ -47,7 +47,7 @@
             if (!data.is_active && !temAssinaturaPaga) {
                 console.warn('[SECURITY] -> Acesso negado. Redirecionando para assinatura.');
                 if (!ehPaginaAssinatura) {
-                    window.location.href = 'assinatura.html';
+                    window.location.href = '/assinatura.html';
                 }
             } else {
                 console.log('[SECURITY] -> Acesso permitido.');

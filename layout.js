@@ -280,7 +280,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const bannerHtml = `
             <div id="trial-banner" style="background:${cor}; color:white; padding:12px; text-align:center; font-size:0.9rem; font-weight:600; font-family:'Poppins', sans-serif; position:relative; z-index:9999; display:flex; align-items:center; justify-content:center; gap:20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
                 <span style="display:flex; align-items:center; gap:8px;"><i class="fas fa-rocket"></i> ${msg}</span>
-                <button onclick="window.location.href='/assinatura-empresa.html'" style="background:white; color:#1e293b; border:none; padding:6px 18px; border-radius:8px; font-weight:800; cursor:pointer; font-size:0.8rem; transition:0.3s; box-shadow:0 4px 6px rgba(0,0,0,0.1);">ASSINAR AGORA</button>
+                <button onclick="window.location.href='/assinatura.html'" style="background:white; color:#1e293b; border:none; padding:6px 18px; border-radius:8px; font-weight:800; cursor:pointer; font-size:0.8rem; transition:0.3s; box-shadow:0 4px 6px rgba(0,0,0,0.1);">ASSINAR AGORA</button>
             </div>
         `;
         document.body.insertAdjacentHTML('afterbegin', bannerHtml);
@@ -295,7 +295,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <p style="color:#64748b; margin-bottom:35px; line-height:1.7; font-family:'Poppins', sans-serif; font-size:1.05rem;">
                         Seu período de 13 dias de experiência gratuita chegou ao fim. Para continuar usando todas as ferramentas do <strong>Setor de Arte</strong>, escolha seu plano agora.
                     </p>
-                    <button onclick="window.location.href='/assinatura-empresa.html'" style="background:#4f46e5; color:white; border:none; padding:18px 30px; border-radius:16px; font-weight:800; cursor:pointer; font-size:1.15rem; width:100%; font-family:'Poppins', sans-serif; transition:0.4s; box-shadow:0 12px 20px -5px rgba(79,70,229,0.4); text-transform:uppercase; letter-spacing:0.5px;">Ativar Minha Conta</button>
+                    <button onclick="window.location.href='/assinatura.html'" style="background:#4f46e5; color:white; border:none; padding:18px 30px; border-radius:16px; font-weight:800; cursor:pointer; font-size:1.15rem; width:100%; font-family:'Poppins', sans-serif; transition:0.4s; box-shadow:0 12px 20px -5px rgba(79,70,229,0.4); text-transform:uppercase; letter-spacing:0.5px;">Ativar Minha Conta</button>
                     <p style="margin-top:25px; font-size:0.9rem; color:#94a3b8; font-family:'Poppins', sans-serif;">Planos flexíveis a partir de <strong>R$ 49,90/mês</strong>.</p>
                 </div>
             </div>

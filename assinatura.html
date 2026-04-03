@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sua Assinatura - Setor de Arte</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --secondary: #f43f5e;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg);
+            background-image: radial-gradient(circle at top right, rgba(79, 70, 229, 0.15), transparent),
+                              radial-gradient(circle at bottom left, rgba(244, 63, 94, 0.1), transparent);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        header { text-align: center; margin-bottom: 50px; }
+        header h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 10px; }
+        header p { color: var(--text-muted); font-size: 1.1rem; }
+
+        /* LOADING STATE */
+        #loading-screen {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh;
+        }
+        .spinner {
+            width: 50px; height: 50px; border: 5px solid var(--border); border-top-color: var(--primary);
+            border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* STATE: NO SUBSCRIPTION (PLANS) */
+        #plans-view { display: none; }
+        .plans-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 40px;
+        }
+        .plan-card {
+            background: var(--card-bg); backdrop-filter: blur(10px); border: 1px solid var(--border);
+            border-radius: 24px; padding: 40px; text-align: center; transition: 0.3s; position: relative; overflow: hidden;
+        }
+        .plan-card:hover { transform: translateY(-10px); border-color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .plan-card.featured { border: 2px solid var(--primary); }
+        .featured-badge {
+            position: absolute; top: 15px; right: -35px; background: var(--primary);
+            color: white; padding: 5px 40px; transform: rotate(45deg); font-size: 0.75rem; font-weight: 700;
+        }
+        .plan-icon { font-size: 3rem; color: var(--primary); margin-bottom: 20px; }
+        .plan-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 15px; }
+        .plan-price { font-size: 3rem; font-weight: 800; margin-bottom: 25px; }
+        .plan-price span { font-size: 1rem; color: var(--text-muted); font-weight: 400; }
+        .plan-features { list-style: none; text-align: left; margin-bottom: 35px; }
+        .plan-features li { margin-bottom: 12px; display: flex; align-items: center; gap: 10px; color: #cbd5e1; font-size: 0.95rem; }
+        .plan-features li i { color: #22c55e; }
+        .btn-plan {
+            width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: 700;
+            background: var(--primary); color: white; cursor: pointer; transition: 0.3s; text-transform: uppercase;
+        }
+        .btn-plan:hover { background: var(--primary-light); filter: brightness(1.1); }
+
+        /* STATE: ACTIVE SUBSCRIPTION (DASHBOARD) */
+        #dashboard-view { display: none; }
+        .dashboard-grid {
+            display: grid; grid-template-columns: 1fr 1.5fr; gap: 30px;
+        }
+        @media (max-width: 850px) { .dashboard-grid { grid-template-columns: 1fr; } }
+        
+        .status-card {
+            background: var(--card-bg); backdrop-filter: blur(10px); padding: 30px; border-radius: 24px; border: 1px solid var(--border);
+        }
+        .info-group { margin-bottom: 25px; }
+        .info-label { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .info-value { font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .badge-status { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
+        .status-active { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+        .status-pending { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+        
+        .history-card {
+            background: var(--card-bg); backdrop-filter: blur(10px); padding: 30px; border-radius: 24px; border: 1px solid var(--border);
+            overflow: hidden;
+        }
+        .history-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .history-table th { text-align: left; padding: 12px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+        .history-table td { padding: 15px 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        .btn-action { background: var(--glass); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; text-decoration: none; display: inline-block; }
+        .btn-action:hover { background: var(--primary); border-color: var(--primary); }
+
+        .btn-cancel {
+            margin-top: 20px; background: transparent; border: 1px solid rgba(244, 63, 94, 0.3); color: var(--secondary);
+            padding: 12px; width: 100%; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 0.9rem;
+            transition: 0.3s;
+        }
+        .btn-cancel:hover { background: rgba(244, 63, 94, 0.1); border-color: var(--secondary); }
+
+        /* MODAL PIX/CHECKOUT (Shared) */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85);
+            display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(8px);
+        }
+        .modal-content {
+            background: #1e293b; padding: 40px; border-radius: 24px; width: 90%; max-width: 450px; text-align: center;
+            border: 1px solid var(--border); box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+        .chk-input { width:100%; padding:12px; margin-bottom:12px; border-radius:10px; border:1px solid #334155; background:#0f172a; color:white; font-family:'Poppins'; font-size:0.9rem;}
+        .method-btn { flex:1; padding:12px; border-radius:10px; border:1px solid #334155; background:transparent; color:white; cursor:pointer; font-weight:600; transition: 0.2s;}
+        .method-btn.active { background: var(--primary); border-color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Sua Assinatura</h1>
+            <p id="header-subtitle">Gerencie seu plano e pagamentos</p>
+        </header>
+
+        <!-- LOADING -->
+        <div id="loading-screen">
+            <div class="spinner"></div>
+            <p>Carregando dados da sua conta...</p>
+        </div>
+
+        <!-- VIEW: NO SUBSCRIPTION -->
+        <div id="plans-view">
+            <div class="plans-grid">
+                <!-- Designer -->
+                <div class="plan-card" id="card-designer">
+                    <div class="plan-icon"><i class="fas fa-palette"></i></div>
+                    <div class="plan-name">Plano Designer</div>
+                    <div class="plan-price">R$ 29,90<span>/mês</span></div>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check"></i> Acesso à Plataforma Direta</li>
+                        <li><i class="fas fa-check"></i> Notificações no WhatsApp</li>
+                        <li><i class="fas fa-check"></i> Controle Financeiro</li>
+                        <li><i class="fas fa-check"></i> Selo de Verificado</li>
+                    </ul>
+                    <button class="btn-plan" onclick="openCheckout('designer', 29.90)">Assinar Agora</button>
+                </div>
+                <!-- Empresa -->
+                <div class="plan-card featured" id="card-empresa">
+                    <div class="featured-badge">MELHOR VALOR</div>
+                    <div class="plan-icon"><i class="fas fa-building"></i></div>
+                    <div class="plan-name">Plano Empresa</div>
+                    <div class="plan-price">R$ 49,90<span>/mês</span></div>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check"></i> Pedidos Ilimitados</li>
+                        <li><i class="fas fa-check"></i> CRM de Vendas Incluso</li>
+                        <li><i class="fas fa-check"></i> Gestão de Equipe Pros</li>
+                        <li><i class="fas fa-check"></i> Suporte Prioritário</li>
+                    </ul>
+                    <button class="btn-plan" onclick="openCheckout('empresa', 49.90)">Assinar Agora</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: ACTIVE DASHBOARD -->
+        <div id="dashboard-view">
+            <div class="dashboard-grid">
+                <!-- Coluna Lateral: Status -->
+                <div class="status-card">
+                    <div class="info-group">
+                        <div class="info-label">Plano Atual</div>
+                        <div class="info-value" id="disp-plan-name">-</div>
+                    </div>
+                    <div class="info-group">
+                        <div class="info-label">Status do Acesso</div>
+                        <div class="info-value"><span id="disp-status-badge" class="badge-status">-</span></div>
+                    </div>
+                    <div class="info-group">
+                        <div class="info-label">Próxima Cobrança</div>
+                        <div class="info-value" id="disp-next-date">-</div>
+                    </div>
+                    <div class="info-group">
+                        <div class="info-label">Valor Mensal</div>
+                        <div class="info-value" id="disp-value">R$ 0,00</div>
+                    </div>
+                    <button id="btn-cancel-sub" class="btn-cancel" onclick="requestCancel()">Interromper Próxima Cobrança</button>
+                </div>
+
+                <!-- Coluna Principal: Histórico -->
+                <div class="history-card">
+                    <h3 style="font-weight: 700; margin-bottom: 10px;">Histórico de Pagamentos</h3>
+                    <div id="history-loading" style="display:none; text-align:center; padding:20px;">Carregando histórico...</div>
+                    <table class="history-table" id="history-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Valor</th>
+                                <th>Método</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-body">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CHECKOUT -->
+    <div id="checkout-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="checkout-title" style="margin-bottom:25px;">Finalizar Assinatura</h2>
+            
+            <div id="checkout-form-area">
+                <div style="margin-bottom:20px; text-align:left;">
+                    <label style="color:var(--text-muted); font-size:0.8rem; margin-bottom:5px; display:block;">CNPJ ou CPF (Obrigatório)</label>
+                    <input type="text" id="cust-doc" placeholder="Apenas números..." class="chk-input" maxlength="18">
+                </div>
+
+                <div style="display:flex; gap:10px; margin-bottom:25px;">
+                    <button id="btn-m-pix" class="method-btn active" onclick="setMethod('PIX')">PIX</button>
+                    <button id="btn-m-card" class="method-btn" onclick="setMethod('CREDIT_CARD')">Cartão</button>
+                    <button id="btn-m-bol" class="method-btn" onclick="setMethod('BOLETO')">Boleto</button>
+                </div>
+
+                <div id="card-fields" style="display:none; text-align:left; margin-bottom:20px;">
+                    <input type="text" id="cc-name" placeholder="Titular do Cartão" class="chk-input">
+                    <input type="text" id="cc-num" placeholder="Número do Cartão" class="chk-input">
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="cc-month" placeholder="Mês (MM)" class="chk-input" style="flex:1" maxlength="2">
+                        <input type="text" id="cc-year" placeholder="Ano (AAAA)" class="chk-input" style="flex:1" maxlength="4">
+                        <input type="text" id="cc-cvv" placeholder="CVV" class="chk-input" style="flex:0.6" maxlength="4">
+                    </div>
+                </div>
+
+                <button id="btn-pay" onclick="handlePayment()" class="btn-plan" style="background:#22c55e;">Gerar Pagamento</button>
+                <button onclick="closeModal()" style="background:transparent; border:none; color:var(--text-muted); margin-top:15px; cursor:pointer; width:100%;">Cancelar</button>
+            </div>
+
+            <!-- RESULTADOS -->
+            <div id="checkout-loading" style="display:none; padding:40px 0;">
+                <div class="spinner" style="margin:0 auto 20px;"></div>
+                <p>Processando...</p>
+            </div>
+
+            <div id="checkout-success" style="display:none; padding:20px 0;">
+                <i class="fas fa-check-circle" style="font-size:4rem; color:#22c55e; margin-bottom:20px;"></i>
+                <h3 id="success-title">Sucesso!</h3>
+                <p id="success-desc" style="color:var(--text-muted); font-size:0.9rem; margin-top:10px;"></p>
+                <div id="pix-qr-area" style="display:none; margin-top:20px;">
+                    <img id="pix-qr-img" style="width:200px; border-radius:10px; margin-bottom:15px; border:2px solid var(--primary);">
+                    <input type="text" id="pix-code" readonly class="chk-input" style="text-align:center;">
+                </div>
+                <button onclick="location.reload()" class="btn-plan" style="margin-top:20px;">Concluir</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('sessionToken');
+        let currentType = 'empresa';
+        let selectedMethod = 'PIX';
+
+        document.addEventListener('DOMContentLoaded', init);
+
+        async function init() {
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            await loadSubscription();
+        }
+
+        async function loadSubscription() {
+            try {
+                const res = await fetch('/api/asaas/getSubscription', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                const data = await res.json();
+
+                document.getElementById('loading-screen').style.display = 'none';
+
+                if (!data.hasSubscription) {
+                    showPlans(data.tipo);
+                } else {
+                    showDashboard(data);
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Erro ao carregar dados da assinatura.");
+            }
+        }
+
+        function showPlans(tipo) {
+            currentType = tipo || 'empresa';
+            document.getElementById('plans-view').style.display = 'block';
+            document.getElementById('header-subtitle').innerText = "Escolha o melhor plano para o seu negócio";
+            
+            // Destaque condicional se quiser
+            if (currentType === 'designer') {
+                document.getElementById('card-designer').classList.add('featured');
+                document.getElementById('card-empresa').classList.remove('featured');
+                document.getElementById('card-empresa').querySelector('.featured-badge')?.remove();
+                document.getElementById('card-designer').insertAdjacentHTML('afterbegin', '<div class="featured-badge">MAIS POPULAR</div>');
+            }
+        }
+
+        function showDashboard(data) {
+            document.getElementById('dashboard-view').style.display = 'block';
+            document.getElementById('disp-plan-name').innerText = data.tipo === 'empresa' ? 'Plano Empresa Premium' : 'Plano Designer Pro';
+            
+            const badge = document.getElementById('disp-status-badge');
+            badge.innerText = translateStatus(data.status);
+            badge.className = 'badge-status ' + (data.status === 'ACTIVE' ? 'status-active' : 'status-pending');
+
+            document.getElementById('disp-next-date').innerText = formatDate(data.nextDueDate);
+            document.getElementById('disp-value').innerText = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.value);
+
+            // Se o status for expirado/inatividade no asaas, muda banner
+            if (data.status !== 'ACTIVE' && data.status !== 'PENDING') {
+                badge.className = 'badge-status';
+                badge.style.background = '#e11d48';
+                badge.style.color = '#fff';
+            }
+
+            renderHistory(data.history);
+        }
+
+        function renderHistory(history) {
+            const body = document.getElementById('history-body');
+            body.innerHTML = '';
+            if (!history || history.length === 0) {
+                body.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Nenhum pagamento registrado ainda.</td></tr>';
+                return;
+            }
+
+            history.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${formatDate(p.date)}</td>
+                    <td>${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.value)}</td>
+                    <td style="text-transform:capitalize;">${p.billingType === 'CREDIT_CARD' ? 'Cartão' : p.billingType}</td>
+                    <td><span style="color:${p.status === 'RECEIVED' || p.status === 'CONFIRMED' ? '#22c55e' : '#f59e0b'}">${translateStatus(p.status)}</span></td>
+                    <td>
+                        ${p.transactionReceiptUrl ? `<a href="${p.transactionReceiptUrl}" target="_blank" class="btn-action" title="Recibo"><i class="fas fa-file-download"></i></a>` : ''}
+                        ${p.bankSlipUrl && p.status === 'PENDING' ? `<a href="${p.bankSlipUrl}" target="_blank" class="btn-action" title="Boleto"><i class="fas fa-barcode"></i></a>` : ''}
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        function formatDate(iso) {
+            if (!iso) return '-';
+            const d = new Date(iso);
+            return d.toLocaleDateString('pt-BR');
+        }
+
+        function translateStatus(s) {
+            const map = {
+                'ACTIVE': 'Ativa', 'PENDING': 'Pendente', 'RECEIVED': 'Pago', 'CONFIRMED': 'Confirmado',
+                'OVERDUE': 'Vencido', 'DELETED': 'Cancelado', 'EXPIRED': 'Expirado'
+            };
+            return map[s] || s;
+        }
+
+        // CHECKOUT LOGIC
+        function openCheckout(tipo, valor) {
+            currentType = tipo;
+            document.getElementById('checkout-modal').style.display = 'flex';
+            document.getElementById('checkout-title').innerText = `Assinar Plano ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`;
+        }
+
+        function closeModal() {
+            document.getElementById('checkout-modal').style.display = 'none';
+        }
+
+        function setMethod(m) {
+            selectedMethod = m;
+            document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-m-${m === 'PIX' ? 'pix' : (m === 'BOLETO' ? 'bol' : 'card')}`).classList.add('active');
+            document.getElementById('card-fields').style.display = m === 'CREDIT_CARD' ? 'block' : 'none';
+        }
+
+        async function handlePayment() {
+            const doc = document.getElementById('cust-doc').value.replace(/\D/g, '');
+            if (!doc || doc.length < 11) return alert("Informe um CPF/CNPJ válido.");
+
+            const btn = document.getElementById('btn-pay');
+            btn.disabled = true;
+            btn.innerText = "Processando...";
+            
+            document.getElementById('checkout-form-area').style.display = 'none';
+            document.getElementById('checkout-loading').style.display = 'block';
+
+            let creditCard = null;
+            let creditCardHolderInfo = null;
+
+            if (selectedMethod === 'CREDIT_CARD') {
+                const name = document.getElementById('cc-name').value;
+                const number = document.getElementById('cc-num').value.replace(/\s+/g, '');
+                const month = document.getElementById('cc-month').value;
+                const year = document.getElementById('cc-year').value;
+                const cvv = document.getElementById('cc-cvv').value;
+                
+                if (!name || !number || !month || !year || !cvv) {
+                    alert("Preencha os dados do cartão.");
+                    resetCheckout();
+                    return;
+                }
+
+                creditCard = { holderName: name, number, expiryMonth: month, expiryYear: year, ccv };
+                creditCardHolderInfo = { name, email: '-', cpfCnpj: doc, postalCode: '00000000', addressNumber: '0', phone: '0000000000' };
+            }
+
+            try {
+                const res = await fetch('/api/asaas/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, tipo: currentType, paymentMethod: selectedMethod, customerCpf: doc, creditCard, creditCardHolderInfo })
+                });
+                const data = await res.json();
+
+                document.getElementById('checkout-loading').style.display = 'none';
+                
+                if (!data.success && data.status !== 'ACTIVE') {
+                    alert(data.message || "Erro no pagamento.");
+                    resetCheckout();
+                    return;
+                }
+
+                document.getElementById('checkout-success').style.display = 'block';
+                
+                if (data.status === 'ACTIVE') {
+                    document.getElementById('success-title').innerText = "assinatura Ativada!";
+                    document.getElementById('success-desc').innerText = "Sua conta já está liberada com todos os recursos premium.";
+                } else if (selectedMethod === 'PIX') {
+                    document.getElementById('success-title').innerText = "Aguardando PIX";
+                    document.getElementById('pix-qr-area').style.display = 'block';
+                    document.getElementById('pix-qr-img').src = `data:image/jpeg;base64,${data.pixUrl}`;
+                    document.getElementById('pix-code').value = data.pixCode;
+                } else if (selectedMethod === 'BOLETO') {
+                    document.getElementById('success-desc').innerHTML = `Boleto gerado. <a href="${data.boletoUrl}" target="_blank" style="color:var(--primary); font-weight:bold;">Clique aqui para abrir seu boleto.</a>`;
+                }
+
+            } catch (err) {
+                alert("Erro de conexão.");
+                resetCheckout();
+            }
+        }
+
+        function resetCheckout() {
+            document.getElementById('btn-pay').disabled = false;
+            document.getElementById('btn-pay').innerText = "Gerar Pagamento";
+            document.getElementById('checkout-form-area').style.display = 'block';
+            document.getElementById('checkout-loading').style.display = 'none';
+        }
+
+        async function requestCancel() {
+            if (!confirm("Tem certeza que deseja interromper a renovação automática da sua assinatura? Seu acesso continuará ativo até o fim do período já pago.")) return;
+            
+            const btn = document.getElementById('btn-cancel-sub');
+            btn.disabled = true;
+            btn.innerText = "Cancelando...";
+
+            try {
+                const res = await fetch('/api/asaas/cancelSubscription', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message || "Erro ao cancelar.");
+                    btn.disabled = false;
+                    btn.innerText = "Interromper Próxima Cobrança";
+                }
+            } catch (err) {
+                alert("Erro de conexão.");
+                btn.disabled = false;
+            }
+        }
+
+    </script>
+</body>
+</html>
