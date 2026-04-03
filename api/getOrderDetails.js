@@ -38,14 +38,16 @@ module.exports = async (req, res) => {
         if (!empresaId) return res.status(403).json({ message: 'Acesso negado. Sessão inválida.' });
 
         // 2. Buscar Pedido no Banco de Dados (Garante que o pedido pertence a essa empresa)
+        const idInt = parseInt(orderId);
         const pedidos = await prisma.$queryRawUnsafe(`
             SELECT * FROM pedidos 
-            WHERE bitrix_deal_id = $1 
+            WHERE (id = $1 OR bitrix_deal_id = $1)
             AND empresa_id = $2 
             LIMIT 1
-        `, parseInt(orderId), empresaId);
+        `, idInt, empresaId);
 
         if (pedidos.length === 0) {
+            console.error(`[getOrderDetails] Pedido id=${orderId} não encontrado para empresa_id=${empresaId}`);
             return res.status(404).json({ message: 'Pedido não encontrado ou acesso não autorizado.' });
         }
 
