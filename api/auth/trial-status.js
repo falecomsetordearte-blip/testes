@@ -47,7 +47,7 @@ module.exports = async (req, res) => {
         } else {
             // Lógica para Empresa
             const users = await prisma.$queryRawUnsafe(`
-                SELECT e.criado_em, e.assinatura_status, e.nome 
+                SELECT e.criado_em, e.assinatura_status, u.nome 
                 FROM painel_usuarios u
                 JOIN empresas e ON u.empresa_id = e.id
                 WHERE u.session_tokens LIKE $1 OR u.email = $2 LIMIT 1
