@@ -30,20 +30,24 @@ module.exports = async (req, res) => {
 
         // Verifica se pedido existe. Se não existir, não podemos salvar na coluna, a não ser que criemos a linha!
         const pedidos = await prisma.$queryRawUnsafe(`
-            SELECT id FROM pedidos WHERE bitrix_deal_id = $1 AND empresa_id = $2 LIMIT 1
+            SELECT id FROM pedidos 
+            WHERE (id = $1 OR bitrix_deal_id = $1) 
+            AND empresa_id = $2 
+            LIMIT 1
         `, parseInt(dealId), empresaId);
 
         if (pedidos.length === 0) {
-            // Se o pedido não existe localmente (pq foi criado só no Bitrix antigamente), vamos inserir uma row ghost
+            // Se for um ID que não existe de jeito nenhum, talvez seja novo deal Bitrix
             await prisma.$executeRawUnsafe(`
                 INSERT INTO pedidos (empresa_id, bitrix_deal_id, impressoras_ids, titulo)
                 VALUES ($1, $2, $3::jsonb, 'Sincronizado do Bitrix')
             `, empresaId, parseInt(dealId), JSON.stringify(arrayToSave));
         } else {
+            const rowId = pedidos[0].id;
             await prisma.$executeRawUnsafe(`
                 UPDATE pedidos SET impressoras_ids = $1::jsonb 
-                WHERE bitrix_deal_id = $2 AND empresa_id = $3
-            `, JSON.stringify(arrayToSave), parseInt(dealId), empresaId);
+                WHERE id = $2
+            `, JSON.stringify(arrayToSave), rowId);
         }
 
         return res.status(200).json({ success: true });

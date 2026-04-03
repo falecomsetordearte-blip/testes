@@ -172,12 +172,28 @@
 
         async function carregarOpcoesDeFiltro() {
             try {
-                const response = await fetch('/api/getProductionFilters');
+                const response = await fetch('/api/getProductionFilters', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken })
+                });
                 const filters = await response.json();
                 if (!response.ok) throw new Error('Falha ao carregar filtros.');
+
+                const impressorasFiltradas = filters.impressoras || [];
+                window.todasImpressoras = impressorasFiltradas; // Salva para o modal
+
                 impressoraFilterEl.innerHTML = `<option value="">Todas as Impressoras</option>`;
+                impressorasFiltradas.forEach(option => { 
+                    impressoraFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; 
+                });
+                impressoraFilterEl.innerHTML += `<option value="cadastrar" style="font-weight:bold; font-style:italic;">+ Cadastrar Impressora</option>`;
+
+                impressoraFilterEl.addEventListener('change', function() {
+                    if (this.value === 'cadastrar') window.location.href = '../admin-configuracoes.html';
+                });
+
                 materialFilterEl.innerHTML = `<option value="">Todos os Materiais</option>`;
-                filters.impressoras.forEach(option => { impressoraFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
                 filters.materiais.forEach(option => { materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
             } catch (error) { 
                 console.error("Erro ao carregar opções de filtro:", error); 
@@ -337,6 +353,24 @@
                             <div class="info-item"><span>Medidas:</span>${medidasHtml}</div>
                         </div>
 
+                        <div class="card-detalhe" style="margin-top: 15px;">
+                            <h4><i class="fa-solid fa-print"></i> Impressoras do Pedido</h4>
+                            <div style="display: flex; gap: 8px; margin-top: 10px;">
+                                <select id="select-add-impressora" style="flex-grow: 1; padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.85rem;">
+                                    <option value="">Selecione...</option>
+                                    ${(window.todasImpressoras || []).map(imp => `<option value="${imp.id}">${imp.value}</option>`).join('')}
+                                </select>
+                                <button id="btn-add-impressora-tag" class="btn btn-primary" style="padding: 5px 12px; font-size: 1rem;"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div id="tags-impressoras-container" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;">
+                                ${(deal.impressoras_ids || []).map(id => {
+                                    const imp = (window.todasImpressoras || []).find(i => String(i.id) === String(id));
+                                    return imp ? `<span class="impressora-tag" data-id="${imp.id}" style="background: #f1f1f1; padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; border: 1px solid #ddd;">${imp.value} <i class="fa-solid fa-circle-xmark remove-tag" style="cursor:pointer; color: #e74c3c;"></i></span>` : '';
+                                }).join('')}
+                            </div>
+                            <button id="btn-salvar-impressoras" class="btn btn-primary" style="margin-top: 12px; width: 100%; display: none; background: #27ae60; border: none;">Salvar Vincúlo</button>
+                        </div>
+
                         <div class="card-detalhe">
                             <h4>Ações</h4>
                             ${actionsHtml}
@@ -346,6 +380,87 @@
             
             modal.classList.add('active');
             attachStatusStepListeners(deal.ID);
+            attachModalImpressorasListeners(deal.ID);
+        }
+
+        function attachModalImpressorasListeners(dealId) {
+            const btnAdd = document.getElementById('btn-add-impressora-tag');
+            const select = document.getElementById('select-add-impressora');
+            const container = document.getElementById('tags-impressoras-container');
+            const btnSalvar = document.getElementById('btn-salvar-impressoras');
+
+            const verificarAlteracoes = () => { btnSalvar.style.display = 'block'; };
+
+            if (btnAdd) {
+                btnAdd.addEventListener('click', () => {
+                    const idSelected = select.value;
+                    const nomeSelected = select.options[select.selectedIndex]?.text;
+                    if (!idSelected) return;
+
+                    let exists = false;
+                    container.querySelectorAll('.impressora-tag').forEach(span => {
+                        if (span.getAttribute('data-id') === idSelected) exists = true;
+                    });
+                    if (exists) return;
+
+                    const span = document.createElement('span');
+                    span.className = 'impressora-tag';
+                    span.setAttribute('data-id', idSelected);
+                    span.style.cssText = 'background: #f1f1f1; padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; border: 1px solid #ddd;';
+                    span.innerHTML = `${nomeSelected} <i class="fa-solid fa-circle-xmark remove-tag" style="cursor:pointer; color: #e74c3c;"></i>`;
+                    container.appendChild(span);
+
+                    select.value = '';
+                    verificarAlteracoes();
+                });
+            }
+
+            if (container) {
+                container.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('remove-tag')) {
+                        e.target.closest('.impressora-tag').remove();
+                        verificarAlteracoes();
+                    }
+                });
+            }
+
+            if (btnSalvar) {
+                btnSalvar.addEventListener('click', async () => {
+                    btnSalvar.disabled = true;
+                    btnSalvar.textContent = 'Gravando...';
+
+                    const ids = [];
+                    container.querySelectorAll('.impressora-tag').forEach(span => {
+                        ids.push(Number(span.getAttribute('data-id')));
+                    });
+
+                    try {
+                        const res = await fetch('/api/impressao/savePedidoImpressoras', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ sessionToken, dealId, impressorasIds: ids })
+                        });
+                        if (!res.ok) throw new Error('Erro ao salvar vínculo');
+
+                        btnSalvar.textContent = 'Gravado com Sucesso!';
+                        btnSalvar.style.background = '#28a745';
+                        setTimeout(() => {
+                            btnSalvar.style.display = 'none';
+                            btnSalvar.style.background = '#27ae60';
+                            btnSalvar.textContent = 'Salvar Vínculo';
+                            btnSalvar.disabled = false;
+                        }, 2000);
+                        
+                        const dealMem = allDealsData.find(d => d.ID == dealId);
+                        if (dealMem) dealMem.impressoras_ids = ids;
+                        
+                    } catch (err) {
+                        showToast(err.message, 'error');
+                        btnSalvar.disabled = false;
+                        btnSalvar.textContent = 'Salvar Vínculo';
+                    }
+                });
+            }
         }
 
         function attachStatusStepListeners(dealId) {
