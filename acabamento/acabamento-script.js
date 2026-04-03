@@ -14,6 +14,7 @@
         const NOME_CLIENTE_FIELD = 'UF_CRM_1741273407628';
         const CONTATO_CLIENTE_FIELD = 'UF_CRM_1749481565243';
         const MEDIDAS_FIELD = 'UF_CRM_1727464924690';
+        const LAYOUT_FIELD = 'UF_CRM_1764124589418';
         const PRAZO_FINAL_FIELD = 'UF_CRM_1757794109';
         const BRIEFING_FIELD = 'UF_CRM_1738249371'; // Novo campo
 
@@ -159,12 +160,18 @@
 
             .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
             .toast { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 12px; min-width: 300px; animation: slideInRight 0.3s ease-out forwards; border-left: 5px solid #ccc; }
+            .toast-icon { font-size: 1.2rem; }
             .toast.success { border-left-color: var(--success); }
             .toast.error { border-left-color: var(--danger); }
-            .toast-icon { font-size: 1.2rem; }
             .toast.success .toast-icon { color: var(--success); }
             .toast.error .toast-icon { color: var(--danger); }
             .toast-message { font-size: 0.9rem; color: var(--text-dark); font-weight: 500; }
+
+            .detalhe-col-principal { background-color: #f8f9fa; border-radius: 8px; border: 2px dashed #dee2e6; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; padding: 5px; min-height: 400px; }
+            .layout-img { max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: var(--shadow-sm); border-radius: 4px; }
+            .sem-imagem { text-align: center; color: #aaa; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+            .sem-imagem i { font-size: 3rem; margin-bottom: 10px; opacity: 0.5; }
+
             @keyframes slideInRight { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
             @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
 
@@ -317,12 +324,7 @@
             modalBody.innerHTML = `
                 <div class="detalhe-layout">
                     <div class="detalhe-col-principal">
-                        <div class="card-detalhe" style="height: 100%; display: flex; flex-direction: column;">
-                             <h3><i class="fas fa-file-alt"></i> Briefing</h3>
-                             <div class="briefing-scroll-area">
-                                ${briefingTexto}
-                             </div>
-                        </div>
+                        <img src="${deal[LAYOUT_FIELD]}" class="layout-img" alt="Layout" onerror="this.parentElement.innerHTML='<div class=sem-imagem><i class=\\'fas fa-image\\'></i><p>Erro ao carregar layout</p></div>'">
                     </div>
                     <div class="detalhe-col-lateral">
                         <div class="card-detalhe">

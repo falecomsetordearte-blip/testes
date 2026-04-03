@@ -32,7 +32,7 @@ module.exports = async (req, res) => {
 
         const pedidos = await prisma.$queryRawUnsafe(`
             SELECT id, titulo, etapa, nome_cliente, whatsapp_cliente, 
-                   link_arquivo, data_entrega, briefing_completo
+                   link_arquivo, link_layout, data_entrega, briefing_completo
             FROM pedidos /* cache-bust-inst-v1 */
             WHERE empresa_id = $1 
             AND etapa = 'INSTALAÇÃO EXTERNA'
@@ -47,7 +47,7 @@ module.exports = async (req, res) => {
             'UF_CRM_1749481565243': p.whatsapp_cliente,
             'UF_CRM_1748277308731': p.link_arquivo || '', 
             'UF_CRM_1757794109': p.data_entrega,
-            'UF_CRM_1764124589418': p.link_arquivo || '' // Usado como Layout/Imagem no seu script
+            'UF_CRM_1764124589418': p.link_layout || '' // Usado como Layout/Imagem no seu script
         }));
 
         return res.status(200).json({ deals });

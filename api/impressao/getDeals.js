@@ -32,7 +32,7 @@ module.exports = async (req, res) => {
         // Query com campos específicos corrigida para ler link_arquivo_impressao
         let querySql = `
             SELECT id, titulo, etapa, status_impressao, nome_cliente, 
-                   whatsapp_cliente, link_arquivo_impressao, data_entrega, briefing_completo,
+                   whatsapp_cliente, link_arquivo_impressao, link_layout, data_entrega, briefing_completo,
                    impressoras_ids
             FROM pedidos /* cache-bust-v4-port */
             WHERE empresa_id = $1 
@@ -88,6 +88,7 @@ module.exports = async (req, res) => {
                 'UF_CRM_1741273407628': p.nome_cliente,
                 'UF_CRM_1749481565243': p.whatsapp_cliente,
                 'UF_CRM_1748277308731': p.link_arquivo_impressao || '',
+                'UF_CRM_1764124589418': p.link_layout || '',
                 'UF_CRM_1757794109': dataEntregaAtual, // Retorna a nova data para o front
                 'UF_CRM_1738249371': p.briefing_completo,
                 'impressoras_ids': p.impressoras_ids || []

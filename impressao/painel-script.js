@@ -16,6 +16,7 @@
         const LINK_ATENDIMENTO_FIELD = 'UF_CRM_1752712769666';
         const MEDIDAS_FIELD = 'UF_CRM_1727464924690';
         const LINK_ARQUIVO_FINAL_FIELD = 'UF_CRM_1748277308731';
+        const LAYOUT_FIELD = 'UF_CRM_1764124589418';
         const PRAZO_FINAL_FIELD = 'UF_CRM_1757794109';
         const BRIEFING_FIELD = 'UF_CRM_1738249371'; // Novo campo
 
@@ -146,6 +147,11 @@
             .toast-message { font-size: 0.9rem; color: var(--text-dark); font-weight: 500; }
             @keyframes slideInRight { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
             @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+            .detalhe-col-principal { background-color: #f8f9fa; border-radius: 8px; border: 2px dashed #dee2e6; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; padding: 5px; min-height: 400px; }
+            .layout-img { max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: var(--shadow-sm); border-radius: 4px; }
+            .sem-imagem { text-align: center; color: #aaa; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+            .sem-imagem i { font-size: 3rem; margin-bottom: 10px; opacity: 0.5; }
 
             .loading-pedidos { text-align: center; padding: 20px; color: #aaa; } 
             .spinner { border: 3px solid rgba(74, 144, 226, 0.3); border-top: 3px solid var(--primary); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
@@ -350,13 +356,14 @@
             
             if (actionsHtml === '') { actionsHtml = '<p style="text-align:center; color:#999; font-size:0.8rem;">Sem ações disponíveis</p>'; }
             
-            // COLUNA PRINCIPAL AGORA CONTÉM O BRIEFING
-            const mainColumnHtml = `
-                <div class="card-detalhe" style="height: 100%; display: flex; flex-direction: column;">
-                    <h3 style="margin: 0 0 10px 0; color: var(--text-dark); font-size: 1rem;"><i class="fas fa-file-alt"></i> Briefing</h3>
-                    <div class="briefing-scroll-area">
-                        ${briefingTexto}
-                    </div>
+            const linkLayout = deal[LAYOUT_FIELD];
+            const mainColumnHtml = linkLayout ? `
+                <div class="detalhe-col-principal">
+                    <img src="${linkLayout}" class="layout-img" alt="Layout" onerror="this.parentElement.innerHTML='<div class=sem-imagem><i class=\\'fas fa-image\\'></i><p>Erro ao carregar layout</p></div>'">
+                </div>
+            ` : `
+                <div class="detalhe-col-principal">
+                    <div class="sem-imagem"><i class="fas fa-image"></i><p>Sem layout disponível</p></div>
                 </div>
             `;
 

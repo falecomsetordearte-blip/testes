@@ -35,7 +35,7 @@ module.exports = async (req, res) => {
         // 2. Query SQL com Cache Bust e Filtros
         let querySql = `
             SELECT id, titulo, etapa, nome_cliente, whatsapp_cliente, 
-                   data_entrega, briefing_completo, tipo_entrega
+                   link_layout, data_entrega, briefing_completo, tipo_entrega
             FROM pedidos /* cache-bust-acabamento-v1 */
             WHERE empresa_id = $1 
             AND etapa = 'ACABAMENTO'
@@ -86,6 +86,7 @@ module.exports = async (req, res) => {
                 'UF_CRM_1741273407628': p.nome_cliente,
                 'UF_CRM_1749481565243': p.whatsapp_cliente,
                 'UF_CRM_1727464924690': '', // Medidas
+                'UF_CRM_1764124589418': p.link_layout || '',
                 'UF_CRM_1757794109': dataEntregaAtual, // Prazo Final
                 'UF_CRM_1738249371': p.briefing_completo
             });

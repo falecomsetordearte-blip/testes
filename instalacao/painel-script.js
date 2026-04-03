@@ -576,12 +576,12 @@
             if (!deal) return;
             modalTitle.textContent = `Instalação #${deal.TITLE || deal.ID}`;
             
-            const rawLink = deal[LAYOUT_FIELD];
-            let img = rawLink ? `<img src="${rawLink}" class="layout-img">` : '<div style="text-align:center; padding:20px; color:#aaa"><i class="fas fa-image fa-3x"></i><br>Sem Layout</div>';
+            const linkLayout = deal[LAYOUT_FIELD];
+            let imageHtml = linkLayout ? `<img src="${linkLayout}" class="layout-img" onerror="this.parentElement.innerHTML='<div style=\\'text-align:center; padding:20px; color:#aaa\\'><i class=\\'fas fa-image fa-3x\\'></i><br>Erro ao carregar layout</div>'">` : '<div style="text-align:center; padding:20px; color:#aaa"><i class="fas fa-image fa-3x"></i><br>Sem Layout</div>';
             
             modalBody.innerHTML = `
                 <div class="detalhe-layout">
-                    <div class="detalhe-col-principal">${img}</div>
+                    <div class="detalhe-col-principal">${imageHtml}</div>
                     <div class="detalhe-col-lateral">
                         <h3>${deal[NOME_CLIENTE_FIELD] || 'Cliente'}</h3>
                         <p><strong>Contato:</strong> ${deal[CONTATO_CLIENTE_FIELD] || '-'}</p>

@@ -230,17 +230,16 @@
             const medidaInfo = MEDIDAS_MAP[deal[MEDIDAS_FIELD]];
             let medidasHtml = medidaInfo ? `<span class="tag-medidas" style="background-color: ${medidaInfo.cor};">${medidaInfo.nome}</span>` : '<span style="color:#aaa">Não def.</span>';
             
-            const rawLink = deal[LAYOUT_FIELD];
-            const imageSrc = processarLinkImagem(rawLink);
+            const linkLayout = deal[LAYOUT_FIELD];
             let imageHtml = '';
-            if (imageSrc) {
+            if (linkLayout) {
                 imageHtml = `
-                    <a href="${rawLink}" target="_blank" title="Clique para abrir original">
-                        <img src="${imageSrc}" class="layout-img" alt="Layout" 
-                        onerror="this.onerror=null; this.parentElement.parentElement.innerHTML='<div class=sem-imagem><i class=\\'fas fa-link\\'></i><p>Erro visualização</p><a href=\\'${rawLink}\\' target=\\'_blank\\' class=\\'btn-acao-modal secundario\\'>Abrir Link</a></div>'">
-                    </a>`;
+                    <div class="detalhe-col-principal">
+                        <img src="${linkLayout}" class="layout-img" alt="Layout" 
+                        onerror="this.onerror=null; this.parentElement.innerHTML='<div class=sem-imagem><i class=\\'fas fa-image\\'></i><p>Erro ao carregar layout</p></div>'">
+                    </div>`;
             } else {
-                imageHtml = `<div class="sem-imagem"><i class="fas fa-image"></i><p>Sem layout anexado</p></div>`;
+                imageHtml = `<div class="detalhe-col-principal"><div class="sem-imagem"><i class="fas fa-image"></i><p>Sem layout anexado</p></div></div>`;
             }
 
             let linksHtml = '';
@@ -249,9 +248,7 @@
 
             modalBody.innerHTML = `
                 <div class="detalhe-layout">
-                    <div class="detalhe-col-principal">
-                       ${imageHtml}
-                    </div>
+                    ${imageHtml}
                     <div class="detalhe-col-lateral">
                         <button id="btn-concluir-action" class="btn-concluir">
                             <i class="fas fa-check-circle"></i> Instalação Realizada
