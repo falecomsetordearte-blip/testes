@@ -147,5 +147,5 @@ async function marcarEntregue(idInterno, btnElement) {
             fecharGaveta();
             carregarPedidos(document.getElementById('input-busca').value);
         }
-    } catch (err) { alert("Erro ao atualizar."); btnElement.disabled = false; }
+    } catch (err) { window.adminCustomDialog({ type: 'alert', title: 'Erro', message: "Erro ao atualizar." }); btnElement.disabled = false; }
 }

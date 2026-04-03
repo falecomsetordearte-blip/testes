@@ -523,7 +523,7 @@
             const instaladores = inputInstaladores.value;
 
             if (!dia || !hora || !duracao) {
-                alert("Preencha data, hora e duração.");
+                window.adminCustomDialog({ type: 'alert', title: 'Aviso', message: "Preencha data, hora e duração." });
                 return;
             }
 
@@ -594,23 +594,28 @@
             
             const btnConc = document.getElementById('btn-concluir-inst');
             if(btnConc) {
-                btnConc.addEventListener('click', async () => {
-                    if(confirm("Confirmar conclusão? O card sairá da lista.")) {
-                        try {
-                            const r = await fetch('/api/instalacao/concluir', {
-                                method: 'POST',
-                                headers: {'Content-Type':'application/json'},
-                                body: JSON.stringify({ sessionToken, dealId })
-                            });
-                            if(r.ok) { 
-                                modal.classList.remove('active');
-                                showToast("Concluído!", "success");
-                                // Remove visualmente
-                                allDealsData = allDealsData.filter(d => d.ID != dealId);
-                                renderKanban(); renderCalendar();
-                            }
-                        } catch(e) { console.error(e); }
-                    }
+                btnConc.addEventListener('click', () => {
+                    window.adminCustomDialog({
+                        type: 'confirm',
+                        title: 'Atenção',
+                        message: "Confirmar conclusão? O card sairá da lista.",
+                        onConfirm: async () => {
+                            try {
+                                const r = await fetch('/api/instalacao/concluir', {
+                                    method: 'POST',
+                                    headers: {'Content-Type':'application/json'},
+                                    body: JSON.stringify({ sessionToken, dealId })
+                                });
+                                if(r.ok) { 
+                                    modal.classList.remove('active');
+                                    showToast("Concluído!", "success");
+                                    // Remove visualmente
+                                    allDealsData = allDealsData.filter(d => d.ID != dealId);
+                                    renderKanban(); renderCalendar();
+                                }
+                            } catch(e) { console.error(e); }
+                        }
+                    });
                 });
             }
         }

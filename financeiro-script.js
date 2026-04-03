@@ -163,7 +163,7 @@
             }
 
         } catch (error) {
-            alert('Erro ao atualizar: ' + error.message);
+            window.adminCustomDialog({ type: 'alert', title: 'Erro', message: 'Erro ao atualizar: ' + error.message });
             if(itemRow) itemRow.style.opacity = '1';
         }
     }
@@ -204,12 +204,13 @@
             
             // Pequeno delay para a UI do radio atualizar antes da animação
             setTimeout(() => {
-                if (confirm(`Confirmar mudança para ${valor}?`)) {
-                    updateStatus(dealId, valor);
-                } else {
-                    // Reverte a seleção se cancelar (recarrega a lista pra facilitar)
-                    fetchFinancialDeals(currentPage);
-                }
+                window.adminCustomDialog({
+                    type: 'confirm',
+                    title: 'Atenção',
+                    message: `Confirmar mudança para ${valor}?`,
+                    onConfirm: () => updateStatus(dealId, valor),
+                    onCancel: () => fetchFinancialDeals(currentPage)
+                });
             }, 50);
         }
     });

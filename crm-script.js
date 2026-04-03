@@ -491,19 +491,24 @@ window.produzirCardDireto = function (cardId, btnElement, event) {
     }
 };
 
-window.confirmarExclusaoCard = async function (cardId, event) {
+window.confirmarExclusaoCard = function (cardId, event) {
     if (event) event.stopPropagation();
-    if (confirm("Deseja realmente excluir este card permanentemente?")) {
-        try {
-            const res = await fetch('/api/crm/deleteCard', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: cardId })
-            });
-            if (res.ok) { showToast("Card excluído!", "success"); carregarKanban(); carregarMetasCRM(); }
-            else { showToast("Erro ao excluir.", "error"); }
-        } catch (err) { showToast("Erro de conexão.", "error"); }
-    }
+    window.adminCustomDialog({
+        type: 'confirm',
+        title: 'Excluir Card',
+        message: "Deseja realmente excluir este card permanentemente?",
+        onConfirm: async () => {
+            try {
+                const res = await fetch('/api/crm/deleteCard', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: cardId })
+                });
+                if (res.ok) { showToast("Card excluído!", "success"); carregarKanban(); carregarMetasCRM(); }
+                else { showToast("Erro ao excluir.", "error"); }
+            } catch (err) { showToast("Erro de conexão.", "error"); }
+        }
+    });
 };
 
 document.getElementById('form-crm').addEventListener('submit', async (e) => {

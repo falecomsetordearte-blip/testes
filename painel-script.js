@@ -208,14 +208,14 @@
                 
             } catch(e) {
                 console.error(e);
-                alert('Erro: ' + e.message);
+                window.adminCustomDialog({ type: 'alert', title: 'Erro', message: 'Erro: ' + e.message });
             }
         }
 
         if(btnConfirmarAprovacao) {
             btnConfirmarAprovacao.addEventListener('click', () => {
                 const link = inputLinkImpressao.value.trim();
-                if(!link) { alert('Insira o link.'); return; }
+                if(!link) { window.adminCustomDialog({ type: 'alert', title: 'Aviso', message: 'Insira o link.' }); return; }
                 
                 if(dealIdPendenteAprovacao) {
                     const textoOriginal = btnConfirmarAprovacao.innerText;

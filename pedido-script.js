@@ -133,62 +133,70 @@ function configurarEventosAdmin(dealId) {
     const sessionToken = localStorage.getItem('sessionToken');
 
     if (btnMover) {
-        btnMover.addEventListener('click', async () => {
+        btnMover.addEventListener('click', () => {
             const novoEstagio = selectStage.value;
-            if (!novoEstagio) return alert("Selecione a etapa para onde deseja mover o pedido.");
+            if (!novoEstagio) return window.adminCustomDialog({ type: 'alert', title: 'Aviso', message: "Selecione a etapa para onde deseja mover o pedido." });
             
-            if (confirm(`Atenção: Você tem certeza que deseja forçar a ida deste pedido para a etapa selecionada?`)) {
-                btnMover.disabled = true;
-                btnMover.textContent = 'Movendo...';
-                
-                try {
-                    const res = await fetch('/api/admin/forceUpdateStage', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sessionToken, dealId, newStageId: novoEstagio })
-                    });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.message);
+            window.adminCustomDialog({
+                type: 'confirm',
+                title: 'Confirmar',
+                message: "Atenção: Você tem certeza que deseja forçar a ida deste pedido para a etapa selecionada?",
+                onConfirm: async () => {
+                    btnMover.disabled = true;
+                    btnMover.textContent = 'Movendo...';
                     
-                    alert("Estágio do pedido alterado com sucesso!");
-                    window.location.reload();
-                } catch (e) {
-                    alert(`Erro ao mover etapa: ${e.message}`);
-                    btnMover.disabled = false;
-                    btnMover.innerHTML = '<i class="fas fa-random"></i> Mover';
+                    try {
+                        const res = await fetch('/api/admin/forceUpdateStage', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ sessionToken, dealId, newStageId: novoEstagio })
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.message);
+                        
+                        window.adminCustomDialog({ type: 'alert', title: 'Sucesso', message: "Estágio do pedido alterado com sucesso!", onConfirm: () => window.location.reload() });
+                    } catch (e) {
+                        window.adminCustomDialog({ type: 'alert', title: 'Erro', message: \`Erro ao mover etapa: \${e.message}\` });
+                        btnMover.disabled = false;
+                        btnMover.innerHTML = '<i class="fas fa-random"></i> Mover';
+                    }
                 }
-            }
+            });
         });
     }
 
     if (btnExcluir) {
-        btnExcluir.addEventListener('click', async () => {
-            const digitado = prompt(`[ZONA DE PERIGO]\nPara confirmar a exclusão PERMANENTE no banco de dados, digite o ID do pedido: ${dealId}`);
-            
-            if (digitado === String(dealId)) {
-                btnExcluir.disabled = true;
-                btnExcluir.textContent = 'Excluindo...';
-                
-                try {
-                    const res = await fetch('/api/admin/deleteDeal', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sessionToken, dealId })
-                    });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.message);
-                    
-                    alert("Pedido excluído permanentemente da base.");
-                    window.close(); // Fecha a aba ou
-                    window.location.href = '/dashboard.html'; // Redireciona
-                } catch (e) {
-                    alert(`Erro ao excluir: ${e.message}`);
-                    btnExcluir.disabled = false;
-                    btnExcluir.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir Pedido Permanentemente';
+        btnExcluir.addEventListener('click', () => {
+            window.adminCustomDialog({
+                type: 'prompt',
+                title: 'Zona de Perigo',
+                message: \`Para confirmar a exclusão PERMANENTE, digite o ID do pedido: <b>\${dealId}</b>\`,
+                okText: 'Excluir',
+                onConfirm: async (digitado) => {
+                    if (digitado === String(dealId)) {
+                        btnExcluir.disabled = true;
+                        btnExcluir.textContent = 'Excluindo...';
+                        
+                        try {
+                            const res = await fetch('/api/admin/deleteDeal', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ sessionToken, dealId })
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.message);
+                            
+                            window.adminCustomDialog({ type: 'alert', title: 'Sucesso', message: "Pedido excluído permanentemente da base.", onConfirm: () => { window.location.href = '/dashboard.html'; } });
+                        } catch (e) {
+                            window.adminCustomDialog({ type: 'alert', title: 'Erro', message: \`Erro ao excluir: \${e.message}\` });
+                            btnExcluir.disabled = false;
+                            btnExcluir.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir Pedido Permanentemente';
+                        }
+                    } else if (digitado !== null) {
+                        window.adminCustomDialog({ type: 'alert', title: 'Cancelado', message: "ID incorreto. A exclusão foi cancelada." });
+                    }
                 }
-            } else if (digitado !== null) {
-                alert("ID incorreto. A exclusão foi cancelada.");
-            }
+            });
         });
     }
 }

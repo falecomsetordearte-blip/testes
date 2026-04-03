@@ -152,8 +152,7 @@
                 }
             } catch (error) {
                 console.error('Erro ao atualizar etapa:', error);
-                alert(`Erro ao mover o card: ${error.message}. A página será recarregada para reverter.`);
-                window.location.reload();
+                window.adminCustomDialog({ type: 'alert', title: 'Erro', message: `Erro ao mover o card: ${error.message}. A página será recarregada para reverter.`, onConfirm: () => window.location.reload() });
             }
         }
 
@@ -184,10 +183,15 @@
             }
             if (event.target.classList.contains('card-button-produzir')) {
                 const dealId = event.target.dataset.dealId;
-                if (confirm(`Tem certeza que deseja mover o pedido #${dealId} para a produção?`)) {
-                    updateDealStage(dealId, STAGES.produzir);
-                    event.target.closest('.kanban-card').remove();
-                }
+                window.adminCustomDialog({
+                    type: 'confirm',
+                    title: 'Confirmar Produção',
+                    message: `Tem certeza que deseja mover o pedido #${dealId} para a produção?`,
+                    onConfirm: () => {
+                        updateDealStage(dealId, STAGES.produzir);
+                        event.target.closest('.kanban-card').remove();
+                    }
+                });
             }
         });
 

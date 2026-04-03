@@ -156,7 +156,7 @@
                         adminHtml = `
                             <div class="card-detalhe" style="margin-top: 15px; border: 2px solid #e74c3c; background: #fffcfc;">
                                 <h3 style="color: #c0392b; border-bottom: 1px solid #fadbd8;"><i class="fas fa-tools"></i> Ações Master</h3>
-                                <p style="font-size: 0.8rem; color: #7f8c8d; margin-bottom: 10px;">Ações diretas no Banco de Dados</p>
+                                <p style="font-size: 0.8rem; color: #7f8c8d; margin-bottom: 10px;">Ações avançadas de gerenciamento</p>
                                 
                                 <label style="font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; display: block;">Forçar Mudança de Etapa</label>
                                 <select id="modal-admin-stage-select" style="width: 100%; padding: 6px; border-radius: 4px; margin-bottom: 10px; border: 1px solid #ccc;">
@@ -237,7 +237,7 @@
                         input.value = ''; // Limpa o campo em caso de sucesso
                         // Para atualizar o chat visualmente, precisaríamos recarregar ou adicionar a mensagem
                     } catch (error) {
-                        alert(error.message);
+                        window.adminCustomDialog({ type: 'alert', title: 'Erro', message: error.message });
                     } finally {
                         input.disabled = false;
                         formMensagemModal.querySelector('button').disabled = false;
@@ -247,28 +247,34 @@
 
             const btnVerificarModal = document.querySelector('#modal-verificar-box button');
             if (btnVerificarModal) {
-                btnVerificarModal.addEventListener('click', async () => {
-                    if (!confirm('Tem certeza que deseja marcar este pedido como verificado?')) return;
-                    
-                    btnVerificarModal.disabled = true;
-                    btnVerificarModal.textContent = 'Verificando...';
-                    
-                    try {
-                        const response = await fetch('/api/markAsVerified', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ sessionToken, dealId: deal.ID })
-                        });
-                        if (!response.ok) throw new Error('Falha ao marcar como verificado.');
-                        
-                        alert('Pedido verificado com sucesso!');
-                        modal.classList.remove('active');
-                        carregarPedidosDeProducao(); // Recarrega a lista principal
-                    } catch(error) {
-                        alert(error.message);
-                        btnVerificarModal.disabled = false;
-                        btnVerificarModal.textContent = 'Marcar como Verificado';
-                    }
+                btnVerificarModal.addEventListener('click', () => {
+                    window.adminCustomDialog({
+                        type: 'confirm',
+                        title: 'Atenção',
+                        message: 'Tem certeza que deseja marcar este pedido como verificado?',
+                        onConfirm: async () => {
+                            btnVerificarModal.disabled = true;
+                            btnVerificarModal.textContent = 'Verificando...';
+                            
+                            try {
+                                const response = await fetch('/api/markAsVerified', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ sessionToken, dealId: deal.ID })
+                                });
+                                if (!response.ok) throw new Error('Falha ao marcar como verificado.');
+                                
+                                window.adminCustomDialog({ type: 'alert', title: 'Sucesso', message: 'Pedido verificado com sucesso!', onConfirm: () => {
+                                    modal.classList.remove('active');
+                                    carregarPedidosDeProducao();
+                                }});
+                            } catch(error) {
+                                window.adminCustomDialog({ type: 'alert', title: 'Erro', message: error.message });
+                                btnVerificarModal.disabled = false;
+                                btnVerificarModal.textContent = 'Marcar como Verificado';
+                            }
+                        }
+                    });
                 });
             }
 
@@ -278,62 +284,76 @@
             const btnAdminExcluir = document.getElementById('modal-btn-admin-delete');
 
             if (btnAdminMover) {
-                btnAdminMover.addEventListener('click', async () => {
+                btnAdminMover.addEventListener('click', () => {
                     const novoEstagio = selectAdminStage.value;
-                    if (!novoEstagio) return alert("Selecione a etapa para onde deseja mover o pedido.");
+                    if (!novoEstagio) return window.adminCustomDialog({ type: 'alert', title: 'Aviso', message: "Selecione a etapa para onde deseja mover o pedido." });
 
-                    if (confirm(`Atenção: Deseja forçar este pedido para a etapa selecionada?`)) {
-                        btnAdminMover.disabled = true;
-                        btnAdminMover.textContent = 'Movendo...';
+                    window.adminCustomDialog({
+                        type: 'confirm',
+                        title: 'Confirmar Ação',
+                        message: "Atenção: Deseja forçar este pedido para a etapa selecionada?",
+                        onConfirm: async () => {
+                            btnAdminMover.disabled = true;
+                            btnAdminMover.textContent = 'Movendo...';
 
-                        try {
-                            const res = await fetch('/api/admin/forceUpdateStage', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ sessionToken, dealId: deal.ID, newStageId: novoEstagio })
-                            });
-                            const data = await res.json();
-                            if (!res.ok) throw new Error(data.message);
+                            try {
+                                const res = await fetch('/api/admin/forceUpdateStage', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ sessionToken, dealId: deal.ID, newStageId: novoEstagio })
+                                });
+                                const data = await res.json();
+                                if (!res.ok) throw new Error(data.message);
 
-                            alert("Estágio do pedido alterado com sucesso!");
-                            modal.classList.remove('active');
-                            carregarPedidosDeProducao();
-                        } catch (e) {
-                            alert(`Erro ao mover etapa: ${e.message}`);
-                            btnAdminMover.disabled = false;
-                            btnAdminMover.innerHTML = '<i class="fas fa-random"></i> Mover';
+                                window.adminCustomDialog({ type: 'alert', title: 'Sucesso', message: "Estágio do pedido alterado com sucesso!", onConfirm: () => {
+                                    modal.classList.remove('active');
+                                    carregarPedidosDeProducao();
+                                }});
+                            } catch (e) {
+                                window.adminCustomDialog({ type: 'alert', title: 'Erro', message: \`Erro ao mover etapa: \${e.message}\` });
+                                btnAdminMover.disabled = false;
+                                btnAdminMover.innerHTML = '<i class="fas fa-random"></i> Mover';
+                            }
                         }
-                    }
+                    });
                 });
             }
 
             if (btnAdminExcluir) {
-                btnAdminExcluir.addEventListener('click', async () => {
-                    const digitado = prompt(`[ZONA DE PERIGO]\nPara confirmar exclusão PERMANENTE no banco de dados, digite o ID: ${deal.ID}`);
-                    if (digitado === String(deal.ID)) {
-                        btnAdminExcluir.disabled = true;
-                        btnAdminExcluir.textContent = 'Excluindo...';
+                btnAdminExcluir.addEventListener('click', () => {
+                    window.adminCustomDialog({
+                        type: 'prompt',
+                        title: 'Zona de Perigo',
+                        message: \`Para confirmar exclusão PERMANENTE do pedido, digite o ID: <b>\${deal.ID}</b>\`,
+                        okText: 'Excluir',
+                        onConfirm: async (digitado) => {
+                            if (digitado === String(deal.ID)) {
+                                btnAdminExcluir.disabled = true;
+                                btnAdminExcluir.textContent = 'Excluindo...';
 
-                        try {
-                            const res = await fetch('/api/admin/deleteDeal', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ sessionToken, dealId: deal.ID })
-                            });
-                            const data = await res.json();
-                            if (!res.ok) throw new Error(data.message);
+                                try {
+                                    const res = await fetch('/api/admin/deleteDeal', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ sessionToken, dealId: deal.ID })
+                                    });
+                                    const data = await res.json();
+                                    if (!res.ok) throw new Error(data.message);
 
-                            alert("Pedido excluído permanentemente.");
-                            modal.classList.remove('active');
-                            carregarPedidosDeProducao();
-                        } catch (e) {
-                            alert(`Erro ao excluir: ${e.message}`);
-                            btnAdminExcluir.disabled = false;
-                            btnAdminExcluir.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir Pedido Permanentemente';
+                                    window.adminCustomDialog({ type: 'alert', title: 'Sucesso', message: "Pedido excluído permanentemente.", onConfirm: () => {
+                                        modal.classList.remove('active');
+                                        carregarPedidosDeProducao();
+                                    }});
+                                } catch (e) {
+                                    window.adminCustomDialog({ type: 'alert', title: 'Erro', message: \`Erro ao excluir: \${e.message}\` });
+                                    btnAdminExcluir.disabled = false;
+                                    btnAdminExcluir.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir Pedido Permanentemente';
+                                }
+                            } else if (digitado !== null) {
+                                window.adminCustomDialog({ type: 'alert', title: 'Aviso', message: "ID incorreto. A exclusão foi cancelada." });
+                            }
                         }
-                    } else if (digitado !== null) {
-                        alert("ID incorreto. A exclusão foi cancelada.");
-                    }
+                    });
                 });
             }
         }
