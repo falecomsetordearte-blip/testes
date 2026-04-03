@@ -26,17 +26,40 @@ module.exports = async (req, res) => {
         let usuario = null;
         let tipo = null;
 
-        // Tenta Empresa
-        const empresas = await prisma.$queryRawUnsafe(`SELECT id, nome_fantasia as nome, asaas_subscription_id, asaas_customer_id, assinatura_status FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`, tokenBusca);
-        if (empresas.length > 0) {
-            usuario = empresas[0];
+        // Tenta achar via Painel_Usuarios (Novo/Migrado)
+        const userNovo = await prisma.$queryRawUnsafe(`
+            SELECT e.id, u.nome, e.asaas_subscription_id, e.asaas_customer_id, e.assinatura_status 
+            FROM painel_usuarios u
+            JOIN empresas e ON u.empresa_id = e.id
+            WHERE u.session_tokens LIKE $1 LIMIT 1
+        `, tokenBusca);
+
+        if (userNovo.length > 0) {
+            usuario = userNovo[0];
             tipo = 'empresa';
         } else {
-            // Tenta Designer
-            const designers = await prisma.$queryRawUnsafe(`SELECT designer_id as id, nome, asaas_subscription_id, asaas_customer_id, assinatura_status FROM designers_financeiro WHERE session_tokens LIKE $1 LIMIT 1`, tokenBusca);
-            if (designers.length > 0) {
-                usuario = designers[0];
-                tipo = 'designer';
+            // Tenta achar na raiz Empresas (Legacy)
+            const empresasLegacy = await prisma.$queryRawUnsafe(`
+                SELECT id, nome_fantasia as nome, asaas_subscription_id, asaas_customer_id, assinatura_status 
+                FROM empresas 
+                WHERE session_tokens LIKE $1 LIMIT 1
+            `, tokenBusca);
+            
+            if (empresasLegacy.length > 0) {
+                usuario = empresasLegacy[0];
+                tipo = 'empresa';
+            } else {
+                // Tenta Designer
+                const designers = await prisma.$queryRawUnsafe(`
+                    SELECT designer_id as id, nome, asaas_subscription_id, asaas_customer_id, assinatura_status 
+                    FROM designers_financeiro 
+                    WHERE session_tokens LIKE $1 LIMIT 1
+                `, tokenBusca);
+                
+                if (designers.length > 0) {
+                    usuario = designers[0];
+                    tipo = 'designer';
+                }
             }
         }
 
