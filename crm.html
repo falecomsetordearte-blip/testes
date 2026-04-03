@@ -292,11 +292,11 @@
                         <input type="tel" id="crm-wpp" class="form-control" placeholder="(00) 00000-0000">
                     </div>
                     
-                    <!-- NOVO: NOTIFICAÇÃO DO CLIENTE -->
-                    <div class="form-group" style="background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:8px; margin-top:15px;">
+                    <!-- NOTIFICAÇÃO DO CLIENTE - RECURSO PREMIUM -->
+                    <div id="feature-notificacoes-etapas" class="form-group" style="background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:8px; margin-top:15px; position:relative;">
                         <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:#166534; margin:0; font-weight:600;">
-                            <input type="checkbox" id="notificar-cliente" checked style="width:20px; height:20px; cursor:pointer; accent-color:#16a34a;">
-                            <span><i class="fab fa-whatsapp"></i> Criar Grupo e Notificar Cliente a cada Etapa (Recomendado)</span>
+                            <input type="checkbox" id="notificar-cliente" style="width:20px; height:20px; cursor:pointer; accent-color:#16a34a;">
+                            <span><i class="fab fa-whatsapp"></i> Criar Grupo e Notificar Cliente a cada Etapa</span>
                         </label>
                     </div>
 
@@ -481,6 +481,7 @@
     <div class="toast-container"></div>
 
     <script src="/layout.js"></script>
+    <script src="/plan.js"></script>
     <script src="https://unpkg.com/imask"></script>
     <script src="/crm-script.js"></script>
 </body>

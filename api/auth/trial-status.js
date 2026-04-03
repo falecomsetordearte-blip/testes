@@ -3,7 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const jwt = require('jsonwebtoken');
 
-const TRIAL_DAYS = 13;
+const TRIAL_DAYS = 10;
 const IMPLEMENTATION_DATE = new Date('2026-03-18T00:00:00Z');
 
 module.exports = async (req, res) => {

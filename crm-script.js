@@ -662,7 +662,25 @@ function resetarForm() {
     });
 
     const chkNotificar = document.getElementById('notificar-cliente');
-    if(chkNotificar) chkNotificar.checked = true;
+    if (chkNotificar) {
+        // Só marca como checked se tiver plano pago/trial
+        const plano = (window.PlanManager && window.PlanManager.plano) || localStorage.getItem('userPlano') || 'FREE';
+        chkNotificar.checked = (plano === 'PAID' || plano === 'TRIAL');
+    }
+}
+
+// Hook do PlanManager: bloqueios específicos do CRM
+window.planBloqueiosRegistrados = function () {
+    if (window.PlanManager) {
+        window.PlanManager.bloquear(
+            'feature-notificacoes-etapas',
+            'notificacoes-etapas',
+            {
+                titulo: 'Notificações WhatsApp — Plano Completo',
+                descricao: 'Ative notificações automáticas por etapa para seus clientes com o plano pago.'
+            }
+        );
+    }
 }
 
 function adicionarMaterialNoForm(desc = '', det = '') {

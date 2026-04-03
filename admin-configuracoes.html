@@ -241,8 +241,8 @@
                             </div>
                         </div>
 
-                        <!-- PAINEL DE MENSAGENS DO WHATSAPP -->
-                        <div class="admin-panel">
+                        <!-- PAINEL DE MENSAGENS DO WHATSAPP - RECURSO PREMIUM -->
+                        <div id="feature-mensagens-whatsapp" class="admin-panel" style="position:relative;">
                             <div class="panel-toolbar">
                                 <h3><i class="fa-brands fa-whatsapp" style="color:#25D366;"></i> Mensagens de Atualização (WhatsApp)</h3>
                             </div>
@@ -296,11 +296,26 @@
     </div>
 
     <script src="/layout.js"></script>
+    <script src="/plan.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             carregarConfiguracoes();
             document.getElementById('form-configuracoes').addEventListener('submit', salvarConfiguracoes);
         });
+
+        // Hook do PlanManager: bloqueios específicos desta página
+        window.planBloqueiosRegistrados = function () {
+            if (window.PlanManager) {
+                window.PlanManager.bloquear(
+                    'feature-mensagens-whatsapp',
+                    'mensagens-whatsapp-config',
+                    {
+                        titulo: 'Mensagens Personalizadas — Plano Completo',
+                        descricao: 'Personalize as mensagens automáticas de WhatsApp enviadas a cada etapa do pedido.'
+                    }
+                );
+            }
+        };
 
         function mostrarFeedback(mensagem, isErro = false) {
             const fb = document.getElementById('feedback-message');

@@ -47,7 +47,7 @@
             if (!data.is_active && !temAssinaturaPaga) {
                 console.warn('[SECURITY] -> Acesso negado. Redirecionando para assinatura.');
                 if (!ehPaginaAssinatura) {
-                    window.location.href = '/assinatura.html';
+                    window.location.href = '/designer/assinatura.html';
                 }
             } else {
                 console.log('[SECURITY] -> Acesso permitido.');

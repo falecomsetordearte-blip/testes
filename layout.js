@@ -121,7 +121,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
 
         // checkAceiteTermos('EMPRESA', sessionToken); // DESATIVADO - modal de termos removido
-        // checkTrialStatus('EMPRESA', sessionToken); // DESATIVADO - banner e modal de aviso de fim de teste
+        checkTrialStatus('EMPRESA', sessionToken); // ATIVO - banner e bloqueio do trial
 
         // ==========================================
         // CARREGAMENTO DINÂMICO DA BUSCA GLOBAL
@@ -312,7 +312,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function mostrarBannerTrial(dias) {
         const cor = dias <= 3 ? 'linear-gradient(90deg, #ef4444, #f87171)' : 'linear-gradient(90deg, #4f46e5, #6366f1)';
-        const msg = dias === 0 ? "Último dia de teste grátis!" : `Você tem ${dias} dias de teste grátis. Aproveite!`;
+        const msg = dias === 0 ? "Último dia de acesso completo gratuito!" : (dias === 1 ? `Falta apenas 1 dia do seu período de teste grátis!` : `Você tem ${dias} dias restantes de acesso completo grátis.`);
+        const existingBanner = document.getElementById('trial-banner');
+        if (existingBanner) return; // Não duplicar
         
         const bannerHtml = `
             <div id="trial-banner" style="background:${cor}; color:white; padding:12px; text-align:center; font-size:0.9rem; font-weight:600; font-family:'Poppins', sans-serif; position:relative; z-index:9999; display:flex; align-items:center; justify-content:center; gap:20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
@@ -324,16 +326,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     function mostrarBloqueioTrial(type) {
+        // Evita duplicar
+        if (document.getElementById('modal-bloqueio-trial')) return;
+        
+        const redirectUrl = type === 'EMPRESA' ? '/assinatura.html' : '/designer/assinatura.html';
         const modalHtml = `
-            <div id="modal-bloqueio-trial" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.95); z-index:200000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(10px);">
-                <div style="background:white; width:90%; max-width:500px; padding:45px; border-radius:30px; text-align:center; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
-                    <div style="font-size:4.5rem; background: linear-gradient(135deg, #f43f5e, #fb7185); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom:25px;"><i class="fas fa-hourglass-end"></i></div>
-                    <h2 style="color:#1e293b; margin-bottom:15px; font-family:'Poppins', sans-serif; font-weight:800;">O tempo de teste acabou!</h2>
-                    <p style="color:#64748b; margin-bottom:35px; line-height:1.7; font-family:'Poppins', sans-serif; font-size:1.05rem;">
-                        Seu período de 13 dias de experiência gratuita chegou ao fim. Para continuar usando todas as ferramentas do <strong>Setor de Arte</strong>, escolha seu plano agora.
+            <div id="modal-bloqueio-trial" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.97); z-index:200000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(10px);">
+                <div style="background:white; width:90%; max-width:520px; padding:45px; border-radius:30px; text-align:center; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
+                    <div style="font-size:4.5rem; background: linear-gradient(135deg, #f43f5e, #fb7185); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom:20px;"><i class="fas fa-lock"></i></div>
+                    <h2 style="color:#1e293b; margin-bottom:12px; font-family:'Poppins', sans-serif; font-weight:800; font-size:1.6rem;">Seu período de teste terminou</h2>
+                    <p style="color:#64748b; margin-bottom:10px; line-height:1.7; font-family:'Poppins', sans-serif; font-size:1rem;">
+                        Você utilizou os <strong>10 dias de acesso completo gratuito</strong> ao <strong>Setor de Arte</strong>.
                     </p>
-                    <button onclick="window.location.href='/assinatura.html'" style="background:#4f46e5; color:white; border:none; padding:18px 30px; border-radius:16px; font-weight:800; cursor:pointer; font-size:1.15rem; width:100%; font-family:'Poppins', sans-serif; transition:0.4s; box-shadow:0 12px 20px -5px rgba(79,70,229,0.4); text-transform:uppercase; letter-spacing:0.5px;">Ativar Minha Conta</button>
-                    <p style="margin-top:25px; font-size:0.9rem; color:#94a3b8; font-family:'Poppins', sans-serif;">Planos flexíveis a partir de <strong>R$ 49,90/mês</strong>.</p>
+                    <p style="color:#64748b; margin-bottom:30px; line-height:1.7; font-family:'Poppins', sans-serif; font-size:0.95rem;">
+                        Para continuar usando o sistema, assine agora. É rápido e você retoma o acesso na hora!
+                    </p>
+                    <button onclick="window.location.href='${redirectUrl}'" style="background:linear-gradient(135deg, #4f46e5, #6366f1); color:white; border:none; padding:18px 30px; border-radius:16px; font-weight:800; cursor:pointer; font-size:1.1rem; width:100%; font-family:'Poppins', sans-serif; transition:0.4s; box-shadow:0 12px 20px -5px rgba(79,70,229,0.4); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:15px;"><i class="fas fa-crown" style="margin-right:8px;"></i>Ver Planos e Assinar</button>
+                    <p style="font-size:0.85rem; color:#94a3b8; font-family:'Poppins', sans-serif;">A partir de <strong>R$ 49,90/mês</strong> · Cancele quando quiser</p>
                 </div>
             </div>
         `;
