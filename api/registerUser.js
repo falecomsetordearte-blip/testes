@@ -19,7 +19,7 @@ module.exports = async (req, res) => {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ message: 'Método não permitido' });
 
-    const { nomeEmpresa, cnpj, telefoneEmpresa, nomeResponsavel, email, senha } = req.body;
+    const { nomeEmpresa, cnpj, telefoneEmpresa, nomeResponsavel, email, senha, logo_url } = req.body;
 
     if (!nomeEmpresa || !email || !senha || !cnpj || !nomeResponsavel) {
         return res.status(400).json({ message: 'Preencha todos os campos obrigatórios.' });
@@ -83,18 +83,18 @@ module.exports = async (req, res) => {
         try {
             await client.connect();
             
-            // AJUSTADO: Usando 'senha' e 'asaas_customer_id' conforme seu print do Neon
+            // AJUSTADO: Usando 'senha' e 'asaas_customer_id' conforme seu print do Neon, e agora o logo_id vindo do Blob.
             const sql = `
                 INSERT INTO empresas (
                     cnpj, nome_fantasia, whatsapp, email, responsavel, 
-                    senha, session_tokens, asaas_customer_id, created_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+                    senha, session_tokens, asaas_customer_id, logo_id, created_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
                 RETURNING id;
             `;
             
             const values = [
                 cnpj, nomeEmpresa, telefoneEmpresa, email, nomeResponsavel, 
-                hashedPassword, sessionToken, asaasCustomerId
+                hashedPassword, sessionToken, asaasCustomerId, logo_url || null
             ];
             
             const dbRes = await client.query(sql, values);

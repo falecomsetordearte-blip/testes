@@ -121,11 +121,26 @@ function initializeAuthPages() {
             };
 
             try {
+                let logoUrl = null;
                 if (fileInput && fileInput.files.length > 0) {
                     const file = fileInput.files[0];
                     if (file.size > 5 * 1024 * 1024) throw new Error("O logo deve ter no máximo 5MB.");
-                    const base64 = await convertBase64(file);
-                    fileData = { name: file.name, base64: base64 };
+                    
+                    submitButton.textContent = "Fazendo upload da logo...";
+                    
+                    // Import dinâmico do SDK do Vercel Blob
+                    const { upload } = await import('https://esm.sh/@vercel/blob@2.3.1/client');
+                    const empresaNome = document.getElementById('nome_empresa').value || 'nova_empresa';
+                    const safeName = empresaNome.replace(/[^a-zA-Z0-9_-]/g, '_');
+                    const fileName = `logos/${safeName}_${Date.now()}_${file.name}`;
+
+                    const blob = await upload(fileName, file, {
+                        access: 'public',
+                        handleUploadUrl: '/api/upload/blob',
+                        clientPayload: JSON.stringify({ isCadastro: true })
+                    });
+                    
+                    logoUrl = blob.url;
                 }
 
                 if (formWrapper) formWrapper.classList.add('hidden');
@@ -138,7 +153,7 @@ function initializeAuthPages() {
                     nomeResponsavel: document.getElementById('nome_responsavel').value,
                     email: document.getElementById('email').value,
                     senha: senha,
-                    logo: fileData
+                    logo_url: logoUrl
                 };
 
                 const response = await fetch('/api/registerUser', {
