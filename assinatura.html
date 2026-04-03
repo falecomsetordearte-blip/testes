@@ -365,7 +365,9 @@
                     <td>${formatDate(p.date)}</td>
                     <td>${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.value)}</td>
                     <td style="text-transform:capitalize;">${p.billingType === 'CREDIT_CARD' ? 'Cartão' : p.billingType}</td>
-                    <td><span style="color:${p.status === 'RECEIVED' || p.status === 'CONFIRMED' ? '#22c55e' : '#f59e0b'}">${translateStatus(p.status)}</span></td>
+                    <td>
+                        <span style="color:${['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH'].includes(p.status) ? '#22c55e' : '#f59e0b'}">${translateStatus(p.status)}</span>
+                    </td>
                     <td>
                         ${p.transactionReceiptUrl ? `<a href="${p.transactionReceiptUrl}" target="_blank" class="btn-action" title="Recibo"><i class="fas fa-file-download"></i></a>` : ''}
                         ${p.bankSlipUrl && p.status === 'PENDING' ? `<a href="${p.bankSlipUrl}" target="_blank" class="btn-action" title="Boleto"><i class="fas fa-barcode"></i></a>` : ''}
@@ -384,7 +386,8 @@
         function translateStatus(s) {
             const map = {
                 'ACTIVE': 'Ativa', 'PENDING': 'Pendente', 'RECEIVED': 'Pago', 'CONFIRMED': 'Confirmado',
-                'OVERDUE': 'Vencido', 'DELETED': 'Cancelado', 'EXPIRED': 'Expirado'
+                'RECEIVED_IN_CASH': 'Pago em Dinheiro', 'OVERDUE': 'Vencido', 'DELETED': 'Cancelado', 'EXPIRED': 'Expirado',
+                'REFUNDED': 'Estornado'
             };
             return map[s] || s;
         }
