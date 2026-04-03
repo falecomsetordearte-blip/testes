@@ -189,12 +189,31 @@
                 });
                 impressoraFilterEl.innerHTML += `<option value="cadastrar" style="font-weight:bold; font-style:italic;">+ Cadastrar Impressora</option>`;
 
+                // Recuperar filtros salvos
+                const savedImpressora = localStorage.getItem('filtro_impressora_producao');
+                const savedMaterial = localStorage.getItem('filtro_material_producao');
+                
+                if (savedImpressora) impressoraFilterEl.value = savedImpressora;
+
                 impressoraFilterEl.addEventListener('change', function() {
-                    if (this.value === 'cadastrar') window.location.href = '../admin-configuracoes.html';
+                    if (this.value === 'cadastrar') {
+                        window.location.href = '../admin-configuracoes.html';
+                        return;
+                    }
+                    localStorage.setItem('filtro_impressora_producao', this.value);
+                    carregarPedidosDeImpressao();
                 });
 
                 materialFilterEl.innerHTML = `<option value="">Todos os Materiais</option>`;
                 filters.materiais.forEach(option => { materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
+                
+                if (savedMaterial) materialFilterEl.value = savedMaterial;
+
+                materialFilterEl.addEventListener('change', function() {
+                    localStorage.setItem('filtro_material_producao', this.value);
+                    carregarPedidosDeImpressao();
+                });
+
             } catch (error) { 
                 console.error("Erro ao carregar opções de filtro:", error); 
                 showToast("Erro ao carregar filtros", "error");
@@ -510,10 +529,12 @@
             }
         }
         
-        btnFiltrar.addEventListener('click', () => {
-            carregarPedidosDeImpressao();
-            showToast('Filtros aplicados', 'success');
-        });
+        if (btnFiltrar) {
+            btnFiltrar.addEventListener('click', () => {
+                carregarPedidosDeImpressao();
+                showToast('Filtros aplicados', 'success');
+            });
+        }
 
         closeModalBtn.addEventListener('click', () => modal.classList.remove('active'));
         modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
