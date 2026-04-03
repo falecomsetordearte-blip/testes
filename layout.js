@@ -168,7 +168,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     </div>
                     <input type="hidden" id="master-global-deal-id">
                     
-                    <label style="font-weight:600; font-size:0.85rem; color:#444; margin-bottom:5px; display:block;">Forçar Estágio do Banco (Neon DB):</label>
+                    <label style="font-weight:600; font-size:0.85rem; color:#444; margin-bottom:5px; display:block;">Forçar nova etapa:</label>
                     <select id="master-global-stage-select" style="width:100%; padding:9px; margin-bottom:15px; border-radius:6px; border:1px solid #ccc; font-size:0.95rem;">
                         <option value="">Selecione a fase exata...</option>
                         <option value="ARTE">Arte / Design</option>
@@ -183,62 +183,99 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <button id="master-global-btn-mover" style="width:100%; background:#f39c12; color:white; border:none; padding:10px; border-radius:6px; margin-bottom:15px; font-weight:bold; cursor:pointer;">Mover Fase</button>
 
                     <hr style="border:none; border-top:1px dashed #ddd; margin-bottom:15px;" />
-                    <button id="master-global-btn-excluir" style="width:100%; background:#e74c3c; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer;">Deletar do DB Permanente</button>
+                    <button id="master-global-btn-excluir" style="width:100%; background:#e74c3c; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer;">Deletar permanentemente</button>
                 </div>
             </div>
             `;
             document.body.insertAdjacentHTML('beforeend', mstrModalHtml);
 
-            document.getElementById('master-global-btn-mover').addEventListener('click', async () => {
+            window.adminCustomDialog = function(opts) {
+                const id = 'admin-dlg-' + Date.now();
+                let inputHtml = opts.type === 'prompt' ? '<input type="text" id="dlg-input-'+id+'" style="width:100%; padding:10px; margin-top:10px; border-radius:6px; border:1px solid #ccc; font-family:inherit;">' : '';
+                const html = `
+                <div id="${id}" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+                    <div style="background:#fff; padding:25px; border-radius:12px; width:90%; max-width:400px; text-align:center; box-shadow:0 15px 30px rgba(0,0,0,0.2); font-family:'Poppins', sans-serif;">
+                        <h3 style="margin:0 0 10px 0; color:#333; font-size:1.2rem;">${opts.title || 'Atenção'}</h3>
+                        <p style="color:#666; font-size:0.95rem; margin-bottom:15px;">${opts.message}</p>
+                        ${inputHtml}
+                        <div style="display:flex; gap:10px; margin-top:20px;">
+                            ${opts.type !== 'alert' ? `<button id="dlg-cancel-${id}" style="flex:1; padding:10px; border:none; border-radius:6px; background:#f1f5f9; color:#475569; cursor:pointer; font-weight:bold; font-family:inherit;">Cancelar</button>` : ''}
+                            <button id="dlg-ok-${id}" style="flex:1; padding:10px; border:none; border-radius:6px; background:#e74c3c; color:#fff; cursor:pointer; font-weight:bold; font-family:inherit;">${opts.okText || 'OK'}</button>
+                        </div>
+                    </div>
+                </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', html);
+                if (opts.type !== 'alert') {
+                    document.getElementById('dlg-cancel-'+id).onclick = () => { document.getElementById(id).remove(); if(opts.onCancel) opts.onCancel(); };
+                }
+                document.getElementById('dlg-ok-'+id).onclick = () => { 
+                    const val = opts.type === 'prompt' ? document.getElementById('dlg-input-'+id).value : true; 
+                    document.getElementById(id).remove(); 
+                    if(opts.onConfirm) opts.onConfirm(val); 
+                };
+            };
+
+            document.getElementById('master-global-btn-mover').addEventListener('click', () => {
                 const dealId = document.getElementById('master-global-deal-id').value;
                 const stage = document.getElementById('master-global-stage-select').value;
-                if (!stage) return alert('Selecione a etapa para mover.');
+                if (!stage) return window.adminCustomDialog({ type: 'alert', title: 'Erro', message: 'Selecione a etapa para mover.' });
                 
-                const btn = document.getElementById('master-global-btn-mover');
-                if (confirm('Essa ação afetará o banco no Neon DB forçando as datas e estágios normais. Mover o pedido #' + dealId + ' para ' + stage + '?')) {
-                    btn.disabled = true;
-                    btn.innerText = "Processando...";
-                    try {
-                        const res = await fetch('/api/admin/forceUpdateStage', {
-                            method:'POST', headers:{'Content-Type':'application/json'},
-                            body:JSON.stringify({sessionToken, dealId, newStageId:stage})
-                        });
-                        if (!res.ok) throw new Error((await res.json()).message || 'Falha no endpoint');
-                        document.getElementById('master-global-modal').classList.add('hidden');
-                        alert('Ação Master de mover fase finalizada com sucesso!');
-                        window.location.reload();
-                    } catch(e) { 
-                        alert('Erro Master: ' + e.message); 
-                        btn.disabled = false;
-                        btn.innerText = "Mover Fase";
+                window.adminCustomDialog({
+                    type: 'confirm',
+                    title: 'Confirmar Ação',
+                    message: `Esta ação forçará uma nova etapa. Mover o pedido #${dealId} para ${stage}?`,
+                    onConfirm: async () => {
+                        const btn = document.getElementById('master-global-btn-mover');
+                        btn.disabled = true;
+                        btn.innerText = "Processando...";
+                        try {
+                            const res = await fetch('/api/admin/forceUpdateStage', {
+                                method:'POST', headers:{'Content-Type':'application/json'},
+                                body:JSON.stringify({sessionToken, dealId, newStageId:stage})
+                            });
+                            if (!res.ok) throw new Error((await res.json()).message || 'Falha no endpoint');
+                            document.getElementById('master-global-modal').classList.add('hidden');
+                            window.adminCustomDialog({ type: 'alert', title: 'Sucesso', message: 'Fase movida com sucesso!', onConfirm: () => window.location.reload() });
+                        } catch(e) { 
+                            window.adminCustomDialog({ type: 'alert', title: 'Erro', message: e.message });
+                            btn.disabled = false;
+                            btn.innerText = "Mover Fase";
+                        }
                     }
-                }
+                });
             });
 
-            document.getElementById('master-global-btn-excluir').addEventListener('click', async () => {
+            document.getElementById('master-global-btn-excluir').addEventListener('click', () => {
                 const dealId = document.getElementById('master-global-deal-id').value;
-                const conf = prompt(`[ZONA DE PERIGO]\nEXCLUSÃO DIRETA NO POSTGRES NEON DB!\nPara deletar permanentemente, digite o ID: ${dealId}`);
-                if (conf === dealId) {
-                    const btn = document.getElementById('master-global-btn-excluir');
-                    btn.disabled = true;
-                    btn.innerText = "Deletando...";
-                    try {
-                        const res = await fetch('/api/admin/deleteDeal', {
-                            method:'POST', headers:{'Content-Type':'application/json'},
-                            body:JSON.stringify({sessionToken, dealId})
-                        });
-                        if (!res.ok) throw new Error((await res.json()).message || 'Falha no endpoint');
-                        document.getElementById('master-global-modal').classList.add('hidden');
-                        alert('Pedido DELETADO no servidor de banco de dados.');
-                        window.location.reload();
-                    } catch(e) { 
-                        alert('Erro Master: ' + e.message); 
-                        btn.disabled = false;
-                        btn.innerText = "Deletar do DB Permanente";
+                window.adminCustomDialog({
+                    type: 'prompt',
+                    title: 'Zona de Perigo',
+                    message: `EXCLUSÃO PERMANENTE!<br><br>Para deletar o pedido permanentemente, digite o ID: <b>${dealId}</b>`,
+                    okText: 'Deletar',
+                    onConfirm: async (val) => {
+                        if (val === dealId) {
+                            const btn = document.getElementById('master-global-btn-excluir');
+                            btn.disabled = true;
+                            btn.innerText = "Deletando...";
+                            try {
+                                const res = await fetch('/api/admin/deleteDeal', {
+                                    method:'POST', headers:{'Content-Type':'application/json'},
+                                    body:JSON.stringify({sessionToken, dealId})
+                                });
+                                if (!res.ok) throw new Error((await res.json()).message || 'Falha no endpoint');
+                                document.getElementById('master-global-modal').classList.add('hidden');
+                                window.adminCustomDialog({ type: 'alert', title: 'Sucesso', message: 'Pedido deletado permanentemente.', onConfirm: () => window.location.reload() });
+                            } catch(e) { 
+                                window.adminCustomDialog({ type: 'alert', title: 'Erro', message: e.message });
+                                btn.disabled = false;
+                                btn.innerText = "Deletar permanentemente";
+                            }
+                        } else if(val !== null) {
+                            window.adminCustomDialog({ type: 'alert', title: 'Cancelado', message: 'O ID digitado não confere.' });
+                        }
                     }
-                } else if(conf !== null) {
-                    alert('Cancelado: o ID divergente.');
-                }
+                });
             });
 
             window.abrirAdminModal = function(dealId) {

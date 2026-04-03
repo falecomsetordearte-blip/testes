@@ -273,15 +273,21 @@
     </div>
 
     <script>
-        const token = localStorage.getItem('sessionToken');
-        let currentType = 'empresa';
+        let isDesigner = false;
+        let token = localStorage.getItem('sessionToken');
+        if (!token && localStorage.getItem('designerToken')) {
+            token = localStorage.getItem('designerToken');
+            isDesigner = true;
+        }
+        
+        let currentType = isDesigner ? 'designer' : 'empresa';
         let selectedMethod = 'PIX';
 
         document.addEventListener('DOMContentLoaded', init);
 
         async function init() {
             if (!token) {
-                window.location.href = '/login.html';
+                window.location.href = isDesigner ? '/login.html' : '/login.html'; // Adjust as needed if designer login is elsewhere
                 return;
             }
             await loadSubscription();
@@ -305,21 +311,22 @@
                 }
             } catch (err) {
                 console.error(err);
-                alert("Erro ao carregar dados da assinatura.");
+                alertCustom("Erro ao carregar dados da assinatura.");
             }
         }
 
         function showPlans(tipo) {
-            currentType = tipo || 'empresa';
+            currentType = tipo || (isDesigner ? 'designer' : 'empresa');
             document.getElementById('plans-view').style.display = 'block';
-            document.getElementById('header-subtitle').innerText = "Escolha o melhor plano para o seu negócio";
+            document.getElementById('header-subtitle').innerText = "Escolha o seu plano de assinatura";
             
-            // Destaque condicional se quiser
             if (currentType === 'designer') {
+                document.getElementById('card-empresa').style.display = 'none';
+                document.getElementById('card-designer').style.display = 'block';
                 document.getElementById('card-designer').classList.add('featured');
-                document.getElementById('card-empresa').classList.remove('featured');
-                document.getElementById('card-empresa').querySelector('.featured-badge')?.remove();
-                document.getElementById('card-designer').insertAdjacentHTML('afterbegin', '<div class="featured-badge">MAIS POPULAR</div>');
+            } else {
+                document.getElementById('card-designer').style.display = 'none';
+                document.getElementById('card-empresa').style.display = 'block';
             }
         }
 
@@ -402,7 +409,7 @@
 
         async function handlePayment() {
             const doc = document.getElementById('cust-doc').value.replace(/\D/g, '');
-            if (!doc || doc.length < 11) return alert("Informe um CPF/CNPJ válido.");
+            if (!doc || doc.length < 11) return alertCustom("Informe um CPF/CNPJ válido.");
 
             const btn = document.getElementById('btn-pay');
             btn.disabled = true;
@@ -422,7 +429,7 @@
                 const cvv = document.getElementById('cc-cvv').value;
                 
                 if (!name || !number || !month || !year || !cvv) {
-                    alert("Preencha os dados do cartão.");
+                    alertCustom("Preencha os dados do cartão.");
                     resetCheckout();
                     return;
                 }
@@ -442,7 +449,7 @@
                 document.getElementById('checkout-loading').style.display = 'none';
                 
                 if (!data.success && data.status !== 'ACTIVE') {
-                    alert(data.message || "Erro no pagamento.");
+                    alertCustom(data.message || "Erro no pagamento.");
                     resetCheckout();
                     return;
                 }
@@ -462,7 +469,7 @@
                 }
 
             } catch (err) {
-                alert("Erro de conexão.");
+                alertCustom("Erro de conexão.");
                 resetCheckout();
             }
         }
@@ -475,32 +482,70 @@
         }
 
         async function requestCancel() {
-            if (!confirm("Tem certeza que deseja interromper a renovação automática da sua assinatura? Seu acesso continuará ativo até o fim do período já pago.")) return;
+            // Criando modal integrado no lugar de JS confirm()
+            const confirmId = 'cancel-dlg-' + Date.now();
+            const modalHtml = `
+                <div id="${confirmId}" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(8px);">
+                    <div style="background:#1e293b; padding:40px; border-radius:24px; width:90%; max-width:450px; text-align:center; border:1px solid var(--secondary); box-shadow:0 25px 50px rgba(0,0,0,0.5);">
+                        <div style="font-size:3rem; color:var(--secondary); margin-bottom:15px;"><i class="fas fa-exclamation-triangle"></i></div>
+                        <h3 style="color:var(--text); margin-bottom:10px;">Interromper Assinatura?</h3>
+                        <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:25px;">Tem certeza que deseja interromper a renovação automática da sua assinatura? Seu acesso continuará ativo até o fim do período já pago.</p>
+                        <div style="display:flex; gap:10px;">
+                            <button id="btn-n-${confirmId}" style="flex:1; padding:12px; border:none; border-radius:10px; background:#334155; color:white; cursor:pointer; font-weight:600;">Voltar</button>
+                            <button id="btn-s-${confirmId}" style="flex:1; padding:12px; border:none; border-radius:10px; background:var(--secondary); color:white; cursor:pointer; font-weight:600;">Sim, Interromper</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
             
-            const btn = document.getElementById('btn-cancel-sub');
-            btn.disabled = true;
-            btn.innerText = "Cancelando...";
+            document.getElementById('btn-n-' + confirmId).onclick = () => document.getElementById(confirmId).remove();
+            
+            document.getElementById('btn-s-' + confirmId).onclick = async () => {
+                document.getElementById(confirmId).remove();
+                const btn = document.getElementById('btn-cancel-sub');
+                btn.disabled = true;
+                btn.innerText = "Cancelando...";
 
-            try {
-                const res = await fetch('/api/asaas/cancelSubscription', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(data.message);
-                    location.reload();
-                } else {
-                    alert(data.message || "Erro ao cancelar.");
+                try {
+                    const res = await fetch('/api/asaas/cancelSubscription', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alertCustom(data.message, () => location.reload());
+                    } else {
+                        alertCustom(data.message || "Erro ao cancelar.");
+                        btn.disabled = false;
+                        btn.innerText = "Interromper Próxima Cobrança";
+                    }
+                } catch (err) {
+                    alertCustom("Erro de conexão.");
                     btn.disabled = false;
-                    btn.innerText = "Interromper Próxima Cobrança";
                 }
-            } catch (err) {
-                alert("Erro de conexão.");
-                btn.disabled = false;
-            }
+            };
         }
+
+        // Custom alert to replace native window.alert
+        function alertCustom(msg, onOk) {
+            const tempId = 'alert-dlg-' + Date.now();
+            const modalHtml = `
+                <div id="${tempId}" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:10000; backdrop-filter:blur(8px);">
+                    <div style="background:#1e293b; padding:30px; border-radius:24px; width:90%; max-width:400px; text-align:center; border:1px solid var(--border); box-shadow:0 25px 50px rgba(0,0,0,0.5);">
+                        <p style="color:var(--text); font-size:1rem; margin-bottom:20px;">${msg}</p>
+                        <button id="btn-ok-${tempId}" style="width:100%; padding:12px; border:none; border-radius:10px; background:var(--primary); color:white; cursor:pointer; font-weight:600;">OK</button>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            document.getElementById('btn-ok-' + tempId).onclick = () => {
+                document.getElementById(tempId).remove();
+                if(onOk) onOk();
+            };
+        }
+
 
     </script>
 </body>
