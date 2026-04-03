@@ -1,11 +1,12 @@
 <!-- crm.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRM - Pipeline de Vendas</title>
-    
+
     <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
     <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,112 +14,549 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
     <style>
-        .app-content .container { max-width: 100% !important; padding-right: 20px; }
-        
+        .app-content .container {
+            max-width: 100% !important;
+            padding-right: 20px;
+        }
+
         /* KANBAN LAYOUT */
-        .kanban-board { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 20px; height: calc(100vh - 180px); align-items: flex-start; cursor: grab; user-select: none; }
-        .kanban-board.active { cursor: grabbing; }
-        .kanban-column { min-width: 300px; width: 300px; display: inline-flex; flex-direction: column; max-height: 100%; vertical-align: top; }
-        
-        .column-header { font-weight: 700; color: white !important; margin-bottom: 15px; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; padding: 12px 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .col-novos .column-header { background-color: #3498db; }
-        .col-visita .column-header { background-color: #e67e22; }
-        .col-orcamento .column-header { background-color: #f1c40f; color: #333 !important; }
-        .col-pagamento .column-header { background-color: #9b59b6; }
-        .col-abrir .column-header { background-color: #27ae60; }
+        .kanban-board {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding-bottom: 20px;
+            height: calc(100vh - 180px);
+            align-items: flex-start;
+            cursor: grab;
+            user-select: none;
+        }
 
-        .kanban-items { overflow-y: auto; flex-grow: 1; padding-right: 5px; scrollbar-width: thin; display: flex; flex-direction: column; gap: 12px; min-height: 150px; }
-        
+        .kanban-board.active {
+            cursor: grabbing;
+        }
+
+        .kanban-column {
+            min-width: 300px;
+            width: 300px;
+            display: inline-flex;
+            flex-direction: column;
+            max-height: 100%;
+            vertical-align: top;
+        }
+
+        .column-header {
+            font-weight: 700;
+            color: white !important;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            padding: 12px 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .col-novos .column-header {
+            background-color: #3498db;
+        }
+
+        .col-visita .column-header {
+            background-color: #e67e22;
+        }
+
+        .col-orcamento .column-header {
+            background-color: #f1c40f;
+            color: #333 !important;
+        }
+
+        .col-pagamento .column-header {
+            background-color: #9b59b6;
+        }
+
+        .col-abrir .column-header {
+            background-color: #27ae60;
+        }
+
+        .kanban-items {
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-right: 5px;
+            scrollbar-width: thin;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 150px;
+        }
+
         /* CARDS */
-        .kanban-card { background: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: transform 0.2s; border-left: 5px solid #ccc; cursor: pointer; position: relative; display: flex; flex-direction: column; gap: 8px; }
-        .kanban-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
-        .col-novos .kanban-card { border-left-color: #3498db; }
-        .col-visita .kanban-card { border-left-color: #e67e22; }
-        .col-orcamento .kanban-card { border-left-color: #f1c40f; }
-        .col-pagamento .kanban-card { border-left-color: #9b59b6; }
-        .col-abrir .kanban-card { border-left-color: #27ae60; }
+        .kanban-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+            border-left: 5px solid #ccc;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
 
-        .card-header-row { display: flex; justify-content: space-between; align-items: flex-start; padding-right: 20px; }
-        .card-title { font-size: 1rem; font-weight: 600; color: #2c3e50; line-height: 1.3; margin: 0; word-break: break-word; }
-        .card-id { font-size: 0.7rem; color: #aaa; font-weight: 600; }
-        
-        .card-footer-row { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; }
-        .card-price { font-weight: 700; color: #27ae60; font-size: 0.95rem; }
+        .kanban-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .col-novos .kanban-card {
+            border-left-color: #3498db;
+        }
+
+        .col-visita .kanban-card {
+            border-left-color: #e67e22;
+        }
+
+        .col-orcamento .kanban-card {
+            border-left-color: #f1c40f;
+        }
+
+        .col-pagamento .kanban-card {
+            border-left-color: #9b59b6;
+        }
+
+        .col-abrir .kanban-card {
+            border-left-color: #27ae60;
+        }
+
+        .card-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-right: 20px;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            line-height: 1.3;
+            margin: 0;
+            word-break: break-word;
+        }
+
+        .card-id {
+            font-size: 0.7rem;
+            color: #aaa;
+            font-weight: 600;
+        }
+
+        .card-footer-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .card-price {
+            font-weight: 700;
+            color: #27ae60;
+            font-size: 0.95rem;
+        }
 
         .btn-card-delete {
-            position: absolute; top: 5px; right: 5px; background: transparent; border: none; color: #d1d5db;
-            width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; opacity: 0; transition: all 0.2s ease; z-index: 25; font-size: 0.85rem;
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: transparent;
+            border: none;
+            color: #d1d5db;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s ease;
+            z-index: 25;
+            font-size: 0.85rem;
         }
-        .kanban-card:hover .btn-card-delete { opacity: 1; }
-        .btn-card-delete:hover { color: #ef4444; transform: scale(1.2); }
+
+        .kanban-card:hover .btn-card-delete {
+            opacity: 1;
+        }
+
+        .btn-card-delete:hover {
+            color: #ef4444;
+            transform: scale(1.2);
+        }
 
         .btn-card-produzir {
             background: linear-gradient(135deg, #2ecc71, #27ae60);
-            color: white; border: none; border-radius: 6px;
-            padding: 6px 12px; font-size: 0.75rem; font-weight: 700;
-            cursor: pointer; display: flex; align-items: center; gap: 5px;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
             transition: all 0.2s;
         }
-        .btn-card-produzir:hover { transform: scale(1.05); }
-        .btn-card-produzir.confirm-state { background: #e74c3c; animation: pulse 0.5s; }
+
+        .btn-card-produzir:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-card-produzir.confirm-state {
+            background: #e74c3c;
+            animation: pulse 0.5s;
+        }
 
         /* DRAWER (SLIDE PANEL) */
-        .slide-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(3px); z-index: 9990; opacity: 0; visibility: hidden; transition: opacity 0.3s; }
-        .slide-overlay.active { opacity: 1; visibility: visible; }
-        .slide-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 700px; background: #fff; z-index: 9999; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; }
-        .slide-panel.active { transform: translateX(0); }
-        .panel-header { padding: 20px 30px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
-        .panel-body { padding: 0; background: #f9fbfd; flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        .close-panel-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #aaa; }
+        .slide-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(3px);
+            z-index: 9990;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s;
+        }
+
+        .slide-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .slide-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            max-width: 700px;
+            background: #fff;
+            z-index: 9999;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .slide-panel.active {
+            transform: translateX(0);
+        }
+
+        .panel-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-body {
+            padding: 0;
+            background: #f9fbfd;
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .close-panel-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #aaa;
+        }
 
         /* STEPPER WIZARD */
-        .stepper-container { padding: 15px 30px; background: #fff; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
-        .step-indicator { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #ccc; font-weight: 600; }
-        .step-indicator.active { color: #3498db; }
-        .step-indicator.completed { color: #2ecc71; }
-        .step-number { width: 28px; height: 28px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; }
-        .step-indicator.active .step-number { background: #3498db; color: white; }
-        .step-indicator.completed .step-number { background: #2ecc71; color: white; }
-        .step-line { flex: 1; height: 2px; background: #eee; margin: 0 10px; }
-        .step-content { display: none; padding: 30px; animation: fadeIn 0.4s ease; }
-        .step-content.active { display: block; }
+        .stepper-container {
+            padding: 15px 30px;
+            background: #fff;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: #ccc;
+            font-weight: 600;
+        }
+
+        .step-indicator.active {
+            color: #3498db;
+        }
+
+        .step-indicator.completed {
+            color: #2ecc71;
+        }
+
+        .step-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-indicator.active .step-number {
+            background: #3498db;
+            color: white;
+        }
+
+        .step-indicator.completed .step-number {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .step-line {
+            flex: 1;
+            height: 2px;
+            background: #eee;
+            margin: 0 10px;
+        }
+
+        .step-content {
+            display: none;
+            padding: 30px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .step-content.active {
+            display: block;
+        }
 
         /* SELECTIONS & FORMS */
-        .selection-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .selection-card { background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px 10px; text-align: center; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .selection-card:hover { border-color: #b0c4de; transform: translateY(-2px); }
-        .selection-card.selected { border-color: #3498db; background-color: #f0f7ff; color: #3498db; font-weight: 600; }
-        .selection-card i { font-size: 1.8rem; color: #94a3b8; }
-        .selection-card img { width: 35px; height: 35px; border-radius: 50%; object-fit: contain; }
+        .selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
 
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.85rem; color: #475569; }
-        .form-control { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; }
-        .hidden { display: none; }
-        
+        .selection-card {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .selection-card:hover {
+            border-color: #b0c4de;
+            transform: translateY(-2px);
+        }
+
+        .selection-card.selected {
+            border-color: #3498db;
+            background-color: #f0f7ff;
+            color: #3498db;
+            font-weight: 600;
+        }
+
+        .selection-card i {
+            font-size: 1.8rem;
+            color: #94a3b8;
+        }
+
+        .selection-card img {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: contain;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #475569;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+
         /* AUTOCOMPLETE */
-        .autocomplete-wrapper { position: relative; }
-        .search-group { display: flex; gap: 5px; position: relative; z-index: 10; }
-        .btn-search-trigger { background: #3498db; color: white; border: none; border-radius: 8px; padding: 0 15px; cursor: pointer; transition: background 0.2s; }
-        #search-results-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 99999 !important; list-style: none; padding: 0; margin: 0; display: none; box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
-        #search-results-list li { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
-        #search-results-list li:hover { background-color: #f0f7ff; color: #3498db; }
+        .autocomplete-wrapper {
+            position: relative;
+        }
+
+        .search-group {
+            display: flex;
+            gap: 5px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .btn-search-trigger {
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #search-results-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0 0 8px 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 99999 !important;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: none;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        #search-results-list li {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9rem;
+        }
+
+        #search-results-list li:hover {
+            background-color: #f0f7ff;
+            color: #3498db;
+        }
 
         /* MATERIAL ITEMS */
-        .material-item { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px; position: relative; padding-right: 40px; }
-        .btn-remove-material { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: #fee2e2; border: none; color: #ef4444; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .material-item {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 10px;
+            position: relative;
+            padding-right: 40px;
+        }
 
-        .panel-footer { padding: 20px 30px; background: #fff; border-top: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
-        .btn-nav { padding: 12px 25px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; }
-        .btn-prev { background: #f1f5f9; color: #64748b; }
-        .btn-next { background: #3498db; color: white; display: flex; align-items: center; gap: 8px; }
+        .btn-remove-material {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            background: #fee2e2;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .panel-footer {
+            padding: 20px 30px;
+            background: #fff;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .btn-nav {
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: 0.2s;
+        }
+
+        .btn-prev {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .btn-next {
+            background: #3498db;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
         /* TOASTS */
-        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10010; display: flex; flex-direction: column; gap: 10px; }
-        .toast { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); border-left: 5px solid #ccc; min-width: 300px; animation: slideIn 0.3s forwards; display: flex; align-items: center; gap: 10px; }
-        .toast.success { border-left-color: #2ecc71; }
-        .toast.error { border-left-color: #e74c3c; }
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10010;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+            border-left: 5px solid #ccc;
+            min-width: 300px;
+            animation: slideIn 0.3s forwards;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.success {
+            border-left-color: #2ecc71;
+        }
+
+        .toast.error {
+            border-left-color: #e74c3c;
+        }
 
         /* --- COMPONENTE DE METAS (OCULTO) ---
 124:         .metas-widget {
@@ -145,28 +583,165 @@
 145:         .progress-fill.danger { background: linear-gradient(90deg, #e74c3c, #c0392b); }
 146:         */
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+
+            to {
+                transform: translateX(0);
+            }
+        }
 
         /* --- GOOGLE DRIVE UPLOAD UI --- */
-        .gdrive-section { margin-top: 20px; padding: 20px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px; transition: border-color 0.2s; }
-        .gdrive-section.conectado { border-color: #22c55e; background: #f0fdf4; border-style: solid; }
-        .gdrive-connect-btn { display: inline-flex; align-items: center; gap: 10px; background: white; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 12px 20px; cursor: pointer; font-weight: 600; font-size: 0.9rem; color: #334155; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
-        .gdrive-connect-btn:hover { border-color: #4285f4; color: #4285f4; box-shadow: 0 2px 8px rgba(66,133,244,0.15); }
-        .gdrive-connect-btn img { width: 20px; height: 20px; }
-        .gdrive-status-badge { display: inline-flex; align-items: center; gap: 8px; background: #dcfce7; color: #16a34a; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; }
-        .gdrive-upload-area { margin-top: 15px; }
-        .gdrive-file-label { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 30px; border: 2px dashed #94a3b8; border-radius: 10px; cursor: pointer; color: #64748b; transition: all 0.2s; }
-        .gdrive-file-label:hover { border-color: #4285f4; background: #eff6ff; color: #4285f4; }
-        .gdrive-file-label i { font-size: 1.5rem; }
-        .gdrive-upload-btn { width: 100%; margin-top: 12px; padding: 12px; background: #4285f4; color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s; }
-        .gdrive-upload-btn:hover:not(:disabled) { background: #3367d6; transform: translateY(-1px); }
-        .gdrive-upload-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .gdrive-link-result { margin-top: 12px; padding: 12px; background: #dcfce7; border-radius: 8px; font-size: 0.85rem; display: none; align-items: center; gap: 10px; }
-        .gdrive-link-result a { color: #16a34a; font-weight: 600; text-decoration: none; word-break: break-all; }
-        .gdrive-file-count { font-size: 0.8rem; color: #64748b; margin-top: 8px; text-align: center; }
+        .gdrive-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8fafc;
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 12px;
+            transition: border-color 0.2s;
+        }
+
+        .gdrive-section.conectado {
+            border-color: #22c55e;
+            background: #f0fdf4;
+            border-style: solid;
+        }
+
+        .gdrive-connect-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #334155;
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+        }
+
+        .gdrive-connect-btn:hover {
+            border-color: #4285f4;
+            color: #4285f4;
+            box-shadow: 0 2px 8px rgba(66, 133, 244, 0.15);
+        }
+
+        .gdrive-connect-btn img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .gdrive-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #dcfce7;
+            color: #16a34a;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .gdrive-upload-area {
+            margin-top: 15px;
+        }
+
+        .gdrive-file-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 30px;
+            border: 2px dashed #94a3b8;
+            border-radius: 10px;
+            cursor: pointer;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+
+        .gdrive-file-label:hover {
+            border-color: #4285f4;
+            background: #eff6ff;
+            color: #4285f4;
+        }
+
+        .gdrive-file-label i {
+            font-size: 1.5rem;
+        }
+
+        .gdrive-upload-btn {
+            width: 100%;
+            margin-top: 12px;
+            padding: 12px;
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .gdrive-upload-btn:hover:not(:disabled) {
+            background: #3367d6;
+            transform: translateY(-1px);
+        }
+
+        .gdrive-upload-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .gdrive-link-result {
+            margin-top: 12px;
+            padding: 12px;
+            background: #dcfce7;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .gdrive-link-result a {
+            color: #16a34a;
+            font-weight: 600;
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .gdrive-file-count {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 8px;
+            text-align: center;
+        }
     </style>
 </head>
+
 <body>
 
     <div class="app-layout-grid">
@@ -175,10 +750,13 @@
             <div id="header-placeholder"></div>
             <main class="app-content">
                 <div class="container">
-                    
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <h2 style="margin:0; color: #2d3748;"><i class="fa-solid fa-trowel-bricks" style="color: #3498db; margin-right: 8px;"></i> Pipeline de Vendas</h2>
-                        <button class="btn btn-primary" onclick="window.abrirPanelNovo()" style="background:#3498db; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:8px;">
+
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h2 style="margin:0; color: #2d3748;"><i class="fa-solid fa-trowel-bricks"
+                                style="color: #3498db; margin-right: 8px;"></i> Pipeline de Vendas</h2>
+                        <button class="btn btn-primary" onclick="window.abrirPanelNovo()"
+                            style="background:#3498db; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:8px;">
                             <i class="fa-solid fa-plus"></i> Nova Oportunidade
                         </button>
                     </div>
@@ -255,11 +833,17 @@
         </div>
 
         <div class="stepper-container">
-            <div class="step-indicator active" id="indicator-1"><div class="step-number">1</div> Cliente</div>
+            <div class="step-indicator active" id="indicator-1">
+                <div class="step-number">1</div> Cliente
+            </div>
             <div class="step-line"></div>
-            <div class="step-indicator" id="indicator-2"><div class="step-number">2</div> Detalhes</div>
+            <div class="step-indicator" id="indicator-2">
+                <div class="step-number">2</div> Detalhes
+            </div>
             <div class="step-line"></div>
-            <div class="step-indicator" id="indicator-3"><div class="step-number">3</div> Orçamento</div>
+            <div class="step-indicator" id="indicator-3">
+                <div class="step-number">3</div> Orçamento
+            </div>
         </div>
 
         <div class="panel-body">
@@ -273,17 +857,22 @@
                 <div id="step-1" class="step-content active">
                     <h4 style="color:#64748b; margin-bottom:15px;">1. O que vamos fazer?</h4>
                     <div class="selection-grid" id="servico-grid">
-                        <div class="selection-card" onclick="selectCard('servico', 'Arte Impressão', this)"><i class="fas fa-print"></i><span>Arte p/ Impressão</span></div>
-                        <div class="selection-card" onclick="selectCard('servico', 'Arte Digital', this)"><i class="fas fa-desktop"></i><span>Arte Digital</span></div>
-                        <div class="selection-card" onclick="selectCard('servico', 'Edição de Vídeo', this)"><i class="fas fa-video"></i><span>Vídeo</span></div>
+                        <div class="selection-card" onclick="selectCard('servico', 'Arte Impressão', this)"><i
+                                class="fas fa-print"></i><span>Impressão</span></div>
+                        <div class="selection-card" onclick="selectCard('servico', 'Arte Digital', this)"><i
+                                class="fas fa-desktop"></i><span>Arte Digital</span></div>
+                        <div class="selection-card" onclick="selectCard('servico', 'Edição de Vídeo', this)"><i
+                                class="fas fa-video"></i><span>Vídeo</span></div>
                     </div>
 
                     <h4 style="color:#64748b; margin-bottom:15px; margin-top: 30px;">2. Para quem?</h4>
                     <div class="form-group autocomplete-wrapper">
                         <label>Nome do Cliente</label>
                         <div class="search-group">
-                            <input type="text" id="crm-nome" class="form-control" placeholder="Digite nome ou telefone..." autocomplete="off">
-                            <button type="button" id="btn-buscar-cliente" class="btn-search-trigger"><i class="fas fa-search"></i></button>
+                            <input type="text" id="crm-nome" class="form-control"
+                                placeholder="Digite nome ou telefone..." autocomplete="off">
+                            <button type="button" id="btn-buscar-cliente" class="btn-search-trigger"><i
+                                    class="fas fa-search"></i></button>
                         </div>
                         <ul id="search-results-list"></ul>
                     </div>
@@ -291,18 +880,22 @@
                         <label>WhatsApp</label>
                         <input type="tel" id="crm-wpp" class="form-control" placeholder="(00) 00000-0000">
                     </div>
-                    
+
                     <!-- NOTIFICAÇÃO DO CLIENTE - RECURSO PREMIUM -->
-                    <div id="feature-notificacoes-etapas" class="form-group" style="background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:8px; margin-top:15px; position:relative;">
-                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:#166534; margin:0; font-weight:600;">
-                            <input type="checkbox" id="notificar-cliente" style="width:20px; height:20px; cursor:pointer; accent-color:#16a34a;">
-                            <span><i class="fab fa-whatsapp"></i> Criar Grupo e Notificar Cliente a cada Etapa</span>
+                    <div id="feature-notificacoes-etapas" class="form-group"
+                        style="background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:8px; margin-top:15px; position:relative;">
+                        <label
+                            style="display:flex; align-items:center; gap:10px; cursor:pointer; color:#166534; margin:0; font-weight:600;">
+                            <input type="checkbox" id="notificar-cliente"
+                                style="width:20px; height:20px; cursor:pointer; accent-color:#16a34a;">
+                            <span><i class="fab fa-whatsapp"></i> Notificar Cliente a cada Etapa</span>
                         </label>
                     </div>
 
                     <div class="form-group" style="margin-top: 20px;">
                         <label>Nome do Pedido (Opcional)</label>
-                        <input type="text" id="crm-titulo-manual" class="form-control" placeholder="Ex: Logotipo Novo" maxlength="30">
+                        <input type="text" id="crm-titulo-manual" class="form-control" placeholder="Ex: Logotipo Novo"
+                            maxlength="30">
                     </div>
                 </div>
 
@@ -310,28 +903,36 @@
                 <div id="step-2" class="step-content">
                     <h4 style="color:#64748b; margin-bottom:15px;">3. Quem fará a arte?</h4>
                     <div class="selection-grid" id="arte-grid">
-                        <div class="selection-card" onclick="selectCard('arte', 'Setor de Arte', this)"><img src="/images/logo-redonda.svg" alt="Logo"><span>FREELANCER</span></div>
-                        <div class="selection-card" onclick="selectCard('arte', 'Designer Próprio', this)"><i class="fas fa-user-edit"></i><span>Designer Próprio</span></div>
-                        <div class="selection-card" onclick="selectCard('arte', 'Arquivo do Cliente', this)"><i class="fas fa-file-upload"></i><span>Arquivo Pronto</span></div>
+                        <div class="selection-card" onclick="selectCard('arte', 'Setor de Arte', this)"><img
+                                src="/images/logo-redonda.svg" alt="Logo"><span>FREELANCER</span></div>
+                        <div class="selection-card" onclick="selectCard('arte', 'Designer Próprio', this)"><i
+                                class="fas fa-user-edit"></i><span>Designer Próprio</span></div>
+                        <div class="selection-card" onclick="selectCard('arte', 'Arquivo do Cliente', this)"><i
+                                class="fas fa-file-upload"></i><span>Arquivo Pronto</span></div>
                     </div>
 
                     <div id="arquivo-cliente-fields" class="hidden">
                         <div class="form-group">
                             <label>Link Externo (Opcional)</label>
-                            <input type="url" id="link-arquivo" class="form-control" placeholder="Cole um link já existente, ou use o Drive abaixo">
+                            <input type="url" id="link-arquivo" class="form-control"
+                                placeholder="Cole um link já existente, ou use o Drive abaixo">
                         </div>
                         <div id="gdrive-block-arquivo" class="gdrive-section">
                             <div id="gdrive-header-arquivo">
-                                <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px;"><i class="fab fa-google-drive" style="color:#4285f4;"></i> <strong>Upload Direto</strong> — Envie o arquivo de impressão</p>
+                                <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px;"><i
+                                        class="fab fa-google-drive" style="color:#4285f4;"></i> <strong>Upload
+                                        Direto</strong> — Envie o arquivo de impressão</p>
                             </div>
                             <div class="gdrive-upload-area" id="upload-area-arquivo">
                                 <label class="gdrive-file-label" for="input-file-arquivo" id="label-upload-arquivo">
                                     <i class="fas fa-paperclip"></i>
                                     <span>Clique para anexar arquivo(s)</span>
                                 </label>
-                                <input type="file" id="input-file-arquivo" multiple style="display:none" onchange="uploadAutomatico('arquivo')">
+                                <input type="file" id="input-file-arquivo" multiple style="display:none"
+                                    onchange="uploadAutomatico('arquivo')">
                                 <p class="gdrive-file-count" id="count-arquivo"></p>
-                                <button type="button" class="gdrive-upload-btn" id="btn-upload-arquivo" style="display:none">
+                                <button type="button" class="gdrive-upload-btn" id="btn-upload-arquivo"
+                                    style="display:none">
                                     <i class="fas fa-spinner fa-spin"></i> Enviando...
                                 </button>
                                 <!-- Barra de Progresso Adicionada -->
@@ -347,20 +948,28 @@
                             </div>
                             <div class="gdrive-link-result" id="link-result-arquivo">
                                 <i class="fas fa-folder-open" style="color:#16a34a; font-size:1.2rem;"></i>
-                                <div><strong>Link gerado:</strong><br><a id="link-url-arquivo" href="#" target="_blank">Ver Arquivo</a></div>
+                                <div><strong>Link gerado:</strong><br><a id="link-url-arquivo" href="#"
+                                        target="_blank">Ver Arquivo</a></div>
                             </div>
                         </div>
                         <input type="hidden" id="link-arquivo-drive-arquivo">
                     </div>
 
-                    <div id="setor-arte-fields" class="hidden" style="background:#f8f9fa; padding:15px; border-radius:8px;">
-                        <div class="aviso-freelancer" style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; border: 1px solid #ffeeba; margin-bottom: 15px; font-size: 0.9rem;">
+                    <div id="setor-arte-fields" class="hidden"
+                        style="background:#f8f9fa; padding:15px; border-radius:8px;">
+                        <div class="aviso-freelancer"
+                            style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; border: 1px solid #ffeeba; margin-bottom: 15px; font-size: 0.9rem;">
                             <strong>Atenção: ### Aviso importante</strong><br><br>
-                            As demandas são disponibilizadas para designers freelancers e podem não ser aceitas. Não há garantia de atendimento. O sistema é apenas uma ferramenta e não se responsabiliza pela execução dos serviços ou pagamentos. <a href="/regras-freelancer.html" target="_blank" style="color: #856404; text-decoration: underline; font-weight: bold;">Saiba mais</a>.
+                            As demandas são disponibilizadas para designers freelancers e podem não ser aceitas. Não há
+                            garantia de atendimento. O sistema é apenas uma ferramenta e não se responsabiliza pela
+                            execução dos serviços ou pagamentos. <a href="/regras-freelancer.html" target="_blank"
+                                style="color: #856404; text-decoration: underline; font-weight: bold;">Saiba mais</a>.
                         </div>
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                            <div class="form-group"><label>Supervisão (Wpp)</label><input type="tel" id="pedido-supervisao" class="form-control"></div>
-                            <div class="form-group"><label>Oferta ao Designer (R$)</label><input type="number" id="valor-designer" class="form-control" step="0.01"></div>
+                            <div class="form-group"><label>Supervisão (Wpp)</label><input type="tel"
+                                    id="pedido-supervisao" class="form-control"></div>
+                            <div class="form-group"><label>Oferta ao Designer (R$)</label><input type="number"
+                                    id="valor-designer" class="form-control" step="0.01"></div>
                         </div>
                         <div class="form-group">
                             <label>Formato</label>
@@ -371,18 +980,23 @@
                                 <option value="CDR">CDR</option>
                             </select>
                         </div>
-                        <div id="cdr-versao-container" class="hidden"><label>Versão Corel</label><input type="text" id="cdr-versao" class="form-control"></div>
+                        <div id="cdr-versao-container" class="hidden"><label>Versão Corel</label><input type="text"
+                                id="cdr-versao" class="form-control"></div>
 
                         <div id="gdrive-block-setor" class="gdrive-section" style="margin-top:15px;">
-                            <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px;"><i class="fab fa-google-drive" style="color:#4285f4;"></i> <strong>Arquivos de Referência (Opcional)</strong> — Envie logos, fotos ou arquivos para o freelancer</p>
+                            <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px;"><i class="fab fa-google-drive"
+                                    style="color:#4285f4;"></i> <strong>Arquivos de Referência (Opcional)</strong> —
+                                Envie logos, fotos ou arquivos para o freelancer</p>
                             <div class="gdrive-upload-area" id="upload-area-setor">
                                 <label class="gdrive-file-label" for="input-file-setor" id="label-upload-setor">
                                     <i class="fas fa-paperclip"></i>
                                     <span>Clique para anexar referências</span>
                                 </label>
-                                <input type="file" id="input-file-setor" multiple style="display:none" onchange="uploadAutomatico('setor')">
+                                <input type="file" id="input-file-setor" multiple style="display:none"
+                                    onchange="uploadAutomatico('setor')">
                                 <p class="gdrive-file-count" id="count-setor"></p>
-                                <button type="button" class="gdrive-upload-btn" id="btn-upload-setor" style="display:none">
+                                <button type="button" class="gdrive-upload-btn" id="btn-upload-setor"
+                                    style="display:none">
                                     <i class="fas fa-spinner fa-spin"></i> Enviando...
                                 </button>
                                 <!-- Barra de Progresso Adicionada -->
@@ -398,7 +1012,8 @@
                             </div>
                             <div class="gdrive-link-result" id="link-result-setor">
                                 <i class="fas fa-folder-open" style="color:#16a34a; font-size:1.2rem;"></i>
-                                <div><strong>Link gerado:</strong><br><a id="link-url-setor" href="#" target="_blank">Ver Arquivos</a></div>
+                                <div><strong>Link gerado:</strong><br><a id="link-url-setor" href="#"
+                                        target="_blank">Ver Arquivos</a></div>
                             </div>
                         </div>
                         <input type="hidden" id="link-arquivo-drive-setor">
@@ -406,15 +1021,19 @@
 
                     <div id="designer-proprio-fields" class="hidden">
                         <div id="gdrive-block-proprio" class="gdrive-section">
-                            <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px;"><i class="fab fa-google-drive" style="color:#4285f4;"></i> <strong>Arquivo para o Designer</strong> — Envie logos, fotos ou arquivos para o seu designer</p>
+                            <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px;"><i class="fab fa-google-drive"
+                                    style="color:#4285f4;"></i> <strong>Arquivo para o Designer</strong> — Envie logos,
+                                fotos ou arquivos para o seu designer</p>
                             <div class="gdrive-upload-area" id="upload-area-proprio">
                                 <label class="gdrive-file-label" for="input-file-proprio" id="label-upload-proprio">
                                     <i class="fas fa-paperclip"></i>
                                     <span>Clique para anexar arquivos</span>
                                 </label>
-                                <input type="file" id="input-file-proprio" multiple style="display:none" onchange="uploadAutomatico('proprio')">
+                                <input type="file" id="input-file-proprio" multiple style="display:none"
+                                    onchange="uploadAutomatico('proprio')">
                                 <p class="gdrive-file-count" id="count-proprio"></p>
-                                <button type="button" class="gdrive-upload-btn" id="btn-upload-proprio" style="display:none">
+                                <button type="button" class="gdrive-upload-btn" id="btn-upload-proprio"
+                                    style="display:none">
                                     <i class="fas fa-spinner fa-spin"></i> Enviando...
                                 </button>
                                 <!-- Barra de Progresso Adicionada -->
@@ -430,7 +1049,8 @@
                             </div>
                             <div class="gdrive-link-result" id="link-result-proprio">
                                 <i class="fas fa-folder-open" style="color:#16a34a; font-size:1.2rem;"></i>
-                                <div><strong>Link gerado:</strong><br><a id="link-url-proprio" href="#" target="_blank">Ver Arquivos</a></div>
+                                <div><strong>Link gerado:</strong><br><a id="link-url-proprio" href="#"
+                                        target="_blank">Ver Arquivos</a></div>
                             </div>
                         </div>
                         <input type="hidden" id="link-arquivo-drive-proprio">
@@ -438,9 +1058,12 @@
 
                     <h4 style="color:#64748b; margin-bottom:15px; margin-top: 30px;">4. Entrega / Instalação?</h4>
                     <div class="selection-grid" id="entrega-grid">
-                        <div class="selection-card" onclick="selectCard('entrega', 'RETIRADA NO BALCÃO', this)"><i class="fas fa-box-open"></i><span>Só Retirar</span></div>
-                        <div class="selection-card" onclick="selectCard('entrega', 'INSTALAÇÃO NA LOJA', this)"><i class="fas fa-store"></i><span>Instal. na Loja</span></div>
-                        <div class="selection-card" onclick="selectCard('entrega', 'INSTALAÇÃO EXTERNA', this)"><i class="fas fa-truck-pickup"></i><span>Instal. Externa</span></div>
+                        <div class="selection-card" onclick="selectCard('entrega', 'RETIRADA NO BALCÃO', this)"><i
+                                class="fas fa-box-open"></i><span>Só Retirar</span></div>
+                        <div class="selection-card" onclick="selectCard('entrega', 'INSTALAÇÃO NA LOJA', this)"><i
+                                class="fas fa-store"></i><span>Instal. na Loja</span></div>
+                        <div class="selection-card" onclick="selectCard('entrega', 'INSTALAÇÃO EXTERNA', this)"><i
+                                class="fas fa-truck-pickup"></i><span>Instal. Externa</span></div>
                     </div>
                 </div>
 
@@ -448,30 +1071,40 @@
                 <div id="step-3" class="step-content">
                     <h4 style="color:#64748b; margin-bottom:15px;">5. Materiais/Itens</h4>
                     <div id="materiais-container"></div>
-                    <button type="button" id="btn-add-material" style="width:100%; padding:10px; border:1px dashed #ccc; background:none; cursor:pointer; margin-bottom:20px; border-radius:8px;">+ Adicionar Item</button>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <button type="button" id="btn-add-material"
+                        style="width:100%; padding:10px; border:1px dashed #ccc; background:none; cursor:pointer; margin-bottom:20px; border-radius:8px;">+
+                        Adicionar Item</button>
+
+                    <div
+                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
                         <div class="form-group" style="margin-bottom:0;">
                             <label>Valor Total (R$)</label>
-                            <input type="number" id="crm-valor" class="form-control" style="font-weight:700; color:#2c3e50;" step="0.01" value="0">
+                            <input type="number" id="crm-valor" class="form-control"
+                                style="font-weight:700; color:#2c3e50;" step="0.01" value="0">
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
                             <label>Valor Pago (R$)</label>
-                            <input type="number" id="crm-valor-pago" class="form-control" style="font-weight:700; color:#27ae60;" step="0.01" value="0">
+                            <input type="number" id="crm-valor-pago" class="form-control"
+                                style="font-weight:700; color:#27ae60;" step="0.01" value="0">
                         </div>
                     </div>
-                    
+
                     <div class="form-group" style="margin-top:15px;">
                         <label>Resta a Pagar (R$)</label>
-                        <input type="number" id="crm-valor-restante" class="form-control" style="font-size:1.5rem; font-weight:700; color:#e74c3c; background:#fff1f0;" step="0.01" readonly>
+                        <input type="number" id="crm-valor-restante" class="form-control"
+                            style="font-size:1.5rem; font-weight:700; color:#e74c3c; background:#fff1f0;" step="0.01"
+                            readonly>
                     </div>
                 </div>
 
                 <div class="panel-footer">
-                    <button type="button" id="btn-prev" class="btn-nav btn-prev" onclick="mudarPasso(-1)">Voltar</button>
-                    <button type="button" id="btn-next" class="btn-nav btn-next" onclick="mudarPasso(1)">Próximo</button>
+                    <button type="button" id="btn-prev" class="btn-nav btn-prev"
+                        onclick="mudarPasso(-1)">Voltar</button>
+                    <button type="button" id="btn-next" class="btn-nav btn-next"
+                        onclick="mudarPasso(1)">Próximo</button>
                     <div id="final-buttons" style="display:none; gap:10px;">
-                        <button type="submit" id="btn-salvar-rascunho" class="btn-nav" style="background:#eee;">Salvar</button>
+                        <button type="submit" id="btn-salvar-rascunho" class="btn-nav"
+                            style="background:#eee;">Salvar</button>
                     </div>
                 </div>
             </form>
@@ -485,4 +1118,5 @@
     <script src="https://unpkg.com/imask"></script>
     <script src="/crm-script.js"></script>
 </body>
+
 </html>
