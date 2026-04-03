@@ -256,5 +256,15 @@ model Impressora {
   ativo      Boolean  @default(true)
   criado_em  DateTime @default(now())
 
-  @@map("impressoras")
+// ---------------------------------------------------------
+// MODELO DE MENSAGENS (CHAT) LOCAL
+// ---------------------------------------------------------
+model PedidoMensagem {
+  id         Int      @id @default(autoincrement())
+  pedido_id  Int      
+  texto      String   @db.Text
+  remetente  String   @default("sistema") // "cliente", "designer", "sistema"
+  criado_em  DateTime @default(now())
+
+  @@map("pedido_mensagens")
 }

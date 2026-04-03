@@ -190,11 +190,34 @@
                 impressoraFilterEl.innerHTML += `<option value="cadastrar" style="font-weight:bold; font-style:italic;">+ Cadastrar Impressora</option>`;
 
                 impressoraFilterEl.addEventListener('change', function() {
-                    if (this.value === 'cadastrar') window.location.href = '../admin-configuracoes.html';
+                    if (this.value === 'cadastrar') {
+                        window.location.href = '../admin-configuracoes.html';
+                        return;
+                    }
+                    localStorage.setItem('last_printer_filter', this.value);
+                    carregarPedidosDeImpressao();
                 });
 
+                materialFilterEl.addEventListener('change', function() {
+                    localStorage.setItem('last_material_filter', this.value);
+                    carregarPedidosDeImpressao();
+                });
+
+                // Preenche materiais antes de tentar recuperar do localStorage
                 materialFilterEl.innerHTML = `<option value="">Todos os Materiais</option>`;
-                filters.materiais.forEach(option => { materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
+                filters.materiais.forEach(option => { 
+                    materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; 
+                });
+
+                // RECUPERAR ESTADO SALVO (Persistência)
+                const lastPrinter = localStorage.getItem('last_printer_filter');
+                const lastMaterial = localStorage.getItem('last_material_filter');
+                if (lastPrinter) {
+                    impressoraFilterEl.value = lastPrinter;
+                }
+                if (lastMaterial) {
+                    materialFilterEl.value = lastMaterial;
+                }
             } catch (error) { 
                 console.error("Erro ao carregar opções de filtro:", error); 
                 showToast("Erro ao carregar filtros", "error");
@@ -357,10 +380,9 @@
                             <h4><i class="fa-solid fa-print"></i> Impressoras do Pedido</h4>
                             <div style="display: flex; gap: 8px; margin-top: 10px;">
                                 <select id="select-add-impressora" style="flex-grow: 1; padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.85rem;">
-                                    <option value="">Selecione...</option>
+                                    <option value="">+ Vincular Impressora...</option>
                                     ${(window.todasImpressoras || []).map(imp => `<option value="${imp.id}">${imp.value}</option>`).join('')}
                                 </select>
-                                <button id="btn-add-impressora-tag" class="btn btn-primary" style="padding: 5px 12px; font-size: 1rem;"><i class="fa-solid fa-plus"></i></button>
                             </div>
                             <div id="tags-impressoras-container" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;">
                                 ${(deal.impressoras_ids || []).map(id => {
@@ -368,7 +390,6 @@
                                     return imp ? `<span class="impressora-tag" data-id="${imp.id}" style="background: #f1f1f1; padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; border: 1px solid #ddd;">${imp.value} <i class="fa-solid fa-circle-xmark remove-tag" style="cursor:pointer; color: #e74c3c;"></i></span>` : '';
                                 }).join('')}
                             </div>
-                            <button id="btn-salvar-impressoras" class="btn btn-primary" style="margin-top: 12px; width: 100%; display: none; background: #27ae60; border: none;">Salvar Vincúlo</button>
                         </div>
 
                         <div class="card-detalhe">
@@ -384,15 +405,34 @@
         }
 
         function attachModalImpressorasListeners(dealId) {
-            const btnAdd = document.getElementById('btn-add-impressora-tag');
             const select = document.getElementById('select-add-impressora');
             const container = document.getElementById('tags-impressoras-container');
-            const btnSalvar = document.getElementById('btn-salvar-impressoras');
 
-            const verificarAlteracoes = () => { btnSalvar.style.display = 'block'; };
+            const salvarNoBanco = async () => {
+                const ids = [];
+                container.querySelectorAll('.impressora-tag').forEach(span => {
+                    ids.push(Number(span.getAttribute('data-id')));
+                });
 
-            if (btnAdd) {
-                btnAdd.addEventListener('click', () => {
+                try {
+                    const res = await fetch('/api/impressao/savePedidoImpressoras', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sessionToken, dealId, impressorasIds: ids })
+                    });
+                    if (!res.ok) throw new Error('Erro ao salvar vínculo');
+                    
+                    const dealMem = allDealsData.find(d => d.ID == dealId);
+                    if (dealMem) dealMem.impressoras_ids = ids;
+                    
+                    showToast("Impressoras atualizadas!", "success");
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            };
+
+            if (select) {
+                select.addEventListener('change', async () => {
                     const idSelected = select.value;
                     const nomeSelected = select.options[select.selectedIndex]?.text;
                     if (!idSelected) return;
@@ -401,63 +441,27 @@
                     container.querySelectorAll('.impressora-tag').forEach(span => {
                         if (span.getAttribute('data-id') === idSelected) exists = true;
                     });
-                    if (exists) return;
 
-                    const span = document.createElement('span');
-                    span.className = 'impressora-tag';
-                    span.setAttribute('data-id', idSelected);
-                    span.style.cssText = 'background: #f1f1f1; padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; border: 1px solid #ddd;';
-                    span.innerHTML = `${nomeSelected} <i class="fa-solid fa-circle-xmark remove-tag" style="cursor:pointer; color: #e74c3c;"></i>`;
-                    container.appendChild(span);
-
-                    select.value = '';
-                    verificarAlteracoes();
+                    if (!exists) {
+                        const span = document.createElement('span');
+                        span.className = 'impressora-tag';
+                        span.setAttribute('data-id', idSelected);
+                        span.style.cssText = 'background: #f1f1f1; padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; border: 1px solid #ddd;';
+                        span.innerHTML = `${nomeSelected} <i class="fa-solid fa-circle-xmark remove-tag" style="cursor:pointer; color: #e74c3c;"></i>`;
+                        container.appendChild(span);
+                        
+                        await salvarNoBanco();
+                    }
+                    
+                    select.value = ''; // Reseta para o placeholder
                 });
             }
 
             if (container) {
-                container.addEventListener('click', (e) => {
+                container.addEventListener('click', async (e) => {
                     if (e.target.classList.contains('remove-tag')) {
                         e.target.closest('.impressora-tag').remove();
-                        verificarAlteracoes();
-                    }
-                });
-            }
-
-            if (btnSalvar) {
-                btnSalvar.addEventListener('click', async () => {
-                    btnSalvar.disabled = true;
-                    btnSalvar.textContent = 'Gravando...';
-
-                    const ids = [];
-                    container.querySelectorAll('.impressora-tag').forEach(span => {
-                        ids.push(Number(span.getAttribute('data-id')));
-                    });
-
-                    try {
-                        const res = await fetch('/api/impressao/savePedidoImpressoras', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ sessionToken, dealId, impressorasIds: ids })
-                        });
-                        if (!res.ok) throw new Error('Erro ao salvar vínculo');
-
-                        btnSalvar.textContent = 'Gravado com Sucesso!';
-                        btnSalvar.style.background = '#28a745';
-                        setTimeout(() => {
-                            btnSalvar.style.display = 'none';
-                            btnSalvar.style.background = '#27ae60';
-                            btnSalvar.textContent = 'Salvar Vínculo';
-                            btnSalvar.disabled = false;
-                        }, 2000);
-                        
-                        const dealMem = allDealsData.find(d => d.ID == dealId);
-                        if (dealMem) dealMem.impressoras_ids = ids;
-                        
-                    } catch (err) {
-                        showToast(err.message, 'error');
-                        btnSalvar.disabled = false;
-                        btnSalvar.textContent = 'Salvar Vínculo';
+                        await salvarNoBanco();
                     }
                 });
             }

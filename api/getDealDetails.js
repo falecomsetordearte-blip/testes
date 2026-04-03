@@ -1,11 +1,4 @@
-// /api/getDealDetails.js - CÓDIGO COMPLETO (NENHUMA ALTERAÇÃO NECESSÁRIA)
-
-const axios = require('axios');
-
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
-
-// Adicionando a constante para o campo de avaliação
-const FIELD_JA_AVALIADO = 'UF_CRM_1753383576795';
+const prisma = require('../lib/prisma');
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
@@ -18,85 +11,76 @@ module.exports = async (req, res) => {
             return res.status(400).json({ message: 'Token e ID do pedido são obrigatórios.' });
         }
 
-        const userSearch = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-            filter: { '%UF_CRM_1751824225': sessionToken },
-            select: ['COMPANY_ID']
-        });
+        // 1. Identificar Usuário e Empresa do sessionToken (Neon/Postgres)
+        const users = await prisma.$queryRawUnsafe(`
+            SELECT empresa_id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1
+        `, `%${sessionToken}%`);
 
-        const user = userSearch.data.result[0];
-        if (!user || !user.COMPANY_ID) {
-            return res.status(401).json({ message: 'Sessão inválida ou usuário não associado a uma empresa.' });
+        let empresaId = null;
+        if (users.length > 0) {
+            empresaId = users[0].empresa_id;
+        } else {
+            const empresasLegacy = await prisma.$queryRawUnsafe(`
+                SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+            `, `%${sessionToken}%`);
+            if (empresasLegacy.length > 0) empresaId = empresasLegacy[0].id;
         }
+
+        if (!empresaId) return res.status(401).json({ message: 'Sessão inválida.' });
         
-        // ETAPA 2: Buscar os dados do negócio, solicitando explicitamente os campos necessários
-        const dealResponse = await axios.post(`${BITRIX24_API_URL}crm.deal.get`, {
-            id: dealId,
-            select: [
-                "*", // Pega todos os campos padrão
-                "UF_*", // Pega todos os campos personalizados (UF_CRM_*)
-                FIELD_JA_AVALIADO // Garante que nosso campo específico venha na resposta
-            ]
-        });
-        const deal = dealResponse.data.result;
+        // 2. Buscar dados do pedido localmente
+        const pedidos = await prisma.$queryRawUnsafe(`
+            SELECT * FROM pedidos 
+            WHERE id = $1 AND empresa_id = $2 LIMIT 1
+        `, parseInt(dealId), empresaId);
 
-        if (!deal) {
-            return res.status(404).json({ message: 'Pedido não encontrado.' });
+        if (pedidos.length === 0) {
+            return res.status(404).json({ message: 'Pedido não encontrado ou sem permissão.' });
         }
 
-        if (deal.COMPANY_ID != user.COMPANY_ID) {
-            return res.status(403).json({ message: 'Acesso negado a este pedido.' });
-        }
+        const pedido = pedidos[0];
 
-        // ETAPA 3: Buscar os dados do designer responsável
-        const responsibleId = deal.ASSIGNED_BY_ID;
+        // 3. Buscar os dados do designer responsável localmente (se houver mapping)
         let designerInfo = {
             nome: 'Setor de Arte',
             avatar: 'https://setordearte.com.br/images/logo-redonda.svg'
         };
-
-        if (responsibleId) {
-            const designerResponse = await axios.post(`${BITRIX24_API_URL}user.get.json`, {
-                ID: responsibleId
-            });
-            const designer = designerResponse.data.result[0];
-
-            if (designer) {
-                designerInfo = {
-                    nome: `${designer.NAME} ${designer.LAST_NAME}`.trim(),
-                    avatar: designer.PERSONAL_PHOTO || designerInfo.avatar
-                };
+        
+        const designerId = pedido.assigned_by_id;
+        if (designerId) {
+            const designers = await prisma.$queryRawUnsafe(`SELECT nome FROM painel_usuarios WHERE id = $1 LIMIT 1`, parseInt(designerId));
+            if (designers.length > 0) {
+                designerInfo.nome = designers[0].nome;
             }
         }
         
-        // ETAPA 4: Buscar o histórico de mensagens
-        const commentsResponse = await axios.post(`${BITRIX24_API_URL}crm.timeline.comment.list`, {
-            filter: {
-                ENTITY_ID: dealId,
-                ENTITY_TYPE: "deal"
-            },
-            order: { "CREATED": "ASC" }
-        });
+        // 4. Buscar o histórico de mensagens (Localmente)
+        // Como o bitrix foi removido, tentamos buscar na tabela local pedido_mensagens se existir
+        let historicoMensagens = [];
+        try {
+            const msgs = await prisma.$queryRawUnsafe(`SELECT texto, remetente FROM pedido_mensagens WHERE pedido_id = $1 ORDER BY criado_em ASC`, parseInt(dealId));
+            historicoMensagens = msgs.map(m => ({
+                texto: m.texto,
+                remetente: m.remetente // 'cliente' ou 'designer'
+            }));
+        } catch (e) {
+            console.log("Tabela pedido_mensagens ainda não existe ou vazia.");
+        }
 
-        const historicoMensagens = (commentsResponse.data.result || []).map(comment => ({
-            texto: comment.COMMENT,
-            remetente: comment.AUTHOR_ID == 1 ? 'cliente' : 'designer'
-        }));
-
-        // ETAPA 5: Montar a resposta final
+        // 5. Montar a resposta final
         return res.status(200).json({
             status: 'success',
             pedido: {
-                ID: deal.ID,
-                TITLE: deal.TITLE,
-                STAGE_ID: deal.STAGE_ID,
-                OPPORTUNITY: parseFloat(deal.OPPORTUNITY || 0) / 0.9,
-                NOME_CLIENTE_FINAL: deal.UF_CRM_1741273407628,
-                LINK_ATENDIMENTO: deal.UF_CRM_1752712769666,
-                LINK_ARQUIVO_FINAL: deal.UF_CRM_1748277308731,
+                ID: pedido.id,
+                TITLE: pedido.titulo || String(pedido.id),
+                STAGE_ID: pedido.etapa,
+                OPPORTUNITY: (parseFloat(pedido.valor_venda || 0) + parseFloat(pedido.valor_designer || 0)) / 0.9,
+                NOME_CLIENTE_FINAL: pedido.nome_cliente,
+                LINK_ATENDIMENTO: pedido.link_acompanhar || '',
+                LINK_ARQUIVO_FINAL: pedido.link_arquivo_impressao || '',
                 designerInfo: designerInfo,
                 historicoMensagens: historicoMensagens,
-                // ADICIONADO: A chave que informa o frontend se o pedido já foi avaliado
-                jaAvaliado: deal[FIELD_JA_AVALIADO] === true || deal[FIELD_JA_AVALIADO] === '1'
+                jaAvaliado: false // Lógica de avaliação pode ser migrada depois
             }
         });
 
