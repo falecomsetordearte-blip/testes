@@ -154,7 +154,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             
             const styleAdmin = document.createElement('style');
             styleAdmin.innerHTML = `
-                .btn-master-icon { position:absolute; top:8px; right:8px; background:#e74c3c; color:white; padding:4px 7px; border-radius:50%; font-size:0.75rem; cursor:pointer; z-index:100; opacity:0.6; transition:0.2s; box-shadow:0 2px 5px rgba(0,0,0,0.2); }
+                .btn-master-icon { position:absolute; top:8px; right:8px; background:#e74c3c; color:white; width:22px; height:22px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:0.75rem; cursor:pointer; z-index:100; opacity:0.6; transition:0.2s; box-shadow:0 2px 5px rgba(0,0,0,0.2); }
                 .btn-master-icon:hover { opacity:1; transform:scale(1.1); }
             `;
             document.head.appendChild(styleAdmin);

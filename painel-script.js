@@ -118,7 +118,7 @@
             }
 
             const isAdmin = localStorage.getItem('userPermissoes')?.includes('"admin"');
-            const adminHtml = isAdmin ? `<div class="btn-master-icon" onclick="event.stopPropagation(); if(window.abrirAdminModal) window.abrirAdminModal('${deal.ID}')" title="Ações Forçadas do Mestre (BD)"><i class="fas fa-cog"></i></div>` : '';
+            const adminHtml = isAdmin ? `<div class="btn-master-icon" onclick="event.stopPropagation(); if(window.abrirAdminModal) window.abrirAdminModal('${deal.ID}')" title="Ações Forçadas do Mestre (BD)"><i class="fas fa-ellipsis-v"></i></div>` : '';
 
             return `
                 <div class="kanban-card card-internal-styled" data-deal-id="${deal.ID}" onclick="abrirModal(${deal.ID})" style="position: relative;">
@@ -131,7 +131,7 @@
                     
                     <div class="internal-info-row">
                         <span class="tag-servico">${servico}</span>
-                        ${deal.coluna_local === 'EM_ANDAMENTO' ? '<i class="fas fa-cog fa-spin internal-icon" style="color:#f39c12"></i>' : '<i class="fas fa-pencil-ruler internal-icon"></i>'}
+                        ${deal.coluna_local === 'EM_ANDAMENTO' ? '' : '<i class="fas fa-pencil-ruler internal-icon"></i>'}
                     </div>
                 </div>
             `;

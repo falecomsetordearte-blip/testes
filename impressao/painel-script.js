@@ -261,7 +261,7 @@
             }
 
             const isAdmin = localStorage.getItem('userPermissoes')?.includes('"admin"');
-            const adminHtml = isAdmin ? `<div class="btn-master-icon" onclick="event.stopPropagation(); if(window.abrirAdminModal) window.abrirAdminModal('${deal.ID}')" title="Ações Forçadas do Mestre (BD)"><i class="fas fa-cog"></i></div>` : '';
+            const adminHtml = isAdmin ? `<div class="btn-master-icon" onclick="event.stopPropagation(); if(window.abrirAdminModal) window.abrirAdminModal('${deal.ID}')" title="Ações Forçadas do Mestre (BD)"><i class="fas fa-ellipsis-v"></i></div>` : '';
 
             return `
                 <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}" style="position: relative;">
