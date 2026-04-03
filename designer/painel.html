@@ -172,7 +172,59 @@
             display: flex;
             gap: 10px;
             align-items: center;
-            margin-left: 15px;
+        }
+
+        /* Estilos do Perfil no Header */
+        .profile-link-wrapper {
+            text-decoration: none;
+            color: inherit;
+            transition: var(--transition);
+            display: block;
+        }
+
+        .user-profile-data {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 15px;
+            border-radius: 12px;
+            transition: var(--transition);
+        }
+
+        .user-profile-data:hover {
+            background-color: #f1f5f9;
+        }
+
+        .user-avatar {
+            width: 42px;
+            height: 42px;
+            background: #e0e7ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            border: 2px solid #fff;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .user-info-text {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .user-stats-compact {
+            display: flex;
+            gap: 6px;
+            margin-top: 2px;
+        }
+
+        .user-stats-compact .stat-badge {
+            padding: 2px 8px;
+            font-size: 0.7rem;
         }
 
         .stat-badge {
@@ -592,16 +644,28 @@
 
     <header class="app-header">
         <div class="header-content">
-            <img src="https://app.setordearte.com.br/images/logo-fundo-claro-100x100.png" alt="Logo" class="app-logo">
+            <a href="painel.html">
+                <img src="https://app.setordearte.com.br/images/logo-fundo-claro-100x100.png" alt="Logo" class="app-logo">
+            </a>
+            
             <div class="user-menu">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div
-                        style="width: 35px; height: 35px; background: #e0e7ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary-color);">
-                        <i class="fas fa-user"></i>
+                <!-- Seção de Perfil Clicável -->
+                <a href="perfil.html" class="profile-link-wrapper" title="Editar meu perfil">
+                    <div class="user-profile-data">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="user-info-text">
+                            <span id="designer-greeting">Olá, Designer</span>
+                            <div class="user-stats-compact">
+                                <span id="badge-nivel" class="stat-badge lvl-3"><i class="fas fa-medal"></i> Nível Bronze</span>
+                                <span class="stat-badge score-badge"><i class="fas fa-star"></i> <span id="val-pontos">0</span> pts</span>
+                            </div>
+                        </div>
                     </div>
-                    <span id="designer-greeting">Olá, Designer</span>
-                </div>
-                <button id="logout-button">Sair</button>
+                </a>
+
+                <button id="logout-button" title="Sair do sistema">Sair</button>
             </div>
         </div>
     </header>
@@ -609,14 +673,7 @@
     <main class="main-painel">
         <div class="container">
             <div style="margin-bottom: 30px;">
-                <h2 style="font-weight: 700; color: var(--text-main); display: flex; align-items: center;">
-                    Visão Geral
-                    <div class="user-stats-bar">
-                        <span id="badge-nivel" class="stat-badge lvl-3"><i class="fas fa-medal"></i> Nível Bronze</span>
-                        <span class="stat-badge score-badge"><i class="fas fa-star"></i> <span id="val-pontos">0</span>
-                            pts</span>
-                    </div>
-                </h2>
+                <h2 style="font-weight: 700; color: var(--text-main);">Visão Geral</h2>
             </div>
 
             <div class="dashboard-grid">
