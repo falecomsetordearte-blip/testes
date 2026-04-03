@@ -310,7 +310,7 @@
                                     carregarPedidosDeProducao();
                                 }});
                             } catch (e) {
-                                window.adminCustomDialog({ type: 'alert', title: 'Erro', message: \`Erro ao mover etapa: \${e.message}\` });
+                                window.adminCustomDialog({ type: 'alert', title: 'Erro', message: `Erro ao mover etapa: ${e.message}` });
                                 btnAdminMover.disabled = false;
                                 btnAdminMover.innerHTML = '<i class="fas fa-random"></i> Mover';
                             }
@@ -324,7 +324,7 @@
                     window.adminCustomDialog({
                         type: 'prompt',
                         title: 'Zona de Perigo',
-                        message: \`Para confirmar exclusão PERMANENTE do pedido, digite o ID: <b>\${deal.ID}</b>\`,
+                        message: `Para confirmar exclusão PERMANENTE do pedido, digite o ID: <b>${deal.ID}</b>`,
                         okText: 'Excluir',
                         onConfirm: async (digitado) => {
                             if (digitado === String(deal.ID)) {
@@ -345,7 +345,7 @@
                                         carregarPedidosDeProducao();
                                     }});
                                 } catch (e) {
-                                    window.adminCustomDialog({ type: 'alert', title: 'Erro', message: \`Erro ao excluir: \${e.message}\` });
+                                    window.adminCustomDialog({ type: 'alert', title: 'Erro', message: `Erro ao excluir: ${e.message}` });
                                     btnAdminExcluir.disabled = false;
                                     btnAdminExcluir.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir Pedido Permanentemente';
                                 }

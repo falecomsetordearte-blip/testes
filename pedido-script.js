@@ -156,7 +156,7 @@ function configurarEventosAdmin(dealId) {
                         
                         window.adminCustomDialog({ type: 'alert', title: 'Sucesso', message: "Estágio do pedido alterado com sucesso!", onConfirm: () => window.location.reload() });
                     } catch (e) {
-                        window.adminCustomDialog({ type: 'alert', title: 'Erro', message: \`Erro ao mover etapa: \${e.message}\` });
+                        window.adminCustomDialog({ type: 'alert', title: 'Erro', message: `Erro ao mover etapa: ${e.message}` });
                         btnMover.disabled = false;
                         btnMover.innerHTML = '<i class="fas fa-random"></i> Mover';
                     }
@@ -170,7 +170,7 @@ function configurarEventosAdmin(dealId) {
             window.adminCustomDialog({
                 type: 'prompt',
                 title: 'Zona de Perigo',
-                message: \`Para confirmar a exclusão PERMANENTE, digite o ID do pedido: <b>\${dealId}</b>\`,
+                message: `Para confirmar a exclusão PERMANENTE, digite o ID do pedido: <b>${dealId}</b>`,
                 okText: 'Excluir',
                 onConfirm: async (digitado) => {
                     if (digitado === String(dealId)) {
@@ -188,7 +188,7 @@ function configurarEventosAdmin(dealId) {
                             
                             window.adminCustomDialog({ type: 'alert', title: 'Sucesso', message: "Pedido excluído permanentemente da base.", onConfirm: () => { window.location.href = '/dashboard.html'; } });
                         } catch (e) {
-                            window.adminCustomDialog({ type: 'alert', title: 'Erro', message: \`Erro ao excluir: \${e.message}\` });
+                            window.adminCustomDialog({ type: 'alert', title: 'Erro', message: `Erro ao excluir: ${e.message}` });
                             btnExcluir.disabled = false;
                             btnExcluir.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir Pedido Permanentemente';
                         }
