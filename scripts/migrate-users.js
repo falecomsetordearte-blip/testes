@@ -7,32 +7,8 @@ async function runMigration() {
     try {
         // 1. Criar a Função Legacy (Migrado)
         console.log("1. Criando ou buscando a Função 'Acesso Migrado'...");
-        let empresaUnicaId = 1; // Vamos precisar do ID de uma empresa pra amarrar a função e os usuários.
-
-        // Buscar a primeira empresa como referência se houver
-        const primeiraEmpresa = await prisma.$queryRawUnsafe(`SELECT id FROM empresas ORDER BY id ASC LIMIT 1`);
-        if (primeiraEmpresa.length > 0) {
-            empresaUnicaId = primeiraEmpresa[0].id;
-        } else {
-            console.log("Nenhuma empresa encontrada para parametrizar a migração. Abortando.");
-            return;
-        }
-
-        let funcaoMigradaId;
-        const fnMigrada = await prisma.$queryRawUnsafe(`SELECT id FROM painel_funcoes WHERE nome = 'Acesso Migrado' AND empresa_id = $1 LIMIT 1`, empresaUnicaId);
-        
-        if (fnMigrada.length > 0) {
-            funcaoMigradaId = fnMigrada[0].id;
-            console.log("Função 'Acesso Migrado' já existe. ID:", funcaoMigradaId);
-        } else {
-            const insercaoFuncao = await prisma.$queryRawUnsafe(`
-                INSERT INTO painel_funcoes (empresa_id, nome, permissoes, ativo, criado_em)
-                VALUES ($1, 'Acesso Migrado', '["acesso_total_legacy"]', true, NOW())
-                RETURNING id
-            `, empresaUnicaId);
-            funcaoMigradaId = insercaoFuncao[0].id;
-            console.log("Função 'Acesso Migrado' criada. ID:", funcaoMigradaId);
-        }
+        // Alterado: Vamos criar a função "Administrador (Migrado)" para cada empresa individualmente
+        // e conceder a permissão '["admin"]' para que não percam o acesso às páginas.
 
         // 2. Buscar Empresários antigos que usavam login do sistema
         console.log("2. Buscando usuários base da tabela empresas...");
@@ -52,12 +28,26 @@ async function runMigration() {
                 continue;
             }
 
+            // Busca ou Cria a função "Administrador" para ESTA empresa
+            let funcaoId;
+            const fnQuery = await prisma.$queryRawUnsafe(`SELECT id FROM painel_funcoes WHERE nome = 'Administrador (Migrado)' AND empresa_id = $1 LIMIT 1`, emp.id);
+            if (fnQuery.length > 0) {
+                funcaoId = fnQuery[0].id;
+            } else {
+                const insercaoFuncao = await prisma.$queryRawUnsafe(`
+                    INSERT INTO painel_funcoes (empresa_id, nome, permissoes, ativo, criado_em)
+                    VALUES ($1, 'Administrador (Migrado)', '["admin"]', true, NOW())
+                    RETURNING id
+                `, emp.id);
+                funcaoId = insercaoFuncao[0].id;
+            }
+
             console.log(`Migrando usuário: ${emp.email}...`);
-            // Inserir ele como usuario "funcionário" do sistema, portando seu hash e seus tokens antigos.
+            // Inserir ele como usuario master na sua respectiva empresa
             await prisma.$queryRawUnsafe(`
                 INSERT INTO painel_usuarios (empresa_id, funcao_id, nome, email, senha_hash, session_tokens, ativo, criado_em)
                 VALUES ($1, $2, $3, $4, $5, $6, true, NOW())
-            `, emp.id, funcaoMigradaId, emp.nome_fantasia || 'Usuario Migrado', emp.email, emp.senha, emp.session_tokens);
+            `, emp.id, funcaoId, emp.nome_fantasia || 'Usuario Master', emp.email, emp.senha, emp.session_tokens);
             console.log(`> Migrado com sucesso: ${emp.email}`);
         }
 

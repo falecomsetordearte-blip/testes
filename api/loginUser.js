@@ -24,15 +24,22 @@ module.exports = async (req, res) => {
         let usuario = null;
 
         const usuariosNovos = await prisma.$queryRawUnsafe(`
-            SELECT u.*, f.permissoes, df.assinatura_status 
+            SELECT 
+                u.*, 
+                f.permissoes, 
+                df.assinatura_status AS designer_assinatura,
+                e.assinatura_status AS empresa_assinatura
             FROM painel_usuarios u
             LEFT JOIN painel_funcoes f ON u.funcao_id = f.id
             LEFT JOIN designers_financeiro df ON df.designer_id = u.id
+            LEFT JOIN empresas e ON e.id = u.empresa_id
             WHERE u.email = $1 LIMIT 1
         `, email);
 
         if (usuariosNovos.length > 0) {
             usuario = usuariosNovos[0];
+            // Resolve o status de assinatura baseado no tipo de usuário
+            usuario.assinatura_status = usuario.designer_assinatura || usuario.empresa_assinatura;
         } else {
             // Se não achou na nova, busca na ANTIGA (empresas)
             const empresasLegacy = await prisma.$queryRawUnsafe(`

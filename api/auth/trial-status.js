@@ -52,7 +52,18 @@ module.exports = async (req, res) => {
                 JOIN empresas e ON u.empresa_id = e.id
                 WHERE u.session_tokens LIKE $1 OR u.email = $2 LIMIT 1
             `, `%${token}%`, token);
-            if (users.length > 0) usuario = users[0];
+            
+            if (users.length > 0) {
+                usuario = users[0];
+            } else {
+                // Fallback de segurança (Busca na tabela legada)
+                const legacyUsers = await prisma.$queryRawUnsafe(`
+                    SELECT criado_em, assinatura_status, nome_fantasia AS nome 
+                    FROM empresas 
+                    WHERE session_tokens LIKE $1 OR email = $2 LIMIT 1
+                `, `%${token}%`, token);
+                if (legacyUsers.length > 0) usuario = legacyUsers[0];
+            }
         }
 
         if (!usuario) {
