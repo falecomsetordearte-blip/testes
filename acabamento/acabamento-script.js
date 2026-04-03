@@ -121,9 +121,17 @@
             .close-modal { font-size: 1.5rem; color: #aaa; background: none; border: none; cursor: pointer; }
             .modal-body { padding: 25px; background: #fff; }
             
-            .detalhe-layout { display: grid; grid-template-columns: 2fr 1.2fr; gap: 25px; }
-            .card-detalhe { background: #fff; }
-            .card-detalhe h3 { font-size: 1rem; color: var(--text-light); text-transform: uppercase; margin-bottom: 15px; border-bottom: 2px solid #f1f1f1; padding-bottom: 5px; }
+            .steps-container { display: flex; padding: 0 0 20px 0; margin-bottom: 20px; border-bottom: 1px solid #eee; width: 100%; }
+            .step { flex: 1; text-align: center; position: relative; color: #aaa; font-weight: 600; font-size: 0.9rem; padding: 12px 5px; background-color: #f8f9fa; border: 1px solid #eee; cursor: pointer; transition: all 0.2s; }
+            .step:first-child { border-radius: 6px 0 0 6px; }
+            .step:last-child { border-radius: 0 6px 6px 0; }
+            .step.completed { background-color: #7f8c8d; color: white; border-color: #7f8c8d; }
+            .step.active { z-index: 2; transform: scale(1.05); color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); background-color: var(--primary); border-color: var(--primary); }
+
+            .detalhe-layout { display: grid; grid-template-columns: 2fr 1.2fr; gap: 20px; }
+            .detalhe-col-lateral { display: flex; flex-direction: column; gap: 15px; }
+            .card-detalhe { background: #fff; border-radius: 8px; padding: 15px; border: 1px solid #eee; }
+            .card-detalhe h4 { font-size: 0.9rem; color: var(--text-light); text-transform: uppercase; margin: 0 0 10px 0; border-bottom: 2px solid #f1f1f1; padding-bottom: 5px; }
             
             /* Briefing Styles */
             .briefing-scroll-area {
@@ -319,16 +327,23 @@
 
             actionsHtml += `<button class="btn-acao-modal principal" data-action="concluir-deal"><i class="fa-solid fa-check"></i> Concluir Etapa</button>`;
 
-            // Coluna Principal = BRIEFING
+            const stepsHtml = `
+                <div class="step active">Pendente</div>
+                <div class="step">Em Produção</div>
+                <div class="step">Pronto</div>
+            `;
+
+            // Coluna Principal = LAYOUT
             // Coluna Lateral = Informações do Cliente + Ações
             modalBody.innerHTML = `
+                <div class="steps-container">${stepsHtml}</div>
                 <div class="detalhe-layout">
                     <div class="detalhe-col-principal">
                         <img src="${deal[LAYOUT_FIELD]}" class="layout-img" alt="Layout" onerror="this.parentElement.innerHTML='<div class=sem-imagem><i class=\\'fas fa-image\\'></i><p>Erro ao carregar layout</p></div>'">
                     </div>
                     <div class="detalhe-col-lateral">
                         <div class="card-detalhe">
-                             <h3>Dados do Cliente</h3>
+                             <h4>Dados do Cliente</h4>
                              <div class="info-item">
                                 <span class="info-item-label">Cliente</span>
                                 <span class="info-item-value">${nomeCliente}</span>
@@ -342,7 +357,8 @@
                                 <div class="info-item-value">${medidasHtml}</div>
                              </div>
                         </div>
-                        <div class="card-detalhe modal-actions-container" style="margin-top: 20px;">
+                        <div class="card-detalhe modal-actions-container">
+                            <h4>Ações</h4>
                             ${actionsHtml}
                         </div>
                     </div>

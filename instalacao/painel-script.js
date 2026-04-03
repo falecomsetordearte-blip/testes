@@ -134,16 +134,33 @@
             .modal-content { background: white; width: 90%; max-width: 500px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; border: none; }
             .modal-content.modal-lg { max-width: 900px; }
             .modal-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; }
-            .modal-body { padding: 20px; max-height: 80vh; overflow-y: auto; }
+            .modal-body { padding: 25px; background: #fff; }
             .close-modal { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+
+            /* Stepper Style */
+            .steps-container { display: flex; padding: 0 0 20px 0; margin-bottom: 20px; border-bottom: 1px solid #eee; width: 100%; }
+            .step { flex: 1; text-align: center; position: relative; color: #aaa; font-weight: 600; font-size: 0.85rem; padding: 12px 5px; background-color: #f8f9fa; border: 1px solid #eee; cursor: pointer; transition: all 0.2s; }
+            .step:first-child { border-radius: 6px 0 0 6px; }
+            .step:last-child { border-radius: 0 6px 6px 0; }
+            .step.completed { background-color: #7f8c8d; color: white; border-color: #7f8c8d; }
+            .step.active { z-index: 2; transform: scale(1.05); color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); background-color: var(--primary); border-color: var(--primary); }
             
             /* Detalhes específicos */
-            .detalhe-layout { display: grid; grid-template-columns: 60% 38%; gap: 2%; min-height: 300px; }
-            .detalhe-col-principal { background: #f8f9fa; display: flex; align-items: center; justify-content: center; border: 2px dashed #eee; padding: 5px; }
-            .layout-img { max-width: 100%; max-height: 400px; object-fit: contain; }
-            .btn-acao-modal { display: block; width: 100%; padding: 10px; margin-bottom: 5px; text-align: center; border-radius: 4px; text-decoration: none; font-size: 0.9rem; }
+            .detalhe-layout { display: grid; grid-template-columns: 2fr 1.2fr; gap: 20px; }
+            .detalhe-col-lateral { display: flex; flex-direction: column; gap: 15px; }
+            .card-detalhe { background: #fff; border-radius: 8px; padding: 15px; border: 1px solid #eee; }
+            .card-detalhe h4 { font-size: 0.9rem; color: #7f8c8d; text-transform: uppercase; margin: 0 0 10px 0; border-bottom: 2px solid #f1f1f1; padding-bottom: 5px; }
+
+            .layout-img { max-width: 100%; max-height: 450px; object-fit: contain; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+            .btn-acao-modal { display: block; width: 100%; padding: 10px; margin-bottom: 8px; text-align: center; border-radius: 6px; text-decoration: none; font-size: 0.9rem; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
             .btn-acao-modal.principal { background: var(--primary); color: white; }
-            .btn-acao-modal.secundario { background: #eee; color: #333; }
+            .btn-acao-modal.principal:hover { background: #2980b9; }
+            .btn-acao-modal.secundario { background: #f8f9fa; border: 1px solid #ddd; color: #333; }
+            .btn-acao-modal.secundario:hover { background: #eee; }
+
+            .info-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 0.9rem; }
+            .info-item span:first-child { color: #7f8c8d; font-weight: 500; }
+            .info-item span:last-child { font-weight: 600; color: #2c3e50; }
         `;
         document.head.appendChild(style);
 
@@ -577,17 +594,30 @@
             modalTitle.textContent = `Instalação #${deal.TITLE || deal.ID}`;
             
             const linkLayout = deal[LAYOUT_FIELD];
-            let imageHtml = linkLayout ? `<img src="${linkLayout}" class="layout-img" onerror="this.parentElement.innerHTML='<div style=\\'text-align:center; padding:20px; color:#aaa\\'><i class=\\'fas fa-image fa-3x\\'></i><br>Erro ao carregar layout</div>'">` : '<div style="text-align:center; padding:20px; color:#aaa"><i class="fas fa-image fa-3x"></i><br>Sem Layout</div>';
+            let imageHtml = linkLayout ? `<img src="${linkLayout}" class="layout-img" onerror="this.parentElement.innerHTML='<div class=sem-imagem><i class=\\'fas fa-image fa-2x\\'></i><p>Erro no layout</p></div>'">` : '<div class="sem-imagem"><i class="fas fa-image fa-2x"></i><p>Sem Layout</p></div>';
             
+            const stepsHtml = `
+                <div class="step active">Pendente</div>
+                <div class="step">Agendamento</div>
+                <div class="step">Realizado</div>
+            `;
+
             modalBody.innerHTML = `
+                <div class="steps-container">${stepsHtml}</div>
                 <div class="detalhe-layout">
                     <div class="detalhe-col-principal">${imageHtml}</div>
                     <div class="detalhe-col-lateral">
-                        <h3>${deal[NOME_CLIENTE_FIELD] || 'Cliente'}</h3>
-                        <p><strong>Contato:</strong> ${deal[CONTATO_CLIENTE_FIELD] || '-'}</p>
-                        <a href="/pedido.html?id=${deal.ID}" target="_blank" class="btn-hub" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; text-align: center; cursor: pointer; border: 1px solid #bae6fd; font-size: 0.9rem; transition: all 0.2s; text-decoration: none; margin-bottom: 8px; background-color: #e0f2fe; color: #0369a1;"><i class="fa-solid fa-circle-info"></i> Ver Detalhes</a>
-                        <hr>
-                        <button id="btn-concluir-inst" class="btn-concluir"><i class="fas fa-check"></i> Instalação Realizada</button>
+                        <div class="card-detalhe">
+                            <h4>Dados do Cliente</h4>
+                            <div class="info-item"><span>Nome:</span><span>${deal[NOME_CLIENTE_FIELD] || '---'}</span></div>
+                            <div class="info-item"><span>Contato:</span><span>${deal[CONTATO_CLIENTE_FIELD] || '---'}</span></div>
+                        </div>
+
+                        <div class="card-detalhe">
+                            <h4>Ações</h4>
+                            <a href="/pedido.html?id=${deal.ID}" target="_blank" class="btn-hub" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; text-align: center; cursor: pointer; border: 1px solid #bae6fd; font-size: 0.9rem; transition: all 0.2s; text-decoration: none; margin-bottom: 8px; background-color: #e0f2fe; color: #0369a1;"><i class="fa-solid fa-circle-info"></i> Ver Detalhes</a>
+                            <button id="btn-concluir-inst" class="btn-acao-modal principal"><i class="fas fa-check"></i> Instalação Realizada</button>
+                        </div>
                     </div>
                 </div>`;
             

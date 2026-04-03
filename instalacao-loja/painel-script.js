@@ -73,26 +73,29 @@
 
             /* Modal */
             #modal-detalhes-rapidos.modal-overlay { background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); transition: opacity 0.3s; }
-            #modal-detalhes-rapidos .modal-content { border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: none; padding: 0; overflow: hidden; max-width: 900px; width: 95%; }
-            .modal-header { background: #f8f9fa; padding: 15px 25px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-            .modal-header h3 { margin: 0; font-size: 1.2rem; color: var(--text-dark); }
-            .close-modal { font-size: 1.5rem; color: #aaa; background: none; border: none; cursor: pointer; }
-            .modal-body { padding: 25px; background: #fff; }
-            
-            .detalhe-layout { display: grid; grid-template-columns: 60% 38%; gap: 2%; min-height: 400px; }
+            /* Stepper Style */
+            .steps-container { display: flex; padding: 0 0 20px 0; margin-bottom: 20px; border-bottom: 1px solid #eee; width: 100%; }
+            .step { flex: 1; text-align: center; position: relative; color: #aaa; font-weight: 600; font-size: 0.85rem; padding: 12px 5px; background-color: #f8f9fa; border: 1px solid #eee; cursor: pointer; transition: all 0.2s; }
+            .step:first-child { border-radius: 6px 0 0 6px; }
+            .step:last-child { border-radius: 0 6px 6px 0; }
+            .step.completed { background-color: #7f8c8d; color: white; border-color: #7f8c8d; }
+            .step.active { z-index: 2; transform: scale(1.05); color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); background-color: var(--primary); border-color: var(--primary); }
+
+            .detalhe-layout { display: grid; grid-template-columns: 2fr 1.2fr; gap: 20px; min-height: 400px; }
             .detalhe-col-principal { background-color: #f8f9fa; border-radius: 8px; border: 2px dashed #dee2e6; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; padding: 5px; }
-            .layout-img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: zoom-in; box-shadow: var(--shadow-sm); border-radius: 4px; }
+            .layout-img { max-width: 100%; max-height: 450px; object-fit: contain; cursor: zoom-in; box-shadow: var(--shadow-sm); border-radius: 4px; }
             .sem-imagem { text-align: center; color: #aaa; display: flex; flex-direction: column; align-items: center; justify-content: center; }
             .sem-imagem i { font-size: 3rem; margin-bottom: 10px; opacity: 0.5; }
 
             .detalhe-col-lateral { display: flex; flex-direction: column; gap: 15px; }
-            .card-detalhe { background: #fff; }
+            .card-detalhe { background: #fff; border-radius: 8px; padding: 15px; border: 1px solid #eee; }
             .card-detalhe h4 { font-size: 0.9rem; color: var(--text-light); text-transform: uppercase; margin: 0 0 10px 0; border-bottom: 2px solid #f1f1f1; padding-bottom: 5px; }
 
             .info-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 0.9rem; }
-            .tag-medidas { padding: 2px 8px; border-radius: 4px; color: white; font-weight: 600; font-size: 0.8rem; }
+            .info-item span:first-child { color: var(--text-light); font-weight: 500; }
+            .info-item span:last-child { font-weight: 600; color: var(--text-dark); }
             
-            .btn-acao-modal { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; text-align: center; cursor: pointer; border: none; font-size: 0.9rem; transition: all 0.2s; text-decoration: none; margin-bottom: 8px; }
+            .btn-acao-modal { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; text-align: center; cursor: pointer; border: none; font-size: 0.85rem; transition: all 0.2s; text-decoration: none; margin-bottom: 8px; }
             .btn-acao-modal.principal { background-color: var(--primary); color: white; }
             .btn-acao-modal.secundario { background-color: #fff; border: 1px solid #ddd; color: var(--text-dark); }
             .btn-acao-modal.secundario:hover { background-color: #f8f9fa; }
@@ -246,7 +249,14 @@
             if(deal[LINK_ARQUIVO_FINAL_FIELD]) linksHtml += `<a href="${deal[LINK_ARQUIVO_FINAL_FIELD]}" target="_blank" class="btn-acao-modal principal"><i class="fas fa-download"></i> Baixar Arquivo</a>`;
             if(deal[LINK_ATENDIMENTO_FIELD]) linksHtml += `<a href="${deal[LINK_ATENDIMENTO_FIELD]}" target="_blank" class="btn-acao-modal secundario"><i class="fab fa-whatsapp"></i> Ver Atendimento</a>`;
 
+            const stepsHtml = `
+                <div class="step active">Pendente</div>
+                <div class="step">Agendado</div>
+                <div class="step">Realizado</div>
+            `;
+
             modalBody.innerHTML = `
+                <div class="steps-container">${stepsHtml}</div>
                 <div class="detalhe-layout">
                     ${imageHtml}
                     <div class="detalhe-col-lateral">
