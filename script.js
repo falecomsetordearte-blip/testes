@@ -373,9 +373,9 @@ function setupNotifications() {
             // 2. Lógica do Modal de Tela Cheia (Salva no LocalStorage de forma independente)
             const lastSeenModalId = localStorage.getItem('lastSeenModalNotifId') || 0;
             // Verifica a mais nova, se o ID for maior do que o usuário já viu, abre o modal
-            if (newestId > lastSeenModalId) {
-                openGlobalNewsModal(notifications[0]);
-            }
+            // if (newestId > lastSeenModalId) {
+            //     openGlobalNewsModal(notifications[0]);
+            // }
 
         } catch (err) { console.error("Erro notificações:", err); }
     }

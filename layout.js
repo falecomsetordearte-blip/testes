@@ -121,7 +121,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
 
         // checkAceiteTermos('EMPRESA', sessionToken); // DESATIVADO - modal de termos removido
-        checkTrialStatus('EMPRESA', sessionToken);
+        // checkTrialStatus('EMPRESA', sessionToken); // DESATIVADO - banner e modal de aviso de fim de teste
 
         // ==========================================
         // CARREGAMENTO DINÂMICO DA BUSCA GLOBAL
