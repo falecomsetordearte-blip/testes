@@ -166,6 +166,13 @@
             .info-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 0.9rem; }
             .info-item span:first-child { color: #7f8c8d; font-weight: 500; }
             .info-item span:last-child { font-weight: 600; color: #2c3e50; }
+
+            /* Confirmação e Spinner */
+            .btn-confirmacao-ativa { background-color: var(--danger) !important; animation: pulse 1s infinite; }
+            @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+            
+            .spinner { border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid #fff; border-radius: 50%; width: 15px; height: 15px; animation: spin 1s linear infinite; display: inline-block; }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         `;
         document.head.appendChild(style);
 
@@ -633,28 +640,53 @@
             
             const btnConc = document.getElementById('btn-concluir-inst');
             if(btnConc) {
-                btnConc.addEventListener('click', () => {
-                    window.adminCustomDialog({
-                        type: 'confirm',
-                        title: 'Atenção',
-                        message: "Confirmar conclusão? O card sairá da lista.",
-                        onConfirm: async () => {
-                            try {
-                                const r = await fetch('/api/instalacao/concluir', {
-                                    method: 'POST',
-                                    headers: {'Content-Type':'application/json'},
-                                    body: JSON.stringify({ sessionToken, dealId })
-                                });
-                                if(r.ok) { 
-                                    modal.classList.remove('active');
-                                    showToast("Concluído!", "success");
-                                    // Remove visualmente
-                                    allDealsData = allDealsData.filter(d => d.ID != dealId);
-                                    renderKanban(); renderCalendar();
-                                }
-                            } catch(e) { console.error(e); }
+                let confirmationStage = false;
+                btnConc.addEventListener('click', async () => {
+                    if (!confirmationStage) {
+                        confirmationStage = true;
+                        btnConc.innerHTML = '<i class="fa-solid fa-question-circle"></i> Tem certeza? Clique p/ confirmar';
+                        btnConc.classList.add('btn-confirmacao-ativa');
+                        setTimeout(() => {
+                            if (btnConc && confirmationStage) {
+                                confirmationStage = false;
+                                btnConc.innerHTML = '<i class="fas fa-check"></i> Instalação Realizada';
+                                btnConc.classList.remove('btn-confirmacao-ativa');
+                            }
+                        }, 4000);
+                        return;
+                    }
+
+                    btnConc.disabled = true;
+                    btnConc.innerHTML = '<div class="spinner"></div> Processando...';
+                    btnConc.classList.remove('btn-confirmacao-ativa');
+
+                    try {
+                        const r = await fetch('/api/instalacao/concluir', {
+                            method: 'POST',
+                            headers: {'Content-Type':'application/json'},
+                            body: JSON.stringify({ sessionToken, dealId })
+                        });
+                        
+                        if (r.ok) { 
+                            modal.classList.remove('active');
+                            showToast("Concluído!", "success");
+                            // Remove visualmente
+                            allDealsData = allDealsData.filter(d => d.ID != dealId);
+                            renderKanban(); renderCalendar();
+                        } else {
+                            const errData = await r.json();
+                            showToast(errData.message || "Erro ao concluir", "error");
+                            btnConc.disabled = false;
+                            btnConc.innerHTML = '<i class="fas fa-check"></i> Tentar Novamente';
+                            confirmationStage = false;
                         }
-                    });
+                    } catch(e) { 
+                        console.error(e); 
+                        showToast("Erro de conexão", "error");
+                        btnConc.disabled = false;
+                        btnConc.innerHTML = '<i class="fas fa-check"></i> Tentar Novamente';
+                        confirmationStage = false;
+                    }
                 });
             }
         }
