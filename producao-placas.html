@@ -1,16 +1,20 @@
+dv
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sinaliza - Dashboard de Produção</title>
+    <title>Sinaliza - Dashboard de Produção Unificado</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #fdfdfd;
             --card-bg: #ffffff;
-            --primary: #f97316; /* Laranja */
-            --secondary: #eab308; /* Amarelo */
+            --primary: #f97316;
+            /* Laranja */
+            --secondary: #eab308;
+            /* Amarelo */
             --success: #16a34a;
             --danger: #dc2626;
             --border: #e2e8f0;
@@ -36,15 +40,16 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
             border-bottom: 2px solid var(--border);
             padding-bottom: 1rem;
         }
 
         .title-group h1 {
-            font-size: 1.8rem;
+            font-size: 2rem;
             color: var(--primary);
             font-weight: 800;
+            letter-spacing: -1px;
         }
 
         .btn {
@@ -56,128 +61,146 @@
             transition: all 0.2s;
         }
 
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-danger { background: #fee2e2; color: var(--danger); border: 1px solid #fecaca; }
-        .btn:hover { opacity: 0.9; transform: scale(1.02); }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
 
-        .kanban-board {
+        .btn-danger {
+            background: #fee2e2;
+            color: var(--danger);
+            border: 1px solid #fecaca;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
+        /* GRID PRINCIPAL */
+        .grid-board {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 1.5rem;
-            align-items: start;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 2rem;
+            padding-bottom: 5rem;
         }
 
-        .column {
-            background: #f1f5f9;
-            border-radius: 20px;
-            padding: 1.5rem;
-            border: 1px solid var(--border);
-            min-height: 85vh;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
-        }
-
-        .column-header {
-            margin-bottom: 1.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 3px solid var(--secondary);
-        }
-
-        .column-title {
-            font-size: 1.3rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            color: var(--text-main);
-        }
-
-        .card-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1.2rem;
-        }
-
+        /* CARD DE PRODUTO UNIFICADO */
         .card {
             background: var(--card-bg);
             border: 1px solid var(--border);
-            border-radius: 16px;
+            border-radius: 20px;
             padding: 1.5rem;
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            gap: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
         }
 
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-            border-color: var(--primary);
-        }
-
-        .card.done {
-            background: #f0fdf4;
-            border-color: var(--success);
+            border-color: var(--secondary);
         }
 
         .plate-name-hero {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 800;
             text-align: center;
-            color: #1e293b;
+            color: #0f172a;
             line-height: 1.2;
-            padding: 0.5rem 0;
             text-transform: uppercase;
         }
 
-        /* BARRA DE PROGRESSO */
-        .progress-container {
-            width: 100%;
-            height: 12px;
-            background: #e2e8f0;
+        /* BARRA DE PROGRESSO GLOBAL NO CARD */
+        .global-progress {
+            background: #f1f5f9;
+            height: 14px;
             border-radius: 10px;
             overflow: hidden;
-            margin: 0.5rem 0;
+            border: 1px solid var(--border);
+            margin-top: -0.5rem;
         }
 
-        .progress-bar {
+        .global-progress-fill {
             height: 100%;
             background: linear-gradient(90deg, var(--secondary), var(--primary));
-            transition: width 0.5s ease;
-            border-radius: 10px;
+            transition: width 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .card.done .progress-bar {
-            background: var(--success);
-        }
-
-        .card-info {
+        /* LINHA DE ETAPA (IMPRESSÃO, REFILAR, COLAR) */
+        .step-section {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 0.6rem;
+            flex-direction: column;
+            gap: 0.8rem;
+            padding: 1rem;
             background: #f8fafc;
-            border-radius: 10px;
-            font-size: 1rem;
+            border-radius: 15px;
             border: 1px solid var(--border);
         }
 
-        .card-info strong { color: var(--primary); margin: 0 5px; font-size: 1.2rem; }
-        .card.done strong { color: var(--success); }
-
-        .card-controls {
+        .step-row {
             display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px dashed var(--border);
+        }
+
+        .step-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .step-label {
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: #475569;
+            width: 100px;
+            text-transform: uppercase;
+        }
+
+        .step-status {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-dim);
+        }
+
+        .step-status span {
+            color: var(--primary);
+            font-weight: 800;
+        }
+
+        .step-controls {
+            display: flex;
+            align-items: center;
             gap: 0.5rem;
         }
 
+        .step-input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .step-input-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #94a3b8;
+        }
+
         .compact-input {
-            flex: 1;
+            width: 55px;
+            height: 35px;
             background: #fff;
             border: 2px solid var(--border);
-            border-radius: 10px;
-            color: var(--text-main);
-            padding: 0.6rem;
-            font-size: 1.1rem;
+            border-radius: 8px;
+            font-size: 1rem;
             text-align: center;
-            font-weight: 600;
+            font-weight: 800;
+            color: var(--text-main);
         }
 
         .compact-input:focus {
@@ -185,182 +208,221 @@
             outline: none;
         }
 
+        .btn-ok {
+            width: 35px;
+            height: 35px;
+            padding: 0;
+            background: var(--primary);
+            color: white;
+            font-weight: 800;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* ÁREA DE RE-IMPRESSÃO */
+        .re-section {
+            margin-top: 3rem;
+            padding: 2rem;
+            background: #fff5f0;
+            border-radius: 20px;
+            border: 2px dashed #fdba74;
+        }
+
+        .re-header {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--danger);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
         .re-text-area {
             width: 100%;
-            height: 150px;
+            height: 120px;
             background: white;
-            border: 2px solid var(--border);
+            border: 1px solid #fdba74;
             border-radius: 12px;
             padding: 1rem;
-            color: var(--text-main);
             font-size: 1rem;
             resize: none;
             margin-bottom: 1rem;
         }
 
-        @media (max-width: 768px) {
-            body { padding: 1rem; }
-            .kanban-board { grid-template-columns: 1fr; }
+        @media (max-width: 600px) {
+            .grid-board {
+                grid-template-columns: 1fr;
+            }
+
+            body {
+                padding: 1rem;
+            }
         }
     </style>
 </head>
+
 <body>
 
-<header>
-    <div class="title-group">
-        <h1>Dashboard SINALIZA</h1>
-        <p style="color: var(--text-dim); font-size: 1rem;">Fluxo de Produção Real</p>
-    </div>
-    <div class="actions">
-        <button class="btn btn-danger" onclick="resetData()">Zerar Sistema</button>
-    </div>
-</header>
-
-<div class="kanban-board">
-    <div class="column">
-        <div class="column-header"><span class="column-title">🎨 1. Adesivo</span></div>
-        <div class="card-list" id="list-adesivo"></div>
-    </div>
-    <div class="column">
-        <div class="column-header"><span class="column-title">✂️ 2. Refilar</span></div>
-        <div class="card-list" id="list-refilar"></div>
-    </div>
-    <div class="column">
-        <div class="column-header"><span class="column-title">🛠️ 3. Colar</span></div>
-        <div class="card-list" id="list-colar"></div>
-    </div>
-    <div class="column">
-        <div class="column-header"><span class="column-title" style="color: var(--danger);">⚠️ Re-impressão</span></div>
-        <div class="card-list" id="list-reimpressao">
-            <div class="card">
-                <textarea class="re-text-area" id="re-text" placeholder="Observações de re-impressão..."></textarea>
-                <button class="btn btn-primary" onclick="saveRe()">Salvar Observações</button>
-                <div id="saved-re" style="margin-top:1rem; font-size:1rem; color: var(--text-dim); white-space: pre-wrap;"></div>
-            </div>
+    <header>
+        <div class="title-group">
+            <h1>SINALIZA Dashboard</h1>
+            <p style="color: var(--text-dim); font-size: 1rem;">Fluxo Único de Produção por Peça</p>
         </div>
+        <div class="actions">
+            <button class="btn btn-danger" onclick="resetData()">Zerar Tudo</button>
+        </div>
+    </header>
+
+    <div class="grid-board" id="main-grid">
+        <!-- Cards de produtos serão inseridos aqui -->
     </div>
-</div>
 
-<script>
-    const INITIAL_DATA = [
-        { id: 1, name: "ATENÇÃO A 1000 METROS", total: 10 },
-        { id: 2, name: "ATENÇÃO A 1500 METROS", total: 10 },
-        { id: 3, name: "ATENÇÃO HOMENS TRABALHANDO", total: 10 },
-        { id: 4, name: "ATENÇÃO TRECHO EM OBRAS", total: 10 },
-        { id: 5, name: "FIM DE OBRAS", total: 10 },
-        { id: 6, name: "INÍCIO DAS OBRAS", total: 15 },
-        { id: 7, name: "TRAFÉGO EM MEIA PISTA À 700 M", total: 20 },
-        { id: 8, name: "TRAFÉGO EM MEIA PISTA À 500 M", total: 20 },
-        { id: 9, name: "ATENÇÃO OBEDEÇA O OPERADOR", total: 20 },
-        { id: 10, name: "ATENÇÃO PARE À 100 M", total: 20 },
-        { id: 11, name: "ATENÇÃO PARE À 200 M", total: 20 },
-        { id: 12, name: "60 KM/H", total: 20 },
-        { id: 13, name: "40 KM/H", total: 20 },
-        { id: 14, name: "PROIBIDO ULTRAPASSAR", total: 20 }
-    ];
+    <div class="re-section">
+        <div class="re-header">⚠️ Re-impressões e Observações</div>
+        <textarea class="re-text-area" id="re-text"
+            placeholder="Anote aqui quais placas precisam ser refeitas ou detalhes técnicos de re-impressão..."></textarea>
+        <button class="btn btn-primary" onclick="saveRe()">Salvar Observações</button>
+        <div id="saved-re"
+            style="margin-top:1rem; font-size:1.1rem; color: #475569; white-space: pre-wrap; font-weight: 500;"></div>
+    </div>
 
-    let state = {
-        adesivo: {},
-        refilar: {},
-        colar: {},
-        reimpressao: { text: "" }
-    };
+    <script>
+        const INITIAL_DATA = [
+            { id: 1, name: "ATENÇÃO A 1000 METROS", total: 10 },
+            { id: 2, name: "ATENÇÃO A 1500 METROS", total: 10 },
+            { id: 3, name: "ATENÇÃO HOMENS TRABALHANDO", total: 10 },
+            { id: 4, name: "ATENÇÃO TRECHO EM OBRAS", total: 10 },
+            { id: 5, name: "FIM DE OBRAS", total: 10 },
+            { id: 6, name: "INÍCIO DAS OBRAS", total: 15 },
+            { id: 7, name: "TRAFÉGO EM MEIA PISTA À 700 M", total: 20 },
+            { id: 8, name: "TRAFÉGO EM MEIA PISTA À 500 M", total: 20 },
+            { id: 9, name: "ATENÇÃO OBEDEÇA O OPERADOR", total: 20 },
+            { id: 10, name: "ATENÇÃO PARE À 100 M", total: 20 },
+            { id: 11, name: "ATENÇÃO PARE À 200 M", total: 20 },
+            { id: 12, name: "60 KM/H", total: 20 },
+            { id: 13, name: "40 KM/H", total: 20 },
+            { id: 14, name: "PROIBIDO ULTRAPASSAR", total: 20 }
+        ];
 
-    function init() {
-        const saved = localStorage.getItem('placa_tracker_v3');
-        if (saved) {
-            state = JSON.parse(saved);
-        }
-        render();
-    }
+        let state = {
+            impressao: {},
+            refilar: {},
+            colar: {},
+            reimpressao: { text: "" }
+        };
 
-    function save() {
-        localStorage.setItem('placa_tracker_v3', JSON.stringify(state));
-    }
-
-    window.updateCount = (step, id, delta) => {
-        const current = state[step][id] || 0;
-        const plate = INITIAL_DATA.find(p => p.id === id);
-        
-        let newValue = current + delta;
-        if (newValue < 0) newValue = 0;
-        if (newValue > plate.total) newValue = plate.total;
-        
-        state[step][id] = newValue;
-        save();
-        render();
-    };
-
-    window.handleProduce = (step, id) => {
-        const input = document.getElementById(`input-${step}-${id}`);
-        const val = parseInt(input.value);
-        if (!isNaN(val) && val > 0) {
-            updateCount(step, id, val);
-            input.value = '';
-        }
-    };
-
-    function createCard(plate, step) {
-        const count = state[step][plate.id] || 0;
-        const remaining = plate.total - count;
-        const isDone = remaining === 0;
-        const percent = (count / plate.total) * 100;
-
-        const card = document.createElement('div');
-        card.className = `card ${isDone ? 'done' : ''}`;
-        
-        card.innerHTML = `
-            <div class="plate-name-hero">${plate.name}</div>
-            <div class="progress-container">
-                <div class="progress-bar" style="width: ${percent}%"></div>
-            </div>
-            <div class="card-info">
-                <span>Faltam: <strong>${remaining}</strong> / ${plate.total}</span>
-            </div>
-            <div class="card-controls">
-                <input type="number" class="compact-input" placeholder="Qtde" id="input-${step}-${plate.id}">
-                <button class="btn btn-primary" onclick="handleProduce('${step}', ${plate.id})">OK</button>
-            </div>
-        `;
-        return card;
-    }
-
-    function render() {
-        const columns = ['adesivo', 'refilar', 'colar'];
-        columns.forEach(step => {
-            const list = document.getElementById(`list-${step}`);
-            if(!list) return;
-            list.innerHTML = '';
-            INITIAL_DATA.forEach(plate => {
-                list.appendChild(createCard(plate, step));
-            });
-        });
-
-        const reTextArea = document.getElementById('re-text');
-        const reDisplay = document.getElementById('saved-re');
-        if(reTextArea && reDisplay) {
-            const savedRe = state.reimpressao.text || "";
-            reTextArea.value = savedRe;
-            reDisplay.textContent = savedRe;
-        }
-    }
-
-    window.saveRe = () => {
-        state.reimpressao.text = document.getElementById('re-text').value;
-        save();
-        render();
-    };
-
-    window.resetData = () => {
-        if(confirm('Isso apagará todo o progresso. Continuar?')) {
-            state = { adesivo: {}, refilar: {}, colar: {}, reimpressao: { text: "" } };
-            save();
+        function init() {
+            const saved = localStorage.getItem('placa_tracker_v4');
+            if (saved) {
+                state = JSON.parse(saved);
+            }
             render();
         }
-    };
 
-    init();
-</script>
+        function save() {
+            localStorage.setItem('placa_tracker_v4', JSON.stringify(state));
+        }
+
+        window.updateCount = (step, id, delta) => {
+            const current = state[step][id] || 0;
+            const plate = INITIAL_DATA.find(p => p.id === id);
+
+            let newValue = current + delta;
+            if (newValue < 0) newValue = 0;
+            if (newValue > plate.total) newValue = plate.total;
+
+            state[step][id] = newValue;
+            save();
+            render();
+        };
+
+        function createCard(plate) {
+            const steps = [
+                { key: 'impressao', label: 'Impressão' },
+                { key: 'refilar', label: 'Refilar' },
+                { key: 'colar', label: 'Colar' }
+            ];
+
+            // Cálculo do progresso global (soma das etapas / total de ações possíveis)
+            const currentTotal = steps.reduce((sum, s) => sum + (state[s.key][plate.id] || 0), 0);
+            const maxTotal = plate.total * steps.length;
+            const globalPercent = (currentTotal / maxTotal) * 100;
+
+            const card = document.createElement('div');
+            card.className = `card`;
+
+            let stepsHTML = '';
+            steps.forEach(s => {
+                const count = state[s.key][plate.id] || 0;
+                const remaining = plate.total - count;
+                stepsHTML += `
+                <div class="step-row">
+                    <div class="step-label">${s.label}</div>
+                    <div class="step-status">Faltam: <span>${remaining}</span></div>
+                    <div class="step-controls">
+                        <div class="step-input-group">
+                            <label>Fiz</label>
+                            <input type="number" class="compact-input" id="input-${s.key}-${plate.id}">
+                            <button class="btn-ok" onclick="handleProduce('${s.key}', ${plate.id})">OK</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            });
+
+            card.innerHTML = `
+            <div class="plate-name-hero">${plate.name}</div>
+            <div class="global-progress">
+                <div class="global-progress-fill" style="width: ${globalPercent}%"></div>
+            </div>
+            <div class="step-section">
+                ${stepsHTML}
+            </div>
+        `;
+            return card;
+        }
+
+        window.handleProduce = (step, id) => {
+            const input = document.getElementById(`input-${step}-${id}`);
+            const val = parseInt(input.value);
+            if (!isNaN(val) && val > 0) {
+                updateCount(step, id, val);
+            }
+        };
+
+        function render() {
+            const grid = document.getElementById('main-grid');
+            grid.innerHTML = '';
+            INITIAL_DATA.forEach(plate => {
+                grid.appendChild(createCard(plate));
+            });
+
+            const reTextArea = document.getElementById('re-text');
+            const reDisplay = document.getElementById('saved-re');
+            const savedText = state.reimpressao.text || "";
+            reTextArea.value = savedText;
+            reDisplay.textContent = savedText;
+        }
+
+        window.saveRe = () => {
+            state.reimpressao.text = document.getElementById('re-text').value;
+            save();
+            render();
+        };
+
+        window.resetData = () => {
+            if (confirm('Atenção: Isso zerará todo o progresso de todas as etapas. Deseja continuar?')) {
+                state = { impressao: {}, refilar: {}, colar: {}, reimpressao: { text: "" } };
+                save();
+                render();
+            }
+        };
+
+        init();
+    </script>
 
 </body>
+
 </html>
