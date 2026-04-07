@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Produção de Placas</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&amp;display=swap');
+        
+        :root {
+            --primary: #007BFF;
+            --success: #28a745;
+            --danger: #dc3545;
+            --gray: #6c757d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #f4f6f9;
+            color: #333;
+            line-height: 1.5;
+        }
+        
+        header {
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            font-size: 24px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .main-container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+            display: flex;
+            gap: 30px;
+        }
+        
+        .column {
+            flex: 1;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        
+        .column-header {
+            padding: 18px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+        }
+        
+        .column-header h2 {
+            font-size: 20px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .cards-grid {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 18px;
+        }
+        
+        .card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+        
+        .card-img {
+            width: 100%;
+            height: 180px;
+            object-fit: contain;
+            background: #f8f9fa;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .card-body {
+            padding: 16px;
+        }
+        
+        .card-name {
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #222;
+            line-height: 1.3;
+        }
+        
+        .faltam {
+            font-size: 22px;
+            font-weight: 600;
+            color: #e74c3c;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .faltam-label {
+            font-size: 13px;
+            font-weight: 400;
+            color: #777;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .action-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .action-row input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 15px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        
+        .action-row input:focus {
+            border-color: var(--primary);
+        }
+        
+        .action-row button {
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .reprint-list {
+            padding: 0 20px 20px;
+            max-height: 420px;
+            overflow-y: auto;
+        }
+        
+        .reprint-item {
+            background: #f8f9fa;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+        
+        .reset-btn {
+            background: #6c757d;
+            color: white;
+            font-size: 13px;
+        }
+        
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: #888;
+            font-size: 15px;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        
+        .stat-item {
+            background: #f8f9fa;
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        @media (max-width: 1100px) {
+            .main-container {
+                flex-direction: column;
+            }
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 14px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            animation: toastIn 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">📋</div>
+            <h1>Controle de Produção de Placas</h1>
+            <div class="controls">
+                <button onclick="resetAll()" class="reset-btn">🔄 Reiniciar Tudo</button>
+                <button onclick="exportData()" class="btn-primary">📤 Exportar Dados</button>
+                <button onclick="importData()" class="btn-primary">📥 Importar Dados</button>
+            </div>
+        </div>
+    </header>
+    
+    <div class="main-container">
+        <!-- Coluna Produção -->
+        <div class="column">
+            <div class="column-header">
+                <h2>🚧 Produção</h2>
+                <div class="stats">
+                    <div class="stat-item">
+                        <span id="total-faltam">0</span> 
+                        <small>FALTANDO</small>
+                    </div>
+                    <div class="stat-item">
+                        <span id="total-produzido">0</span> 
+                        <small>PRODUZIDO</small>
+                    </div>
+                </div>
+            </div>
+            <div class="cards-grid" id="producao-grid"></div>
+        </div>
+        
+        <!-- Coluna Re-impressão -->
+        <div class="column">
+            <div class="column-header">
+                <h2>🖨️ Re-impressão</h2>
+                <button onclick="clearReprints()" class="btn-danger" style="font-size:13px;padding:6px 12px;">Limpar Lista</button>
+            </div>
+            <div class="cards-grid" id="reimpressao-grid"></div>
+            
+            <div style="padding: 0 20px 10px;">
+                <h3 style="margin-bottom: 12px; font-size: 18px; border-bottom: 2px solid #eee; padding-bottom: 8px;">📋 Solicitações de Re-impressão</h3>
+                <div id="reprint-list" class="reprint-list">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast de confirmação -->
+    <div id="toast" class="toast">
+        ✅ <span id="toast-text"></span>
+    </div>
+    
+    <script>
+        // ==================== DADOS DAS PLACAS ====================
+        const placas = [
+            {
+                id: "aten1000",
+                name: "ATENÇÃO A 1000 METROS",
+                initial: 10,
+                img: "https://http2.mlstatic.com/D_NQ_NP_810516-MLB53526291542_012023-O.webp",
+                type: "url"
+            },
+            {
+                id: "aten1500",
+                name: "ATENÇÃO A 1500 METROS",
+                initial: 10,
+                img: "https://cdn.awsli.com.br/300x300/1012/1012749/produto/70980112/39ce527488.jpg",
+                type: "url"
+            },
+            {
+                id: "atenHomens",
+                name: "ATENÇÃO HOMENS TRABALHANDO",
+                initial: 10,
+                img: "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
