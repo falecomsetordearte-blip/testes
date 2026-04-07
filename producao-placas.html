@@ -7,14 +7,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0f172a;
-            --card-bg: #1e293b;
-            --primary: #38bdf8;
-            --success: #22c55e;
-            --danger: #ef4444;
-            --border: rgba(255,255,255,0.1);
-            --text-main: #f8fafc;
-            --text-dim: #94a3b8;
+            --bg: #fdfdfd;
+            --card-bg: #ffffff;
+            --primary: #f97316; /* Laranja */
+            --secondary: #eab308; /* Amarelo */
+            --success: #16a34a;
+            --danger: #dc2626;
+            --border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-dim: #64748b;
         }
 
         * {
@@ -36,15 +37,14 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 2px solid var(--border);
             padding-bottom: 1rem;
         }
 
         .title-group h1 {
             font-size: 1.8rem;
-            background: linear-gradient(90deg, #fff, var(--primary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: var(--primary);
+            font-weight: 800;
         }
 
         .btn {
@@ -56,8 +56,8 @@
             transition: all 0.2s;
         }
 
-        .btn-primary { background: var(--primary); color: #000; }
-        .btn-danger { background: var(--danger); color: white; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-danger { background: #fee2e2; color: var(--danger); border: 1px solid #fecaca; }
         .btn:hover { opacity: 0.9; transform: scale(1.02); }
 
         .kanban-board {
@@ -68,79 +68,99 @@
         }
 
         .column {
-            background: rgba(30, 41, 59, 0.5);
-            border-radius: 16px;
+            background: #f1f5f9;
+            border-radius: 20px;
             padding: 1.5rem;
             border: 1px solid var(--border);
-            min-height: 80vh;
+            min-height: 85vh;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
         }
 
         .column-header {
             margin-bottom: 1.5rem;
             padding-bottom: 0.5rem;
-            border-bottom: 2px solid var(--primary);
+            border-bottom: 3px solid var(--secondary);
         }
 
         .column-title {
-            font-size: 1.25rem;
+            font-size: 1.3rem;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--primary);
+            color: var(--text-main);
         }
 
         .card-list {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: 1.2rem;
         }
 
         .card {
-            background: linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+            background: var(--card-bg);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 1.5rem;
             display: flex;
             flex-direction: column;
-            gap: 1.2rem;
-            transition: all 0.2s ease;
+            gap: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         .card:hover {
-            transform: translateY(-4px);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
             border-color: var(--primary);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
         }
 
         .card.done {
+            background: #f0fdf4;
             border-color: var(--success);
-            background: rgba(34, 197, 94, 0.05);
-            opacity: 0.8;
         }
 
         .plate-name-hero {
-            font-size: 2.2rem;
+            font-size: 1.8rem;
             font-weight: 800;
             text-align: center;
-            color: white;
-            line-height: 1.1;
-            padding: 1rem 0;
+            color: #1e293b;
+            line-height: 1.2;
+            padding: 0.5rem 0;
             text-transform: uppercase;
-            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        /* BARRA DE PROGRESSO */
+        .progress-container {
+            width: 100%;
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .card.done .progress-bar {
+            background: var(--success);
         }
 
         .card-info {
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 0.8rem;
-            background: rgba(0,0,0,0.3);
-            border-radius: 12px;
-            font-size: 1.1rem;
+            padding: 0.6rem;
+            background: #f8fafc;
+            border-radius: 10px;
+            font-size: 1rem;
+            border: 1px solid var(--border);
         }
 
-        .card-info span { color: var(--text-dim); }
-        .card-info strong { color: var(--primary); margin: 0 5px; font-size: 1.4rem; }
+        .card-info strong { color: var(--primary); margin: 0 5px; font-size: 1.2rem; }
         .card.done strong { color: var(--success); }
 
         .card-controls {
@@ -150,24 +170,29 @@
 
         .compact-input {
             flex: 1;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: white;
-            padding: 0.8rem;
-            font-size: 1.2rem;
+            background: #fff;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-main);
+            padding: 0.6rem;
+            font-size: 1.1rem;
             text-align: center;
             font-weight: 600;
+        }
+
+        .compact-input:focus {
+            border-color: var(--primary);
+            outline: none;
         }
 
         .re-text-area {
             width: 100%;
             height: 150px;
-            background: rgba(0,0,0,0.2);
-            border: 1px solid var(--border);
+            background: white;
+            border: 2px solid var(--border);
             border-radius: 12px;
             padding: 1rem;
-            color: white;
+            color: var(--text-main);
             font-size: 1rem;
             resize: none;
             margin-bottom: 1rem;
@@ -176,7 +201,6 @@
         @media (max-width: 768px) {
             body { padding: 1rem; }
             .kanban-board { grid-template-columns: 1fr; }
-            .plate-name-hero { font-size: 1.6rem; }
         }
     </style>
 </head>
@@ -184,49 +208,34 @@
 
 <header>
     <div class="title-group">
-        <h1>Painel de Produção - Kanban</h1>
-        <p style="color: var(--text-dim); font-size: 0.9rem;">Controle em tempo real de placas e sinalização</p>
+        <h1>Dashboard SINALIZA</h1>
+        <p style="color: var(--text-dim); font-size: 1rem;">Fluxo de Produção Real</p>
     </div>
     <div class="actions">
-        <button class="btn btn-danger" onclick="resetData()">Zerar Tudo</button>
+        <button class="btn btn-danger" onclick="resetData()">Zerar Sistema</button>
     </div>
 </header>
 
 <div class="kanban-board">
-    <!-- ADESIVO -->
     <div class="column">
-        <div class="column-header">
-            <span class="column-title">1. Adesivo</span>
-        </div>
+        <div class="column-header"><span class="column-title">🎨 1. Adesivo</span></div>
         <div class="card-list" id="list-adesivo"></div>
     </div>
-
-    <!-- REFILAR -->
     <div class="column">
-        <div class="column-header">
-            <span class="column-title">2. Refilar</span>
-        </div>
+        <div class="column-header"><span class="column-title">✂️ 2. Refilar</span></div>
         <div class="card-list" id="list-refilar"></div>
     </div>
-
-    <!-- COLAR -->
     <div class="column">
-        <div class="column-header">
-            <span class="column-title">3. Colar</span>
-        </div>
+        <div class="column-header"><span class="column-title">🛠️ 3. Colar</span></div>
         <div class="card-list" id="list-colar"></div>
     </div>
-
-    <!-- RE-IMPRESSÃO -->
     <div class="column">
-        <div class="column-header">
-            <span class="column-title" style="color: var(--danger);">Re-impressão</span>
-        </div>
+        <div class="column-header"><span class="column-title" style="color: var(--danger);">⚠️ Re-impressão</span></div>
         <div class="card-list" id="list-reimpressao">
             <div class="card">
-                <textarea class="re-text-area" id="re-text" placeholder="Liste aqui as placas que precisam de re-imposição ou re-impressão..."></textarea>
+                <textarea class="re-text-area" id="re-text" placeholder="Observações de re-impressão..."></textarea>
                 <button class="btn btn-primary" onclick="saveRe()">Salvar Observações</button>
-                <div id="saved-re" style="margin-top:1rem; font-size:0.9rem; color: #94a3b8; white-space: pre-wrap;"></div>
+                <div id="saved-re" style="margin-top:1rem; font-size:1rem; color: var(--text-dim); white-space: pre-wrap;"></div>
             </div>
         </div>
     </div>
@@ -258,7 +267,7 @@
     };
 
     function init() {
-        const saved = localStorage.getItem('placa_tracker_v2');
+        const saved = localStorage.getItem('placa_tracker_v3');
         if (saved) {
             state = JSON.parse(saved);
         }
@@ -266,7 +275,7 @@
     }
 
     function save() {
-        localStorage.setItem('placa_tracker_v2', JSON.stringify(state));
+        localStorage.setItem('placa_tracker_v3', JSON.stringify(state));
     }
 
     window.updateCount = (step, id, delta) => {
@@ -295,12 +304,16 @@
         const count = state[step][plate.id] || 0;
         const remaining = plate.total - count;
         const isDone = remaining === 0;
+        const percent = (count / plate.total) * 100;
 
         const card = document.createElement('div');
         card.className = `card ${isDone ? 'done' : ''}`;
         
         card.innerHTML = `
             <div class="plate-name-hero">${plate.name}</div>
+            <div class="progress-container">
+                <div class="progress-bar" style="width: ${percent}%"></div>
+            </div>
             <div class="card-info">
                 <span>Faltam: <strong>${remaining}</strong> / ${plate.total}</span>
             </div>
@@ -316,15 +329,20 @@
         const columns = ['adesivo', 'refilar', 'colar'];
         columns.forEach(step => {
             const list = document.getElementById(`list-${step}`);
+            if(!list) return;
             list.innerHTML = '';
             INITIAL_DATA.forEach(plate => {
                 list.appendChild(createCard(plate, step));
             });
         });
 
-        const savedRe = state.reimpressao.text || "";
-        document.getElementById('re-text').value = savedRe;
-        document.getElementById('saved-re').textContent = savedRe;
+        const reTextArea = document.getElementById('re-text');
+        const reDisplay = document.getElementById('saved-re');
+        if(reTextArea && reDisplay) {
+            const savedRe = state.reimpressao.text || "";
+            reTextArea.value = savedRe;
+            reDisplay.textContent = savedRe;
+        }
     }
 
     window.saveRe = () => {
