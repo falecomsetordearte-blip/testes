@@ -1,4 +1,3 @@
-dv
 <!DOCTYPE html>
 <html lang="pt-br">
 
@@ -364,7 +363,7 @@ dv
                     <div class="step-controls">
                         <div class="step-input-group">
                             <label>Fiz</label>
-                            <input type="number" class="compact-input" id="input-${s.key}-${plate.id}">
+                            <input type="number" class="compact-input" id="input-${s.key}-${plate.id}" onkeyup="if(event.key === 'Enter') handleProduce('${s.key}', ${plate.id})">
                             <button class="btn-ok" onclick="handleProduce('${s.key}', ${plate.id})">OK</button>
                         </div>
                     </div>
@@ -390,6 +389,8 @@ dv
             if (!isNaN(val) && val > 0) {
                 updateCount(step, id, val);
             }
+            input.value = ''; // Limpa o campo após ok
+            input.focus(); // Mantém o foco
         };
 
         function render() {
@@ -419,6 +420,13 @@ dv
                 render();
             }
         };
+
+        init();
+    </script>
+
+</body>
+
+</html>};
 
         init();
     </script>
