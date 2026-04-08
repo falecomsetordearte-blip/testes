@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sinaliza - Setor de IMPRESSÃO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fdfdfd;
+            --card-bg: #ffffff;
+            --primary: #f97316; /* Laranja */
+            --secondary: #eab308; /* Amarelo */
+            --success: #16a34a;
+            --danger: #dc2626;
+            --border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-dim: #64748b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+
+        body { background-color: var(--bg); color: var(--text-main); min-height: 100vh; padding: 2rem; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        .title-group h1 { font-size: 2rem; color: var(--primary); font-weight: 800; }
+        .nav-links { display: flex; gap: 1rem; align-items: center; }
+        .nav-links a { text-decoration: none; color: var(--text-dim); font-weight: 600; padding: 0.5rem 1rem; border-radius: 8px; transition: all 0.2s; border: 1px solid var(--border); }
+        .nav-links a:hover { background: #f1f5f9; color: var(--primary); }
+        .nav-links a.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .btn { padding: 0.6rem 1.2rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-danger { background: #fee2e2; color: var(--danger); border: 1px solid #fecaca; }
+
+        .grid-board {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 2rem;
+            padding-bottom: 5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .plate-name-hero {
+            font-size: 1.5rem;
+            font-weight: 800;
+            text-align: center;
+            color: #0f172a;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+
+        .global-progress {
+            background: #f1f5f9;
+            height: 10px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .global-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            transition: width 0.6s ease;
+        }
+
+        .step-section {
+            padding: 1rem;
+            background: #fdf7f2;
+            border-radius: 15px;
+            border: 1px solid #fed7aa;
+        }
+
+        .step-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .step-label { font-weight: 800; font-size: 1.1rem; color: #9a3412; text-transform: uppercase; }
+        .step-status { font-size: 1rem; font-weight: 600; color: var(--text-dim); }
+        .step-status span { color: var(--primary); font-weight: 800; }
+
+        .compact-input {
+            width: 70px;
+            height: 45px;
+            background: #fff;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1.2rem;
+            text-align: center;
+            font-weight: 800;
+        }
+
+        .compact-input:focus { border-color: var(--primary); outline: none; }
+
+        .btn-ok { 
+            width: 45px; height: 45px; background: var(--primary); color: white; font-weight: 800;
+            border-radius: 10px; border: none; cursor: pointer;
+        }
+
+        .re-section { margin-top: 3rem; padding: 2rem; background: #fff5f0; border-radius: 20px; border: 2px dashed #fdba74; }
+        .re-header { font-size: 1.4rem; font-weight: 800; color: var(--danger); margin-bottom: 1rem; }
+        .re-text-area { width: 100%; height: 100px; background: white; border: 1px solid #fdba74; border-radius: 12px; padding: 1rem; font-size: 1rem; resize: none; margin-bottom: 1rem; }
+
+        @media (max-width: 600px) { .grid-board { grid-template-columns: 1fr; } body { padding: 1rem; } }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="title-group">
+            <h1 style="color: #ea580c">🖨️ ÁREA DE IMPRESSÃO</h1>
+            <p style="color: var(--text-dim)">Gerencie aqui as placas enviadas para impressão</p>
+        </div>
+        <div class="nav-links">
+            <a href="lcm-impressao.html" class="active">Impressão</a>
+            <a href="lcm-prontos.html">Setor de Prontos</a>
+            <button class="btn btn-danger" onclick="resetData()" style="margin-left: 1rem">Zerar Sistema</button>
+        </div>
+    </header>
+
+    <div class="grid-board" id="main-grid"></div>
+
+    <div class="re-section">
+        <div class="re-header">⚠️ Re-impressões e Observações Compartilhadas</div>
+        <textarea class="re-text-area" id="re-text" placeholder="Anotar placa para re-imposto..."></textarea>
+        <button class="btn btn-primary" onclick="saveRe()">Salvar Observações</button>
+        <div id="saved-re" style="margin-top:1rem; font-size:1.1rem; color: #475569; white-space: pre-wrap; font-weight: 500;"></div>
+    </div>
+
+    <script>
+        const INITIAL_DATA = [
+            { id: 1, name: "ATENÇÃO A 1000 METROS", total: 10 },
+            { id: 2, name: "ATENÇÃO A 1500 METROS", total: 10 },
+            { id: 3, name: "ATENÇÃO HOMENS TRABALHANDO", total: 10 },
+            { id: 4, name: "ATENÇÃO TRECHO EM OBRAS", total: 10 },
+            { id: 5, name: "FIM DE OBRAS", total: 10 },
+            { id: 6, name: "INÍCIO DAS OBRAS", total: 15 },
+            { id: 7, name: "TRAFÉGO EM MEIA PISTA À 700 M", total: 20 },
+            { id: 8, name: "TRAFÉGO EM MEIA PISTA À 500 M", total: 20 },
+            { id: 9, name: "ATENÇÃO OBEDEÇA O OPERADOR", total: 20 },
+            { id: 10, name: "ATENÇÃO PARE À 100 M", total: 20 },
+            { id: 11, name: "ATENÇÃO PARE À 200 M", total: 20 },
+            { id: 12, name: "60 KM/H", total: 20 },
+            { id: 13, name: "40 KM/H", total: 20 },
+            { id: 14, name: "PROIBIDO ULTRAPASSAR", total: 20 }
+        ];
+
+        let state = { impressao: {}, prontos: {}, reimpressao: { text: "" } };
+
+        function init() {
+            const saved = localStorage.getItem('placa_tracker_v5');
+            if (saved) state = JSON.parse(saved);
+            render();
+            // Escutar mudanças de outras abas
+            window.addEventListener('storage', (e) => {
+                if(e.key === 'placa_tracker_v5') {
+                    state = JSON.parse(e.newValue);
+                    render();
+                }
+            });
+        }
+
+        function save() { localStorage.setItem('placa_tracker_v5', JSON.stringify(state)); }
+
+        window.updateCount = (step, id, delta) => {
+            const plate = INITIAL_DATA.find(p => p.id === id);
+            let nv = (state[step][id] || 0) + delta;
+            state[step][id] = Math.max(0, Math.min(plate.total, nv));
+            save();
+            render();
+        };
+
+        function createCard(plate) {
+            const countImp = state.impressao[plate.id] || 0;
+            const countPronto = state.prontos[plate.id] || 0;
+            const globalPercent = ((countImp + countPronto) / (plate.total * 2)) * 100;
+            const remaining = plate.total - countImp;
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="plate-name-hero">${plate.name}</div>
+                <div class="global-progress"><div class="global-progress-fill" style="width: ${globalPercent}%"></div></div>
+                <div class="step-section">
+                    <div class="step-row">
+                        <div class="step-label">IMPRESSÃO</div>
+                        <div class="step-status">Faltam: <span>${remaining}</span> / ${plate.total}</div>
+                        <div style="display:flex; gap:0.5rem">
+                            <input type="number" class="compact-input" id="input-imp-${plate.id}" onkeyup="if(event.key==='Enter') handleProduce(${plate.id})">
+                            <button class="btn-ok" onclick="handleProduce(${plate.id})">OK</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        window.handleProduce = (id) => {
+            const input = document.getElementById(`input-imp-${id}`);
+            const val = parseInt(input.value);
+            if (!isNaN(val) && val > 0) updateCount('impressao', id, val);
+            input.value = '';
+            input.focus();
+        };
+
+        function render() {
+            const grid = document.getElementById('main-grid');
+            grid.innerHTML = '';
+            INITIAL_DATA.forEach(p => grid.appendChild(createCard(p)));
+            const reText = document.getElementById('re-text');
+            const savedRe = document.getElementById('saved-re');
+            reText.value = state.reimpressao.text || "";
+            savedRe.textContent = state.reimpressao.text || "";
+        }
+
+        window.saveRe = () => {
+            state.reimpressao.text = document.getElementById('re-text').value;
+            save();
+            render();
+        };
+
+        window.resetData = () => {
+            if (confirm('Zerar progresso total?')) {
+                state = { impressao: {}, prontos: {}, reimpressao: { text: "" } };
+                save();
+                render();
+            }
+        };
+
+        init();
+    </script>
+</body>
+</html>
