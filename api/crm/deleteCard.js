@@ -11,16 +11,28 @@ module.exports = async (req, res) => {
     try {
         const { sessionToken, cardId } = req.body;
 
-        const empresas = await prisma.$queryRawUnsafe(`
-            SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+        let empresaId = null;
+        const users = await prisma.$queryRawUnsafe(`
+            SELECT empresa_id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1
         `, `%${sessionToken}%`);
 
-        if (empresas.length === 0) return res.status(403).json({ message: 'Auth Error' });
+        if (users.length > 0) {
+            empresaId = users[0].empresa_id;
+        } else {
+            const empresas = await prisma.$queryRawUnsafe(`
+                SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+            `, `%${sessionToken}%`);
+            if (empresas.length > 0) {
+                empresaId = empresas[0].id;
+            }
+        }
+
+        if (!empresaId) return res.status(403).json({ message: 'Auth Error' });
 
         await prisma.$executeRawUnsafe(`
             DELETE FROM crm_oportunidades 
             WHERE id = $1 AND empresa_id = $2
-        `, parseInt(cardId), empresas[0].id);
+        `, parseInt(cardId), empresaId);
 
         return res.status(200).json({ success: true });
 

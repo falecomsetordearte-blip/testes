@@ -17,9 +17,19 @@ module.exports = async (req, res) => {
         }
 
         // Identifica a empresa
-        const empresas = await prisma.$queryRawUnsafe(`SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`, `%${sessionToken}%`);
-        if (empresas.length === 0) return res.status(403).json({ error: 'Auth Error' });
-        const empresaId = empresas[0].id;
+        let empresaId = null;
+        const users = await prisma.$queryRawUnsafe(`SELECT empresa_id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1`, `%${sessionToken}%`);
+        
+        if (users.length > 0) {
+            empresaId = users[0].empresa_id;
+        } else {
+            const empresas = await prisma.$queryRawUnsafe(`SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`, `%${sessionToken}%`);
+            if (empresas.length > 0) {
+                empresaId = empresas[0].id;
+            }
+        }
+
+        if (!empresaId) return res.status(403).json({ error: 'Auth Error' });
 
         const hoje = new Date();
         const mesAno = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;

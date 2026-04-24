@@ -17,12 +17,23 @@ module.exports = async (req, res) => {
         } = req.body;
 
         // 1. Identificar a Empresa no Neon
-        const empresas = await prisma.$queryRawUnsafe(`
-            SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+        let empresaId = null;
+        const users = await prisma.$queryRawUnsafe(`
+            SELECT empresa_id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1
         `, `%${sessionToken}%`);
 
-        if (empresas.length === 0) return res.status(403).json({ message: 'Sessão inválida.' });
-        const empresaId = empresas[0].id;
+        if (users.length > 0) {
+            empresaId = users[0].empresa_id;
+        } else {
+            const empresas = await prisma.$queryRawUnsafe(`
+                SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+            `, `%${sessionToken}%`);
+            if (empresas.length > 0) {
+                empresaId = empresas[0].id;
+            }
+        }
+
+        if (!empresaId) return res.status(403).json({ message: 'Sessão inválida.' });
 
         // 2. Gestão do Cliente (Cria se não existir na tabela crm_clientes)
         const clienteExistente = await prisma.$queryRawUnsafe(`
