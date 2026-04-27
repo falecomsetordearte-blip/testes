@@ -72,6 +72,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const roteamentoPermissoes = {
             "/carteira.html": "carteira",
             "/crm.html": "crm",
+            "/clientes.html": "crm",
             "/painel.html": "arte",
             "/impressao/painel.html": "impressao",
             "/acabamento/acabamento.html": "acabamento",
