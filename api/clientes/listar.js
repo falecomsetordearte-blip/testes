@@ -51,7 +51,14 @@ module.exports = async (req, res) => {
 
         const clientes = await prisma.$queryRawUnsafe(sql, ...params);
 
-        return res.status(200).json(clientes);
+        // Corrigir serialização de BigInt para JSON
+        const clientesFormatados = clientes.map(c => ({
+            ...c,
+            total_pedidos: Number(c.total_pedidos),
+            total_gasto: parseFloat(c.total_gasto || 0)
+        }));
+
+        return res.status(200).json(clientesFormatados);
 
     } catch (error) {
         console.error("Erro Clientes Listar:", error);

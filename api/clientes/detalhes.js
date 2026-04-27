@@ -38,7 +38,14 @@ module.exports = async (req, res) => {
             ORDER BY id DESC
         `, empresaId, nome);
 
-        return res.status(200).json(pedidos);
+        const pedidosFormatados = pedidos.map(p => ({
+            ...p,
+            id: Number(p.id),
+            valor_pago: parseFloat(p.valor_pago || 0),
+            valor_restante: parseFloat(p.valor_restante || 0)
+        }));
+
+        return res.status(200).json(pedidosFormatados);
 
     } catch (error) {
         console.error("Erro Detalhes Cliente:", error);
