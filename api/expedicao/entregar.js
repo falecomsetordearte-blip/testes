@@ -14,13 +14,24 @@ module.exports = async (req, res) => {
         const { sessionToken, id } = req.body;
         if (!sessionToken || !id) return res.status(400).json({ message: 'Dados incompletos' });
 
-        // 1. Validar Empresa
-        const empresas = await prisma.$queryRawUnsafe(`
-            SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+        // 1. Identificar Empresa pelo Token
+        let empresaId = null;
+        const users = await prisma.$queryRawUnsafe(`
+            SELECT empresa_id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1
         `, `%${sessionToken}%`);
 
-        if (empresas.length === 0) return res.status(403).json({ message: 'Sessão inválida' });
-        const empresaId = empresas[0].id;
+        if (users.length > 0) {
+            empresaId = users[0].empresa_id;
+        } else {
+            const empresasLegacy = await prisma.$queryRawUnsafe(`
+                SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1
+            `, `%${sessionToken}%`);
+            if (empresasLegacy.length > 0) {
+                empresaId = empresasLegacy[0].id;
+            }
+        }
+
+        if (!empresaId) return res.status(403).json({ message: 'Sessão inválida' });
 
         // 2. Atualizar para Entregue e Mover etapa para CONCLUÍDO
         const resultado = await prisma.$executeRawUnsafe(`
