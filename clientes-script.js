@@ -9,12 +9,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function carregarClientes(busca = '') {
     const grid = document.getElementById('clientes-grid');
-    grid.innerHTML = `
-        <div class="cliente-card skeleton" style="height: 180px;"></div>
-        <div class="cliente-card skeleton" style="height: 180px;"></div>
-        <div class="cliente-card skeleton" style="height: 180px;"></div>
-        <div class="cliente-card skeleton" style="height: 180px;"></div>
+    const skeletonRow = `
+        <tr class="skeleton-row">
+            <td><div class="skeleton-line" style="width:60%;"></div></td>
+            <td><div class="skeleton-line" style="width:80%;"></div></td>
+            <td><div class="skeleton-line" style="width:40%; margin:0 auto;"></div></td>
+            <td><div class="skeleton-line" style="width:50%; margin-left:auto;"></div></td>
+            <td><div class="skeleton-line" style="width:30px; border-radius:50%;"></div></td>
+        </tr>
     `;
+    grid.innerHTML = skeletonRow + skeletonRow + skeletonRow + skeletonRow + skeletonRow;
 
     const token = localStorage.getItem('sessionToken');
     
@@ -30,11 +34,13 @@ async function carregarClientes(busca = '') {
 
         if (clientes.length === 0) {
             grid.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #64748b;">
-                    <i class="fas fa-users-slash" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
-                    <h3>Nenhum cliente encontrado</h3>
-                    <p>Tente buscar por outro nome ou número.</p>
-                </div>
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 50px 20px; color: #64748b;">
+                        <i class="fas fa-users-slash" style="font-size: 2.5rem; margin-bottom: 12px; opacity: 0.5; display: block;"></i>
+                        <strong>Nenhum cliente encontrado</strong>
+                        <p style="margin: 5px 0 0; font-size: 0.85rem;">Tente buscar por outro nome ou número.</p>
+                    </td>
+                </tr>
             `;
             return;
         }
@@ -44,34 +50,38 @@ async function carregarClientes(busca = '') {
             const formatWpp = cliente.whatsapp ? cliente.whatsapp.replace(/\D/g, '') : '';
             const wppDisplay = formatWpp ? `(${formatWpp.substring(0,2)}) ${formatWpp.substring(2,7)}-${formatWpp.substring(7)}` : 'Não informado';
             
-            const card = document.createElement('div');
-            card.className = 'cliente-card';
-            card.onclick = () => abrirDetalhes(cliente.nome, formatWpp);
+            const tr = document.createElement('tr');
+            tr.onclick = () => abrirDetalhes(cliente.nome, formatWpp);
             
-            card.innerHTML = `
-                <div class="cliente-icon"><i class="fas fa-user"></i></div>
-                <div class="cliente-nome">${cliente.nome}</div>
-                <div class="cliente-info"><i class="fab fa-whatsapp"></i> ${wppDisplay}</div>
-                
-                ${formatWpp ? `<a href="https://wa.me/55${formatWpp}" target="_blank" class="wpp-btn" onclick="event.stopPropagation()"><i class="fab fa-whatsapp"></i></a>` : ''}
-                
-                <div class="cliente-stats">
-                    <div class="stat-item">
-                        <div class="stat-label">Pedidos</div>
-                        <div class="stat-value">${cliente.total_pedidos}</div>
+            tr.innerHTML = `
+                <td>
+                    <div class="cliente-nome-cell">
+                        <div class="cliente-avatar"><i class="fas fa-user"></i></div>
+                        <span class="cliente-nome-text">${cliente.nome}</span>
                     </div>
-                    <div class="stat-item" style="text-align: right;">
-                        <div class="stat-label">Total Gasto</div>
-                        <div class="stat-value money">R$ ${parseFloat(cliente.total_gasto || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                </td>
+                <td>
+                    <div class="wpp-cell">
+                        <i class="fab fa-whatsapp"></i>
+                        ${wppDisplay}
                     </div>
-                </div>
+                </td>
+                <td style="text-align:center;">
+                    <span class="badge-pedidos">${cliente.total_pedidos}</span>
+                </td>
+                <td style="text-align:right;">
+                    <span class="valor-gasto">R$ ${parseFloat(cliente.total_gasto || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                </td>
+                <td style="text-align:center;">
+                    ${formatWpp ? `<a href="https://wa.me/55${formatWpp}" target="_blank" class="wpp-btn" onclick="event.stopPropagation()"><i class="fab fa-whatsapp"></i></a>` : ''}
+                </td>
             `;
-            grid.appendChild(card);
+            grid.appendChild(tr);
         });
 
     } catch (error) {
         console.error("Erro:", error);
-        grid.innerHTML = `<div style="grid-column: 1 / -1; color: #ef4444; padding: 20px;">Falha ao carregar os dados.</div>`;
+        grid.innerHTML = `<tr><td colspan="5" style="color: #ef4444; padding: 20px; text-align:center;">Falha ao carregar os dados.</td></tr>`;
     }
 }
 
