@@ -326,6 +326,128 @@
         <div class="main-content-area">
             <div id="header-placeholder"></div>
 
+            <!-- ============================================ -->
+            <!-- BLOQUEIO: EM BREVE - Remover quando pronto  -->
+            <!-- ============================================ -->
+            <div style="
+                position: absolute;
+                inset: 0;
+                z-index: 500;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+                backdrop-filter: blur(12px);
+                overflow: hidden;
+            ">
+                <!-- Partículas decorativas -->
+                <div style="position:absolute; top:10%; left:8%; width:300px; height:300px; background: radial-gradient(circle, rgba(79,70,229,0.15) 0%, transparent 70%); border-radius:50%; pointer-events:none;"></div>
+                <div style="position:absolute; bottom:15%; right:10%; width:250px; height:250px; background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%); border-radius:50%; pointer-events:none;"></div>
+                <div style="position:absolute; top:40%; left:2%; width:180px; height:180px; background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%); border-radius:50%; pointer-events:none;"></div>
+
+                <div style="text-align:center; padding: 40px; max-width: 500px; position:relative; z-index:1;">
+                    <!-- Ícone animado -->
+                    <div style="
+                        width: 90px;
+                        height: 90px;
+                        margin: 0 auto 30px;
+                        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+                        border-radius: 24px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 2.5rem;
+                        color: white;
+                        box-shadow: 0 20px 40px rgba(79,70,229,0.4);
+                        animation: floatIcon 3s ease-in-out infinite;
+                    ">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+
+                    <!-- Badge -->
+                    <div style="
+                        display: inline-block;
+                        background: rgba(79,70,229,0.2);
+                        border: 1px solid rgba(99,102,241,0.4);
+                        color: #818cf8;
+                        font-size: 0.7rem;
+                        font-weight: 700;
+                        letter-spacing: 3px;
+                        text-transform: uppercase;
+                        padding: 5px 14px;
+                        border-radius: 20px;
+                        margin-bottom: 20px;
+                    ">Em Desenvolvimento</div>
+
+                    <!-- Título -->
+                    <h2 style="
+                        font-size: 2.2rem;
+                        font-weight: 800;
+                        color: #f1f5f9;
+                        margin: 0 0 15px;
+                        line-height: 1.2;
+                    ">Módulo de Marketing</h2>
+
+                    <!-- Descrição -->
+                    <p style="
+                        font-size: 1rem;
+                        color: #64748b;
+                        line-height: 1.7;
+                        margin: 0 0 35px;
+                    ">
+                        Estamos construindo algo incrível para você. O funil de pós-venda automatizado via WhatsApp estará disponível em breve.
+                    </p>
+
+                    <!-- Features previstas -->
+                    <div style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 12px;
+                        margin-bottom: 35px;
+                        text-align: left;
+                    ">
+                        <div style="display:flex; align-items:center; gap:12px; color:#475569; font-size:0.9rem;">
+                            <div style="width:28px; height:28px; background:rgba(79,70,229,0.15); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <i class="fas fa-check" style="color:#6366f1; font-size:0.75rem;"></i>
+                            </div>
+                            Funil de mensagens automáticas por WhatsApp
+                        </div>
+                        <div style="display:flex; align-items:center; gap:12px; color:#475569; font-size:0.9rem;">
+                            <div style="width:28px; height:28px; background:rgba(79,70,229,0.15); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <i class="fas fa-check" style="color:#6366f1; font-size:0.75rem;"></i>
+                            </div>
+                            Segmentação de clientes por tags
+                        </div>
+                        <div style="display:flex; align-items:center; gap:12px; color:#475569; font-size:0.9rem;">
+                            <div style="width:28px; height:28px; background:rgba(79,70,229,0.15); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <i class="fas fa-check" style="color:#6366f1; font-size:0.75rem;"></i>
+                            </div>
+                            Envios com delay configurável por etapa
+                        </div>
+                    </div>
+
+                    <!-- Botão voltar -->
+                    <a href="/clientes.html" style="
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 8px;
+                        background: rgba(255,255,255,0.06);
+                        border: 1px solid rgba(255,255,255,0.1);
+                        color: #94a3b8;
+                        text-decoration: none;
+                        padding: 10px 22px;
+                        border-radius: 10px;
+                        font-size: 0.9rem;
+                        font-weight: 500;
+                        transition: 0.2s;
+                    " onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.color='#e2e8f0';"
+                       onmouseout="this.style.background='rgba(255,255,255,0.06)'; this.style.color='#94a3b8';">
+                        <i class="fas fa-arrow-left"></i> Voltar para Clientes
+                    </a>
+                </div>
+            </div>
+            <!-- ============================================ -->
+
             <div class="marketing-container">
                 <div class="marketing-header">
                     <h1><i class="fas fa-bullhorn" style="color: #4f46e5;"></i> Funil de Pós-Venda</h1>
