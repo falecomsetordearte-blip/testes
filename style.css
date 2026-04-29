@@ -19,6 +19,126 @@
 }
 
 /* ========================================================= */
+/* ===                MODO NOTURNO (DARK)                === */
+/* ========================================================= */
+[data-theme="dark"] {
+    --fundo-pagina: #0f172a;
+    --branco: #1e293b;
+    --texto-escuro: #e2e8f0;
+    --cinza-texto: #94a3b8;
+    --borda: #334155;
+    --texto-claro: #1e293b;
+}
+
+[data-theme="dark"] body {
+    background-color: var(--fundo-pagina);
+    color: var(--texto-escuro);
+}
+
+[data-theme="dark"] .app-header {
+    background-color: #1e293b;
+    border-bottom-color: #334155;
+}
+
+[data-theme="dark"] #user-greeting { color: #94a3b8; }
+
+[data-theme="dark"] #logout-button {
+    color: #94a3b8;
+    border-color: #334155;
+    background-color: transparent;
+}
+[data-theme="dark"] #logout-button:hover {
+    background-color: #2d3748;
+    color: #f87171;
+    border-color: #f87171;
+}
+
+[data-theme="dark"] .app-content-wrapper { background-color: var(--fundo-pagina); }
+
+[data-theme="dark"] .dash-card,
+[data-theme="dark"] .main-panel,
+[data-theme="dark"] .side-panel,
+[data-theme="dark"] .dashboard-header {
+    background-color: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+[data-theme="dark"] .recent-pedido-item:hover,
+[data-theme="dark"] .training-item:hover { background-color: #2d3748; }
+
+[data-theme="dark"] .modal-content {
+    background-color: #1e293b;
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .modal-header {
+    border-bottom-color: #334155;
+    background-color: #1e293b;
+}
+
+[data-theme="dark"] .modal-footer {
+    background-color: #162032;
+    border-top-color: #334155;
+}
+
+[data-theme="dark"] .modal-header h3 { color: #e2e8f0; }
+[data-theme="dark"] .close-modal:hover { background-color: #2d3748; color: #e2e8f0; }
+
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group textarea,
+[data-theme="dark"] .form-group select,
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+    background-color: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .tab-buttons { background-color: #162032; border-bottom-color: #334155; }
+[data-theme="dark"] .tab-btn { color: #64748b; }
+[data-theme="dark"] .tab-btn:hover { color: #e2e8f0; }
+[data-theme="dark"] .tab-content { background-color: #1e293b; }
+
+[data-theme="dark"] .pedido-item {
+    background-color: #1e293b;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .notification-dropdown {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .notif-header {
+    background: #162032;
+    border-bottom-color: #334155;
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .notif-item { border-bottom-color: #334155; }
+[data-theme="dark"] .notif-item h4 { color: #e2e8f0; }
+[data-theme="dark"] .notif-item.alerta { background: #1e1a09; }
+
+/* Tabelas de clientes / módulos */
+[data-theme="dark"] .clientes-table-wrapper,
+[data-theme="dark"] .clientes-table thead tr {
+    background-color: #1e293b;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .clientes-table tbody td { color: #cbd5e1; }
+[data-theme="dark"] .clientes-table tbody tr:hover { background-color: #2d3748; }
+[data-theme="dark"] .clientes-table tbody tr { border-bottom-color: #334155; }
+
+/* Scroll customizado no dark */
+[data-theme="dark"] ::-webkit-scrollbar-track { background: #0f172a; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+
+/* ========================================================= */
 /* ===                RESET E BASE                       === */
 /* ========================================================= */
 html { scroll-behavior: smooth; }

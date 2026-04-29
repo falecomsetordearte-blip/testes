@@ -2,6 +2,18 @@
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("[Layout] Iniciando carregamento do layout...");
 
+    // ==========================================
+    // DARK MODE: Aplica ANTES de qualquer renderização para evitar flash
+    // ==========================================
+    (function aplicarTemaInicial() {
+        const tema = localStorage.getItem('tema') || 'light';
+        if (tema === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
+    })();
+
     // Função genérica para carregar um componente HTML
     async function loadComponent(componentPath) {
         try {
@@ -410,4 +422,61 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     await buildLayout();
+
+    // ==========================================
+    // DARK MODE: Conecta o botão após a sidebar ser montada
+    // ==========================================
+    function atualizarIconeDarkMode() {
+        const icone = document.getElementById('dark-mode-icon');
+        const btn = document.getElementById('btn-dark-mode');
+        if (!icone || !btn) return;
+
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        
+        if (isDark) {
+            icone.className = 'fas fa-sun';
+            icone.style.color = '#fbbf24';
+            btn.style.color = '#fbbf24';
+            btn.title = 'Modo claro';
+        } else {
+            icone.className = 'fas fa-moon';
+            icone.style.color = '#90a4ae';
+            btn.style.color = '#90a4ae';
+            btn.title = 'Modo noturno';
+        }
+    }
+
+    function toggleDarkMode() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const btn = document.getElementById('btn-dark-mode');
+
+        if (isDark) {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('tema', 'light');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('tema', 'dark');
+        }
+
+        // Animação de rotação no botão
+        if (btn) {
+            btn.style.transform = 'rotate(360deg)';
+            setTimeout(() => { btn.style.transform = 'rotate(0deg)'; }, 300);
+        }
+
+        atualizarIconeDarkMode();
+    }
+
+    // Aplica ícone correto e vincula evento após montar a sidebar
+    atualizarIconeDarkMode();
+    const btnDark = document.getElementById('btn-dark-mode');
+    if (btnDark) {
+        btnDark.addEventListener('click', toggleDarkMode);
+        btnDark.addEventListener('mouseenter', () => {
+            btnDark.style.background = 'rgba(255,255,255,0.08)';
+        });
+        btnDark.addEventListener('mouseleave', () => {
+            btnDark.style.background = 'none';
+        });
+    }
 });
