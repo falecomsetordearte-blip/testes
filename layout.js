@@ -73,6 +73,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             "/carteira.html": "carteira",
             "/crm.html": "crm",
             "/clientes.html": "crm",
+            "/marketing.html": "crm",
             "/painel.html": "arte",
             "/impressao/painel.html": "impressao",
             "/acabamento/acabamento.html": "acabamento",

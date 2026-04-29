@@ -172,6 +172,37 @@
             font-size: 0.95rem;
         }
 
+        .tag-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: white;
+            margin-right: 4px;
+            margin-bottom: 4px;
+        }
+
+        .btn-add-tag {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: 1px dashed #cbd5e1;
+            background: none;
+            color: #94a3b8;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+        .btn-add-tag:hover {
+            border-color: #4f46e5;
+            color: #4f46e5;
+            background: #f5f3ff;
+        }
+
         .wpp-btn {
             background: #25D366;
             color: white;
@@ -354,6 +385,15 @@
                         <input type="text" id="search-input" placeholder="Buscar por nome ou WhatsApp...">
                         <button onclick="buscarClientes()"><i class="fas fa-search"></i></button>
                     </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="abrirModalSegmentos()" style="background: white; color: #475569; border: 1px solid #cbd5e1; padding: 10px 15px; border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-tags"></i> Segmentos
+                        </button>
+                        <button onclick="abrirModalNovoCliente()" style="background: #4f46e5; color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-plus"></i> Novo Cliente
+                        </button>
+                    </div>
                 </div>
 
                 <div class="clientes-table-wrapper">
@@ -363,6 +403,7 @@
                                 <th><i class="fas fa-user" style="margin-right:6px;"></i>Nome</th>
                                 <th><i class="fab fa-whatsapp" style="margin-right:6px;"></i>WhatsApp</th>
                                 <th style="text-align:center;"><i class="fas fa-shopping-bag" style="margin-right:6px;"></i>Pedidos</th>
+                                <th><i class="fas fa-tags" style="margin-right:6px;"></i>Segmentos</th>
                                 <th style="text-align:right;"><i class="fas fa-dollar-sign" style="margin-right:6px;"></i>Total Gasto</th>
                                 <th></th>
                             </tr>
@@ -381,7 +422,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="modal-nome-cliente">Detalhes do Cliente</h2>
-                <button class="modal-close" onclick="fecharModal()"><i class="fas fa-times"></i></button>
+                <button class="modal-close" onclick="fecharModal('modal-detalhes')"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <div style="display: flex; gap: 20px; margin-bottom: 20px; align-items: center; background: #f8fafc; padding: 15px; border-radius: 10px;">
@@ -396,6 +437,67 @@
                 <ul class="historico-list" id="historico-list">
                     <!-- Lista de pedidos -->
                 </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Novo Cliente -->
+    <div class="modal-overlay" id="modal-novo-cliente">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2>Novo Cliente</h2>
+                <button class="modal-close" onclick="fecharModal('modal-novo-cliente')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-novo-cliente" onsubmit="salvarNovoCliente(event)">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #64748b; margin-bottom: 5px;">Nome Completo</label>
+                        <input type="text" id="novo-nome" required style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #64748b; margin-bottom: 5px;">WhatsApp (com DDD)</label>
+                        <input type="text" id="novo-wpp" required placeholder="Ex: 28999998888" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                    </div>
+                    <button type="submit" style="width: 100%; background: #4f46e5; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer;">Cadastrar Cliente</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Gerenciar Segmentos -->
+    <div class="modal-overlay" id="modal-segmentos">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Gerenciar Segmentos</h2>
+                <button class="modal-close" onclick="fecharModal('modal-segmentos')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9;">
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="input-novo-segmento" placeholder="Novo segmento (ex: Farmácia)" style="flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                        <button onclick="criarSegmento()" style="background: #10b981; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: 600; cursor: pointer;">Criar</button>
+                    </div>
+                </div>
+                <div id="lista-segmentos-gestao" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Lista de segmentos aqui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Aplicar Tag -->
+    <div class="modal-overlay" id="modal-aplicar-tag">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Aplicar Segmentos</h2>
+                <button class="modal-close" onclick="fecharModal('modal-aplicar-tag')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 15px;">Selecione os segmentos para <strong id="tag-nome-cliente">...</strong></p>
+                <div id="lista-tags-disponiveis" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Checkboxes de tags -->
+                </div>
+                <button onclick="fecharModal('modal-aplicar-tag')" style="width: 100%; margin-top: 20px; background: #f1f5f9; color: #475569; border: none; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer;">Concluído</button>
             </div>
         </div>
     </div>

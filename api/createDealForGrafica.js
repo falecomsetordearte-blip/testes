@@ -88,6 +88,31 @@ module.exports = async (req, res) => {
         const newPedidoId = insertResult[0].id;
         console.log(`[OK] Pedido salvo com Sucesso! ID: ${newPedidoId}`);
 
+        // --- 3.5. [NOVO] Gatilho de Marketing: Cadastrar/Atualizar Cliente ---
+        if (formData.wppCliente) {
+            console.log(`[MARKETING] Sincronizando cliente para o funil...`);
+            try {
+                const wppLimpo = formData.wppCliente.replace(/\D/g, '');
+                const existeMarketing = await prisma.$queryRawUnsafe(`
+                    SELECT id FROM marketing_clientes WHERE empresa_id = $1 AND whatsapp = $2
+                `, empresa.id, wppLimpo);
+
+                if (existeMarketing.length > 0) {
+                    await prisma.$queryRawUnsafe(`
+                        UPDATE marketing_clientes SET nome = $1 WHERE id = $2
+                    `, formData.nomeCliente || 'Cliente', existeMarketing[0].id);
+                } else {
+                    await prisma.$queryRawUnsafe(`
+                        INSERT INTO marketing_clientes (empresa_id, nome, whatsapp, criado_em) 
+                        VALUES ($1, $2, $3, NOW())
+                    `, empresa.id, formData.nomeCliente || 'Cliente', wppLimpo);
+                }
+                console.log(`[MARKETING] Cliente sincronizado.`);
+            } catch (errMkt) {
+                console.error("[MARKETING] Erro ao sincronizar cliente:", errMkt.message);
+            }
+        }
+
         // --- 4. BLOCO DE AUTOMAÇÃO CHATAPP (SETOR DE ARTE) ---
         if (arteNormalizada.includes("setor") && arteNormalizada.includes("arte")) {
             console.log(`[CHATAPP] Iniciando criação de grupo duplo (Produção)...`);

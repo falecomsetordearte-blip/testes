@@ -31,31 +31,50 @@ module.exports = async (req, res) => {
         if (!empresaId) return res.status(403).json({ message: 'Sessão inválida' });
 
         // 2. Montar Query de busca dos clientes
+        // Buscamos da tabela de marketing_clientes e trazemos as tags agregadas
         let sql = `
             SELECT 
-                nome_cliente as nome, 
-                MAX(whatsapp_cliente) as whatsapp,
-                COUNT(id) as total_pedidos,
-                SUM(COALESCE(CAST(valor_pago AS NUMERIC), 0) + COALESCE(CAST(valor_restante AS NUMERIC), 0)) as total_gasto
-            FROM pedidos
-            WHERE empresa_id = $1 AND nome_cliente IS NOT NULL AND nome_cliente != ''
+                c.id,
+                c.nome, 
+                c.whatsapp,
+                c.criado_em,
+                (
+                    SELECT json_agg(json_build_object('id', s.id, 'nome', s.nome, 'cor', s.cor))
+                    FROM marketing_cliente_segmentos cs
+                    JOIN marketing_segmentos s ON cs.segmento_id = s.id
+                    WHERE cs.cliente_id = c.id
+                ) as tags,
+                COALESCE(p.total_pedidos, 0) as total_pedidos,
+                COALESCE(p.total_gasto, 0) as total_gasto
+            FROM marketing_clientes c
+            LEFT JOIN (
+                SELECT 
+                    whatsapp_cliente,
+                    COUNT(id) as total_pedidos,
+                    SUM(COALESCE(CAST(valor_pago AS NUMERIC), 0) + COALESCE(CAST(valor_restante AS NUMERIC), 0)) as total_gasto
+                FROM pedidos
+                WHERE empresa_id = $1
+                GROUP BY whatsapp_cliente
+            ) p ON c.whatsapp = p.whatsapp_cliente
+            WHERE c.empresa_id = $1
         `;
         const params = [empresaId];
 
         if (query) {
-            sql += ` AND (nome_cliente ILIKE $2 OR whatsapp_cliente ILIKE $2)`;
+            sql += ` AND (c.nome ILIKE $2 OR c.whatsapp ILIKE $2)`;
             params.push(`%${query}%`);
         }
 
-        sql += ` GROUP BY nome_cliente ORDER BY total_pedidos DESC`;
+        sql += ` ORDER BY c.criado_em DESC`;
 
         const clientes = await prisma.$queryRawUnsafe(sql, ...params);
 
-        // Corrigir serialização de BigInt para JSON
+        // Corrigir serialização para JSON
         const clientesFormatados = clientes.map(c => ({
             ...c,
             total_pedidos: Number(c.total_pedidos),
-            total_gasto: parseFloat(c.total_gasto || 0)
+            total_gasto: parseFloat(c.total_gasto || 0),
+            tags: c.tags || []
         }));
 
         return res.status(200).json(clientesFormatados);

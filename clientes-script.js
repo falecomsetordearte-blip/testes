@@ -1,6 +1,9 @@
 // /clientes-script.js
+let segmentosCache = [];
+
 document.addEventListener("DOMContentLoaded", () => {
     carregarClientes();
+    carregarSegmentos(); // Cache inicial dos segmentos
 
     document.getElementById('search-input').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') buscarClientes();
@@ -14,6 +17,7 @@ async function carregarClientes(busca = '') {
             <td><div class="skeleton-line" style="width:60%;"></div></td>
             <td><div class="skeleton-line" style="width:80%;"></div></td>
             <td><div class="skeleton-line" style="width:40%; margin:0 auto;"></div></td>
+            <td><div class="skeleton-line" style="width:100px;"></div></td>
             <td><div class="skeleton-line" style="width:50%; margin-left:auto;"></div></td>
             <td><div class="skeleton-line" style="width:30px; border-radius:50%;"></div></td>
         </tr>
@@ -35,7 +39,7 @@ async function carregarClientes(busca = '') {
         if (clientes.length === 0) {
             grid.innerHTML = `
                 <tr>
-                    <td colspan="5" style="text-align: center; padding: 50px 20px; color: #64748b;">
+                    <td colspan="6" style="text-align: center; padding: 50px 20px; color: #64748b;">
                         <i class="fas fa-users-slash" style="font-size: 2.5rem; margin-bottom: 12px; opacity: 0.5; display: block;"></i>
                         <strong>Nenhum cliente encontrado</strong>
                         <p style="margin: 5px 0 0; font-size: 0.85rem;">Tente buscar por outro nome ou número.</p>
@@ -53,6 +57,11 @@ async function carregarClientes(busca = '') {
             const tr = document.createElement('tr');
             tr.onclick = () => abrirDetalhes(cliente.nome, formatWpp);
             
+            // Renderizar tags
+            const tagsHtml = (cliente.tags || []).map(t => 
+                `<span class="tag-badge" style="background: ${t.cor || '#3b82f6'}">${t.nome}</span>`
+            ).join('');
+
             tr.innerHTML = `
                 <td>
                     <div class="cliente-nome-cell">
@@ -69,6 +78,14 @@ async function carregarClientes(busca = '') {
                 <td style="text-align:center;">
                     <span class="badge-pedidos">${cliente.total_pedidos}</span>
                 </td>
+                <td>
+                    <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
+                        ${tagsHtml}
+                        <button class="btn-add-tag" onclick="event.stopPropagation(); abrirModalAplicarTag(${cliente.id}, '${cliente.nome.replace(/'/g, "\\'")}', ${JSON.stringify((cliente.tags || []).map(t => t.id))})" title="Adicionar Tag">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </td>
                 <td style="text-align:right;">
                     <span class="valor-gasto">R$ ${parseFloat(cliente.total_gasto || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
                 </td>
@@ -81,7 +98,7 @@ async function carregarClientes(busca = '') {
 
     } catch (error) {
         console.error("Erro:", error);
-        grid.innerHTML = `<tr><td colspan="5" style="color: #ef4444; padding: 20px; text-align:center;">Falha ao carregar os dados.</td></tr>`;
+        grid.innerHTML = `<tr><td colspan="6" style="color: #ef4444; padding: 20px; text-align:center;">Falha ao carregar os dados.</td></tr>`;
     }
 }
 
@@ -90,6 +107,156 @@ function buscarClientes() {
     carregarClientes(busca);
 }
 
+// MODAIS
+function fecharModal(id) {
+    document.getElementById(id).classList.remove('active');
+}
+
+function abrirModalNovoCliente() {
+    document.getElementById('form-novo-cliente').reset();
+    document.getElementById('modal-novo-cliente').classList.add('active');
+}
+
+async function salvarNovoCliente(e) {
+    e.preventDefault();
+    const nome = document.getElementById('novo-nome').value;
+    const whatsapp = document.getElementById('novo-wpp').value.replace(/\D/g, '');
+    const token = localStorage.getItem('sessionToken');
+
+    try {
+        const response = await fetch('/api/clientes/cadastrar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionToken: token, nome, whatsapp })
+        });
+
+        if (!response.ok) throw new Error('Erro ao cadastrar');
+        
+        fecharModal('modal-novo-cliente');
+        carregarClientes();
+        alert('Cliente cadastrado com sucesso!');
+    } catch (error) {
+        alert('Erro ao cadastrar cliente');
+    }
+}
+
+// GESTÃO DE SEGMENTOS (TAGS)
+async function carregarSegmentos() {
+    const token = localStorage.getItem('sessionToken');
+    try {
+        const response = await fetch('/api/clientes/segmentos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionToken: token, action: 'list' })
+        });
+        if (response.ok) {
+            segmentosCache = await response.json();
+        }
+    } catch (error) {
+        console.error("Erro ao carregar segmentos:", error);
+    }
+}
+
+async function abrirModalSegmentos() {
+    await carregarSegmentos();
+    const lista = document.getElementById('lista-segmentos-gestao');
+    lista.innerHTML = '';
+    
+    segmentosCache.forEach(s => {
+        lista.innerHTML += `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 12px; height: 12px; border-radius: 50%; background: ${s.cor || '#3b82f6'}"></div>
+                    <span style="font-weight: 500; font-size: 0.9rem;">${s.nome}</span>
+                </div>
+                <button onclick="excluirSegmento(${s.id})" style="background: none; border: none; color: #94a3b8; cursor: pointer; transition: 0.2s;"><i class="fas fa-trash-alt"></i></button>
+            </div>
+        `;
+    });
+    
+    document.getElementById('modal-segmentos').classList.add('active');
+}
+
+async function criarSegmento() {
+    const nome = document.getElementById('input-novo-segmento').value;
+    if (!nome) return;
+    
+    const token = localStorage.getItem('sessionToken');
+    try {
+        const response = await fetch('/api/clientes/segmentos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionToken: token, action: 'create', nome })
+        });
+        if (response.ok) {
+            document.getElementById('input-novo-segmento').value = '';
+            abrirModalSegmentos();
+            carregarClientes(); // Recarrega para refletir se precisar
+        }
+    } catch (error) {
+        alert('Erro ao criar segmento');
+    }
+}
+
+async function excluirSegmento(id) {
+    if (!confirm('Tem certeza que deseja excluir este segmento? Ele será removido de todos os clientes.')) return;
+    
+    const token = localStorage.getItem('sessionToken');
+    try {
+        await fetch('/api/clientes/segmentos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionToken: token, action: 'delete', id })
+        });
+        abrirModalSegmentos();
+        carregarClientes();
+    } catch (error) {
+        alert('Erro ao excluir');
+    }
+}
+
+// APLICAR TAG AO CLIENTE
+async function abrirModalAplicarTag(clienteId, nomeCliente, tagsAtuaisIds) {
+    document.getElementById('tag-nome-cliente').innerText = nomeCliente;
+    const lista = document.getElementById('lista-tags-disponiveis');
+    lista.innerHTML = '';
+    
+    if (segmentosCache.length === 0) await carregarSegmentos();
+    
+    segmentosCache.forEach(s => {
+        const checked = tagsAtuaisIds.includes(s.id) ? 'checked' : '';
+        lista.innerHTML += `
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 6px 10px; border-radius: 6px; background: #f8fafc; border: 1px solid #e2e8f0;">
+                <input type="checkbox" ${checked} onchange="toggleTag(${clienteId}, ${s.id}, this.checked)">
+                <div style="width: 10px; height: 10px; border-radius: 50%; background: ${s.cor || '#3b82f6'}"></div>
+                <span style="font-size: 0.9rem;">${s.nome}</span>
+            </label>
+        `;
+    });
+    
+    document.getElementById('modal-aplicar-tag').classList.add('active');
+}
+
+async function toggleTag(clienteId, segmentoId, add) {
+    const token = localStorage.getItem('sessionToken');
+    try {
+        await fetch('/api/clientes/tags', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                sessionToken: token, 
+                action: add ? 'add' : 'remove', 
+                clienteId, 
+                segmentoId 
+            })
+        });
+        carregarClientes(); // Atualiza a lista para mostrar a nova tag
+    } catch (error) {
+        console.error("Erro ao alterar tag:", error);
+    }
+}
+
+// DETALHES EXISTENTES
 async function abrirDetalhes(nome, wpp) {
     document.getElementById('modal-nome-cliente').innerText = nome;
     document.getElementById('modal-wpp-cliente').innerText = wpp ? `(${wpp.substring(0,2)}) ${wpp.substring(2,7)}-${wpp.substring(7)}` : 'Não informado';
@@ -151,8 +318,4 @@ async function abrirDetalhes(nome, wpp) {
     } catch (error) {
         lista.innerHTML = `<li style="text-align:center; padding:20px; color:#ef4444;">Erro ao carregar histórico.</li>`;
     }
-}
-
-function fecharModal() {
-    document.getElementById('modal-detalhes').classList.remove('active');
 }
