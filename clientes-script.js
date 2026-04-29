@@ -81,7 +81,7 @@ async function carregarClientes(busca = '') {
                 <td>
                     <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
                         ${tagsHtml}
-                        <button class="btn-add-tag" onclick="event.stopPropagation(); abrirModalAplicarTag(${cliente.id}, '${cliente.nome.replace(/'/g, "\\'")}', ${JSON.stringify((cliente.tags || []).map(t => t.id))})" title="Adicionar Tag">
+                        <button class="btn-add-tag" onclick="event.stopPropagation(); abrirModalAplicarTag(${cliente.id || 0}, '${cliente.nome.replace(/'/g, "\\'") }', ${JSON.stringify((cliente.tags || []).map(t => t.id))})" title="Adicionar Tag">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
@@ -89,7 +89,10 @@ async function carregarClientes(busca = '') {
                 <td style="text-align:right;">
                     <span class="valor-gasto">R$ ${parseFloat(cliente.total_gasto || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
                 </td>
-                <td style="text-align:center;">
+                <td style="text-align:center; white-space: nowrap;">
+                    <button class="wpp-btn" style="background: #f1f5f9; color: #64748b; margin-right: 6px;" onclick="event.stopPropagation(); abrirModalEditar('${cliente.nome.replace(/'/g, "\\'") }', '${formatWpp}')" title="Editar cliente">
+                        <i class="fas fa-edit" style="font-size: 0.85rem;"></i>
+                    </button>
                     ${formatWpp ? `<a href="https://wa.me/55${formatWpp}" target="_blank" class="wpp-btn" onclick="event.stopPropagation()"><i class="fab fa-whatsapp"></i></a>` : ''}
                 </td>
             `;
@@ -115,6 +118,43 @@ function fecharModal(id) {
 function abrirModalNovoCliente() {
     document.getElementById('form-novo-cliente').reset();
     document.getElementById('modal-novo-cliente').classList.add('active');
+}
+
+// EDITAR CLIENTE
+function abrirModalEditar(nome, wpp) {
+    document.getElementById('editar-nome').value = nome;
+    document.getElementById('editar-wpp').value = wpp;
+    document.getElementById('editar-wpp-original').value = wpp;
+    document.getElementById('modal-editar-cliente').classList.add('active');
+}
+
+async function salvarEdicaoCliente(e) {
+    e.preventDefault();
+    const nome = document.getElementById('editar-nome').value.trim();
+    const whatsapp = document.getElementById('editar-wpp').value.replace(/\D/g, '');
+    const token = localStorage.getItem('sessionToken');
+
+    const btn = e.target.querySelector('button[type=submit]');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+
+    try {
+        const response = await fetch('/api/clientes/cadastrar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionToken: token, nome, whatsapp })
+        });
+
+        if (!response.ok) throw new Error('Erro ao salvar');
+        
+        fecharModal('modal-editar-cliente');
+        carregarClientes();
+    } catch (error) {
+        alert('Erro ao salvar edição do cliente.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
+    }
 }
 
 async function salvarNovoCliente(e) {
