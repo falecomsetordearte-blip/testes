@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
 
         // Tenta achar via Painel_Usuarios (Novo/Migrado)
         const userNovo = await prisma.$queryRawUnsafe(`
-            SELECT e.id, u.nome, e.asaas_subscription_id, e.asaas_customer_id, e.assinatura_status 
+            SELECT e.id, u.nome, e.asaas_subscription_id, e.asaas_customer_id, e.assinatura_status, e.plan_type 
             FROM painel_usuarios u
             JOIN empresas e ON u.empresa_id = e.id
             WHERE u.session_tokens LIKE $1 LIMIT 1
@@ -40,7 +40,7 @@ module.exports = async (req, res) => {
         } else {
             // Tenta achar na raiz Empresas (Legacy)
             const empresasLegacy = await prisma.$queryRawUnsafe(`
-                SELECT id, nome_fantasia as nome, asaas_subscription_id, asaas_customer_id, assinatura_status 
+                SELECT id, nome_fantasia as nome, asaas_subscription_id, asaas_customer_id, assinatura_status, plan_type 
                 FROM empresas 
                 WHERE session_tokens LIKE $1 LIMIT 1
             `, tokenBusca);
@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
             } else {
                 // Tenta Designer
                 const designers = await prisma.$queryRawUnsafe(`
-                    SELECT designer_id as id, nome, asaas_subscription_id, asaas_customer_id, assinatura_status 
+                    SELECT designer_id as id, nome, asaas_subscription_id, asaas_customer_id, assinatura_status, plan_type 
                     FROM designers_financeiro 
                     WHERE session_tokens LIKE $1 LIMIT 1
                 `, tokenBusca);
@@ -70,6 +70,7 @@ module.exports = async (req, res) => {
             return res.status(200).json({ 
                 hasSubscription: false, 
                 status: usuario.assinatura_status || 'INATIVO',
+                plan_type: usuario.plan_type || 'FREE',
                 tipo: tipo
             });
         }
@@ -91,6 +92,7 @@ module.exports = async (req, res) => {
         return res.status(200).json({
             hasSubscription: true,
             status: usuario.assinatura_status || subResponse.data.status,
+            plan_type: usuario.plan_type || 'FREE',
             value: subResponse.data.value,
             cycle: subResponse.data.cycle,
             nextDueDate: subResponse.data.nextDueDate,

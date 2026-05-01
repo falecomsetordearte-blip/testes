@@ -123,12 +123,17 @@ module.exports = async (req, res) => {
 
         console.log(`[SUBSCRIBE ASAAS] Assinatura criada! ID Assinatura: ${subscriptionId}`);
 
-        // Atualiza banco com ID da assinatura
-        await prisma.$executeRawUnsafe(`UPDATE ${tabela} SET asaas_subscription_id = $1, assinatura_status = 'PENDING' WHERE ${idColuna} = $2`, subscriptionId, usuario.id);
-        
-        // Observação: O chatapp_plano será ativado apenas via Webhook após confirmação do pagamento.
+        // Atualiza banco com ID da assinatura + plan_type definitivo
+        // Mapeia o 'tipo' do front-end para o plan_type padronizado do banco
+        const planTypeMap = { designer: 'DESIGNER', empresa: 'BASIC', empresa_premium: 'PRO' };
+        const planType = planTypeMap[tipo] || 'FREE';
 
-        console.log(`[SUBSCRIBE ASAAS] Status 'PENDING' e asaas_subscription_id salvos no banco.`);
+        await prisma.$executeRawUnsafe(
+            `UPDATE ${tabela} SET asaas_subscription_id = $1, assinatura_status = 'PENDING', plan_type = $2 WHERE ${idColuna} = $3`,
+            subscriptionId, planType, usuario.id
+        );
+
+        console.log(`[SUBSCRIBE ASAAS] Status 'PENDING', plan_type '${planType}' e asaas_subscription_id salvos no banco.`);
 
         // 4. Buscar a cobrança gerada por esta assinatura
         console.log(`[SUBSCRIBE ASAAS] Buscando cobranças (payments) vinculadas à assinatura ${subscriptionId}...`);

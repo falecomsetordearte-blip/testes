@@ -27,44 +27,41 @@ module.exports = async (req, res) => {
         if (['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED'].includes(event.event)) {
             console.log(`[WEBHOOK ASAAS] Ação: ATIVAR assinatura ${subId}`);
 
-            // Ativa em ambas as tabelas (o ID é único)
-            // Ativa em ambas as tabelas (o ID é único)
+            // Ativa status em ambas as tabelas
             const resEmpresa = await prisma.$executeRawUnsafe(`UPDATE empresas SET assinatura_status = 'ACTIVE' WHERE asaas_subscription_id = $1`, subId);
             const resDesigner = await prisma.$executeRawUnsafe(`UPDATE designers_financeiro SET assinatura_status = 'ACTIVE' WHERE asaas_subscription_id = $1`, subId);
 
             console.log(`[WEBHOOK ASAAS] Resultado Update: Empresas afetadas: ${resEmpresa} | Designers afetados: ${resDesigner}`);
 
-            // VERIFICA SE É PLANO PRO (R$ 490,00) PARA ATIVAR RECURSOS DE WHATSAPP
+            // VERIFICA O plan_type SALVO NO BANCO (definido em subscribe.js) — NÃO mais pelo valor pago
             if (resEmpresa > 0) {
-                // Buscamos o valor da cobrança para confirmar se é o plano PRO
-                const valorPago = event.payment.value;
-                if (valorPago >= 490.00) {
-                    console.log(`[WEBHOOK ASAAS] Detectado pagamento do Plano PRO. Ativando recursos...`);
+                const empresaRows = await prisma.$queryRawUnsafe(`SELECT nome_fantasia, plan_type FROM empresas WHERE asaas_subscription_id = $1 LIMIT 1`, subId);
+                if (empresaRows.length > 0 && empresaRows[0].plan_type === 'PRO') {
+                    console.log(`[WEBHOOK ASAAS] Detectado plan_type PRO. Ativando recursos ChatApp...`);
                     await prisma.$executeRawUnsafe(`UPDATE empresas SET chatapp_plano = 'PREMIUM', chatapp_status = 'AGUARDANDO_ADMIN' WHERE asaas_subscription_id = $1`, subId);
-                    
-                    const empresasPrem = await prisma.$queryRawUnsafe(`SELECT nome_fantasia FROM empresas WHERE asaas_subscription_id = $1 LIMIT 1`, subId);
-                    await prisma.$executeRawUnsafe(`INSERT INTO notificacoes_globais (titulo, mensagem, tipo, ativa) VALUES ($1, $2, 'warning', true)`,
-                        '🚨 NOVO UPGRADE PRO PAGO', 
-                        `O cliente ${empresasPrem[0].nome_fantasia} ativou o plano PRO. Vincule a licença e o link do QR Code no banco para liberar o acesso dele.`
+                    await prisma.$executeRawUnsafe(
+                        `INSERT INTO notificacoes_globais (titulo, mensagem, tipo, ativa) VALUES ($1, $2, 'warning', true)`,
+                        '🚨 NOVO UPGRADE PRO PAGO',
+                        `O cliente ${empresaRows[0].nome_fantasia} ativou o plano PRO. Vincule a licença e o link do QR Code no banco para liberar o acesso dele.`
                     );
                 }
             }
         }
 
-        // Se a assinatura foi cancelada ou venceu
         else if (['PAYMENT_OVERDUE', 'PAYMENT_DELETED', 'SUBSCRIPTION_DELETED'].includes(event.event)) {
             console.log(`[WEBHOOK ASAAS] Ação: INATIVAR assinatura ${subId}`);
 
-            // Verifica se é premium antes de inativar para alertar
-            const empresasPrem = await prisma.$queryRawUnsafe(`SELECT nome_fantasia, chatapp_plano FROM empresas WHERE asaas_subscription_id = $1 LIMIT 1`, subId);
-            
-            const resEmpresa = await prisma.$executeRawUnsafe(`UPDATE empresas SET assinatura_status = 'INATIVO', chatapp_status = 'INATIVO' WHERE asaas_subscription_id = $1`, subId);
-            const resDesigner = await prisma.$executeRawUnsafe(`UPDATE designers_financeiro SET assinatura_status = 'INATIVO' WHERE asaas_subscription_id = $1`, subId);
+            // Verifica se é PRO antes de inativar, para alertar o admin
+            const empresasPrem = await prisma.$queryRawUnsafe(`SELECT nome_fantasia, plan_type FROM empresas WHERE asaas_subscription_id = $1 LIMIT 1`, subId);
 
-            if (empresasPrem.length > 0 && empresasPrem[0].chatapp_plano === 'PREMIUM') {
+            // Inativa e reseta plan_type para FREE em ambas as tabelas
+            const resEmpresa = await prisma.$executeRawUnsafe(`UPDATE empresas SET assinatura_status = 'INATIVO', plan_type = 'FREE', chatapp_status = 'INATIVO' WHERE asaas_subscription_id = $1`, subId);
+            const resDesigner = await prisma.$executeRawUnsafe(`UPDATE designers_financeiro SET assinatura_status = 'INATIVO', plan_type = 'FREE' WHERE asaas_subscription_id = $1`, subId);
+
+            if (empresasPrem.length > 0 && empresasPrem[0].plan_type === 'PRO') {
                 await prisma.$executeRawUnsafe(`INSERT INTO notificacoes_globais (titulo, mensagem, tipo, ativa) VALUES ($1, $2, 'error', true)`,
-                    '🚨 URGENTE: DOWNGRADE/INADIMPLÊNCIA', 
-                    `O cliente ${empresasPrem[0].nome_fantasia} não renovou o Premium. Vá no ChatApp e cancele a licença associada para evitar cobranças.`
+                    '🚨 URGENTE: DOWNGRADE/INADIMPLÊNCIA',
+                    `O cliente ${empresasPrem[0].nome_fantasia} não renovou o PRO. Vá no ChatApp e cancele a licença associada para evitar cobranças.`
                 );
             }
 

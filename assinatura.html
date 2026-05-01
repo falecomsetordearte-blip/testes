@@ -422,10 +422,14 @@
             document.getElementById('dashboard-view').style.display = 'block';
             currentActivePlan = data.tipo;
 
-            let nomePlano = 'Plano Ativo';
-            if (data.tipo === 'designer') nomePlano = 'Plano Designer Pro';
-            else if (data.tipo === 'empresa') nomePlano = 'Plano Básico';
-            else if (data.tipo === 'empresa_premium') nomePlano = 'Plano PRO';
+            // Usa plan_type retornado pelo backend (fonte única de verdade)
+            const planNames = {
+                FREE:     'Plano Free',
+                BASIC:    'Plano Básico',
+                PRO:      'Plano PRO',
+                DESIGNER: 'Plano Designer'
+            };
+            let nomePlano = planNames[data.plan_type] || 'Plano Ativo';
             
             document.getElementById('disp-plan-name').innerText = nomePlano;
             
@@ -568,9 +572,28 @@
                     document.getElementById('success-desc').innerHTML = "Sua conta já está liberada com todos os recursos PRO.<br><br><a href='/admin-configuracoes.html' style='color:var(--primary); font-weight:700;'>Clique aqui para configurar sua linha de WhatsApp</a>";
                 } else if (selectedMethod === 'PIX') {
                     document.getElementById('success-title').innerText = "Aguardando PIX";
+                    document.getElementById('success-desc').innerText = "Escaneie o QR Code abaixo. Assim que o pagamento for confirmado, seu plano será ativado automaticamente.";
                     document.getElementById('pix-qr-area').style.display = 'block';
                     document.getElementById('pix-qr-img').src = `data:image/jpeg;base64,${data.pixUrl}`;
                     document.getElementById('pix-code').value = data.pixCode;
+                    document.getElementById('checkout-success').style.display = 'block';
+
+                    // Polling: detecta quando o pagamento PIX foi confirmado e atualiza a UI
+                    const pixPollingInterval = setInterval(async () => {
+                        try {
+                            const pollRes = await fetch('/api/asaas/status', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ token, tipo: currentType })
+                            });
+                            const pollData = await pollRes.json();
+                            if (pollData.status === 'ACTIVE') {
+                                clearInterval(pixPollingInterval);
+                                closeModal();
+                                await loadSubscription(); // Atualiza painel com novo plan_type
+                            }
+                        } catch(e) { /* silencioso */ }
+                    }, 5000);
                 } else if (selectedMethod === 'BOLETO') {
                     document.getElementById('success-desc').innerHTML = `Boleto gerado. <a href="${data.boletoUrl}" target="_blank" style="color:var(--primary); font-weight:bold;">Clique aqui para abrir seu boleto.</a>`;
                 }

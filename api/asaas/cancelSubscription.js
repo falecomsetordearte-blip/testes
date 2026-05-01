@@ -61,7 +61,7 @@ module.exports = async (req, res) => {
         // Por segurança, vamos atualizar o campo asaas_subscription_id para NULL no futuro ou apenas marcar status.
         // Vamos apenas marcar como INATIVO para refletir na interface.
         
-        await prisma.$executeRawUnsafe(`UPDATE ${tabela} SET assinatura_status = 'INATIVO' WHERE ${idColuna} = $2`, usuario.id);
+        await prisma.$executeRawUnsafe(`UPDATE ${tabela} SET assinatura_status = 'INATIVO', plan_type = 'FREE' WHERE ${idColuna} = $1`, usuario.id);
 
         console.log(`[CANCEL SUBSCRIPTION] Assinatura cancelada com sucesso.`);
 

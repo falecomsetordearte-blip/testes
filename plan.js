@@ -4,15 +4,21 @@
 (function () {
     // ============================================================
     // CONFIGURAÇÃO CENTRAL DE PLANOS
-    // Adicione a key do recurso aqui para bloqueá-lo no plano FREE
+    // Para cada feature, defina o PLANO MÍNIMO necessario para acesso.
+    // Hierarquia: FREE < DESIGNER < BASIC < PRO
     // ============================================================
-    const PAID_FEATURES = [
-        'notificacoes-etapas',      // CRM: checkbox de notificação por etapa
-        'mensagens-whatsapp-config', // Configurações: personalizar mensagens WhatsApp
-        // Adicione mais features aqui no futuro:
-        // 'relatorio-financeiro',
-        // 'exportar-dados',
-    ];
+    const FEATURES = {
+        'notificacoes-etapas':       'BASIC',   // Notificações por etapa no CRM
+        'mensagens-whatsapp-config': 'BASIC',   // Configuração de mensagens WhatsApp
+        'whatsapp-linha-propria':    'PRO',     // Conexão de linha própria de WhatsApp
+        'chatapp-config':            'PRO',     // Configurações do ChatApp (QR Code)
+        // Adicione mais features aqui:
+        // 'relatorio-financeiro':  'BASIC',
+        // 'exportar-dados':        'PRO',
+    };
+
+    // Hierarquia de planos (ordem crescente de acesso)
+    const PLAN_HIERARCHY = ['FREE', 'DESIGNER', 'BASIC', 'PRO'];
 
     // ============================================================
     // GERENCIADOR DE PLANOS
@@ -20,10 +26,13 @@
     window.PlanManager = {
         plano: localStorage.getItem('userPlano') || 'FREE',
 
-        /** Verifica se o usuário pode usar o recurso */
+        /** Verifica se o usuário pode usar o recurso baseado na hierarquia de planos */
         podeUsar: function (featureKey) {
-            if (this.plano === 'PAID' || this.plano === 'TRIAL') return true;
-            return !PAID_FEATURES.includes(featureKey);
+            const required = FEATURES[featureKey];
+            if (!required) return true; // Feature não mapeada = livre para todos
+            const userIndex = PLAN_HIERARCHY.indexOf(this.plano.toUpperCase());
+            const requiredIndex = PLAN_HIERARCHY.indexOf(required);
+            return userIndex >= requiredIndex;
         },
 
         /**
@@ -119,17 +128,18 @@
                 });
                 const data = await res.json();
 
-                // Determina o plano efetivo
+                // Determina o plano efetivo baseado em status + plan_type do backend
                 const statusPagos = ['ACTIVE', 'ATIVO', 'CONFIRMED', 'PAGO', 'ASSINADO'];
-                const statusTrialExplicito = ['TRIAL'];
                 let planoEfetivo = 'FREE';
 
                 const statusAtual = (data.status_atual || '').toUpperCase();
+                const planTypeRecebido = (data.plan_type || '').toUpperCase();
 
-                if (statusPagos.includes(statusAtual)) {
-                    planoEfetivo = 'PAID';
-                } else if (statusTrialExplicito.includes(statusAtual) || (data.is_trial && data.is_active)) {
-                    planoEfetivo = 'TRIAL';
+                if (statusPagos.includes(statusAtual) && PLAN_HIERARCHY.includes(planTypeRecebido)) {
+                    // Usa o plan_type real retornado pelo backend
+                    planoEfetivo = planTypeRecebido;
+                } else if (statusPagos.includes(statusAtual)) {
+                    planoEfetivo = 'BASIC'; // Fallback: pago sem plan_type → assume BASIC
                 } else {
                     planoEfetivo = 'FREE';
                 }
