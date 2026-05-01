@@ -4,22 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sua Assinatura - Setor de Arte</title>
+    <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
+    <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
     <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-light: #6366f1;
-            --secondary: #f43f5e;
-            --premium: #10b981;
             --premium-light: #34d399;
-            --bg: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --text: #f1f5f9;
-            --text-muted: #94a3b8;
-            --glass: rgba(255, 255, 255, 0.03);
-            --border: rgba(255, 255, 255, 0.1);
+            --card-bg-local: rgba(30, 41, 59, 0.7);
+            --border-local: rgba(255, 255, 255, 0.1);
+            --text-muted-local: #94a3b8;
         }
+
+
 
         /* Removido background fixo do body para usar o do layout */
         body {
@@ -47,7 +43,7 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh;
         }
         .spinner {
-            width: 50px; height: 50px; border: 5px solid var(--border); border-top-color: var(--primary);
+            width: 50px; height: 50px; border: 5px solid var(--border-local); border-top-color: var(--primary);
             border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -58,7 +54,7 @@
             display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 40px;
         }
         .plan-card {
-            background: var(--card-bg); backdrop-filter: blur(10px); border: 1px solid var(--border);
+            background: var(--card-bg-local); backdrop-filter: blur(10px); border: 1px solid var(--border-local);
             border-radius: 24px; padding: 40px; text-align: center; transition: 0.3s; position: relative; overflow: hidden;
         }
         .plan-card:hover { transform: translateY(-10px); border-color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
@@ -75,7 +71,7 @@
         .plan-icon { font-size: 3rem; color: var(--primary); margin-bottom: 20px; }
         .plan-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 15px; }
         .plan-price { font-size: 3rem; font-weight: 800; margin-bottom: 25px; }
-        .plan-price span { font-size: 1rem; color: var(--text-muted); font-weight: 400; }
+        .plan-price span { font-size: 1rem; color: var(--text-muted-local); font-weight: 400; }
         .plan-features { list-style: none; text-align: left; margin-bottom: 35px; }
         .plan-features li { margin-bottom: 12px; display: flex; align-items: center; gap: 10px; color: #cbd5e1; font-size: 0.95rem; }
         .plan-features li i { color: #22c55e; }
@@ -87,8 +83,8 @@
         .btn-premium { background: var(--premium); }
         .btn-premium:hover { background: var(--premium-light); }
         .btn-saiba-mais {
-            width: 100%; padding: 10px; border-radius: 12px; border: 1px solid var(--border); font-weight: 600;
-            background: transparent; color: var(--text-muted); cursor: pointer; transition: 0.3s; margin-bottom: 10px;
+            width: 100%; padding: 10px; border-radius: 12px; border: 1px solid var(--border-local); font-weight: 600;
+            background: transparent; color: var(--text-muted-local); cursor: pointer; transition: 0.3s; margin-bottom: 10px;
         }
         .btn-saiba-mais:hover { background: rgba(255, 255, 255, 0.05); color: white; }
 
@@ -100,23 +96,23 @@
         @media (max-width: 850px) { .dashboard-grid { grid-template-columns: 1fr; } }
         
         .status-card {
-            background: var(--card-bg); backdrop-filter: blur(10px); padding: 30px; border-radius: 24px; border: 1px solid var(--border);
+            background: var(--card-bg-local); backdrop-filter: blur(10px); padding: 30px; border-radius: 24px; border: 1px solid var(--border-local);
         }
         .info-group { margin-bottom: 25px; }
-        .info-label { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .info-label { font-size: 0.85rem; color: var(--text-muted-local); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
         .info-value { font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
         .badge-status { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
         .status-active { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
         .status-pending { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
         
         .history-card {
-            background: var(--card-bg); backdrop-filter: blur(10px); padding: 30px; border-radius: 24px; border: 1px solid var(--border);
+            background: var(--card-bg-local); backdrop-filter: blur(10px); padding: 30px; border-radius: 24px; border: 1px solid var(--border-local);
             overflow: hidden;
         }
         .history-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .history-table th { text-align: left; padding: 12px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid var(--border); }
-        .history-table td { padding: 15px 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
-        .btn-action { background: var(--glass); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; text-decoration: none; display: inline-block; }
+        .history-table th { text-align: left; padding: 12px; font-size: 0.85rem; color: var(--text-muted-local); border-bottom: 1px solid var(--border-local); }
+        .history-table td { padding: 15px 12px; border-bottom: 1px solid var(--border-local); font-size: 0.9rem; }
+        .btn-action { background: var(--glass); border: 1px solid var(--border-local); color: var(--text); padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; text-decoration: none; display: inline-block; }
         .btn-action:hover { background: var(--primary); border-color: var(--primary); }
 
         .btn-cancel {
@@ -133,7 +129,7 @@
         }
         .modal-content {
             background: #1e293b; padding: 40px; border-radius: 24px; width: 90%; max-width: 450px; text-align: center;
-            border: 1px solid var(--border); box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-local); box-shadow: 0 25px 50px rgba(0,0,0,0.5);
         }
         .chk-input { width:100%; padding:12px; margin-bottom:12px; border-radius:10px; border:1px solid #334155; background:#0f172a; color:white; font-family:'Poppins'; font-size:0.9rem;}
         .method-btn { flex:1; padding:12px; border-radius:10px; border:1px solid #334155; background:transparent; color:white; cursor:pointer; font-weight:600; transition: 0.2s;}
