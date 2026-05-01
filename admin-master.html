@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Master — Setor de Arte</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0f172a;--surface:#1e293b;--surface2:#263347;--border:#334155;
+  --primary:#6366f1;--primary-h:#4f46e5;--success:#10b981;--danger:#ef4444;
+  --warn:#f59e0b;--text:#f1f5f9;--muted:#94a3b8;--accent:#818cf8;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* ── AUTH OVERLAY ── */
+#auth-overlay{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;}
+.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:48px 40px;width:100%;max-width:420px;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,0.5);}
+.auth-logo{font-size:3rem;background:linear-gradient(135deg,var(--primary),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px;}
+.auth-box h2{font-size:1.5rem;font-weight:800;margin-bottom:6px;}
+.auth-box p{color:var(--muted);font-size:0.9rem;margin-bottom:28px;}
+.auth-input{width:100%;padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:1rem;font-family:inherit;outline:none;transition:.2s;}
+.auth-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.2);}
+.auth-btn{width:100%;margin-top:14px;padding:14px;background:linear-gradient(135deg,var(--primary),var(--accent));border:none;border-radius:10px;color:#fff;font-weight:700;font-size:1rem;cursor:pointer;transition:.2s;}
+.auth-btn:hover{opacity:.9;transform:translateY(-1px);}
+.auth-error{color:var(--danger);font-size:.85rem;margin-top:10px;display:none;}
+
+/* ── LAYOUT PRINCIPAL ── */
+#app{display:none;min-height:100vh;flex-direction:column;}
+.top-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.top-bar-left{display:flex;align-items:center;gap:12px;}
+.top-bar-left .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--primary),var(--accent));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;color:#fff;}
+.top-bar-left h1{font-size:1rem;font-weight:700;}
+.top-bar-left span{font-size:.8rem;color:var(--muted);}
+.badge-admin{background:rgba(99,102,241,.2);color:var(--accent);border:1px solid rgba(99,102,241,.3);border-radius:6px;padding:3px 10px;font-size:.75rem;font-weight:700;letter-spacing:.5px;}
+
+/* ── TABS ── */
+.tabs-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;display:flex;gap:4px;}
+.tab-btn{padding:14px 20px;background:none;border:none;color:var(--muted);font-size:.88rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:.2s;display:flex;align-items:center;gap:8px;font-family:inherit;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* ── MAIN ── */
+.main{padding:32px;max-width:1200px;margin:0 auto;width:100%;}
+.tab-panel{display:none;}
+.tab-panel.active{display:grid;grid-template-columns:1fr 1fr;gap:28px;}
+.tab-panel.single{display:none;grid-template-columns:1fr;}
+.tab-panel.single.active{display:grid;}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;}
+.card-title{font-size:1rem;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.card-title i{color:var(--accent);}
+.card-sub{color:var(--muted);font-size:.85rem;margin-bottom:20px;line-height:1.6;}
+
+/* ── FORM ── */
+.fg{margin-bottom:16px;}
+.fg label{display:block;font-size:.82rem;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+.fg input,.fg select,.fg textarea{width:100%;padding:11px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.9rem;font-family:inherit;outline:none;transition:.2s;resize:vertical;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.15);}
+.fg select option{background:var(--surface2);}
+.btn-primary{width:100%;padding:13px;background:linear-gradient(135deg,var(--primary),var(--accent));border:none;border-radius:9px;color:#fff;font-weight:700;font-size:.95rem;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+/* ── LISTA HISTÓRICO ── */
+.hist-list{display:flex;flex-direction:column;gap:12px;max-height:540px;overflow-y:auto;padding-right:4px;}
+.hist-list::-webkit-scrollbar{width:4px;}
+.hist-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+.hist-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;border-left:3px solid var(--primary);transition:.2s;}
+.hist-item.inativo{opacity:.45;border-left-color:var(--border);}
+.hist-item-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.hist-item-title{font-size:.88rem;font-weight:700;margin-bottom:4px;}
+.hist-item-msg{font-size:.8rem;color:var(--muted);margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.hist-item-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.badge{font-size:.7rem;font-weight:700;padding:3px 8px;border-radius:999px;}
+.badge-on{background:rgba(16,185,129,.15);color:var(--success);border:1px solid rgba(16,185,129,.3);}
+.badge-off{background:rgba(148,163,184,.1);color:var(--muted);border:1px solid var(--border);}
+.badge-dest{background:rgba(99,102,241,.15);color:var(--accent);border:1px solid rgba(99,102,241,.3);}
+.badge-tipo-novo{background:rgba(16,185,129,.15);color:var(--success);}
+.badge-tipo-corrigido{background:rgba(245,158,11,.15);color:var(--warn);}
+.badge-tipo-melhorado{background:rgba(99,102,241,.15);color:var(--accent);}
+.hist-date{font-size:.75rem;color:var(--muted);}
+.btn-toggle{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:5px 11px;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:600;transition:.2s;white-space:nowrap;font-family:inherit;}
+.btn-toggle:hover{border-color:var(--accent);color:var(--accent);}
+.empty-hist{text-align:center;color:var(--muted);padding:30px;font-size:.85rem;}
+.empty-hist i{font-size:1.8rem;display:block;margin-bottom:10px;color:var(--border);}
+
+/* ── ASSINATURAS PLACEHOLDER ── */
+.coming-soon{text-align:center;padding:80px 30px;color:var(--muted);}
+.coming-soon .cs-icon{font-size:4rem;background:linear-gradient(135deg,var(--primary),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:20px;}
+.coming-soon h2{font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:10px;}
+.coming-soon p{font-size:.95rem;line-height:1.7;max-width:400px;margin:0 auto;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:28px;right:28px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 20px;font-size:.88rem;font-weight:600;display:flex;align-items:center;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:99999;opacity:0;transform:translateY(10px);transition:.3s;pointer-events:none;}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.ok{border-left:3px solid var(--success);color:var(--success);}
+#toast.err{border-left:3px solid var(--danger);color:var(--danger);}
+
+@media(max-width:768px){
+  .tab-panel{grid-template-columns:1fr;}
+  .tabs-bar{overflow-x:auto;padding:0 16px;}
+  .main{padding:20px 16px;}
+  .top-bar{padding:0 16px;}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo"><i class="fas fa-shield-halved"></i></div>
+    <h2>Área Restrita</h2>
+    <p>Digite a senha de administrador para continuar</p>
+    <input class="auth-input" type="password" id="auth-pass" placeholder="Senha admin..." autocomplete="current-password">
+    <button class="auth-btn" onclick="doAuth()"><i class="fas fa-unlock-alt"></i> Entrar</button>
+    <p class="auth-error" id="auth-error">Senha incorreta. Tente novamente.</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="logo-icon"><i class="fas fa-crown"></i></div>
+      <div>
+        <h1>Admin Master</h1>
+        <span>Setor de Arte — Painel de Controle</span>
+      </div>
+    </div>
+    <span class="badge-admin">ADMIN</span>
+  </div>
+
+  <div class="tabs-bar">
+    <button class="tab-btn active" onclick="switchTab('notif',this)"><i class="fas fa-bell"></i> Notificações</button>
+    <button class="tab-btn" onclick="switchTab('popup',this)"><i class="fas fa-window-restore"></i> Pop-ups</button>
+    <button class="tab-btn" onclick="switchTab('novidade',this)"><i class="fas fa-star"></i> Novidades</button>
+    <button class="tab-btn" onclick="switchTab('assinatura',this)"><i class="fas fa-credit-card"></i> Assinaturas</button>
+  </div>
+
+  <div class="main">
+
+    <!-- ===== ABA NOTIFICAÇÕES ===== -->
+    <div class="tab-panel active" id="tab-notif">
+      <div class="card">
+        <div class="card-title"><i class="fas fa-bell"></i> Nova Notificação (Sininho)</div>
+        <p class="card-sub">Aparece no sininho do header. Pode ter link "Saiba mais" opcional.</p>
+        <form onsubmit="createItem(event,'notificacao')">
+          <div class="fg"><label>Título</label><input type="text" name="titulo" required placeholder="Ex: Nova funcionalidade disponível!"></div>
+          <div class="fg"><label>Mensagem</label><textarea name="mensagem" rows="3" required placeholder="Descreva a notificação..."></textarea></div>
+          <div class="fg"><label>Link "Saiba Mais" (opcional)</label><input type="url" name="link_saiba_mais" placeholder="https://..."></div>
+          <div class="fg"><label>Destino</label>
+            <select name="destino">
+              <option value="todos">👥 Todos</option>
+              <option value="designer">🎨 Designers</option>
+              <option value="empresa">🏢 Empresas</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-primary"><i class="fas fa-paper-plane"></i> Publicar Notificação</button>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="fas fa-clock-rotate-left"></i> Histórico</div>
+        <div class="hist-list" id="hist-notificacao"><div class="empty-hist"><i class="fas fa-spinner fa-spin"></i>Carregando...</div></div>
+      </div>
+    </div>
+
+    <!-- ===== ABA POPUPS ===== -->
+    <div class="tab-panel" id="tab-popup">
+      <div class="card">
+        <div class="card-title"><i class="fas fa-window-restore"></i> Novo Pop-up HTML</div>
+        <p class="card-sub">Cole o HTML completo do pop-up. Aparece uma vez por sessão para o usuário.</p>
+        <form onsubmit="createItem(event,'popup')">
+          <div class="fg"><label>Destino</label>
+            <select name="destino">
+              <option value="todos">👥 Todos</option>
+              <option value="designer">🎨 Designers</option>
+              <option value="empresa">🏢 Empresas</option>
+            </select>
+          </div>
+          <div class="fg"><label>HTML do Pop-up</label><textarea name="html_content" rows="12" required placeholder="&lt;div style=&quot;background:#fff;padding:40px;border-radius:16px;&quot;&gt;&#10;  &lt;h2&gt;Título do popup&lt;/h2&gt;&#10;  &lt;p&gt;Conteúdo...&lt;/p&gt;&#10;&lt;/div&gt;"></textarea></div>
+          <button type="submit" class="btn-primary"><i class="fas fa-rocket"></i> Ativar Pop-up</button>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="fas fa-clock-rotate-left"></i> Histórico</div>
+        <div class="hist-list" id="hist-popup"><div class="empty-hist"><i class="fas fa-spinner fa-spin"></i>Carregando...</div></div>
+      </div>
+    </div>
+
+    <!-- ===== ABA NOVIDADES ===== -->
+    <div class="tab-panel" id="tab-novidade">
+      <div class="card">
+        <div class="card-title"><i class="fas fa-star"></i> Lançar Novidade</div>
+        <p class="card-sub">Aparece no dashboard inicial dos usuários com destaque.</p>
+        <form onsubmit="createItem(event,'novidade')">
+          <div class="fg"><label>Título</label><input type="text" name="titulo" required placeholder="Ex: Área de Clientes Lançada!"></div>
+          <div class="fg"><label>Descrição</label><textarea name="descricao" rows="4" required placeholder="Descreva o que foi lançado ou corrigido..."></textarea></div>
+          <div class="fg"><label>Tipo</label>
+            <select name="tipo_novidade">
+              <option value="novo">🚀 Novo</option>
+              <option value="melhorado">⚡ Melhorado</option>
+              <option value="corrigido">🔧 Corrigido</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-primary"><i class="fas fa-bullhorn"></i> Publicar Novidade</button>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="fas fa-clock-rotate-left"></i> Histórico</div>
+        <div class="hist-list" id="hist-novidade"><div class="empty-hist"><i class="fas fa-spinner fa-spin"></i>Carregando...</div></div>
+      </div>
+    </div>
+
+    <!-- ===== ABA ASSINATURAS ===== -->
+    <div class="tab-panel single" id="tab-assinatura">
+      <div class="card">
+        <div class="coming-soon">
+          <div class="cs-icon"><i class="fas fa-credit-card"></i></div>
+          <h2>Controle de Assinaturas</h2>
+          <p>Esta seção está reservada para o gerenciamento de assinaturas. Em breve você irá explicar melhor o que precisa aqui e implementamos!</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<div id="toast"></div>
+
+<script>
+let ADMIN_PASS_LOCAL = '';
+
+// ── Autenticação local ──────────────────────────────────────
+document.getElementById('auth-pass').addEventListener('keydown', e => { if(e.key==='Enter') doAuth(); });
+
+async function doAuth() {
+  const pass = document.getElementById('auth-pass').value.trim();
+  if (!pass) return;
+
+  // Testa a senha batendo no endpoint protegido
+  try {
+    const res = await fetch('/api/admin/masterNotifications?type=notificacao', {
+      headers: { 'x-admin-pass': pass }
+    });
+    if (res.ok || res.status === 200) {
+      ADMIN_PASS_LOCAL = pass;
+      document.getElementById('auth-overlay').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      loadHist('notificacao');
+      loadHist('popup');
+      loadHist('novidade');
+    } else {
+      document.getElementById('auth-error').style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById('auth-error').style.display = 'block';
+  }
+}
+
+// ── Tabs ────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Criar item ──────────────────────────────────────────────
+async function createItem(e, type) {
+  e.preventDefault();
+  const form = e.target;
+  const btn  = form.querySelector('button[type=submit]');
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publicando...';
+
+  const fd = new FormData(form);
+  const body = { action: 'create', type };
+  fd.forEach((v,k) => { body[k] = v; });
+
+  try {
+    const res = await fetch('/api/admin/masterNotifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-pass': ADMIN_PASS_LOCAL },
+      body: JSON.stringify(body)
+    });
+    if (res.ok) {
+      showToast('Publicado com sucesso!', 'ok');
+      form.reset();
+      loadHist(type);
+    } else {
+      const err = await res.json();
+      showToast('Erro: ' + (err.message || 'Falha'), 'err');
+    }
+  } catch(ex) {
+    showToast('Erro de conexão.', 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = orig;
+  }
+}
+
+// ── Carregar histórico ──────────────────────────────────────
+async function loadHist(type) {
+  const el = document.getElementById('hist-' + type);
+  if (!el) return;
+  el.innerHTML = '<div class="empty-hist"><i class="fas fa-spinner fa-spin"></i>Carregando...</div>';
+
+  try {
+    const res = await fetch(`/api/admin/masterNotifications?type=${type}`, {
+      headers: { 'x-admin-pass': ADMIN_PASS_LOCAL }
+    });
+    const list = await res.json();
+
+    if (!list.length) {
+      el.innerHTML = '<div class="empty-hist"><i class="fas fa-inbox"></i>Nenhum registro ainda.</div>';
+      return;
+    }
+
+    el.innerHTML = list.map(item => {
+      const ativa = item.ativa;
+      const dest  = item.destino || 'todos';
+      const destLabel = dest === 'designer' ? '🎨 Designers' : dest === 'empresa' ? '🏢 Empresas' : '👥 Todos';
+      const data  = new Date(item.criado_em).toLocaleString('pt-BR');
+
+      let titleLine = '';
+      let msgLine   = '';
+
+      if (type === 'notificacao') {
+        titleLine = `<div class="hist-item-title">${item.titulo}</div>`;
+        msgLine   = `<p class="hist-item-msg">${item.mensagem}</p>`;
+        if (item.link_saiba_mais) msgLine += `<p class="hist-item-msg" style="color:var(--accent)"><i class="fas fa-link" style="margin-right:4px"></i>${item.link_saiba_mais}</p>`;
+      } else if (type === 'popup') {
+        titleLine = `<div class="hist-item-title"><i class="fas fa-code" style="margin-right:6px;color:var(--accent)"></i>Pop-up HTML</div>`;
+        msgLine   = `<p class="hist-item-msg" style="font-family:monospace">${item.html_content.substring(0,80)}...</p>`;
+      } else if (type === 'novidade') {
+        const tipoBadgeClass = item.tipo === 'corrigido' ? 'badge-tipo-corrigido' : item.tipo === 'melhorado' ? 'badge-tipo-melhorado' : 'badge-tipo-novo';
+        const tipoLabel = item.tipo === 'corrigido' ? '🔧 Corrigido' : item.tipo === 'melhorado' ? '⚡ Melhorado' : '🚀 Novo';
+        titleLine = `<div class="hist-item-title"><span class="badge ${tipoBadgeClass}">${tipoLabel}</span> ${item.titulo}</div>`;
+        msgLine   = `<p class="hist-item-msg">${item.descricao}</p>`;
+      }
+
+      return `
+        <div class="hist-item ${ativa ? '' : 'inativo'}" id="item-${type}-${item.id}">
+          <div class="hist-item-top">
+            <div style="flex:1">
+              ${titleLine}
+              ${msgLine}
+              <div class="hist-item-meta">
+                <span class="badge ${ativa ? 'badge-on' : 'badge-off'}">${ativa ? 'Ativa' : 'Inativa'}</span>
+                <span class="badge badge-dest">${destLabel}</span>
+                <span class="hist-date">${data}</span>
+              </div>
+            </div>
+            <button class="btn-toggle" onclick="toggleItem('${type}',${item.id},${!ativa})">
+              <i class="fas ${ativa ? 'fa-eye-slash' : 'fa-eye'}"></i> ${ativa ? 'Desativar' : 'Ativar'}
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+  } catch(ex) {
+    el.innerHTML = '<div class="empty-hist" style="color:var(--danger)"><i class="fas fa-triangle-exclamation"></i>Erro ao carregar.</div>';
+  }
+}
+
+// ── Toggle ativa/inativa ────────────────────────────────────
+async function toggleItem(type, id, makeAtiva) {
+  try {
+    const res = await fetch('/api/admin/masterNotifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-pass': ADMIN_PASS_LOCAL },
+      body: JSON.stringify({ action: 'toggle', type, id, ativa: makeAtiva })
+    });
+    if (res.ok) {
+      showToast(makeAtiva ? 'Ativado!' : 'Desativado!', 'ok');
+      loadHist(type);
+    } else {
+      showToast('Erro ao alterar.', 'err');
+    }
+  } catch(e) {
+    showToast('Erro de conexão.', 'err');
+  }
+}
+
+// ── Toast ───────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  const icon = type === 'ok' ? 'fa-check-circle' : 'fa-circle-exclamation';
+  t.className = 'show ' + type;
+  t.innerHTML = `<i class="fas ${icon}"></i> ${msg}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ''; }, 3000);
+}
+</script>
+</body>
+</html>

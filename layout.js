@@ -424,6 +424,82 @@ document.addEventListener("DOMContentLoaded", async () => {
     await buildLayout();
 
     // ==========================================
+    // SISTEMA DE NOTIFICAÇÕES DO SININHO + POPUP
+    // ==========================================
+    (async function carregarAdminContent() {
+        try {
+            const sessionToken  = localStorage.getItem("sessionToken");
+            const designerToken = localStorage.getItem("designerToken");
+            if (!sessionToken && !designerToken) return;
+
+            // Designers têm designerToken; empresas têm sessionToken
+            const userType = designerToken ? 'designer' : 'empresa';
+
+            const res = await fetch(`/api/admin/getAdminContent?userType=${userType}`);
+            if (!res.ok) return;
+            const data = await res.json();
+
+            // ── Popular sininho ──────────────────────────────────
+            const notifList  = document.getElementById('notif-list');
+            const notifBadge = document.getElementById('notif-badge');
+
+            if (notifList && data.notificacoes && data.notificacoes.length > 0) {
+                notifBadge.textContent = data.notificacoes.length > 9 ? '9+' : data.notificacoes.length;
+                notifBadge.classList.remove('hidden');
+
+                notifList.innerHTML = data.notificacoes.map(n => `
+                    <div class="notif-item">
+                        <div class="notif-item-title">
+                            <span class="dot"></span>
+                            ${n.titulo}
+                        </div>
+                        <p class="notif-item-msg">${n.mensagem}</p>
+                        ${n.link_saiba_mais
+                            ? `<a href="${n.link_saiba_mais}" target="_blank" class="notif-item-link">
+                                <i class="fas fa-arrow-right"></i> Saiba mais
+                               </a>`
+                            : ''}
+                    </div>
+                `).join('');
+            }
+
+            // ── Injetar popup HTML (uma vez por sessão) ──────────
+            if (data.popup) {
+                const popupKey = `popup_visto_${data.popup.id}`;
+                if (!sessionStorage.getItem(popupKey)) {
+                    sessionStorage.setItem(popupKey, '1');
+
+                    const wrapId = 'admin-popup-overlay-' + data.popup.id;
+                    const wrapEl = document.createElement('div');
+                    wrapEl.id = wrapId;
+                    wrapEl.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:999999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);';
+
+                    const inner = document.createElement('div');
+                    inner.style.cssText = 'position:relative;max-width:700px;width:90%;max-height:90vh;overflow-y:auto;border-radius:16px;box-shadow:0 25px 50px rgba(0,0,0,0.3);';
+                    inner.innerHTML = data.popup.html_content;
+
+                    // Botão fechar nativo
+                    const closeBtn = document.createElement('button');
+                    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    closeBtn.style.cssText = 'position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.4);color:#fff;border:none;width:32px;height:32px;border-radius:50%;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;';
+                    closeBtn.onclick = () => document.getElementById(wrapId)?.remove();
+
+                    inner.appendChild(closeBtn);
+                    wrapEl.appendChild(inner);
+                    document.body.appendChild(wrapEl);
+
+                    // Fecha ao clicar no overlay
+                    wrapEl.addEventListener('click', (e) => {
+                        if (e.target === wrapEl) wrapEl.remove();
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn('[Layout] Erro ao carregar conteúdo admin:', e);
+        }
+    })();
+
+    // ==========================================
     // DARK MODE: Conecta o botão após a sidebar ser montada
     // ==========================================
     function atualizarIconeDarkMode() {
