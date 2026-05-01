@@ -259,25 +259,3 @@
         </div>
     </div>
 </header>
-
-<script>
-(function() {
-    // Toggle dropdown ao clicar no sino
-    const bellBtn   = document.getElementById('btn-notif-bell');
-    const dropdown  = document.getElementById('notif-dropdown');
-
-    if (bellBtn && dropdown) {
-        bellBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dropdown.classList.toggle('open');
-        });
-
-        // Fecha ao clicar fora
-        document.addEventListener('click', (e) => {
-            if (!document.getElementById('notif-wrapper').contains(e.target)) {
-                dropdown.classList.remove('open');
-            }
-        });
-    }
-})();
-</script>

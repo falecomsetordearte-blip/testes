@@ -424,6 +424,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     await buildLayout();
 
     // ==========================================
+    // SINO: inicializa toggle após header montado
+    // ==========================================
+    (function inicializarSino() {
+        const bellBtn  = document.getElementById('btn-notif-bell');
+        const dropdown = document.getElementById('notif-dropdown');
+        const wrapper  = document.getElementById('notif-wrapper');
+
+        if (!bellBtn || !dropdown) return;
+
+        bellBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (wrapper && !wrapper.contains(e.target)) {
+                dropdown.classList.remove('open');
+            }
+        });
+    })();
+
+    // ==========================================
     // SISTEMA DE NOTIFICAÇÕES DO SININHO + POPUP
     // ==========================================
     (async function carregarAdminContent() {
