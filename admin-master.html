@@ -233,6 +233,23 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 <div id="toast"></div>
 
 <script>
+// ── Blindagem: marca todos popups ativos como vistos nesta sessão ─────────
+// Garante que nenhum popup apareça ou bloqueie esta tela de administração.
+(async function blindarPopupsAdmin() {
+  try {
+    // Busca todos os popups ativos sem autenticação (endpoint público)
+    const res = await fetch('/api/admin/getAdminContent?userType=todos&soPopup=1');
+    if (!res.ok) return;
+    const data = await res.json();
+    // Marca o popup ativo como visto para esta sessão
+    if (data && data.popup && data.popup.id) {
+      sessionStorage.setItem(`popup_visto_${data.popup.id}`, '1');
+    }
+  } catch(e) { /* silencioso */ }
+})();
+</script>
+
+<script>
 let ADMIN_PASS_LOCAL = '';
 
 // ── Autenticação local ──────────────────────────────────────
@@ -290,6 +307,11 @@ async function createItem(e, type) {
       body: JSON.stringify(body)
     });
     if (res.ok) {
+      const resultado = await res.json();
+      // Se for popup, marcar como visto imediatamente para não bloquear o admin
+      if (type === 'popup' && resultado.id) {
+        sessionStorage.setItem(`popup_visto_${resultado.id}`, '1');
+      }
       showToast('Publicado com sucesso!', 'ok');
       form.reset();
       loadHist(type);

@@ -50,31 +50,34 @@ module.exports = async (req, res) => {
                 if (type === 'notificacao') {
                     const { titulo, mensagem, link_saiba_mais, destino } = req.body;
                     if (!titulo || !mensagem) return res.status(400).json({ message: 'titulo e mensagem são obrigatórios.' });
-                    await pool.query(
+                    const r = await pool.query(
                         `INSERT INTO notificacao_sininho (titulo, mensagem, link_saiba_mais, destino)
-                         VALUES ($1, $2, $3, $4)`,
+                         VALUES ($1, $2, $3, $4) RETURNING id`,
                         [titulo, mensagem, link_saiba_mais || null, destino || 'todos']
                     );
+                    return res.status(200).json({ success: true, id: r.rows[0].id });
                 }
 
                 if (type === 'popup') {
                     const { html_content, destino } = req.body;
                     if (!html_content) return res.status(400).json({ message: 'html_content é obrigatório.' });
-                    await pool.query(
+                    const r = await pool.query(
                         `INSERT INTO popup_html (html_content, destino)
-                         VALUES ($1, $2)`,
+                         VALUES ($1, $2) RETURNING id`,
                         [html_content, destino || 'todos']
                     );
+                    return res.status(200).json({ success: true, id: r.rows[0].id });
                 }
 
                 if (type === 'novidade') {
                     const { titulo, descricao, tipo_novidade } = req.body;
                     if (!titulo || !descricao) return res.status(400).json({ message: 'titulo e descricao são obrigatórios.' });
-                    await pool.query(
+                    const r = await pool.query(
                         `INSERT INTO novidade_sistema (titulo, descricao, tipo)
-                         VALUES ($1, $2, $3)`,
+                         VALUES ($1, $2, $3) RETURNING id`,
                         [titulo, descricao, tipo_novidade || 'novo']
                     );
+                    return res.status(200).json({ success: true, id: r.rows[0].id });
                 }
 
                 return res.status(200).json({ success: true });
