@@ -328,6 +328,38 @@
                             </div>
                         </div>
 
+                        <!-- PAINEL DE LINHA PRÓPRIA (UPSELL) -->
+                        <div id="feature-linha-propria" class="admin-panel full-width-panel" style="position:relative; margin-bottom: 2rem;">
+                            <div class="panel-toolbar">
+                                <h3><i class="fa-solid fa-phone" style="color:#25D366;"></i> Sua Própria Linha de WhatsApp</h3>
+                            </div>
+                            
+                            <div id="linha-propria-locked" style="display: none; text-align: center; padding: 2rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                <i class="fa-solid fa-lock" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
+                                <h4 style="font-size: 1.2rem; color: #334155; margin-bottom: 0.5rem;">Recurso Exclusivo do Plano Empresa Premium</h4>
+                                <p style="color: #64748b; margin-bottom: 1.5rem; max-width: 600px; margin-left: auto; margin-right: auto;">Transmita mais credibilidade usando o <strong>seu próprio número de WhatsApp</strong> para enviar notificações e interagir com seus clientes pelo nosso sistema, em vez do número padrão.</p>
+                                <a href="/assinatura.html" class="btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;"><i class="fa-solid fa-arrow-up-right-dots"></i> Fazer Upgrade Agora</a>
+                            </div>
+
+                            <div id="linha-propria-active" style="display: none;">
+                                <div id="status-aguardando-admin" style="display: none; background: #fffbeb; border-left: 4px solid #f59e0b; padding: 1.5rem; border-radius: 6px; margin-bottom: 1rem;">
+                                    <h4 style="color: #b45309; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-clock"></i> Aguardando Configuração</h4>
+                                    <p style="color: #92400e; margin: 0;">Recebemos o seu pagamento! Aguarde até 24h para a disponibilização da conexão da sua linha. Nossa equipe está ativando a sua licença de uso.</p>
+                                </div>
+                                
+                                <div id="status-pronto-conectar" style="display: none; background: #eff6ff; border-left: 4px solid #3b82f6; padding: 1.5rem; border-radius: 6px; margin-bottom: 1rem;">
+                                    <h4 style="color: #1e40af; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-qrcode"></i> Pronto para Conectar</h4>
+                                    <p style="color: #1e3a8a; margin-bottom: 1rem;">Sua licença já foi gerada e está pronta para uso! Escaneie o QR Code com o seu WhatsApp para conectar a linha ao nosso sistema.</p>
+                                    <a href="#" id="link-qr-code" target="_blank" class="btn-primary" style="background: #3b82f6; text-decoration: none;"><i class="fa-solid fa-camera"></i> Escanear QR Code</a>
+                                </div>
+
+                                <div id="status-conectado" style="display: none; background: #f0fdf4; border-left: 4px solid #22c55e; padding: 1.5rem; border-radius: 6px; margin-bottom: 1rem;">
+                                    <h4 style="color: #166534; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-circle-check"></i> Linha Conectada (Ativa)</h4>
+                                    <p style="color: #14532d; margin: 0;">Sua própria linha de WhatsApp está conectada com sucesso! Todas as notificações e interações no CRM já estão utilizando o seu número.</p>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- PAINEL DE MENSAGENS DO WHATSAPP - RECURSO PREMIUM -->
                         <div id="feature-mensagens-whatsapp" class="admin-panel full-width-panel" style="position:relative; margin-bottom: 2rem;">
                             <div class="panel-toolbar">
@@ -443,6 +475,41 @@
                     document.getElementById('msg_expedicao').value = msgs.EXPEDICAO || '';
                     document.getElementById('msg_inst_loja').value = msgs.INSTALACAO_LOJA || '';
                     document.getElementById('msg_inst_ext').value = msgs.INSTALACAO_EXTERNA || '';
+                }
+
+                if (data.chatapp) {
+                    const plano = data.chatapp.chatapp_plano;
+                    const status = data.chatapp.chatapp_status;
+                    const qrLink = data.chatapp.chatapp_qr_link;
+
+                    if (plano === 'PREMIUM') {
+                        document.getElementById('linha-propria-locked').style.display = 'none';
+                        document.getElementById('linha-propria-active').style.display = 'block';
+
+                        document.getElementById('status-aguardando-admin').style.display = 'none';
+                        document.getElementById('status-pronto-conectar').style.display = 'none';
+                        document.getElementById('status-conectado').style.display = 'none';
+
+                        if (status === 'AGUARDANDO_ADMIN') {
+                            document.getElementById('status-aguardando-admin').style.display = 'block';
+                        } else if (status === 'AGUARDANDO_QR') {
+                            document.getElementById('status-pronto-conectar').style.display = 'block';
+                            if (qrLink) {
+                                document.getElementById('link-qr-code').href = qrLink;
+                            }
+                        } else if (status === 'CONECTADO') {
+                            document.getElementById('status-conectado').style.display = 'block';
+                        } else {
+                            // Se for inativo mas é premium, mostra aguardando admin como fallback
+                            document.getElementById('status-aguardando-admin').style.display = 'block';
+                        }
+                    } else {
+                        // Não é premium
+                        document.getElementById('linha-propria-locked').style.display = 'block';
+                        document.getElementById('linha-propria-active').style.display = 'none';
+                    }
+                } else {
+                    document.getElementById('linha-propria-locked').style.display = 'block';
                 }
             } catch (error) {
                 console.error("Erro carregando configurações:", error);

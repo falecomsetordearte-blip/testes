@@ -58,10 +58,28 @@ function formatarTelefone(telefone) {
     return limpo.length >= 12 ? parseInt(limpo, 10) : null;
 }
 
+async function getLicenseId(empresaId) {
+    let licenseId = process.env.CHATAPP_LICENSE_ID || '59808';
+    if (!empresaId) return licenseId;
+    
+    try {
+        const empresas = await prisma.$queryRawUnsafe(`SELECT chatapp_plano, chatapp_status, chatapp_license_id FROM empresas WHERE id = $1 LIMIT 1`, Number(empresaId));
+        if (empresas.length > 0) {
+            const e = empresas[0];
+            if (e.chatapp_plano === 'PREMIUM' && e.chatapp_status === 'CONECTADO' && e.chatapp_license_id) {
+                licenseId = e.chatapp_license_id;
+            }
+        }
+    } catch(err) {
+        console.error('[CHATAPP-LICENSE] Erro ao buscar licença da empresa:', err.message);
+    }
+    return licenseId;
+}
+
 // -------------------------------------------------------------
 // 1. CRIAÇÃO DOS GRUPOS PARA QUEM TERCEIRIZA A ARTE
 // -------------------------------------------------------------
-async function criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, nomeCliente = 'Cliente', nomeEmpresa = 'nossa gráfica', retry = true) {
+async function criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, nomeCliente = 'Cliente', nomeEmpresa = 'nossa gráfica', retry = true, empresaId = null) {
     console.log(`[CHATAPP-PRODUCAO] Iniciando criarGrupoProducao - Titulo: ${titulo}`);
 
     // Log para verificar se o link do Drive chegou dentro do briefing
@@ -74,7 +92,7 @@ async function criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, n
     }
 
     const headers = { 'Authorization': token, 'Content-Type': 'application/json', 'Lang': 'pt' };
-    const L_ID = process.env.CHATAPP_LICENSE_ID || '59808';
+    const L_ID = await getLicenseId(empresaId);
     const L_MSG = 'grWhatsApp';
 
     try {
@@ -185,7 +203,7 @@ async function criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, n
         if ((error.response?.data?.error?.code === "ApiInvalidTokenError" || error.response?.status === 401) && retry) {
             console.log(`[CHATAPP-PRODUCAO] Token inválido. Tentando novamente com novo token...`);
             await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => { });
-            return await criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, nomeCliente, nomeEmpresa, false);
+            return await criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, nomeCliente, nomeEmpresa, false, empresaId);
         }
         return null;
     }
@@ -195,7 +213,7 @@ async function criarGrupoProducao(titulo, wppCliente, supervisorWpp, briefing, n
 // -------------------------------------------------------------
 // 2. CRIAÇÃO DO GRUPO EXCLUSIVO DE ATUALIZAÇÕES
 // -------------------------------------------------------------
-async function criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, nomeCliente = 'Cliente', nomeEmpresa = 'nossa gráfica', retry = true) {
+async function criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, nomeCliente = 'Cliente', nomeEmpresa = 'nossa gráfica', retry = true, empresaId = null) {
     console.log(`[NOTIF-GROUP] Iniciando criação do grupo de notificações para o pedido: ${titulo}`);
     const token = await getChatAppToken(!retry);
     if (!token) {
@@ -204,7 +222,7 @@ async function criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, nomeClient
     }
 
     const headers = { 'Authorization': token, 'Content-Type': 'application/json', 'Lang': 'pt' };
-    const L_ID = process.env.CHATAPP_LICENSE_ID || '59808';
+    const L_ID = await getLicenseId(empresaId);
     const L_MSG = 'grWhatsApp';
 
     try {
@@ -264,7 +282,7 @@ async function criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, nomeClient
         if ((error.response?.data?.error?.code === "ApiInvalidTokenError" || error.response?.status === 401) && retry) {
             console.log(`[NOTIF-GROUP] Token inválido. Tentando novamente com novo token...`);
             await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => { });
-            return await criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, nomeCliente, nomeEmpresa, false);
+            return await criarGrupoNotificacoes(titulo, wppCliente, wppEmpresa, nomeCliente, nomeEmpresa, false, empresaId);
         }
         return null;
     }
@@ -311,7 +329,7 @@ async function enviarNotificacaoEtapa(pedidoId, novaEtapa, retry = true) {
         // 2. Pega as configurações personalizadas daquela empresa específica
         console.log(`[ETAPA-DB] Buscando configurações de notificação para a empresa ${p.empresa_id}...`);
         const configs = await prisma.$queryRawUnsafe(`SELECT mensagens_etapas FROM painel_configuracoes_sistema WHERE empresa_id = $1`, p.empresa_id);
-        const empresas = await prisma.$queryRawUnsafe(`SELECT whatsapp FROM empresas WHERE id = $1`, p.empresa_id);
+        const empresas = await prisma.$queryRawUnsafe(`SELECT whatsapp, chatapp_plano, chatapp_status, chatapp_license_id FROM empresas WHERE id = $1`, p.empresa_id);
 
         let mensagens = configs.length && configs[0].mensagens_etapas ? configs[0].mensagens_etapas : {};
         if (typeof mensagens === 'string') mensagens = JSON.parse(mensagens);
@@ -335,7 +353,15 @@ async function enviarNotificacaoEtapa(pedidoId, novaEtapa, retry = true) {
 
         // 5. Envia no Chat do Grupo
         const headers = { 'Authorization': token, 'Content-Type': 'application/json', 'Lang': 'pt' };
-        const L_ID = process.env.CHATAPP_LICENSE_ID || '59808';
+        
+        let L_ID = process.env.CHATAPP_LICENSE_ID || '59808';
+        if (empresas.length > 0) {
+            const e = empresas[0];
+            if (e.chatapp_plano === 'PREMIUM' && e.chatapp_status === 'CONECTADO' && e.chatapp_license_id) {
+                L_ID = e.chatapp_license_id;
+            }
+        }
+
         const L_MSG = 'grWhatsApp';
         const url = `${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${p.chatapp_chat_notificacoes_id}/messages/text`;
 
@@ -356,7 +382,7 @@ async function enviarNotificacaoEtapa(pedidoId, novaEtapa, retry = true) {
     }
 }
 
-async function definirAvatarGrupo(chatId, url, retry = true) {
+async function definirAvatarGrupo(chatId, url, retry = true, empresaId = null) {
     if (!chatId || !url || !url.startsWith('http')) return;
     
     // Pequeno delay para garantir que o grupo recém-criado já esteja propagado nos servidores da ChatApp
@@ -380,7 +406,7 @@ async function definirAvatarGrupo(chatId, url, retry = true) {
     if (!token) return;
 
     const headers = { 'Authorization': token, 'Content-Type': 'application/json', 'Lang': 'pt' };
-    const L_ID = process.env.CHATAPP_LICENSE_ID || '59808';
+    const L_ID = await getLicenseId(empresaId);
     const L_MSG = 'grWhatsApp';
 
     const encodedId = encodeURIComponent(chatId);
@@ -398,19 +424,19 @@ async function definirAvatarGrupo(chatId, url, retry = true) {
         if ((error.response?.data?.error?.code === "ApiInvalidTokenError" || error.response?.status === 401) && retry) {
             console.log(`[CHATAPP-AVATAR] Token inválido reportado. Limpando cache e tentando novamente...`);
             await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => { });
-            return await definirAvatarGrupo(chatId, url, false);
+            return await definirAvatarGrupo(chatId, url, false, empresaId);
         }
     }
 }
 
-async function enviarMensagemTexto(chatId, texto, retry = true) {
+async function enviarMensagemTexto(chatId, texto, retry = true, empresaId = null) {
     if (!chatId || !texto) return null;
 
     const token = await getChatAppToken(!retry);
     if (!token) return null;
 
     const headers = { 'Authorization': token, 'Content-Type': 'application/json', 'Lang': 'pt' };
-    const L_ID = process.env.CHATAPP_LICENSE_ID || '59808';
+    const L_ID = await getLicenseId(empresaId);
     const L_MSG = 'grWhatsApp';
 
     try {
@@ -421,7 +447,7 @@ async function enviarMensagemTexto(chatId, texto, retry = true) {
         console.error(`[CHATAPP-SEND] Erro ao enviar mensagem de texto:`, error.response?.data || error.message);
         if ((error.response?.data?.error?.code === "ApiInvalidTokenError" || error.response?.status === 401) && retry) {
             await prisma.$executeRawUnsafe(`DELETE FROM system_config WHERE chave = 'chatapp_token'`).catch(() => { });
-            return await enviarMensagemTexto(chatId, texto, false);
+            return await enviarMensagemTexto(chatId, texto, false, empresaId);
         }
         return null;
     }

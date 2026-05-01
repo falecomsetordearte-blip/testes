@@ -121,9 +121,11 @@ module.exports = async (req, res) => {
                     formData.titulo,
                     formData.wppCliente,
                     supervisaoWpp,
-                    briefingFinal, // O link anexado já vai dentro desta variável
+                    briefingFinal,
                     formData.nomeCliente || 'Cliente',
-                    empresa.nome_fantasia || 'nossa gráfica'
+                    empresa.nome_fantasia || 'nossa gráfica',
+                    true,
+                    empresa.id
                 );
 
                 if (automacao && automacao.chatId) {
@@ -139,9 +141,9 @@ module.exports = async (req, res) => {
                     // --- NOVA LÓGICA: DEFINIR AVATAR DO GRUPO ---
                     if (empresa.logo_id && empresa.logo_id.startsWith('http')) {
                         console.log(`[CHATAPP-AVATAR] Disparando atualização de foto de perfil...`);
-                        await definirAvatarGrupo(automacao.chatId, empresa.logo_id);
+                        await definirAvatarGrupo(automacao.chatId, empresa.logo_id, true, empresa.id);
                         if (automacao.chatIdInterno) {
-                            await definirAvatarGrupo(automacao.chatIdInterno, empresa.logo_id);
+                            await definirAvatarGrupo(automacao.chatIdInterno, empresa.logo_id, true, empresa.id);
                         }
                     }
 
@@ -165,7 +167,9 @@ module.exports = async (req, res) => {
                     formData.wppCliente,
                     empresa.whatsapp,
                     formData.nomeCliente || 'Cliente',
-                    empresa.nome_fantasia || 'nossa gráfica'
+                    empresa.nome_fantasia || 'nossa gráfica',
+                    true,
+                    empresa.id
                 );
                 if (grupoNotif && grupoNotif.chatId) {
                     console.log(`[NOTIF-GROUP] Vinculando grupo de notificações ao pedido ${newPedidoId}...`);
@@ -175,7 +179,7 @@ module.exports = async (req, res) => {
                     
                     // --- NOVA LÓGICA: DEFINIR AVATAR DO GRUPO ---
                     if (empresa.logo_id && empresa.logo_id.startsWith('http')) {
-                        await definirAvatarGrupo(grupoNotif.chatId, empresa.logo_id);
+                        await definirAvatarGrupo(grupoNotif.chatId, empresa.logo_id, true, empresa.id);
                     }
 
                     console.log(`[NOTIF-GROUP] Grupo de notificações vinculado com sucesso! ID: ${grupoNotif.chatId}`);

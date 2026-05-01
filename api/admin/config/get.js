@@ -56,13 +56,20 @@ module.exports = async (req, res) => {
             WHERE empresa_id = $1 LIMIT 1
         `, empresaId);
 
+        const empresaData = await prisma.$queryRawUnsafe(`
+            SELECT chatapp_plano, chatapp_status, chatapp_qr_link
+            FROM empresas
+            WHERE id = $1 LIMIT 1
+        `, empresaId);
+
         if (configs.length === 0) {
             return res.status(200).json({
                 config: {
                     prazo_padrao_impressao: 24,
                     prazo_padrao_acabamento: 24,
                     mensagens_etapas: msgsPadrao
-                }
+                },
+                chatapp: empresaData[0] || {}
             });
         }
 
@@ -74,7 +81,7 @@ module.exports = async (req, res) => {
         
         configs[0].mensagens_etapas = finalMsgs;
 
-        return res.status(200).json({ config: configs[0] });
+        return res.status(200).json({ config: configs[0], chatapp: empresaData[0] || {} });
 
     } catch (error) {
         console.error("Erro GET config:", error);

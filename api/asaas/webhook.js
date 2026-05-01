@@ -32,14 +32,35 @@ module.exports = async (req, res) => {
             const resDesigner = await prisma.$executeRawUnsafe(`UPDATE designers_financeiro SET assinatura_status = 'ACTIVE' WHERE asaas_subscription_id = $1`, subId);
 
             console.log(`[WEBHOOK ASAAS] Resultado Update: Empresas afetadas: ${resEmpresa} | Designers afetados: ${resDesigner}`);
+
+            // VERIFICA SE É EMPRESA PREMIUM PARA NOTIFICAR O ADMIN
+            if (resEmpresa > 0) {
+                const empresasPrem = await prisma.$queryRawUnsafe(`SELECT nome_fantasia, chatapp_plano, chatapp_status FROM empresas WHERE asaas_subscription_id = $1 LIMIT 1`, subId);
+                if (empresasPrem.length > 0 && empresasPrem[0].chatapp_plano === 'PREMIUM' && empresasPrem[0].chatapp_status !== 'CONECTADO') {
+                    await prisma.$executeRawUnsafe(`INSERT INTO notificacoes_globais (titulo, mensagem, tipo, ativa) VALUES ($1, $2, 'warning', true)`,
+                        '🚨 NOVO UPGRADE PREMIUM PAGO', 
+                        `O cliente ${empresasPrem[0].nome_fantasia} ativou o plano Premium. Vá ao ChatApp, compre a licença e cole no banco de dados.`
+                    );
+                }
+            }
         }
 
         // Se a assinatura foi cancelada ou venceu
         else if (['PAYMENT_OVERDUE', 'PAYMENT_DELETED', 'SUBSCRIPTION_DELETED'].includes(event.event)) {
             console.log(`[WEBHOOK ASAAS] Ação: INATIVAR assinatura ${subId}`);
 
-            const resEmpresa = await prisma.$executeRawUnsafe(`UPDATE empresas SET assinatura_status = 'INATIVO' WHERE asaas_subscription_id = $1`, subId);
+            // Verifica se é premium antes de inativar para alertar
+            const empresasPrem = await prisma.$queryRawUnsafe(`SELECT nome_fantasia, chatapp_plano FROM empresas WHERE asaas_subscription_id = $1 LIMIT 1`, subId);
+            
+            const resEmpresa = await prisma.$executeRawUnsafe(`UPDATE empresas SET assinatura_status = 'INATIVO', chatapp_status = 'INATIVO' WHERE asaas_subscription_id = $1`, subId);
             const resDesigner = await prisma.$executeRawUnsafe(`UPDATE designers_financeiro SET assinatura_status = 'INATIVO' WHERE asaas_subscription_id = $1`, subId);
+
+            if (empresasPrem.length > 0 && empresasPrem[0].chatapp_plano === 'PREMIUM') {
+                await prisma.$executeRawUnsafe(`INSERT INTO notificacoes_globais (titulo, mensagem, tipo, ativa) VALUES ($1, $2, 'error', true)`,
+                    '🚨 URGENTE: DOWNGRADE/INADIMPLÊNCIA', 
+                    `O cliente ${empresasPrem[0].nome_fantasia} não renovou o Premium. Vá no ChatApp e cancele a licença associada para evitar cobranças.`
+                );
+            }
 
             console.log(`[WEBHOOK ASAAS] Resultado Update: Empresas afetadas: ${resEmpresa} | Designers afetados: ${resDesigner}`);
         } else {

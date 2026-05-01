@@ -47,9 +47,12 @@ module.exports = async (req, res) => {
 
         console.log(`[SUBSCRIBE ASAAS] Usuário encontrado: ${usuario.nome} | Email: ${usuario.email} | ID DB: ${usuario.id}`);
 
-        const valorAssinatura = tipo === 'empresa' ? 49.90 : 29.90;
+        let valorAssinatura = 29.90;
+        if (tipo === 'empresa') valorAssinatura = 49.90;
+        else if (tipo === 'empresa_premium') valorAssinatura = 116.50;
+
         let asaasCustomerId = usuario.asaas_customer_id;
-        const tabela = tipo === 'empresa' ? 'empresas' : 'designers_financeiro';
+        const tabela = (tipo === 'empresa' || tipo === 'empresa_premium') ? 'empresas' : 'designers_financeiro';
 
         let docFinal = customerCpf ? customerCpf.replace(/\D/g, '') : (usuario.documento ? usuario.documento.replace(/\D/g, '') : '');
 
@@ -109,6 +112,11 @@ module.exports = async (req, res) => {
 
         // Atualiza banco com ID da assinatura
         await prisma.$executeRawUnsafe(`UPDATE ${tabela} SET asaas_subscription_id = $1, assinatura_status = 'PENDING' WHERE ${idColuna} = $2`, subscriptionId, usuario.id);
+        
+        if (tipo === 'empresa_premium') {
+            await prisma.$executeRawUnsafe(`UPDATE empresas SET chatapp_plano = 'PREMIUM', chatapp_status = 'AGUARDANDO_ADMIN' WHERE id = $1`, usuario.id);
+        }
+
         console.log(`[SUBSCRIBE ASAAS] Status 'PENDING' e asaas_subscription_id salvos no banco.`);
 
         // 4. Buscar a cobrança gerada por esta assinatura
@@ -122,6 +130,14 @@ module.exports = async (req, res) => {
             if (subCheck.data.status === 'ACTIVE') {
                 console.log(`[SUBSCRIBE ASAAS] Assinatura já consta como ACTIVE direto da criação (Ex: Cartão pré-aprovado). Atualizando banco...`);
                 await prisma.$executeRawUnsafe(`UPDATE ${tabela} SET assinatura_status = 'ACTIVE' WHERE ${idColuna} = $1`, usuario.id);
+
+                if (tipo === 'empresa_premium') {
+                    await prisma.$executeRawUnsafe(`INSERT INTO notificacoes_globais (titulo, mensagem, tipo, ativa) VALUES ($1, $2, 'warning', true)`,
+                        '🚨 NOVO UPGRADE PREMIUM', 
+                        `O cliente ${usuario.nome} assinou o plano Premium. Vá ao ChatApp, compre uma licença e cole no banco de dados o ID.`
+                    );
+                }
+
                 return res.status(200).json({ success: true, status: 'ACTIVE' });
             }
         }

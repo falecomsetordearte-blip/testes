@@ -11,6 +11,8 @@
             --primary: #4f46e5;
             --primary-light: #6366f1;
             --secondary: #f43f5e;
+            --premium: #10b981;
+            --premium-light: #34d399;
             --bg: #0f172a;
             --card-bg: rgba(30, 41, 59, 0.7);
             --text: #f1f5f9;
@@ -63,8 +65,13 @@
         }
         .plan-card:hover { transform: translateY(-10px); border-color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
         .plan-card.featured { border: 2px solid var(--primary); }
+        .plan-card.premium { border: 2px solid var(--premium); background: rgba(16, 185, 129, 0.05); }
         .featured-badge {
             position: absolute; top: 15px; right: -35px; background: var(--primary);
+            color: white; padding: 5px 40px; transform: rotate(45deg); font-size: 0.75rem; font-weight: 700;
+        }
+        .premium-badge {
+            position: absolute; top: 15px; right: -35px; background: var(--premium);
             color: white; padding: 5px 40px; transform: rotate(45deg); font-size: 0.75rem; font-weight: 700;
         }
         .plan-icon { font-size: 3rem; color: var(--primary); margin-bottom: 20px; }
@@ -79,6 +86,13 @@
             background: var(--primary); color: white; cursor: pointer; transition: 0.3s; text-transform: uppercase;
         }
         .btn-plan:hover { background: var(--primary-light); filter: brightness(1.1); }
+        .btn-premium { background: var(--premium); }
+        .btn-premium:hover { background: var(--premium-light); }
+        .btn-saiba-mais {
+            width: 100%; padding: 10px; border-radius: 12px; border: 1px solid var(--border); font-weight: 600;
+            background: transparent; color: var(--text-muted); cursor: pointer; transition: 0.3s; margin-bottom: 10px;
+        }
+        .btn-saiba-mais:hover { background: rgba(255, 255, 255, 0.05); color: white; }
 
         /* STATE: ACTIVE SUBSCRIPTION (DASHBOARD) */
         #dashboard-view { display: none; }
@@ -160,7 +174,7 @@
                 </div>
                 <!-- Empresa -->
                 <div class="plan-card featured" id="card-empresa">
-                    <div class="featured-badge">MELHOR VALOR</div>
+                    <div class="featured-badge">BÁSICO</div>
                     <div class="plan-icon"><i class="fas fa-building"></i></div>
                     <div class="plan-name">Plano Empresa</div>
                     <div class="plan-price">R$ 49,90<span>/mês</span></div>
@@ -169,8 +183,24 @@
                         <li><i class="fas fa-check"></i> CRM de Vendas Incluso</li>
                         <li><i class="fas fa-check"></i> Gestão de Equipe Pros</li>
                         <li><i class="fas fa-check"></i> Suporte Prioritário</li>
+                        <li style="color: #64748b;"><i class="fas fa-times" style="color: #ef4444;"></i> Linha de WhatsApp Própria</li>
                     </ul>
                     <button class="btn-plan" onclick="openCheckout('empresa', 49.90)">Assinar Agora</button>
+                </div>
+                <!-- Empresa Premium -->
+                <div class="plan-card premium" id="card-empresa-premium">
+                    <div class="premium-badge">COMPLETO</div>
+                    <div class="plan-icon" style="color: var(--premium);"><i class="fas fa-crown"></i></div>
+                    <div class="plan-name">Plano Premium</div>
+                    <div class="plan-price">R$ 116,50<span>/mês</span></div>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check"></i> Todos os recursos do Básico</li>
+                        <li><i class="fas fa-check"></i> <strong>Sua Própria Linha WhatsApp</strong></li>
+                        <li><i class="fas fa-check"></i> Maior Confiança do seu Cliente</li>
+                        <li><i class="fas fa-check"></i> Notificações sem o nosso logotipo</li>
+                    </ul>
+                    <button class="btn-saiba-mais" onclick="openTermosModal()"><i class="fas fa-info-circle"></i> Saiba Mais sobre a Linha</button>
+                    <button class="btn-plan btn-premium" onclick="openCheckout('empresa_premium', 116.50)">Fazer Upgrade</button>
                 </div>
             </div>
         </div>
@@ -272,6 +302,22 @@
         </div>
     </div>
 
+    <!-- MODAL TERMOS DE RISCO -->
+    <div id="termos-modal" class="modal">
+        <div class="modal-content" style="max-width: 550px; text-align: left;">
+            <h2 style="margin-bottom:20px; color: var(--premium);"><i class="fas fa-shield-alt"></i> Termos da Linha Própria</h2>
+            <div style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; max-height: 60vh; overflow-y: auto; padding-right: 10px;">
+                <p style="margin-bottom: 15px;">Ao contratar o plano <strong>Premium</strong>, conectaremos a sua própria linha de WhatsApp (escaneando um QR Code) para que todos os envios de mensagens automatizadas no sistema passem a sair do seu número.</p>
+                <p style="margin-bottom: 15px;"><strong>Aviso Importante:</strong><br>Você é inteiramente responsável pelo chip e número utilizado. O WhatsApp possui políticas rígidas anti-spam e nós não nos responsabilizamos por eventuais banimentos de números pelo uso da plataforma.</p>
+                <p style="margin-bottom: 15px;">Recomendamos fortemente:<br>
+                - Não utilizar um número pessoal ou o seu principal número de fechamento de negócios sem antes entender os riscos.<br>
+                - Utilizar um chip secundário exclusivo para notificações sistêmicas.</p>
+                <p><strong>Prazo de Ativação:</strong> Após o pagamento, nossa equipe precisa gerar uma licença em nossos servidores de comunicação. Esse processo leva no máximo <strong>24 horas úteis</strong>.</p>
+            </div>
+            <button onclick="closeTermosModal()" class="btn-plan" style="margin-top:25px; background: #334155;">Entendi os Termos</button>
+        </div>
+    </div>
+
     <script>
         let isDesigner = false;
         let token = localStorage.getItem('sessionToken');
@@ -322,17 +368,24 @@
             
             if (currentType === 'designer') {
                 document.getElementById('card-empresa').style.display = 'none';
+                document.getElementById('card-empresa-premium').style.display = 'none';
                 document.getElementById('card-designer').style.display = 'block';
                 document.getElementById('card-designer').classList.add('featured');
             } else {
                 document.getElementById('card-designer').style.display = 'none';
                 document.getElementById('card-empresa').style.display = 'block';
+                document.getElementById('card-empresa-premium').style.display = 'block';
             }
         }
 
         function showDashboard(data) {
             document.getElementById('dashboard-view').style.display = 'block';
-            document.getElementById('disp-plan-name').innerText = data.tipo === 'empresa' ? 'Plano Empresa Premium' : 'Plano Designer Pro';
+            let nomePlano = 'Plano Ativo';
+            if (data.tipo === 'designer') nomePlano = 'Plano Designer Pro';
+            else if (data.tipo === 'empresa') nomePlano = 'Plano Empresa';
+            else if (data.tipo === 'empresa_premium') nomePlano = 'Plano Empresa Premium';
+            
+            document.getElementById('disp-plan-name').innerText = nomePlano;
             
             const badge = document.getElementById('disp-status-badge');
             badge.innerText = translateStatus(data.status);
@@ -396,11 +449,20 @@
         function openCheckout(tipo, valor) {
             currentType = tipo;
             document.getElementById('checkout-modal').style.display = 'flex';
-            document.getElementById('checkout-title').innerText = `Assinar Plano ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`;
+            const nomeStr = tipo === 'empresa_premium' ? 'Empresa Premium' : (tipo.charAt(0).toUpperCase() + tipo.slice(1));
+            document.getElementById('checkout-title').innerText = `Assinar Plano ${nomeStr}`;
         }
 
         function closeModal() {
             document.getElementById('checkout-modal').style.display = 'none';
+        }
+
+        function openTermosModal() {
+            document.getElementById('termos-modal').style.display = 'flex';
+        }
+
+        function closeTermosModal() {
+            document.getElementById('termos-modal').style.display = 'none';
         }
 
         function setMethod(m) {
