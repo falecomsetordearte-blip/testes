@@ -15,9 +15,8 @@
             --secondary: #f43f5e;
             --premium: #10b981;
             --premium-light: #34d399;
-            --card-bg-local: rgba(30, 41, 59, 0.7);
-            --border-local: rgba(255, 255, 255, 0.1);
-            --text-muted-local: #94a3b8;
+            --text-muted-local: #f1f5f9;
+            --border-local: rgba(255, 255, 255, 0.2);
         }
 
 
@@ -79,11 +78,11 @@
         }
         .plan-icon { font-size: 3rem; color: var(--primary); margin-bottom: 20px; }
         .plan-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 15px; }
-        .plan-price { font-size: 3rem; font-weight: 800; margin-bottom: 25px; }
-        .plan-price span { font-size: 1rem; color: var(--text-muted-local); font-weight: 400; }
+        .plan-price { font-size: 3rem; font-weight: 800; margin-bottom: 25px; color: #ffffff; }
+        .plan-price span { font-size: 1rem; color: #cbd5e1; font-weight: 400; }
         .plan-features { list-style: none; text-align: left; margin-bottom: 35px; }
-        .plan-features li { margin-bottom: 12px; display: flex; align-items: center; gap: 10px; color: #f1f5f9; font-size: 0.95rem; font-weight: 500; }
-        .plan-features li i { color: #22c55e; font-size: 1.1rem; }
+        .plan-features li { margin-bottom: 12px; display: flex; align-items: center; gap: 10px; color: #ffffff; font-size: 0.95rem; font-weight: 600; }
+        .plan-features li i { color: #4ade80; font-size: 1.1rem; }
         .btn-plan {
             width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: 700;
             background: var(--primary); color: white; cursor: pointer; transition: 0.3s; text-transform: uppercase;
@@ -92,10 +91,11 @@
         .btn-premium { background: var(--premium); }
         .btn-premium:hover { background: var(--premium-light); }
         .btn-saiba-mais {
-            width: 100%; padding: 10px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2); font-weight: 600;
-            background: transparent; color: #f1f5f9; cursor: pointer; transition: 0.3s; margin-bottom: 15px;
+            width: 100%; padding: 10px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.4); font-weight: 700;
+            background: rgba(255, 255, 255, 0.05); color: #ffffff; cursor: pointer; transition: 0.3s; margin-bottom: 15px;
+            font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .btn-saiba-mais:hover { background: rgba(255, 255, 255, 0.1); color: white; border-color: white; }
+        .btn-saiba-mais:hover { background: rgba(255, 255, 255, 0.15); border-color: #ffffff; }
 
         /* STATE: ACTIVE SUBSCRIPTION (DASHBOARD) */
         #dashboard-view { display: none; }
@@ -140,7 +140,7 @@
         }
         .modal-content {
             background: #1e293b; padding: 40px; border-radius: 24px; width: 90%; max-width: 450px; text-align: center;
-            border: 1px solid var(--border-local); box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255, 255, 255, 0.2); box-shadow: 0 25px 50px rgba(0,0,0,0.8); color: #ffffff;
         }
         .chk-input { width:100%; padding:12px; margin-bottom:12px; border-radius:10px; border:1px solid #334155; background:#0f172a; color:white; font-family:'Poppins'; font-size:0.9rem;}
         .method-btn { flex:1; padding:12px; border-radius:10px; border:1px solid #334155; background:transparent; color:white; cursor:pointer; font-weight:600; transition: 0.2s;}
@@ -317,13 +317,13 @@
     <div id="termos-modal" class="modal">
         <div class="modal-content" style="max-width: 550px; text-align: left;">
             <h2 style="margin-bottom:20px; color: var(--premium);"><i class="fas fa-shield-alt"></i> Termos da Linha Própria</h2>
-            <div style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; max-height: 60vh; overflow-y: auto; padding-right: 10px;">
+            <div style="font-size: 1rem; color: #ffffff; line-height: 1.6; max-height: 60vh; overflow-y: auto; padding-right: 10px; font-weight: 500;">
                 <p style="margin-bottom: 15px;">Ao contratar o plano <strong>PRO</strong>, conectaremos a sua própria linha de WhatsApp (escaneando um QR Code) para que todos os envios de mensagens automatizadas no sistema passem a sair do seu número.</p>
-                <p style="margin-bottom: 15px;"><strong>Aviso Importante:</strong><br>Você é inteiramente responsável pelo chip e número utilizado. O WhatsApp possui políticas rígidas anti-spam e nós não nos responsabilizamos por eventuais banimentos de números pelo uso da plataforma.</p>
-                <p style="margin-bottom: 15px;">Recomendamos fortemente:<br>
+                <p style="margin-bottom: 15px;"><strong style="color: #fb7185;">Aviso Importante:</strong><br>Você é inteiramente responsável pelo chip e número utilizado. O WhatsApp possui políticas rígidas anti-spam e nós não nos responsabilizamos por eventuais banimentos de números pelo uso da plataforma.</p>
+                <p style="margin-bottom: 15px;"><strong style="color: #38bdf8;">Recomendamos fortemente:</strong><br>
                 - Não utilizar um número pessoal ou o seu principal número de fechamento de negócios sem antes entender os riscos.<br>
                 - Utilizar um chip secundário exclusivo para notificações sistêmicas.</p>
-                <p><strong>Prazo de Ativação:</strong> Após o pagamento confirmado, você poderá acessar a tela de configurações para realizar a conexão via QR Code.</p>
+                <p><strong style="color: #4ade80;">Prazo de Ativação:</strong> Após o pagamento confirmado, você poderá acessar a tela de configurações para realizar a conexão via QR Code.</p>
             </div>
             <button onclick="closeTermosModal()" class="btn-plan" style="margin-top:25px; background: #334155;">Entendi os Termos</button>
         </div>
@@ -640,8 +640,8 @@
             const tempId = 'alert-dlg-' + Date.now();
             const modalHtml = `
                 <div id="${tempId}" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:10000; backdrop-filter:blur(8px);">
-                    <div style="background:#1e293b; padding:30px; border-radius:24px; width:90%; max-width:400px; text-align:center; border:1px solid var(--border); box-shadow:0 25px 50px rgba(0,0,0,0.5);">
-                        <p style="color:var(--text); font-size:1rem; margin-bottom:20px;">${msg}</p>
+                    <div style="background:#1e293b; padding:30px; border-radius:24px; width:90%; max-width:400px; text-align:center; border:2px solid #ffffff; box-shadow:0 25px 50px rgba(0,0,0,0.5);">
+                        <p style="color:#ffffff; font-size:1.1rem; margin-bottom:20px; font-weight:600;">${msg}</p>
                         <button id="btn-ok-${tempId}" style="width:100%; padding:12px; border:none; border-radius:10px; background:var(--primary); color:white; cursor:pointer; font-weight:600;">OK</button>
                     </div>
                 </div>
