@@ -82,8 +82,8 @@
         .plan-price { font-size: 3rem; font-weight: 800; margin-bottom: 25px; }
         .plan-price span { font-size: 1rem; color: var(--text-muted-local); font-weight: 400; }
         .plan-features { list-style: none; text-align: left; margin-bottom: 35px; }
-        .plan-features li { margin-bottom: 12px; display: flex; align-items: center; gap: 10px; color: #cbd5e1; font-size: 0.95rem; }
-        .plan-features li i { color: #22c55e; }
+        .plan-features li { margin-bottom: 12px; display: flex; align-items: center; gap: 10px; color: #f1f5f9; font-size: 0.95rem; font-weight: 500; }
+        .plan-features li i { color: #22c55e; font-size: 1.1rem; }
         .btn-plan {
             width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: 700;
             background: var(--primary); color: white; cursor: pointer; transition: 0.3s; text-transform: uppercase;
@@ -92,10 +92,10 @@
         .btn-premium { background: var(--premium); }
         .btn-premium:hover { background: var(--premium-light); }
         .btn-saiba-mais {
-            width: 100%; padding: 10px; border-radius: 12px; border: 1px solid var(--border-local); font-weight: 600;
-            background: transparent; color: var(--text-muted-local); cursor: pointer; transition: 0.3s; margin-bottom: 10px;
+            width: 100%; padding: 10px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2); font-weight: 600;
+            background: transparent; color: #f1f5f9; cursor: pointer; transition: 0.3s; margin-bottom: 15px;
         }
-        .btn-saiba-mais:hover { background: rgba(255, 255, 255, 0.05); color: white; }
+        .btn-saiba-mais:hover { background: rgba(255, 255, 255, 0.1); color: white; border-color: white; }
 
         /* STATE: ACTIVE SUBSCRIPTION (DASHBOARD) */
         #dashboard-view { display: none; }
@@ -339,6 +339,7 @@
         
         let currentType = isDesigner ? 'designer' : 'empresa';
         let selectedMethod = 'PIX';
+        let currentActivePlan = null;
 
         document.addEventListener('DOMContentLoaded', init);
 
@@ -387,10 +388,40 @@
                 document.getElementById('card-empresa').style.display = 'block';
                 document.getElementById('card-empresa-premium').style.display = 'block';
             }
+
+            // Marca o plano atual e desativa o botão
+            document.querySelectorAll('.plan-card').forEach(card => {
+                const btn = card.querySelector('.btn-plan');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = card.id === 'card-empresa-premium' ? 'Assinar Plano PRO' : 'Assinar Agora';
+                    btn.style.opacity = '1';
+                }
+            });
+
+            if (currentActivePlan) {
+                let activeCardId = '';
+                if (currentActivePlan === 'designer') activeCardId = 'card-designer';
+                else if (currentActivePlan === 'empresa') activeCardId = 'card-empresa';
+                else if (currentActivePlan === 'empresa_premium') activeCardId = 'card-empresa-premium';
+
+                if (activeCardId) {
+                    const card = document.getElementById(activeCardId);
+                    const btn = card.querySelector('.btn-plan');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerText = 'SEU PLANO ATUAL';
+                        btn.style.opacity = '0.7';
+                        btn.style.background = '#64748b';
+                    }
+                }
+            }
         }
 
         function showDashboard(data) {
             document.getElementById('dashboard-view').style.display = 'block';
+            currentActivePlan = data.tipo;
+
             let nomePlano = 'Plano Ativo';
             if (data.tipo === 'designer') nomePlano = 'Plano Designer Pro';
             else if (data.tipo === 'empresa') nomePlano = 'Plano Básico';
@@ -630,6 +661,7 @@
             const btnChange = document.getElementById('btn-change-plan');
 
             if (plansView.style.display === 'none' || plansView.style.display === '') {
+                showPlans(currentType); // Chama showPlans para garantir que os cards corretos sejam exibidos
                 plansView.style.display = 'block';
                 dashboardView.style.display = 'none';
                 btnChange.innerText = "Voltar ao Painel";
