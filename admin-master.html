@@ -88,11 +88,25 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .empty-hist{text-align:center;color:var(--muted);padding:30px;font-size:.85rem;}
 .empty-hist i{font-size:1.8rem;display:block;margin-bottom:10px;color:var(--border);}
 
-/* ── ASSINATURAS PLACEHOLDER ── */
-.coming-soon{text-align:center;padding:80px 30px;color:var(--muted);}
-.coming-soon .cs-icon{font-size:4rem;background:linear-gradient(135deg,var(--primary),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:20px;}
-.coming-soon h2{font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:10px;}
-.coming-soon p{font-size:.95rem;line-height:1.7;max-width:400px;margin:0 auto;}
+/* ── LINHAS PRO ── */
+.pro-list{display:flex;flex-direction:column;gap:16px;}
+.pro-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:20px;}
+.pro-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.pro-card-title{font-size:.95rem;font-weight:700;}
+.pro-card-sub{font-size:.78rem;color:var(--muted);margin-top:2px;}
+.pro-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.pro-fields .fg{margin-bottom:0;}
+.status-badge{font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;}
+.status-aguardando-admin{background:rgba(245,158,11,.15);color:var(--warn);border:1px solid rgba(245,158,11,.3);}
+.status-aguardando-qr{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3);}
+.status-conectado{background:rgba(16,185,129,.15);color:var(--success);border:1px solid rgba(16,185,129,.3);}
+.status-inativo{background:rgba(148,163,184,.1);color:var(--muted);border:1px solid var(--border);}
+.btn-save-pro{padding:9px 18px;background:linear-gradient(135deg,var(--primary),var(--accent));border:none;border-radius:8px;color:#fff;font-weight:700;font-size:.82rem;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px;font-family:inherit;white-space:nowrap;}
+.btn-save-pro:hover{opacity:.9;}
+.btn-save-pro:disabled{opacity:.5;cursor:not-allowed;}
+.pro-empty{text-align:center;padding:48px 20px;color:var(--muted);font-size:.9rem;}
+.pro-empty i{font-size:2.5rem;display:block;margin-bottom:12px;color:var(--border);}
+@media(max-width:700px){.pro-fields{grid-template-columns:1fr;}}
 
 /* ── TOAST ── */
 #toast{position:fixed;bottom:28px;right:28px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 20px;font-size:.88rem;font-weight:600;display:flex;align-items:center;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:99999;opacity:0;transform:translateY(10px);transition:.3s;pointer-events:none;}
@@ -140,7 +154,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <button class="tab-btn" onclick="switchTab('popup',this)"><i class="fas fa-window-restore"></i> Pop-ups</button>
     <button class="tab-btn" onclick="switchTab('novidade',this)"><i class="fas fa-star"></i> Atualizações</button>
     <button class="tab-btn" onclick="switchTab('ajuda',this)"><i class="fas fa-question-circle"></i> Ajuda (Central)</button>
-    <button class="tab-btn" onclick="switchTab('assinatura',this)"><i class="fas fa-credit-card"></i> Assinaturas</button>
+    <button class="tab-btn" onclick="switchTab('linhas',this)"><i class="fas fa-phone"></i> Linhas PRO</button>
   </div>
 
   <div class="main">
@@ -244,13 +258,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       </div>
     </div>
 
-    <!-- ===== ABA ASSINATURAS ===== -->
-    <div class="tab-panel single" id="tab-assinatura">
+    <!-- ===== ABA LINHAS PRO ===== -->
+    <div class="tab-panel single" id="tab-linhas">
       <div class="card">
-        <div class="coming-soon">
-          <div class="cs-icon"><i class="fas fa-credit-card"></i></div>
-          <h2>Controle de Assinaturas</h2>
-          <p>Esta seção está reservada para o gerenciamento de assinaturas. Em breve você irá explicar melhor o que precisa aqui e implementamos!</p>
+        <div class="card-title"><i class="fas fa-phone"></i> Gerenciamento de Linhas WhatsApp PRO</div>
+        <p class="card-sub">Empresas que pagaram o Plano PRO e aguardam a configuração da linha própria de WhatsApp. Preencha a licença, o link do QR Code e atualize o status para liberar o acesso.</p>
+        <div id="pro-list-container">
+          <div class="pro-empty"><i class="fas fa-spinner fa-spin"></i>Carregando...</div>
         </div>
       </div>
     </div>
@@ -300,6 +314,7 @@ async function doAuth() {
       loadHist('popup');
       loadHist('novidade');
       loadHist('ajuda');
+      loadLinhasPro();
     } else {
       document.getElementById('auth-error').style.display = 'block';
     }
@@ -459,6 +474,114 @@ function showToast(msg, type) {
   t.innerHTML = `<i class="fas ${icon}"></i> ${msg}`;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.className = ''; }, 3000);
+}
+
+// ── Linhas PRO ──────────────────────────────────────────────
+async function loadLinhasPro() {
+  const container = document.getElementById('pro-list-container');
+  if (!container) return;
+  container.innerHTML = '<div class="pro-empty"><i class="fas fa-spinner fa-spin"></i>Carregando...</div>';
+
+  try {
+    const res = await fetch('/api/admin/linhas-pro', {
+      headers: { 'x-admin-pass': ADMIN_PASS_LOCAL }
+    });
+    const lista = await res.json();
+
+    if (!lista.length) {
+      container.innerHTML = '<div class="pro-empty"><i class="fas fa-phone-slash"></i>Nenhuma empresa com Plano PRO encontrada.</div>';
+      return;
+    }
+
+    const statusOpts = [
+      { value: 'AGUARDANDO_ADMIN', label: '⏳ Aguardando Admin' },
+      { value: 'AGUARDANDO_QR',    label: '📱 Aguardando QR Code' },
+      { value: 'CONECTADO',        label: '✅ Conectado' },
+      { value: 'INATIVO',          label: '🔴 Inativo' }
+    ];
+
+    const statusClass = (s) => ({
+      'AGUARDANDO_ADMIN': 'status-aguardando-admin',
+      'AGUARDANDO_QR':    'status-aguardando-qr',
+      'CONECTADO':        'status-conectado',
+      'INATIVO':          'status-inativo'
+    })[s] || 'status-inativo';
+
+    container.innerHTML = '<div class="pro-list">' + lista.map(e => {
+      const st = e.chatapp_status || 'AGUARDANDO_ADMIN';
+      const opts = statusOpts.map(o =>
+        `<option value="${o.value}" ${st === o.value ? 'selected' : ''}>${o.label}</option>`
+      ).join('');
+
+      return `
+        <div class="pro-card">
+          <div class="pro-card-header">
+            <div>
+              <div class="pro-card-title">🏢 ${e.nome_fantasia}</div>
+              <div class="pro-card-sub">${e.whatsapp || '—'} &bull; ${e.email || '—'} &bull; plan_type: <strong>${e.plan_type || '—'}</strong></div>
+            </div>
+            <span class="status-badge ${statusClass(st)}">${st.replace('_', ' ')}</span>
+          </div>
+          <div class="pro-fields">
+            <div class="fg">
+              <label>License ID (ChatApp)</label>
+              <input type="text" id="lic-${e.id}" value="${e.chatapp_license_id || ''}" placeholder="Ex: 59999">
+            </div>
+            <div class="fg">
+              <label>Link do QR Code</label>
+              <input type="text" id="qr-${e.id}" value="${e.chatapp_qr_link || ''}" placeholder="https://...">
+            </div>
+            <div class="fg">
+              <label>Status da Linha</label>
+              <select id="st-${e.id}">${opts}</select>
+            </div>
+          </div>
+          <button class="btn-save-pro" id="btn-pro-${e.id}" onclick="salvarLinhaPro(${e.id})">
+            <i class="fas fa-save"></i> Salvar Configuração
+          </button>
+        </div>
+      `;
+    }).join('') + '</div>';
+
+  } catch(ex) {
+    container.innerHTML = '<div class="pro-empty" style="color:var(--danger)"><i class="fas fa-triangle-exclamation"></i>Erro ao carregar.</div>';
+  }
+}
+
+async function salvarLinhaPro(empresaId) {
+  const btn = document.getElementById(`btn-pro-${empresaId}`);
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+
+  const licenseId = document.getElementById(`lic-${empresaId}`).value.trim();
+  const qrLink    = document.getElementById(`qr-${empresaId}`).value.trim();
+  const status    = document.getElementById(`st-${empresaId}`).value;
+
+  try {
+    const res = await fetch('/api/admin/linhas-pro', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-pass': ADMIN_PASS_LOCAL },
+      body: JSON.stringify({
+        empresaId,
+        chatapp_license_id: licenseId,
+        chatapp_qr_link:    qrLink,
+        chatapp_status:     status
+      })
+    });
+    if (res.ok) {
+      showToast('Linha atualizada com sucesso!', 'ok');
+      loadLinhasPro();
+    } else {
+      const err = await res.json();
+      showToast('Erro: ' + (err.message || 'Falha'), 'err');
+    }
+  } catch(ex) {
+    showToast('Erro de conexão.', 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = orig;
+  }
 }
 </script>
 </body>
