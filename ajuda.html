@@ -50,7 +50,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .empty-state i{font-size:3rem;color:var(--border);margin-bottom:20px;display:block;}
 .empty-state h2{font-size:1.4rem;color:var(--text);margin-bottom:10px;font-weight:700;}
 
-.article-header{margin-bottom:32px;border-bottom:1px solid var(--border);padding-bottom:24px;}
+.article-header{margin-bottom:32px;border-bottom:1px solid var(--border);padding-bottom:24px;position:relative;}
+.btn-copy-link{position:absolute;top:0;right:0;background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:8px 12px;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;transition:.2s;}
+.btn-copy-link:hover{color:var(--accent);border-color:var(--accent);}
 .article-category{display:inline-block;padding:4px 10px;background:rgba(99,102,241,.15);color:var(--accent);border-radius:6px;font-size:.75rem;font-weight:700;margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px;}
 .article-title{font-size:2rem;font-weight:800;color:#fff;}
 
@@ -128,6 +130,13 @@ async function loadArticles() {
     if(res.ok) {
       ARTICLES = await res.json();
       renderSidebar(ARTICLES);
+
+      // Verifica se tem ID na URL
+      const params = new URLSearchParams(window.location.search);
+      const urlId = params.get('id');
+      if(urlId) {
+        openArticle(parseInt(urlId), true);
+      }
     } else {
       showError('Não foi possível carregar os artigos.');
     }
@@ -166,9 +175,16 @@ function renderSidebar(articlesToRender) {
 }
 
 // Abre um artigo específico
-function openArticle(id) {
+function openArticle(id, preventPush = false) {
   const article = ARTICLES.find(a => a.id === id);
   if(!article) return;
+
+  // Atualiza a URL para permitir cópia
+  if(!preventPush) {
+    const url = new URL(window.location);
+    url.searchParams.set('id', id);
+    window.history.pushState({}, '', url);
+  }
 
   // Marca o botão ativo no menu
   document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
@@ -183,6 +199,7 @@ function openArticle(id) {
 
   contentArea.innerHTML = `
     <div class="article-header">
+      <button class="btn-copy-link" onclick="copyArticleLink(${article.id})"><i class="fas fa-link"></i> Copiar Link</button>
       <div class="article-category">${article.categoria}</div>
       <h1 class="article-title">${article.titulo}</h1>
     </div>
@@ -226,6 +243,17 @@ function getRelatedHtml(currentArticle) {
   });
   html += `</div></div>`;
   return html;
+}
+
+// Copia o link para a área de transferência
+function copyArticleLink(id) {
+  const url = new URL(window.location);
+  url.searchParams.set('id', id);
+  navigator.clipboard.writeText(url.toString()).then(() => {
+    alert('Link direto copiado para a área de transferência!');
+  }).catch(() => {
+    alert('Falha ao copiar o link. Tente copiar a URL do navegador.');
+  });
 }
 
 // Sistema de Busca
