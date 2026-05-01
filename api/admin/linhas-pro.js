@@ -6,7 +6,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const ADMIN_PASS = process.env.ADMIN_MASTER_PASS || 'setor2024master';
+const ADMIN_PASS = process.env.ADMIN_PASS;
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');

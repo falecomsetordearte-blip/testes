@@ -486,6 +486,13 @@ async function loadLinhasPro() {
     const res = await fetch('/api/admin/linhas-pro', {
       headers: { 'x-admin-pass': ADMIN_PASS_LOCAL }
     });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      container.innerHTML = `<div class="pro-empty" style="color:var(--danger)"><i class="fas fa-triangle-exclamation"></i>Erro ${res.status}: ${err.message || 'Falha ao carregar.'}</div>`;
+      return;
+    }
+
     const lista = await res.json();
 
     if (!lista.length) {
