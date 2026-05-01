@@ -482,7 +482,9 @@
                     const status = data.chatapp.chatapp_status;
                     const qrLink = data.chatapp.chatapp_qr_link;
 
-                    if (plano === 'PREMIUM') {
+                    // Desbloqueia se chatapp_plano = 'PREMIUM' OU plan_type = 'PRO'
+                    const isPro = plano === 'PREMIUM' || data.chatapp.plan_type === 'PRO';
+                    if (isPro) {
                         document.getElementById('linha-propria-locked').style.display = 'none';
                         document.getElementById('linha-propria-active').style.display = 'block';
 

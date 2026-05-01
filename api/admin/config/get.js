@@ -57,7 +57,7 @@ module.exports = async (req, res) => {
         `, empresaId);
 
         const empresaData = await prisma.$queryRawUnsafe(`
-            SELECT chatapp_plano, chatapp_status, chatapp_qr_link
+            SELECT chatapp_plano, chatapp_status, chatapp_qr_link, plan_type
             FROM empresas
             WHERE id = $1 LIMIT 1
         `, empresaId);
