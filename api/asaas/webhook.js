@@ -28,18 +28,24 @@ module.exports = async (req, res) => {
             console.log(`[WEBHOOK ASAAS] Ação: ATIVAR assinatura ${subId}`);
 
             // Ativa em ambas as tabelas (o ID é único)
+            // Ativa em ambas as tabelas (o ID é único)
             const resEmpresa = await prisma.$executeRawUnsafe(`UPDATE empresas SET assinatura_status = 'ACTIVE' WHERE asaas_subscription_id = $1`, subId);
             const resDesigner = await prisma.$executeRawUnsafe(`UPDATE designers_financeiro SET assinatura_status = 'ACTIVE' WHERE asaas_subscription_id = $1`, subId);
 
             console.log(`[WEBHOOK ASAAS] Resultado Update: Empresas afetadas: ${resEmpresa} | Designers afetados: ${resDesigner}`);
 
-            // VERIFICA SE É EMPRESA PREMIUM PARA NOTIFICAR O ADMIN
+            // VERIFICA SE É PLANO PRO (R$ 490,00) PARA ATIVAR RECURSOS DE WHATSAPP
             if (resEmpresa > 0) {
-                const empresasPrem = await prisma.$queryRawUnsafe(`SELECT nome_fantasia, chatapp_plano, chatapp_status FROM empresas WHERE asaas_subscription_id = $1 LIMIT 1`, subId);
-                if (empresasPrem.length > 0 && empresasPrem[0].chatapp_plano === 'PREMIUM' && empresasPrem[0].chatapp_status !== 'CONECTADO') {
+                // Buscamos o valor da cobrança para confirmar se é o plano PRO
+                const valorPago = event.payment.value;
+                if (valorPago >= 490.00) {
+                    console.log(`[WEBHOOK ASAAS] Detectado pagamento do Plano PRO. Ativando recursos...`);
+                    await prisma.$executeRawUnsafe(`UPDATE empresas SET chatapp_plano = 'PREMIUM', chatapp_status = 'AGUARDANDO_ADMIN' WHERE asaas_subscription_id = $1`, subId);
+                    
+                    const empresasPrem = await prisma.$queryRawUnsafe(`SELECT nome_fantasia FROM empresas WHERE asaas_subscription_id = $1 LIMIT 1`, subId);
                     await prisma.$executeRawUnsafe(`INSERT INTO notificacoes_globais (titulo, mensagem, tipo, ativa) VALUES ($1, $2, 'warning', true)`,
-                        '🚨 NOVO UPGRADE PREMIUM PAGO', 
-                        `O cliente ${empresasPrem[0].nome_fantasia} ativou o plano Premium. Vá ao ChatApp, compre a licença e cole no banco de dados.`
+                        '🚨 NOVO UPGRADE PRO PAGO', 
+                        `O cliente ${empresasPrem[0].nome_fantasia} ativou o plano PRO. Vincule a licença e o link do QR Code no banco para liberar o acesso dele.`
                     );
                 }
             }

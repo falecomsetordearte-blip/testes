@@ -49,7 +49,7 @@ module.exports = async (req, res) => {
 
         let valorAssinatura = 29.90;
         if (tipo === 'empresa') valorAssinatura = 49.90;
-        else if (tipo === 'empresa_premium') valorAssinatura = 116.50;
+        else if (tipo === 'empresa_premium') valorAssinatura = 490.00;
 
         let asaasCustomerId = usuario.asaas_customer_id;
         const tabela = (tipo === 'empresa' || tipo === 'empresa_premium') ? 'empresas' : 'designers_financeiro';
@@ -113,9 +113,7 @@ module.exports = async (req, res) => {
         // Atualiza banco com ID da assinatura
         await prisma.$executeRawUnsafe(`UPDATE ${tabela} SET asaas_subscription_id = $1, assinatura_status = 'PENDING' WHERE ${idColuna} = $2`, subscriptionId, usuario.id);
         
-        if (tipo === 'empresa_premium') {
-            await prisma.$executeRawUnsafe(`UPDATE empresas SET chatapp_plano = 'PREMIUM', chatapp_status = 'AGUARDANDO_ADMIN' WHERE id = $1`, usuario.id);
-        }
+        // Observação: O chatapp_plano será ativado apenas via Webhook após confirmação do pagamento.
 
         console.log(`[SUBSCRIBE ASAAS] Status 'PENDING' e asaas_subscription_id salvos no banco.`);
 

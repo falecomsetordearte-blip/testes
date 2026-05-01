@@ -5,7 +5,7 @@ const axios = require('axios');
 const FormData = require('form-data');
 const { IncomingForm } = require('formidable');
 const fs = require('fs');
-const { getChatAppToken } = require('../helpers/chatapp');
+const { getChatAppToken, getLicenseId } = require('../helpers/chatapp');
 
 export const config = {
     api: {
@@ -41,7 +41,6 @@ module.exports = async (req, res) => {
         console.log(`[CHAT API] Ação: ${action} | Pedido: ${pedidoId || 'N/A'} | Tipo: ${tipoChat}`);
 
         try {
-            const L_ID = process.env.CHATAPP_LICENSE_ID || '59808'; 
             const L_MSG = 'grWhatsApp'; 
 
             // --- SISTEMA DE AUTO-CURA (RENOVAÇÃO DE TOKEN) ---
@@ -72,7 +71,7 @@ module.exports = async (req, res) => {
                 console.log(`[CHAT NOTIF] Verificando ${idsParaChecar.length} pedidos para notificações.`);
 
                 const results = await prisma.$queryRawUnsafe(`
-                    SELECT id, chatapp_chat_id, chatapp_chat_intern_id 
+                    SELECT id, empresa_id, chatapp_chat_id, chatapp_chat_intern_id 
                     FROM pedidos WHERE id = ANY($1::int[])
                 `, idsParaChecar);
 
@@ -82,11 +81,12 @@ module.exports = async (req, res) => {
                 // Usamos Promise.all para ser mais rápido, mas ChatApp pode ter rate limit se forem muitos pedidos
                 await Promise.all(results.map(async (p) => {
                     latestMessages[p.id] = { cliente: null, interno: null };
+                    const currentLID = await getLicenseId(p.empresa_id);
 
                     // Última do Cliente
                     if (p.chatapp_chat_id) {
                         try {
-                            const urlC = `https://api.chatapp.online/v1/licenses/${L_ID}/messengers/${L_MSG}/chats/${p.chatapp_chat_id}/messages?limit=1&direction=prev`;
+                            const urlC = `https://api.chatapp.online/v1/licenses/${currentLID}/messengers/${L_MSG}/chats/${p.chatapp_chat_id}/messages?limit=1&direction=prev`;
                             const resC = await fetchWithRetry('GET', urlC, null);
                             const lastC = resC.data?.data?.items?.[0];
                             if (lastC) {
@@ -98,7 +98,7 @@ module.exports = async (req, res) => {
                     // Última da Gráfica (Interno)
                     if (p.chatapp_chat_intern_id) {
                         try {
-                            const urlI = `https://api.chatapp.online/v1/licenses/${L_ID}/messengers/${L_MSG}/chats/${p.chatapp_chat_intern_id}/messages?limit=1&direction=prev`;
+                            const urlI = `https://api.chatapp.online/v1/licenses/${currentLID}/messengers/${L_MSG}/chats/${p.chatapp_chat_intern_id}/messages?limit=1&direction=prev`;
                             const resI = await fetchWithRetry('GET', urlI, null);
                             const lastI = resI.data?.data?.items?.[0];
                             if (lastI) {
@@ -116,7 +116,7 @@ module.exports = async (req, res) => {
             if (!pedidoId) return res.status(400).json({ message: "ID do pedido é obrigatório para esta ação." });
 
             const pedidoRes = await prisma.$queryRawUnsafe(`
-                SELECT chatapp_chat_id, chatapp_chat_intern_id 
+                SELECT empresa_id, chatapp_chat_id, chatapp_chat_intern_id 
                 FROM pedidos WHERE id = $1
             `, Number(pedidoId));
             
@@ -130,8 +130,10 @@ module.exports = async (req, res) => {
                 return res.status(404).json({ message: "Este chat específico não foi localizado para este pedido." });
             }
 
+            const currentLID = await getLicenseId(pedidoRes[0].empresa_id);
+
             if (action === 'get') {
-                const url = `https://api.chatapp.online/v1/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/messages?limit=50&direction=prev`;
+                const url = `https://api.chatapp.online/v1/licenses/${currentLID}/messengers/${L_MSG}/chats/${chatId}/messages?limit=50&direction=prev`;
                 const response = await fetchWithRetry('GET', url, null);
                 
                 let itens = (response.data?.data?.items || []).reverse();
@@ -161,7 +163,7 @@ module.exports = async (req, res) => {
                 let headers = {};
 
                 if (arquivo) {
-                    url = `https://api.chatapp.online/v1/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/messages/file`;
+                    url = `https://api.chatapp.online/v1/licenses/${currentLID}/messengers/${L_MSG}/chats/${chatId}/messages/file`;
                     const fd = new FormData();
                     fd.append('file', fs.createReadStream(arquivo.filepath), { filename: arquivo.originalFilename });
                     if (texto) fd.append('caption', `*${designerNome}:* ${texto}`);
@@ -170,7 +172,7 @@ module.exports = async (req, res) => {
                     data = fd;
                     headers = fd.getHeaders();
                 } else {
-                    url = `https://api.chatapp.online/v1/licenses/${L_ID}/messengers/${L_MSG}/chats/${chatId}/messages/text`;
+                    url = `https://api.chatapp.online/v1/licenses/${currentLID}/messengers/${L_MSG}/chats/${chatId}/messages/text`;
                     data = { text: `*${designerNome}:* ${texto}` };
                     headers['Content-Type'] = 'application/json';
                 }

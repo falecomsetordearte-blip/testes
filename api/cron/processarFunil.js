@@ -94,7 +94,7 @@ module.exports = async (req, res) => {
                     if (chatId) {
                         console.log(`[CRON-MARKETING] Enviando mensagem ${proximaMensagem.id} para cliente ${cliente.nome} (${cliente.whatsapp})`);
                         
-                        await enviarMensagemTexto(chatId.toString(), proximaMensagem.texto);
+                        await enviarMensagemTexto(chatId.toString(), proximaMensagem.texto, true, empresaId);
                         
                         // Registrar no log
                         await prisma.$queryRawUnsafe(`

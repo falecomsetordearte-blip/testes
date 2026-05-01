@@ -182,11 +182,11 @@
                     </ul>
                     <button class="btn-plan" onclick="openCheckout('designer', 29.90)">Assinar Agora</button>
                 </div>
-                <!-- Empresa -->
+                <!-- Plano Básico -->
                 <div class="plan-card featured" id="card-empresa">
                     <div class="featured-badge">BÁSICO</div>
                     <div class="plan-icon"><i class="fas fa-building"></i></div>
-                    <div class="plan-name">Plano Empresa</div>
+                    <div class="plan-name">Plano Básico</div>
                     <div class="plan-price">R$ 49,90<span>/mês</span></div>
                     <ul class="plan-features">
                         <li><i class="fas fa-check"></i> Pedidos Ilimitados</li>
@@ -197,20 +197,20 @@
                     </ul>
                     <button class="btn-plan" onclick="openCheckout('empresa', 49.90)">Assinar Agora</button>
                 </div>
-                <!-- Empresa Premium -->
+                <!-- Plano PRO -->
                 <div class="plan-card premium" id="card-empresa-premium">
-                    <div class="premium-badge">COMPLETO</div>
+                    <div class="premium-badge">RECOMENDADO</div>
                     <div class="plan-icon" style="color: var(--premium);"><i class="fas fa-crown"></i></div>
-                    <div class="plan-name">Plano Premium</div>
-                    <div class="plan-price">R$ 116,50<span>/mês</span></div>
+                    <div class="plan-name">Plano PRO</div>
+                    <div class="plan-price">R$ 490,00<span>/mês</span></div>
                     <ul class="plan-features">
-                        <li><i class="fas fa-check"></i> Todos os recursos do Básico</li>
                         <li><i class="fas fa-check"></i> <strong>Sua Própria Linha WhatsApp</strong></li>
-                        <li><i class="fas fa-check"></i> Maior Confiança do seu Cliente</li>
-                        <li><i class="fas fa-check"></i> Notificações sem o nosso logotipo</li>
+                        <li><i class="fas fa-check"></i> Notificações com seu Número</li>
+                        <li><i class="fas fa-check"></i> Sem logotipos de terceiros</li>
+                        <li><i class="fas fa-check"></i> Todos os recursos do Básico</li>
                     </ul>
                     <button class="btn-saiba-mais" onclick="openTermosModal()"><i class="fas fa-info-circle"></i> Saiba Mais sobre a Linha</button>
-                    <button class="btn-plan btn-premium" onclick="openCheckout('empresa_premium', 116.50)">Fazer Upgrade</button>
+                    <button class="btn-plan btn-premium" onclick="openCheckout('empresa_premium', 490.00)">Assinar Plano PRO</button>
                 </div>
             </div>
         </div>
@@ -317,12 +317,12 @@
         <div class="modal-content" style="max-width: 550px; text-align: left;">
             <h2 style="margin-bottom:20px; color: var(--premium);"><i class="fas fa-shield-alt"></i> Termos da Linha Própria</h2>
             <div style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; max-height: 60vh; overflow-y: auto; padding-right: 10px;">
-                <p style="margin-bottom: 15px;">Ao contratar o plano <strong>Premium</strong>, conectaremos a sua própria linha de WhatsApp (escaneando um QR Code) para que todos os envios de mensagens automatizadas no sistema passem a sair do seu número.</p>
+                <p style="margin-bottom: 15px;">Ao contratar o plano <strong>PRO</strong>, conectaremos a sua própria linha de WhatsApp (escaneando um QR Code) para que todos os envios de mensagens automatizadas no sistema passem a sair do seu número.</p>
                 <p style="margin-bottom: 15px;"><strong>Aviso Importante:</strong><br>Você é inteiramente responsável pelo chip e número utilizado. O WhatsApp possui políticas rígidas anti-spam e nós não nos responsabilizamos por eventuais banimentos de números pelo uso da plataforma.</p>
                 <p style="margin-bottom: 15px;">Recomendamos fortemente:<br>
                 - Não utilizar um número pessoal ou o seu principal número de fechamento de negócios sem antes entender os riscos.<br>
                 - Utilizar um chip secundário exclusivo para notificações sistêmicas.</p>
-                <p><strong>Prazo de Ativação:</strong> Após o pagamento, nossa equipe precisa gerar uma licença em nossos servidores de comunicação. Esse processo leva no máximo <strong>24 horas úteis</strong>.</p>
+                <p><strong>Prazo de Ativação:</strong> Após o pagamento confirmado, você poderá acessar a tela de configurações para realizar a conexão via QR Code.</p>
             </div>
             <button onclick="closeTermosModal()" class="btn-plan" style="margin-top:25px; background: #334155;">Entendi os Termos</button>
         </div>
@@ -392,8 +392,8 @@
             document.getElementById('dashboard-view').style.display = 'block';
             let nomePlano = 'Plano Ativo';
             if (data.tipo === 'designer') nomePlano = 'Plano Designer Pro';
-            else if (data.tipo === 'empresa') nomePlano = 'Plano Empresa';
-            else if (data.tipo === 'empresa_premium') nomePlano = 'Plano Empresa Premium';
+            else if (data.tipo === 'empresa') nomePlano = 'Plano Básico';
+            else if (data.tipo === 'empresa_premium') nomePlano = 'Plano PRO';
             
             document.getElementById('disp-plan-name').innerText = nomePlano;
             
@@ -459,7 +459,7 @@
         function openCheckout(tipo, valor) {
             currentType = tipo;
             document.getElementById('checkout-modal').style.display = 'flex';
-            const nomeStr = tipo === 'empresa_premium' ? 'Empresa Premium' : (tipo.charAt(0).toUpperCase() + tipo.slice(1));
+            const nomeStr = tipo === 'empresa_premium' ? 'PRO' : (tipo.charAt(0).toUpperCase() + tipo.slice(1));
             document.getElementById('checkout-title').innerText = `Assinar Plano ${nomeStr}`;
         }
 
@@ -532,8 +532,8 @@
                 document.getElementById('checkout-success').style.display = 'block';
                 
                 if (data.status === 'ACTIVE') {
-                    document.getElementById('success-title').innerText = "assinatura Ativada!";
-                    document.getElementById('success-desc').innerText = "Sua conta já está liberada com todos os recursos premium.";
+                    document.getElementById('success-title').innerText = "Assinatura Ativada!";
+                    document.getElementById('success-desc').innerHTML = "Sua conta já está liberada com todos os recursos PRO.<br><br><a href='/admin-configuracoes.html' style='color:var(--primary); font-weight:700;'>Clique aqui para configurar sua linha de WhatsApp</a>";
                 } else if (selectedMethod === 'PIX') {
                     document.getElementById('success-title').innerText = "Aguardando PIX";
                     document.getElementById('pix-qr-area').style.display = 'block';

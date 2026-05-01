@@ -67,7 +67,8 @@ async function getLicenseId(empresaId) {
         if (empresas.length > 0) {
             const e = empresas[0];
             if (e.chatapp_plano === 'PREMIUM' && e.chatapp_status === 'CONECTADO' && e.chatapp_license_id) {
-                licenseId = e.chatapp_license_id;
+                console.log(`[CHATAPP-LICENSE] Usando linha própria da empresa ${empresaId}: ${e.chatapp_license_id}`);
+                return e.chatapp_license_id;
             }
         }
     } catch(err) {
@@ -353,15 +354,7 @@ async function enviarNotificacaoEtapa(pedidoId, novaEtapa, retry = true) {
 
         // 5. Envia no Chat do Grupo
         const headers = { 'Authorization': token, 'Content-Type': 'application/json', 'Lang': 'pt' };
-        
-        let L_ID = process.env.CHATAPP_LICENSE_ID || '59808';
-        if (empresas.length > 0) {
-            const e = empresas[0];
-            if (e.chatapp_plano === 'PREMIUM' && e.chatapp_status === 'CONECTADO' && e.chatapp_license_id) {
-                L_ID = e.chatapp_license_id;
-            }
-        }
-
+        const L_ID = await getLicenseId(p.empresa_id);
         const L_MSG = 'grWhatsApp';
         const url = `${CHATAPP_API}/licenses/${L_ID}/messengers/${L_MSG}/chats/${p.chatapp_chat_notificacoes_id}/messages/text`;
 
