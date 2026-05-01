@@ -477,6 +477,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     // ==========================================
     (async function carregarAdminContent() {
         try {
+            // Não carregar nada do admin (sininho/popup) na própria tela master
+            if (window.location.pathname.includes('admin-master.html')) return;
+
             const sessionToken  = localStorage.getItem("sessionToken");
             const designerToken = localStorage.getItem("designerToken");
             if (!sessionToken && !designerToken) return;
