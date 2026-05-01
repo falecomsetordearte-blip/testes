@@ -435,7 +435,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         bellBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            const estaAbrindo = !dropdown.classList.contains('open');
             dropdown.classList.toggle('open');
+
+            // Ao ABRIR: marca todas como lidas e zera o badge
+            if (estaAbrindo) {
+                marcarTodasComoLidas();
+            }
         });
 
         document.addEventListener('click', (e) => {
@@ -444,6 +450,27 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         });
     })();
+
+    // Salva IDs lidos e zera badge
+    function marcarTodasComoLidas() {
+        const badge = document.getElementById('notif-badge');
+        const items = document.querySelectorAll('#notif-list .notif-item');
+        const vistas = JSON.parse(localStorage.getItem('notif_vistas') || '[]');
+
+        items.forEach(el => {
+            const id = el.dataset.notifId;
+            if (id && !vistas.includes(id)) vistas.push(id);
+            // Remove o ponto azul visualmente
+            const dot = el.querySelector('.dot');
+            if (dot) dot.style.background = '#cbd5e1';
+        });
+
+        localStorage.setItem('notif_vistas', JSON.stringify(vistas));
+        if (badge) {
+            badge.textContent = '0';
+            badge.classList.add('hidden');
+        }
+    }
 
     // ==========================================
     // SISTEMA DE NOTIFICAÇÕES DO SININHO + POPUP
@@ -466,23 +493,32 @@ document.addEventListener("DOMContentLoaded", async () => {
             const notifBadge = document.getElementById('notif-badge');
 
             if (notifList && data.notificacoes && data.notificacoes.length > 0) {
-                notifBadge.textContent = data.notificacoes.length > 9 ? '9+' : data.notificacoes.length;
-                notifBadge.classList.remove('hidden');
+                // IDs já vistos pelo usuário neste device
+                const vistas = JSON.parse(localStorage.getItem('notif_vistas') || '[]');
+                const naoVistas = data.notificacoes.filter(n => !vistas.includes(String(n.id)));
 
-                notifList.innerHTML = data.notificacoes.map(n => `
-                    <div class="notif-item">
+                // Badge só com as não lidas
+                if (naoVistas.length > 0) {
+                    notifBadge.textContent = naoVistas.length > 9 ? '9+' : naoVistas.length;
+                    notifBadge.classList.remove('hidden');
+                } else {
+                    notifBadge.classList.add('hidden');
+                }
+
+                notifList.innerHTML = data.notificacoes.map(n => {
+                    const jaVista = vistas.includes(String(n.id));
+                    const linkHtml = n.link_saiba_mais
+                        ? `<a href="${n.link_saiba_mais}" target="_blank" class="notif-item-link"><i class="fas fa-arrow-right"></i> Saiba mais</a>`
+                        : '';
+                    return `<div class="notif-item" data-notif-id="${n.id}">
                         <div class="notif-item-title">
-                            <span class="dot"></span>
+                            <span class="dot" style="background:${jaVista ? '#cbd5e1' : '#4f46e5'}"></span>
                             ${n.titulo}
                         </div>
                         <p class="notif-item-msg">${n.mensagem}</p>
-                        ${n.link_saiba_mais
-                            ? `<a href="${n.link_saiba_mais}" target="_blank" class="notif-item-link">
-                                <i class="fas fa-arrow-right"></i> Saiba mais
-                               </a>`
-                            : ''}
-                    </div>
-                `).join('');
+                        ${linkHtml}
+                    </div>`;
+                }).join('');
             }
 
             // ── Injetar popup HTML (uma vez por sessão) ──────────
