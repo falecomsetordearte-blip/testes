@@ -637,6 +637,144 @@
                 max-width: 100%;
             }
         }
+        /* ── ESTILOS DO SININHO DE NOTIFICAÇÕES ── */
+        .notif-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .notification-btn {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            color: var(--secondary-color);
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 12px;
+            transition: var(--transition);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .notification-btn:hover {
+            background-color: #f1f5f9;
+            color: var(--primary-color);
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--danger);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 800;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            border: 2px solid white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .notif-badge.hidden { display: none; }
+
+        .notif-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 15px);
+            right: 0;
+            width: 350px;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            z-index: 1000;
+            overflow: hidden;
+            animation: fadeInNotif 0.2s ease-out;
+        }
+
+        .notif-dropdown.open { display: block; }
+
+        @keyframes fadeInNotif {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .notif-dropdown-header {
+            padding: 18px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .notif-dropdown-header h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .notif-list {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .notif-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f8fafc;
+            transition: var(--transition);
+        }
+
+        .notif-item:hover { background-color: #f8fafc; }
+
+        .notif-item-title {
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .notif-item-title .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .notif-item-msg {
+            font-size: 0.82rem;
+            color: var(--secondary-color);
+            line-height: 1.5;
+        }
+
+        .notif-item-link {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 5px;
+        }
+
+        .notif-empty {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 
@@ -649,6 +787,27 @@
             </a>
             
             <div class="user-menu">
+                <!-- ── SININHO DE NOTIFICAÇÕES ── -->
+                <div class="notif-wrapper" id="notif-wrapper">
+                    <button class="notification-btn" id="btn-notif-bell" title="Notificações">
+                        <i class="fas fa-bell"></i>
+                        <span class="notif-badge hidden" id="notif-badge">0</span>
+                    </button>
+
+                    <div class="notif-dropdown" id="notif-dropdown">
+                        <div class="notif-dropdown-header">
+                            <h4><i class="fas fa-bell" style="color:var(--primary-color)"></i> Notificações</h4>
+                        </div>
+                        <div class="notif-list" id="notif-list">
+                            <div class="notif-empty">
+                                <i class="fas fa-bell-slash" style="display:block; font-size:1.5rem; margin-bottom:10px;"></i>
+                                Nenhuma notificação.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- ───────────────────────────── -->
+
                 <!-- Seção de Perfil Clicável -->
                 <a href="perfil.html" class="profile-link-wrapper" title="Editar meu perfil">
                     <div class="user-profile-data">
@@ -756,6 +915,7 @@
         <div class="drawer-footer" id="drawer-footer"></div>
     </div>
 
+    <script src="/layout.js"></script>
     <script src="designer-script.js?v=4.0"></script>
     <script>
         document.querySelectorAll('.tab-btn').forEach(button => {
