@@ -8,7 +8,8 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const TABELAS = {
     notificacao: 'notificacao_sininho',
     popup:       'popup_html',
-    novidade:    'novidade_sistema'
+    novidade:    'novidade_sistema',
+    ajuda:       'artigos_ajuda'
 };
 
 module.exports = async (req, res) => {
@@ -27,9 +28,21 @@ module.exports = async (req, res) => {
     }
 
     try {
-        // ── GARANTIA DE ESTRUTURA PARA 'NOVIDADE_SISTEMA' ───────
+        // ── GARANTIA DE ESTRUTURA PARA 'NOVIDADE_SISTEMA' E 'ARTIGOS_AJUDA' ───────
         try {
             await pool.query(`ALTER TABLE novidade_sistema ADD COLUMN IF NOT EXISTS destino VARCHAR(50) DEFAULT 'todos'`);
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS artigos_ajuda (
+                    id SERIAL PRIMARY KEY,
+                    titulo VARCHAR(255) NOT NULL,
+                    categoria VARCHAR(100) NOT NULL,
+                    palavras_chave VARCHAR(255),
+                    ordem INT DEFAULT 0,
+                    html_content TEXT NOT NULL,
+                    ativa BOOLEAN DEFAULT true,
+                    criado_em TIMESTAMP DEFAULT NOW()
+                )
+            `);
         } catch(e) { console.error('[Schema Check]', e.message); }
 
         // ── GET: listar registros ────────────────────────────────
@@ -81,6 +94,17 @@ module.exports = async (req, res) => {
                         `INSERT INTO novidade_sistema (titulo, descricao, tipo, destino)
                          VALUES ($1, $2, $3, $4) RETURNING id`,
                         [titulo, descricao, tipo_novidade || 'novo', destino || 'todos']
+                    );
+                    return res.status(200).json({ success: true, id: r.rows[0].id });
+                }
+
+                if (type === 'ajuda') {
+                    const { titulo, categoria, palavras_chave, ordem, html_content } = req.body;
+                    if (!titulo || !categoria || !html_content) return res.status(400).json({ message: 'titulo, categoria e html_content são obrigatórios.' });
+                    const r = await pool.query(
+                        `INSERT INTO artigos_ajuda (titulo, categoria, palavras_chave, ordem, html_content)
+                         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+                        [titulo, categoria, palavras_chave || '', parseInt(ordem) || 0, html_content]
                     );
                     return res.status(200).json({ success: true, id: r.rows[0].id });
                 }

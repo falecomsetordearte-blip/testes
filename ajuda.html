@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Central de Ajuda — Setor de Arte</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0f172a;--surface:#1e293b;--surface2:#263347;--border:#334155;
+  --primary:#6366f1;--primary-h:#4f46e5;--text:#f1f5f9;--muted:#94a3b8;--accent:#818cf8;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+
+/* ── HEADER & SEARCH ── */
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:20px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:20px;}
+.header-brand{display:flex;align-items:center;gap:12px;cursor:pointer;}
+.header-brand .icon{width:40px;height:40px;background:linear-gradient(135deg,var(--primary),var(--accent));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#fff;}
+.header-brand h1{font-size:1.2rem;font-weight:700;}
+.header-brand span{font-size:.85rem;color:var(--muted);font-weight:500;}
+
+.search-container{position:relative;flex:1;max-width:500px;}
+.search-container i{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--muted);}
+.search-input{width:100%;padding:12px 16px 12px 42px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.95rem;font-family:inherit;outline:none;transition:.2s;}
+.search-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.15);}
+
+.header-btn{padding:10px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.85rem;font-weight:600;cursor:pointer;text-decoration:none;transition:.2s;}
+.header-btn:hover{background:var(--border);color:var(--accent);}
+
+/* ── LAYOUT PRINCIPAL ── */
+.main-layout{display:flex;flex:1;max-width:1400px;margin:0 auto;width:100%;padding:32px;gap:40px;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:280px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;align-self:flex-start;position:sticky;top:120px;max-height:calc(100vh - 160px);overflow-y:auto;}
+.sidebar::-webkit-scrollbar{width:4px;}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+.cat-group{margin-bottom:24px;}
+.cat-title{font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.topic-list{list-style:none;display:flex;flex-direction:column;gap:4px;}
+.topic-btn{width:100%;text-align:left;background:none;border:none;padding:8px 12px;color:var(--text);font-size:.9rem;font-weight:500;border-radius:8px;cursor:pointer;transition:.2s;font-family:inherit;}
+.topic-btn:hover{background:var(--surface2);color:var(--accent);}
+.topic-btn.active{background:rgba(99,102,241,.15);color:var(--accent);font-weight:600;}
+
+/* ── CONTENT AREA ── */
+.content-area{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:48px;min-height:600px;}
+.empty-state{text-align:center;padding:80px 0;color:var(--muted);}
+.empty-state i{font-size:3rem;color:var(--border);margin-bottom:20px;display:block;}
+.empty-state h2{font-size:1.4rem;color:var(--text);margin-bottom:10px;font-weight:700;}
+
+.article-header{margin-bottom:32px;border-bottom:1px solid var(--border);padding-bottom:24px;}
+.article-category{display:inline-block;padding:4px 10px;background:rgba(99,102,241,.15);color:var(--accent);border-radius:6px;font-size:.75rem;font-weight:700;margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px;}
+.article-title{font-size:2rem;font-weight:800;color:#fff;}
+
+/* Aqui é onde o HTML do admin será injetado */
+.article-body{font-size:1rem;line-height:1.7;color:var(--text);}
+.article-body h2{font-size:1.4rem;color:#fff;margin:32px 0 16px;font-weight:700;}
+.article-body h3{font-size:1.2rem;color:#fff;margin:24px 0 12px;font-weight:600;}
+.article-body p{margin-bottom:16px;}
+.article-body ul, .article-body ol{margin-bottom:16px;padding-left:24px;}
+.article-body li{margin-bottom:8px;}
+.article-body a{color:var(--primary);text-decoration:none;}
+.article-body a:hover{text-decoration:underline;}
+
+/* ── RELATED TOPICS ── */
+.related-topics{margin-top:48px;padding-top:32px;border-top:1px solid var(--border);}
+.related-title{font-size:1.1rem;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+.related-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;}
+.related-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;transition:.2s;}
+.related-card:hover{border-color:var(--primary);transform:translateY(-2px);}
+.related-card-cat{font-size:.7rem;color:var(--accent);font-weight:700;margin-bottom:6px;text-transform:uppercase;}
+.related-card-title{font-size:.9rem;font-weight:600;color:var(--text);}
+
+@media(max-width:992px){
+  .main-layout{flex-direction:column;padding:20px;}
+  .sidebar{width:100%;position:static;max-height:none;}
+  .content-area{padding:30px;}
+}
+@media(max-width:600px){
+  .header{flex-direction:column;align-items:flex-start;padding:16px;}
+  .search-container{width:100%;max-width:none;}
+  .header-btn{align-self:stretch;text-align:center;}
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-brand" onclick="location.reload()">
+    <div class="icon"><i class="fas fa-life-ring"></i></div>
+    <div>
+      <h1>Central de Ajuda</h1>
+      <span>Setor de Arte</span>
+    </div>
+  </div>
+  <div class="search-container">
+    <i class="fas fa-search"></i>
+    <input type="text" class="search-input" id="search-input" placeholder="Busque por artigos, tutoriais ou palavras-chave...">
+  </div>
+  <a href="javascript:history.back()" class="header-btn"><i class="fas fa-arrow-left"></i> Voltar ao Painel</a>
+</header>
+
+<div class="main-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div style="text-align:center;padding:20px;color:var(--muted);"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+  </aside>
+
+  <!-- CONTENT AREA -->
+  <main class="content-area" id="content-area">
+    <div class="empty-state">
+      <i class="fas fa-book-open"></i>
+      <h2>Como podemos ajudar?</h2>
+      <p>Selecione um tópico no menu ao lado ou faça uma busca acima.</p>
+    </div>
+  </main>
+</div>
+
+<script>
+let ARTICLES = [];
+
+// Carrega os artigos da API pública
+async function loadArticles() {
+  try {
+    const res = await fetch('/api/getHelpArticles');
+    if(res.ok) {
+      ARTICLES = await res.json();
+      renderSidebar(ARTICLES);
+    } else {
+      showError('Não foi possível carregar os artigos.');
+    }
+  } catch(e) {
+    showError('Erro de conexão ao buscar ajuda.');
+  }
+}
+
+// Renderiza o menu lateral agrupando por categoria
+function renderSidebar(articlesToRender) {
+  const sidebar = document.getElementById('sidebar');
+  if(!articlesToRender || articlesToRender.length === 0) {
+    sidebar.innerHTML = '<div style="color:var(--muted);text-align:center;">Nenhum artigo encontrado.</div>';
+    return;
+  }
+
+  // Agrupa os artigos por categoria
+  const categorias = {};
+  articlesToRender.forEach(art => {
+    const cat = art.categoria || 'Geral';
+    if(!categorias[cat]) categorias[cat] = [];
+    categorias[cat].push(art);
+  });
+
+  let html = '';
+  for(const [cat, arts] of Object.entries(categorias)) {
+    html += `<div class="cat-group">
+      <div class="cat-title"><i class="fas fa-folder"></i> ${cat}</div>
+      <ul class="topic-list">`;
+    arts.forEach(art => {
+      html += `<li><button class="topic-btn" id="btn-art-${art.id}" onclick="openArticle(${art.id})">${art.titulo}</button></li>`;
+    });
+    html += `</ul></div>`;
+  }
+  sidebar.innerHTML = html;
+}
+
+// Abre um artigo específico
+function openArticle(id) {
+  const article = ARTICLES.find(a => a.id === id);
+  if(!article) return;
+
+  // Marca o botão ativo no menu
+  document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById(`btn-art-${id}`);
+  if(btn) btn.classList.add('active');
+
+  // Área principal
+  const contentArea = document.getElementById('content-area');
+  
+  // Renderiza relacionados
+  const relatedHtml = getRelatedHtml(article);
+
+  contentArea.innerHTML = `
+    <div class="article-header">
+      <div class="article-category">${article.categoria}</div>
+      <h1 class="article-title">${article.titulo}</h1>
+    </div>
+    <div class="article-body">
+      ${article.html_content}
+    </div>
+    ${relatedHtml}
+  `;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Busca artigos relacionados pelas palavras-chave
+function getRelatedHtml(currentArticle) {
+  if(!currentArticle.palavras_chave) return '';
+  const keywords = currentArticle.palavras_chave.toLowerCase().split(',').map(k => k.trim()).filter(k => k);
+  if(keywords.length === 0) return '';
+
+  let related = ARTICLES.filter(a => {
+    if(a.id === currentArticle.id) return false;
+    if(!a.palavras_chave) return false;
+    const aKeys = a.palavras_chave.toLowerCase();
+    // Vê se alguma palavra bate
+    return keywords.some(k => aKeys.includes(k));
+  });
+
+  // Pega os 3 primeiros
+  related = related.slice(0, 3);
+  if(related.length === 0) return '';
+
+  let html = `<div class="related-topics">
+    <div class="related-title"><i class="fas fa-link"></i> Tópicos Relacionados</div>
+    <div class="related-grid">`;
+  
+  related.forEach(r => {
+    html += `
+      <div class="related-card" onclick="openArticle(${r.id})">
+        <div class="related-card-cat">${r.categoria}</div>
+        <div class="related-card-title">${r.titulo}</div>
+      </div>
+    `;
+  });
+  html += `</div></div>`;
+  return html;
+}
+
+// Sistema de Busca
+document.getElementById('search-input').addEventListener('input', (e) => {
+  const term = e.target.value.toLowerCase().trim();
+  if(!term) {
+    renderSidebar(ARTICLES);
+    return;
+  }
+  const filtrados = ARTICLES.filter(a => 
+    a.titulo.toLowerCase().includes(term) || 
+    a.categoria.toLowerCase().includes(term) || 
+    (a.palavras_chave && a.palavras_chave.toLowerCase().includes(term)) ||
+    (a.html_content && a.html_content.toLowerCase().includes(term))
+  );
+  renderSidebar(filtrados);
+  if(filtrados.length === 0) {
+    document.getElementById('content-area').innerHTML = `
+      <div class="empty-state">
+        <i class="fas fa-search"></i>
+        <h2>Nenhum resultado</h2>
+        <p>Não encontramos artigos para "${term}". Tente outras palavras.</p>
+      </div>
+    `;
+  }
+});
+
+function showError(msg) {
+  document.getElementById('content-area').innerHTML = `
+    <div class="empty-state" style="color:var(--danger)">
+      <i class="fas fa-triangle-exclamation"></i>
+      <h2>Ops!</h2>
+      <p>${msg}</p>
+    </div>
+  `;
+}
+
+// Iniciar
+loadArticles();
+</script>
+</body>
+</html>

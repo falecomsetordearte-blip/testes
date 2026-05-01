@@ -139,6 +139,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <button class="tab-btn active" onclick="switchTab('notif',this)"><i class="fas fa-bell"></i> Notificações</button>
     <button class="tab-btn" onclick="switchTab('popup',this)"><i class="fas fa-window-restore"></i> Pop-ups</button>
     <button class="tab-btn" onclick="switchTab('novidade',this)"><i class="fas fa-star"></i> Atualizações</button>
+    <button class="tab-btn" onclick="switchTab('ajuda',this)"><i class="fas fa-question-circle"></i> Ajuda (Central)</button>
     <button class="tab-btn" onclick="switchTab('assinatura',this)"><i class="fas fa-credit-card"></i> Assinaturas</button>
   </div>
 
@@ -223,6 +224,26 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       </div>
     </div>
 
+    <!-- ===== ABA AJUDA ===== -->
+    <div class="tab-panel" id="tab-ajuda">
+      <div class="card">
+        <div class="card-title"><i class="fas fa-question-circle"></i> Novo Artigo de Ajuda</div>
+        <p class="card-sub">Crie páginas para a central de ajuda do sistema. O HTML será injetado na área de leitura.</p>
+        <form onsubmit="createItem(event,'ajuda')">
+          <div class="fg"><label>Título do Artigo</label><input type="text" name="titulo" required placeholder="Ex: Como configurar sua conta"></div>
+          <div class="fg"><label>Categoria (Tópico Pai)</label><input type="text" name="categoria" required placeholder="Ex: Primeiros Passos"></div>
+          <div class="fg"><label>Palavras-Chave (separadas por vírgula)</label><input type="text" name="palavras_chave" placeholder="Ex: conta, configuração, senha"></div>
+          <div class="fg"><label>Ordem no Menu</label><input type="number" name="ordem" value="0" style="width:100px;"></div>
+          <div class="fg"><label>HTML do Conteúdo</label><textarea name="html_content" rows="8" required placeholder="&lt;div class=&quot;help-content&quot;&gt;&#10;  &lt;h2&gt;Passo a Passo&lt;/h2&gt;&#10;  &lt;p&gt;Para começar...&lt;/p&gt;&#10;&lt;/div&gt;"></textarea></div>
+          <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Salvar Artigo</button>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="fas fa-clock-rotate-left"></i> Histórico de Artigos</div>
+        <div class="hist-list" id="hist-ajuda"><div class="empty-hist"><i class="fas fa-spinner fa-spin"></i>Carregando...</div></div>
+      </div>
+    </div>
+
     <!-- ===== ABA ASSINATURAS ===== -->
     <div class="tab-panel single" id="tab-assinatura">
       <div class="card">
@@ -278,6 +299,7 @@ async function doAuth() {
       loadHist('notificacao');
       loadHist('popup');
       loadHist('novidade');
+      loadHist('ajuda');
     } else {
       document.getElementById('auth-error').style.display = 'block';
     }
@@ -379,6 +401,9 @@ async function loadHist(type) {
         const tipoLabel = item.tipo === 'corrigido' ? '🔧 Corrigido' : item.tipo === 'melhorado' ? '⚡ Melhorado' : '🚀 Novo';
         titleLine = `<div class="hist-item-title"><span class="badge ${tipoBadgeClass}">${tipoLabel}</span> ${item.titulo}</div>`;
         msgLine   = `<p class="hist-item-msg">${item.descricao}</p>`;
+      } else if (type === 'ajuda') {
+        titleLine = `<div class="hist-item-title"><span class="badge" style="background:var(--border);color:var(--text);margin-right:6px;">${item.categoria}</span> ${item.titulo}</div>`;
+        msgLine   = `<p class="hist-item-msg">Ordem: ${item.ordem} &bull; Palavras-chave: ${item.palavras_chave || 'Nenhuma'}</p>`;
       }
 
       return `
