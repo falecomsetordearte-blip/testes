@@ -485,8 +485,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             const designerToken = localStorage.getItem("designerToken");
             if (!sessionToken && !designerToken) return;
 
-            // Designers têm designerToken; empresas têm sessionToken
-            const userType = designerToken ? 'designer' : 'empresa';
+            // Define o tipo de usuário com base na URL atual, já que o localStorage pode ter ambos os tokens
+            const isDesignerPortal = window.location.pathname.includes('/designer/');
+            const userType = isDesignerPortal ? 'designer' : 'empresa';
 
             const res = await fetch(`/api/admin/getAdminContent?userType=${userType}`);
             if (!res.ok) return;
