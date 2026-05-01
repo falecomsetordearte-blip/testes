@@ -358,8 +358,15 @@ async function loadHist(type) {
         msgLine   = `<p class="hist-item-msg">${item.mensagem}</p>`;
         if (item.link_saiba_mais) msgLine += `<p class="hist-item-msg" style="color:var(--accent)"><i class="fas fa-link" style="margin-right:4px"></i>${item.link_saiba_mais}</p>`;
       } else if (type === 'popup') {
+        // Escapar o HTML para não renderizar o conteúdo do popup na tela
+        const htmlEscapado = item.html_content
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .substring(0, 120);
         titleLine = `<div class="hist-item-title"><i class="fas fa-code" style="margin-right:6px;color:var(--accent)"></i>Pop-up HTML</div>`;
-        msgLine   = `<p class="hist-item-msg" style="font-family:monospace">${item.html_content.substring(0,80)}...</p>`;
+        msgLine   = `<p class="hist-item-msg" style="font-family:monospace;font-size:.75rem;color:var(--muted)">${htmlEscapado}...</p>`;
       } else if (type === 'novidade') {
         const tipoBadgeClass = item.tipo === 'corrigido' ? 'badge-tipo-corrigido' : item.tipo === 'melhorado' ? 'badge-tipo-melhorado' : 'badge-tipo-novo';
         const tipoLabel = item.tipo === 'corrigido' ? '🔧 Corrigido' : item.tipo === 'melhorado' ? '⚡ Melhorado' : '🚀 Novo';
