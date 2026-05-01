@@ -2,7 +2,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const axios = require('axios');
-const { getChatAppToken } = require('../helpers/chatapp');
+const { getChatAppToken, getLicenseId } = require('../helpers/chatapp');
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -16,7 +16,7 @@ module.exports = async (req, res) => {
     const { action, pedidoId, texto, tipoChat } = req.body;
 
     try {
-        const pedido = await prisma.$queryRawUnsafe(`SELECT chatapp_chat_id, chatapp_chat_intern_id FROM pedidos WHERE id = $1`, Number(pedidoId));
+        const pedido = await prisma.$queryRawUnsafe(`SELECT empresa_id, chatapp_chat_id, chatapp_chat_intern_id FROM pedidos WHERE id = $1`, Number(pedidoId));
         if (!pedido || pedido.length === 0) {
             return res.status(404).json({ message: "Pedido não localizado no banco." });
         }
@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
         }
 
         const token = await getChatAppToken();
-        const L_ID = process.env.CHATAPP_LICENSE_ID || '59808'; 
+        const L_ID = await getLicenseId(pedido[0].empresa_id);
         const L_MSG = 'grWhatsApp'; 
 
         if (action === 'get') {

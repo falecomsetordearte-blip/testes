@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
                     const empresasPrem = await prisma.$queryRawUnsafe(`SELECT nome_fantasia FROM empresas WHERE asaas_subscription_id = $1 LIMIT 1`, subId);
                     await prisma.$executeRawUnsafe(`INSERT INTO notificacoes_globais (titulo, mensagem, tipo, ativa) VALUES ($1, $2, 'warning', true)`,
                         '🚨 NOVO UPGRADE PRO PAGO', 
-                        `O cliente ${empresasPrem[0].nome_fantasia} ativou o plano PRO. Vá ao ChatApp, compre a licença e cole no banco de dados.`
+                        `O cliente ${empresasPrem[0].nome_fantasia} ativou o plano PRO. Vincule a licença e o link do QR Code no banco para liberar o acesso dele.`
                     );
                 }
             }
