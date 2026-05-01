@@ -84,8 +84,21 @@ module.exports = async (req, res) => {
             }
         }
 
-        // 3. Gerar Assinatura Recorrente
-        let subscriptionId = usuario.asaas_subscription_id;
+        // 3. Cancelar assinatura anterior se existir (Upgrade/Downgrade)
+        if (usuario.asaas_subscription_id) {
+            console.log(`[SUBSCRIBE ASAAS] Detectada assinatura anterior (${usuario.asaas_subscription_id}). Cancelando antes de criar a nova...`);
+            try {
+                await axios.delete(`${ASAAS_BASE_URL}/subscriptions/${usuario.asaas_subscription_id}`, {
+                    headers: { 'access_token': ASAAS_API_KEY }
+                });
+                console.log(`[SUBSCRIBE ASAAS] Assinatura anterior cancelada com sucesso.`);
+            } catch (cancelErr) {
+                console.log(`[SUBSCRIBE ASAAS] Aviso: Falha ao cancelar assinatura anterior (Pode já estar cancelada no Asaas). Detalhe: ${cancelErr.message}`);
+            }
+        }
+
+        // 4. Gerar Assinatura Recorrente
+        let subscriptionId = null;
         const dueDate = new Date().toISOString().split('T')[0];
 
         const subPayload = {

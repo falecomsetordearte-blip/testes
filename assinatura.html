@@ -237,6 +237,7 @@
                         <div class="info-value" id="disp-value">R$ 0,00</div>
                     </div>
                     <button id="btn-cancel-sub" class="btn-cancel" onclick="requestCancel()">Interromper Próxima Cobrança</button>
+                    <button id="btn-change-plan" class="btn-plan" style="margin-top: 10px; background: var(--cinza-claro); color: var(--texto-escuro);" onclick="togglePlansView()">Mudar de Plano</button>
                 </div>
 
                 <!-- Coluna Principal: Histórico -->
@@ -621,6 +622,25 @@
             };
         }
 
+
+        // Plan Management
+        function togglePlansView() {
+            const plansView = document.getElementById('plans-view');
+            const dashboardView = document.getElementById('dashboard-view');
+            const btnChange = document.getElementById('btn-change-plan');
+
+            if (plansView.style.display === 'none' || plansView.style.display === '') {
+                plansView.style.display = 'block';
+                dashboardView.style.display = 'none';
+                btnChange.innerText = "Voltar ao Painel";
+                document.getElementById('header-subtitle').innerText = "Escolha seu novo plano";
+            } else {
+                plansView.style.display = 'none';
+                dashboardView.style.display = 'block';
+                btnChange.innerText = "Mudar de Plano";
+                document.getElementById('header-subtitle').innerText = "Gerencie seu plano e pagamentos";
+            }
+        }
 
     </script>
                 </div>
