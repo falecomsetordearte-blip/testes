@@ -479,6 +479,26 @@
                 padding: 0 1rem;
             }
         }
+
+        /* Atualizações do Sistema */
+        .atualizacao-item {
+            padding: 15px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            transition: background 0.2s;
+        }
+        .atualizacao-item:hover { background: #f8fafc; }
+        .atualizacao-item:last-child { border-bottom: none; }
+        .atualizacao-title { font-weight: 600; font-size: 0.95rem; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+        .atualizacao-desc { font-size: 0.85rem; color: #64748b; line-height: 1.5; margin-top: 2px; }
+        .atualizacao-date { font-size: 0.75rem; color: #94a3b8; }
+        
+        .badge-tipo-novo { background: rgba(16,185,129,.15); color: #10b981; }
+        .badge-tipo-corrigido { background: rgba(245,158,11,.15); color: #f59e0b; }
+        .badge-tipo-melhorado { background: rgba(99,102,241,.15); color: #6366f1; }
+        .badge-tipo { padding: 3px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
     </style>
 </head>
 
@@ -574,6 +594,18 @@
                                         <span>Como anexar comprovantes de PIX.</span>
                                     </div>
                                 </a>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- MÓDULO: ATUALIZAÇÕES DO SISTEMA -->
+                    <section style="margin-top: 2rem;">
+                        <div class="main-panel">
+                            <div class="panel-header">
+                                <h2><i class="fa-solid fa-star" style="color:#f59e0b;"></i> Atualizações do Sistema</h2>
+                            </div>
+                            <div class="panel-body" id="lista-atualizacoes" style="padding: 0; max-height: 350px; overflow-y: auto;">
+                                <div class="empty-state" style="padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Carregando atualizações...</div>
                             </div>
                         </div>
                     </section>

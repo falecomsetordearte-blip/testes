@@ -138,7 +138,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
   <div class="tabs-bar">
     <button class="tab-btn active" onclick="switchTab('notif',this)"><i class="fas fa-bell"></i> Notificações</button>
     <button class="tab-btn" onclick="switchTab('popup',this)"><i class="fas fa-window-restore"></i> Pop-ups</button>
-    <button class="tab-btn" onclick="switchTab('novidade',this)"><i class="fas fa-star"></i> Novidades</button>
+    <button class="tab-btn" onclick="switchTab('novidade',this)"><i class="fas fa-star"></i> Atualizações</button>
     <button class="tab-btn" onclick="switchTab('assinatura',this)"><i class="fas fa-credit-card"></i> Assinaturas</button>
   </div>
 
@@ -192,11 +192,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       </div>
     </div>
 
-    <!-- ===== ABA NOVIDADES ===== -->
+    <!-- ===== ABA ATUALIZAÇÕES ===== -->
     <div class="tab-panel" id="tab-novidade">
       <div class="card">
-        <div class="card-title"><i class="fas fa-star"></i> Lançar Novidade</div>
-        <p class="card-sub">Aparece no dashboard inicial dos usuários com destaque.</p>
+        <div class="card-title"><i class="fas fa-star"></i> Lançar Atualização</div>
+        <p class="card-sub">Aparece na tela inicial dos usuários como uma atualização do sistema.</p>
         <form onsubmit="createItem(event,'novidade')">
           <div class="fg"><label>Título</label><input type="text" name="titulo" required placeholder="Ex: Área de Clientes Lançada!"></div>
           <div class="fg"><label>Descrição</label><textarea name="descricao" rows="4" required placeholder="Descreva o que foi lançado ou corrigido..."></textarea></div>
@@ -207,7 +207,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
               <option value="corrigido">🔧 Corrigido</option>
             </select>
           </div>
-          <button type="submit" class="btn-primary"><i class="fas fa-bullhorn"></i> Publicar Novidade</button>
+          <div class="fg"><label>Destino</label>
+            <select name="destino">
+              <option value="todos">👥 Todos</option>
+              <option value="designer">🎨 Designers</option>
+              <option value="empresa">🏢 Empresas</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-primary"><i class="fas fa-bullhorn"></i> Publicar Atualização</button>
         </form>
       </div>
       <div class="card">

@@ -526,6 +526,29 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }).join('');
             }
 
+            // ── Popular Atualizações do Sistema ──────────────────
+            const listaAtualizacoes = document.getElementById('lista-atualizacoes');
+            if (listaAtualizacoes && data.novidades) {
+                if (data.novidades.length > 0) {
+                    listaAtualizacoes.innerHTML = data.novidades.map(n => {
+                        const tipoBadgeClass = n.tipo === 'corrigido' ? 'badge-tipo-corrigido' : n.tipo === 'melhorado' ? 'badge-tipo-melhorado' : 'badge-tipo-novo';
+                        const tipoLabel = n.tipo === 'corrigido' ? '🔧 Corrigido' : n.tipo === 'melhorado' ? '⚡ Melhorado' : '🚀 Novo';
+                        const dataFormatada = new Date(n.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+                        
+                        return `<div class="atualizacao-item">
+                            <div class="atualizacao-title">
+                                <span class="badge-tipo ${tipoBadgeClass}">${tipoLabel}</span>
+                                ${n.titulo}
+                            </div>
+                            <div class="atualizacao-desc">${n.descricao}</div>
+                            <div class="atualizacao-date">${dataFormatada}</div>
+                        </div>`;
+                    }).join('');
+                } else {
+                    listaAtualizacoes.innerHTML = `<div class="empty-state" style="padding: 2rem; text-align: center; color: #94a3b8;"><i class="fas fa-check-circle" style="font-size: 2rem; color: #cbd5e1; margin-bottom: 10px; display: block;"></i> Nenhuma atualização no momento.</div>`;
+                }
+            }
+
             // ── Injetar popup HTML (uma vez por sessão) ──────────
             if (data.popup) {
                 const popupKey = `popup_visto_${data.popup.id}`;

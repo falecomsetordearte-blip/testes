@@ -46,11 +46,12 @@ module.exports = async (req, res) => {
 
         // ── Novidades do sistema ─────────────────────────────────
         const novidadesResult = await pool.query(
-            `SELECT id, titulo, descricao, tipo, criado_em
+            `SELECT id, titulo, descricao, tipo, destino, criado_em
              FROM novidade_sistema
-             WHERE ativa = true
+             WHERE ativa = true ${destinoFilter}
              ORDER BY criado_em DESC
-             LIMIT 10`
+             LIMIT 10`,
+            params
         );
 
         return res.status(200).json({

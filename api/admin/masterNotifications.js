@@ -27,6 +27,11 @@ module.exports = async (req, res) => {
     }
 
     try {
+        // ── GARANTIA DE ESTRUTURA PARA 'NOVIDADE_SISTEMA' ───────
+        try {
+            await pool.query(`ALTER TABLE novidade_sistema ADD COLUMN IF NOT EXISTS destino VARCHAR(50) DEFAULT 'todos'`);
+        } catch(e) { console.error('[Schema Check]', e.message); }
+
         // ── GET: listar registros ────────────────────────────────
         if (req.method === 'GET') {
             const { type } = req.query;
@@ -70,12 +75,12 @@ module.exports = async (req, res) => {
                 }
 
                 if (type === 'novidade') {
-                    const { titulo, descricao, tipo_novidade } = req.body;
+                    const { titulo, descricao, tipo_novidade, destino } = req.body;
                     if (!titulo || !descricao) return res.status(400).json({ message: 'titulo e descricao são obrigatórios.' });
                     const r = await pool.query(
-                        `INSERT INTO novidade_sistema (titulo, descricao, tipo)
-                         VALUES ($1, $2, $3) RETURNING id`,
-                        [titulo, descricao, tipo_novidade || 'novo']
+                        `INSERT INTO novidade_sistema (titulo, descricao, tipo, destino)
+                         VALUES ($1, $2, $3, $4) RETURNING id`,
+                        [titulo, descricao, tipo_novidade || 'novo', destino || 'todos']
                     );
                     return res.status(200).json({ success: true, id: r.rows[0].id });
                 }
