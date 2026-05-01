@@ -32,7 +32,7 @@ module.exports = async (req, res) => {
 
         console.log(`[SUBSCRIBE ASAAS] Buscando usuário no banco de dados (${tipo})...`);
 
-        if (tipo === 'empresa') {
+        if (tipo === 'empresa' || tipo === 'empresa_premium') {
             const empresas = await prisma.$queryRawUnsafe(`SELECT id, cnpj as documento, nome_fantasia as nome, email, asaas_customer_id, asaas_subscription_id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`, tokenBusca);
             if (empresas.length > 0) { usuario = empresas[0]; idColuna = 'id'; }
         } else {
