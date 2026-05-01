@@ -90,7 +90,7 @@ module.exports = async (req, res) => {
 
         return res.status(200).json({
             hasSubscription: true,
-            status: subResponse.data.status,
+            status: usuario.assinatura_status || subResponse.data.status,
             value: subResponse.data.value,
             cycle: subResponse.data.cycle,
             nextDueDate: subResponse.data.nextDueDate,

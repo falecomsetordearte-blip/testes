@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
         const tokenBusca = `%${token}%`;
         console.log(`[POLLING STATUS] Buscando status para tipo: [${tipo}]. Token formatado: ${tokenBusca}`);
 
-        if (tipo === 'empresa') {
+        if (tipo === 'empresa' || tipo === 'empresa_premium') {
             const rows = await prisma.$queryRawUnsafe(`SELECT assinatura_status FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`, tokenBusca);
             if (rows.length > 0) {
                 status = rows[0].assinatura_status;

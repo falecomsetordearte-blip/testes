@@ -124,22 +124,10 @@ module.exports = async (req, res) => {
         const paymentsReq = await axios.get(`${ASAAS_BASE_URL}/payments?subscription=${subscriptionId}&status=PENDING`, { headers: { 'access_token': ASAAS_API_KEY } });
 
         if (paymentsReq.data.data.length === 0) {
-            console.log(`[SUBSCRIBE ASAAS] Nenhuma cobrança PENDENTE encontrada. Verificando se já ativou...`);
-            const subCheck = await axios.get(`${ASAAS_BASE_URL}/subscriptions/${subscriptionId}`, { headers: { 'access_token': ASAAS_API_KEY } });
-
-            if (subCheck.data.status === 'ACTIVE') {
-                console.log(`[SUBSCRIBE ASAAS] Assinatura já consta como ACTIVE direto da criação (Ex: Cartão pré-aprovado). Atualizando banco...`);
-                await prisma.$executeRawUnsafe(`UPDATE ${tabela} SET assinatura_status = 'ACTIVE' WHERE ${idColuna} = $1`, usuario.id);
-
-                if (tipo === 'empresa_premium') {
-                    await prisma.$executeRawUnsafe(`INSERT INTO notificacoes_globais (titulo, mensagem, tipo, ativa) VALUES ($1, $2, 'warning', true)`,
-                        '🚨 NOVO UPGRADE PREMIUM', 
-                        `O cliente ${usuario.nome} assinou o plano Premium. Vá ao ChatApp, compre uma licença e cole no banco de dados o ID.`
-                    );
-                }
-
-                return res.status(200).json({ success: true, status: 'ACTIVE' });
-            }
+            console.log(`[SUBSCRIBE ASAAS] Nenhuma cobrança PENDENTE encontrada após a criação.`);
+            // Se não houver cobrança pendente, pode ser que já tenha sido paga (ex: cartão imediato)
+            // Mas vamos deixar o Webhook confirmar para garantir sincronia perfeita com o banco.
+            return res.status(200).json({ success: true, status: 'PENDING', message: 'Aguardando confirmação do pagamento.' });
         }
 
         const currentPayment = paymentsReq.data.data[0];
