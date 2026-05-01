@@ -163,7 +163,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         // ==========================================
         // SISTEMA MASTER / ADMIN GLOBAL EM CARDS
         // ==========================================
-        if (permissoesArr.includes("admin")) {
+        const isDesignerPortal = window.location.pathname.includes('/designer/');
+        if (permissoesArr.includes("admin") && !isDesignerPortal) {
             console.log("[Layout] Permissão Admin detectada. Habilitando engrenagens nos cards...");
             
             const styleAdmin = document.createElement('style');
