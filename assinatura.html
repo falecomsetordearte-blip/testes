@@ -20,22 +20,25 @@
         /* Removido background fixo do body para usar o do layout */
         body {
             font-family: 'Poppins', sans-serif;
-            color: var(--text);
+            color: var(--texto-escuro);
+            background-color: var(--fundo-pagina);
             min-height: 100vh;
         }
 
         .container-assinatura {
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 20px 30px;
             animation: fadeIn 0.8s ease-out;
         }
 
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .assinatura-header { text-align: center; margin-bottom: 50px; }
-        .assinatura-header h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 10px; color: white; }
-        .assinatura-header p { color: var(--text-muted); font-size: 1.1rem; }
+        .assinatura-header { text-align: left; margin-bottom: 30px; }
+        .assinatura-header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 5px; color: var(--texto-escuro); }
+        .assinatura-header p { color: var(--cinza-texto); font-size: 1rem; }
+
 
 
         /* LOADING STATE */
@@ -96,31 +99,33 @@
         @media (max-width: 850px) { .dashboard-grid { grid-template-columns: 1fr; } }
         
         .status-card {
-            background: var(--card-bg-local); backdrop-filter: blur(10px); padding: 30px; border-radius: 24px; border: 1px solid var(--border-local);
+            background: var(--branco); padding: 30px; border-radius: 12px; border: 1px solid var(--borda);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
         }
-        .info-group { margin-bottom: 25px; }
-        .info-label { font-size: 0.85rem; color: var(--text-muted-local); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
-        .info-value { font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .info-group { margin-bottom: 20px; }
+        .info-label { font-size: 0.8rem; color: var(--cinza-texto); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 5px; }
+        .info-value { font-size: 1.2rem; font-weight: 700; color: var(--texto-escuro); display: flex; align-items: center; gap: 10px; }
         .badge-status { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
-        .status-active { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
-        .status-pending { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+        .status-active { background: #d4edda; color: #155724; }
+        .status-pending { background: #fff3cd; color: #856404; }
         
         .history-card {
-            background: var(--card-bg-local); backdrop-filter: blur(10px); padding: 30px; border-radius: 24px; border: 1px solid var(--border-local);
-            overflow: hidden;
+            background: var(--branco); padding: 30px; border-radius: 12px; border: 1px solid var(--borda);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06); overflow: hidden;
         }
         .history-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .history-table th { text-align: left; padding: 12px; font-size: 0.85rem; color: var(--text-muted-local); border-bottom: 1px solid var(--border-local); }
-        .history-table td { padding: 15px 12px; border-bottom: 1px solid var(--border-local); font-size: 0.9rem; }
-        .btn-action { background: var(--glass); border: 1px solid var(--border-local); color: var(--text); padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; text-decoration: none; display: inline-block; }
-        .btn-action:hover { background: var(--primary); border-color: var(--primary); }
+        .history-table th { text-align: left; padding: 12px; font-size: 0.85rem; color: var(--cinza-texto); border-bottom: 1px solid var(--borda); }
+        .history-table td { padding: 15px 12px; border-bottom: 1px solid var(--borda); font-size: 0.9rem; color: var(--texto-escuro); }
+        .btn-action { background: #f8f9fa; border: 1px solid var(--borda); color: var(--texto-escuro); padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; text-decoration: none; display: inline-block; font-weight: 600; }
+        .btn-action:hover { background: var(--primary); color: white; border-color: var(--primary); }
 
         .btn-cancel {
-            margin-top: 20px; background: transparent; border: 1px solid rgba(244, 63, 94, 0.3); color: var(--secondary);
-            padding: 12px; width: 100%; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 0.9rem;
+            margin-top: 20px; background: transparent; border: 1px solid #ffcdd2; color: #dc3545;
+            padding: 12px; width: 100%; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 0.85rem;
             transition: 0.3s;
         }
-        .btn-cancel:hover { background: rgba(244, 63, 94, 0.1); border-color: var(--secondary); }
+        .btn-cancel:hover { background: #fbe9e7; border-color: #dc3545; }
+
 
         /* MODAL PIX/CHECKOUT (Shared) */
         .modal {
