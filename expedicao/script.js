@@ -108,10 +108,12 @@ function configurarBotaoAcao(p) {
         btnAcao.innerHTML = '<i class="fas fa-check-circle"></i> PEDIDO JÁ ENTREGUE';
         btnAcao.className = 'btn-base btn-acao-entregue';
         btnAcao.disabled = true;
+        document.getElementById('container-google-review').style.display = 'none';
     } else {
         btnAcao.innerHTML = '<i class="fas fa-box-open"></i> MARCAR COMO ENTREGUE';
         btnAcao.className = 'btn-base btn-acao-entregar';
         btnAcao.disabled = false;
+        document.getElementById('container-google-review').style.display = 'flex';
         btnAcao.onclick = () => {
             if (btnAcao.dataset.confirming === "true") {
                 marcarEntregue(p.id_interno, btnAcao);
@@ -137,13 +139,21 @@ function fecharGaveta() {
 async function marcarEntregue(idInterno, btnElement) {
     btnElement.disabled = true;
     btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+    
+    const pedirAvaliacaoGoogle = document.getElementById('check-google-review').checked;
+
     try {
         const res = await fetch('/api/expedicao/entregar', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), id: idInterno })
+            body: JSON.stringify({ 
+                sessionToken: localStorage.getItem('sessionToken'), 
+                id: idInterno,
+                pedirAvaliacaoGoogle
+            })
         });
         if (res.ok) {
+            document.getElementById('check-google-review').checked = false; // Reset
             fecharGaveta();
             carregarPedidos(document.getElementById('input-busca').value);
         }

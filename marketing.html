@@ -337,7 +337,48 @@
         <div class="main-content-area">
             <div id="header-placeholder"></div>
 
-            <!-- ============================================ -->
+            <!-- NOVA SEÇÃO: CONFIGURAÇÃO DE FEEDBACK DO GOOGLE -->
+            <div class="marketing-container" style="padding-bottom: 0;">
+                <div class="funnel-info-card" style="margin-bottom: 20px; border-left: 4px solid #ea4335;">
+                    <div class="funnel-info-icon" style="background: #fce8e6; color: #ea4335;">
+                        <i class="fab fa-google"></i>
+                    </div>
+                    <div class="funnel-info-text" style="flex: 1;">
+                        <h3>Avaliações no Google Meu Negócio</h3>
+                        <p>Configure a mensagem automática que será enviada no WhatsApp pedindo avaliação aos clientes quando o pedido for Entregue.</p>
+                    </div>
+                </div>
+
+                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; margin-bottom: 40px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                    <form id="form-google-review" onsubmit="salvarConfigGoogle(event)">
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+                                <label style="margin-bottom: 0;">Link de Avaliação do Google</label>
+                                <a href="/ajuda-google-link.html" target="_blank" style="font-size: 0.85rem; color: #4f46e5; text-decoration: none; font-weight: 500;"><i class="fas fa-external-link-alt"></i> Como descobrir meu link?</a>
+                            </div>
+                            <input type="url" id="google-review-link" placeholder="https://g.page/r/..." style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px;">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label>Corpo da Mensagem (WhatsApp)</label>
+                            <textarea id="google-review-message" placeholder="Olá [nome_cliente], seu pedido acaba de ser entregue! Se puder, nos avalie no Google: [link_google]" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; height: 100px; resize: vertical;"></textarea>
+                            <small style="color: #64748b; font-size: 0.8rem; display: block; margin-top: 5px;">
+                                <strong>Variáveis disponíveis:</strong> <code style="background: #f1f5f9; padding: 2px 5px; border-radius: 4px;">[nome_cliente]</code>, <code style="background: #f1f5f9; padding: 2px 5px; border-radius: 4px;">[link_google]</code>
+                            </small>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end;">
+                            <button type="submit" id="btn-save-google" style="background: #4f46e5; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;">
+                                <i class="fas fa-save"></i> Salvar Configuração
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- CONTAINER RESTRITO DO FUNIL (COM BLOQUEIO EM BREVE) -->
+            <div style="position: relative;">
+
             <!-- BLOQUEIO: EM BREVE - Remover quando pronto  -->
             <!-- ============================================ -->
             <div style="
@@ -485,6 +526,7 @@
                     <!-- Mensagens injetadas aqui -->
                 </div>
             </div>
+            </div> <!-- FIM CONTAINER RESTRITO DO FUNIL -->
         </div>
     </div>
 

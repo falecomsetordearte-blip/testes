@@ -2,9 +2,71 @@
 let segmentosCache = [];
 
 document.addEventListener("DOMContentLoaded", () => {
+    carregarConfigGoogle();
     carregarMensagens();
     carregarSegmentos();
 });
+
+async function carregarConfigGoogle() {
+    const token = localStorage.getItem('sessionToken');
+    if (!token) return;
+
+    try {
+        const response = await fetch('/api/marketing/google-review', {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('google-review-link').value = data.google_review_link || '';
+            document.getElementById('google-review-message').value = data.google_review_message || '';
+        }
+    } catch (error) {
+        console.error("Erro ao carregar config google:", error);
+    }
+}
+
+async function salvarConfigGoogle(e) {
+    e.preventDefault();
+    const token = localStorage.getItem('sessionToken');
+    if (!token) return;
+
+    const btn = document.getElementById('btn-save-google');
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+    btn.disabled = true;
+
+    const link = document.getElementById('google-review-link').value;
+    const message = document.getElementById('google-review-message').value;
+
+    try {
+        const response = await fetch('/api/marketing/google-review', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ link, message })
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+            btn.style.background = '#10b981';
+            btn.innerHTML = '<i class="fas fa-check"></i> Salvo!';
+            setTimeout(() => {
+                btn.style.background = '#4f46e5';
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }, 2000);
+        } else {
+            throw new Error(data.message || 'Erro ao salvar');
+        }
+    } catch (error) {
+        alert(error.message);
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    }
+}
 
 async function carregarMensagens() {
     const container = document.getElementById('mensagens-container');

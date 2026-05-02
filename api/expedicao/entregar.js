@@ -1,6 +1,7 @@
 // /api/expedicao/entregar.js - COMPLETO E ATUALIZADO
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const chatapp = require('../helpers/chatapp');
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,7 +12,7 @@ module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Método inválido' });
 
     try {
-        const { sessionToken, id } = req.body;
+        const { sessionToken, id, pedirAvaliacaoGoogle } = req.body;
         if (!sessionToken || !id) return res.status(400).json({ message: 'Dados incompletos' });
 
         // 1. Identificar Empresa pelo Token
@@ -45,6 +46,41 @@ module.exports = async (req, res) => {
 
         if (resultado === 0) {
             return res.status(404).json({ message: 'Pedido não encontrado ou acesso negado.' });
+        }
+
+        // 3. Enviar mensagem do Google Review se solicitado
+        if (pedirAvaliacaoGoogle) {
+            try {
+                // Buscar dados do pedido para a mensagem
+                const pedidos = await prisma.$queryRawUnsafe(`
+                    SELECT nome_cliente, chatapp_chat_notificacoes_id FROM pedidos WHERE id = $1
+                `, parseInt(id));
+
+                if (pedidos.length > 0 && pedidos[0].chatapp_chat_notificacoes_id) {
+                    const pedido = pedidos[0];
+                    
+                    // Buscar config da empresa
+                    const configs = await prisma.$queryRawUnsafe(`
+                        SELECT google_review_link, google_review_message FROM painel_configuracoes_sistema WHERE empresa_id = $1
+                    `, empresaId);
+
+                    if (configs.length > 0 && configs[0].google_review_link && configs[0].google_review_message) {
+                        let textoMensagem = configs[0].google_review_message;
+                        textoMensagem = textoMensagem.replace(/\[nome_cliente\]/gi, pedido.nome_cliente || '');
+                        textoMensagem = textoMensagem.replace(/\[link_google\]/gi, configs[0].google_review_link);
+
+                        await chatapp.enviarMensagemTexto(
+                            pedido.chatapp_chat_notificacoes_id,
+                            textoMensagem,
+                            true,
+                            empresaId
+                        );
+                    }
+                }
+            } catch (errMsg) {
+                console.error("Erro ao enviar Google Review:", errMsg);
+                // Não falha o request se der erro apenas na mensagem
+            }
         }
 
         return res.status(200).json({ success: true });
