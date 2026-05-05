@@ -452,5 +452,6 @@ module.exports = {
     enviarNotificacaoEtapa, 
     getChatAppToken, 
     definirAvatarGrupo,
-    enviarMensagemTexto
+    enviarMensagemTexto,
+    getLicenseId
 };
