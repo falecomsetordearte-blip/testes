@@ -50,37 +50,53 @@ module.exports = async (req, res) => {
 
         // 3. Enviar mensagem do Google Review se solicitado
         if (pedirAvaliacaoGoogle) {
+            console.log(`[GOOGLE-REVIEW] Solicitação de avaliação detectada para o pedido ID: ${id}`);
             try {
                 // Buscar dados do pedido para a mensagem
                 const pedidos = await prisma.$queryRawUnsafe(`
                     SELECT nome_cliente, chatapp_chat_notificacoes_id FROM pedidos WHERE id = $1
                 `, parseInt(id));
 
-                if (pedidos.length > 0 && pedidos[0].chatapp_chat_notificacoes_id) {
+                if (pedidos.length > 0) {
                     const pedido = pedidos[0];
+                    console.log(`[GOOGLE-REVIEW] Dados do pedido encontrados: Cliente=${pedido.nome_cliente}, ChatID=${pedido.chatapp_chat_notificacoes_id}`);
                     
-                    // Buscar config da empresa
-                    const configs = await prisma.$queryRawUnsafe(`
-                        SELECT google_review_link, google_review_message FROM painel_configuracoes_sistema WHERE empresa_id = $1
-                    `, empresaId);
+                    if (pedido.chatapp_chat_notificacoes_id) {
+                        // Buscar config da empresa
+                        const configs = await prisma.$queryRawUnsafe(`
+                            SELECT google_review_link, google_review_message FROM painel_configuracoes_sistema WHERE empresa_id = $1
+                        `, empresaId);
 
-                    if (configs.length > 0 && configs[0].google_review_link && configs[0].google_review_message) {
-                        let textoMensagem = configs[0].google_review_message;
-                        textoMensagem = textoMensagem.replace(/\[nome_cliente\]/gi, pedido.nome_cliente || '');
-                        textoMensagem = textoMensagem.replace(/\[link_google\]/gi, configs[0].google_review_link);
+                        if (configs.length > 0 && configs[0].google_review_link && configs[0].google_review_message) {
+                            console.log(`[GOOGLE-REVIEW] Configurações da empresa encontradas. Preparando mensagem...`);
+                            let textoMensagem = configs[0].google_review_message;
+                            textoMensagem = textoMensagem.replace(/\[nome_cliente\]/gi, pedido.nome_cliente || '');
+                            textoMensagem = textoMensagem.replace(/\[link_google\]/gi, configs[0].google_review_link);
 
-                        await chatapp.enviarMensagemTexto(
-                            pedido.chatapp_chat_notificacoes_id,
-                            textoMensagem,
-                            true,
-                            empresaId
-                        );
+                            console.log(`[GOOGLE-REVIEW] Texto final: ${textoMensagem.substring(0, 50)}...`);
+
+                            const result = await chatapp.enviarMensagemTexto(
+                                pedido.chatapp_chat_notificacoes_id,
+                                textoMensagem,
+                                true,
+                                empresaId
+                            );
+                            console.log(`[GOOGLE-REVIEW] Resultado do envio:`, result ? 'Sucesso' : 'Falha');
+                        } else {
+                            console.warn(`[GOOGLE-REVIEW] Configurações de avaliação não encontradas ou incompletas para empresa ${empresaId}.`);
+                        }
+                    } else {
+                        console.warn(`[GOOGLE-REVIEW] Pedido ${id} não possui chatapp_chat_notificacoes_id.`);
                     }
+                } else {
+                    console.warn(`[GOOGLE-REVIEW] Pedido ${id} não encontrado ao buscar dados para avaliação.`);
                 }
             } catch (errMsg) {
-                console.error("Erro ao enviar Google Review:", errMsg);
+                console.error("[GOOGLE-REVIEW] Erro ao enviar Google Review:", errMsg);
                 // Não falha o request se der erro apenas na mensagem
             }
+        } else {
+            console.log(`[GOOGLE-REVIEW] Pedido finalizado sem solicitação de avaliação do Google.`);
         }
 
         return res.status(200).json({ success: true });
