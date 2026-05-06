@@ -152,10 +152,26 @@ async function marcarEntregue(idInterno, btnElement) {
                 pedirAvaliacaoGoogle
             })
         });
+
+        const data = await res.json();
+
         if (res.ok) {
-            document.getElementById('check-google-review').checked = false; // Reset
+            // Se o checkbox estava marcado, ele voltará ao padrão (marcado) no próximo pedido
+            // mas limpamos aqui para garantir o reset da UI
             fecharGaveta();
             carregarPedidos(document.getElementById('input-busca').value);
+        } else {
+            window.adminCustomDialog({ 
+                type: 'alert', 
+                title: 'Atenção', 
+                message: data.message || "Erro ao atualizar status." 
+            });
+            btnElement.disabled = false;
+            btnElement.innerHTML = '<i class="fas fa-box-open"></i> MARCAR COMO ENTREGUE';
         }
-    } catch (err) { window.adminCustomDialog({ type: 'alert', title: 'Erro', message: "Erro ao atualizar." }); btnElement.disabled = false; }
+    } catch (err) { 
+        window.adminCustomDialog({ type: 'alert', title: 'Erro', message: "Erro de conexão com o servidor." }); 
+        btnElement.disabled = false; 
+        btnElement.innerHTML = '<i class="fas fa-box-open"></i> MARCAR COMO ENTREGUE';
+    }
 }
