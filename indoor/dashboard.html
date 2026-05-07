@@ -87,12 +87,12 @@
         };
 
         function renderKanban(kanban) {
-            renderCol('col-aguardando', 'count-aguardando', kanban['AGUARDANDO PAGAMENTO'] || [], true);
-            renderCol('col-edicao', 'count-edicao', kanban['EM EDIÇÃO'] || [], false);
-            renderCol('col-veicular', 'count-veicular', kanban['VEICULAR'] || [], false);
+            renderCol('col-aguardando', 'count-aguardando', kanban['AGUARDANDO PAGAMENTO'] || [], true, false);
+            renderCol('col-edicao', 'count-edicao', kanban['EM EDIÇÃO'] || [], false, true);
+            renderCol('col-veicular', 'count-veicular', kanban['VEICULAR'] || [], false, false);
         }
 
-        function renderCol(colId, countId, pedidos, showProduzir) {
+        function renderCol(colId, countId, pedidos, showProduzir, showVeicular) {
             const col = document.getElementById(colId);
             document.getElementById(countId).textContent = pedidos.length;
 
@@ -120,6 +120,7 @@
                     ${valor ? `<div class="in-card-price">${valor}</div>` : ''}
                     <div class="in-card-actions">
                         ${showProduzir ? `<button class="in-btn-produzir" data-confirming="false" onclick="handleProduzir(${p.id}, this)"><i class="fas fa-rocket"></i> PRODUZIR</button>` : ''}
+                        ${showVeicular ? `<button class="in-btn-produzir" style="background:#14b8a6; color:#fff;" onclick="moverParaVeicular(${p.id}, this)"><i class="fas fa-broadcast-tower"></i> VEICULAR</button>` : ''}
                         <button class="in-btn-card-del" onclick="excluirCard(${p.id})" title="Excluir"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 `;
@@ -141,6 +142,36 @@
                         btn.innerHTML = '<i class="fas fa-rocket"></i> PRODUZIR';
                     }
                 }, 3500);
+            }
+        };
+
+        window.moverParaVeicular = async function(pedidoId, btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Movendo...';
+
+            try {
+                const res = await fetch('/api/indoor/mover-etapa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionToken: localStorage.getItem('sessionToken'),
+                        id: pedidoId,
+                        etapaAtual: 'EM EDIÇÃO'
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok && data.success) {
+                    window.carregarDashboard();
+                } else {
+                    throw new Error(data.message || 'Erro ao mover pedido.');
+                }
+            } catch (err) {
+                console.error('[Indoor-Dashboard] Erro ao mover:', err);
+                window.indoorDialog({ type: 'alert', title: 'Erro', message: err.message });
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-broadcast-tower"></i> VEICULAR';
             }
         };
 
