@@ -71,14 +71,13 @@ module.exports = async (req, res) => {
                         }
 
                         // Enviar briefing no grupo
-                        setTimeout(async () => {
-                            try {
-                                await enviarMensagemTexto(grupoNotif.chatId, briefingWpp, true, p.empresa_id);
-                                console.log(`[WEBHOOK ASAAS] [INDOOR] Briefing enviado no grupo.`);
-                            } catch(e) {
-                                console.error(`[WEBHOOK ASAAS] [INDOOR] Erro ao enviar briefing:`, e.message);
-                            }
-                        }, 5000); // aguarda 5s para o grupo estabilizar
+                        await new Promise(resolve => setTimeout(resolve, 5000)); // aguarda 5s para o grupo estabilizar
+                        try {
+                            await enviarMensagemTexto(grupoNotif.chatId, briefingWpp, true, p.empresa_id);
+                            console.log(`[WEBHOOK ASAAS] [INDOOR] Briefing enviado no grupo.`);
+                        } catch(e) {
+                            console.error(`[WEBHOOK ASAAS] [INDOOR] Erro ao enviar briefing:`, e.message);
+                        }
 
                     } else {
                         // Mesmo sem grupo, move para EM EDIÇÃO
