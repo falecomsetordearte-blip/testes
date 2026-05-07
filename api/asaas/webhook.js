@@ -39,6 +39,13 @@ module.exports = async (req, res) => {
                 }
 
                 const p = pedidos[0];
+
+                // Trava de segurança: se já não estiver aguardando, significa que o Asaas está reenviando (Timeout 408)
+                if (p.etapa !== 'AGUARDANDO PAGAMENTO') {
+                    console.log(`[WEBHOOK ASAAS] [INDOOR] Pedido #${pedidoId} já está na etapa ${p.etapa}. Ignorando reenvio.`);
+                    return res.status(200).json({ received: true, message: 'Pedido já processado.' });
+                }
+
                 const briefingWpp = p.link_arquivo_impressao || `📋 *BRIEFING — ${p.titulo}*\n\nCliente: ${p.nome_cliente}`;
 
                 console.log(`[WEBHOOK ASAAS] [INDOOR] Criando grupo de notificações para ${p.whatsapp_cliente}...`);
@@ -70,8 +77,7 @@ module.exports = async (req, res) => {
                             await definirAvatarGrupo(grupoNotif.chatId, p.logo_id, true, p.empresa_id);
                         }
 
-                        // Enviar briefing no grupo
-                        await new Promise(resolve => setTimeout(resolve, 5000)); // aguarda 5s para o grupo estabilizar
+                        // Enviar briefing no grupo imediatamente
                         try {
                             await enviarMensagemTexto(grupoNotif.chatId, briefingWpp, true, p.empresa_id);
                             console.log(`[WEBHOOK ASAAS] [INDOOR] Briefing enviado no grupo.`);
