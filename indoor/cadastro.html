@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crie sua Conta Grátis - Indoor Setor de Arte</title>
+    <link rel="icon" type="image/svg+xml" href="https://setordearte.com.br/images/logo-redonda.svg">
+    <!-- Fonte Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #14b8a6; /* Cor temática do Indoor */
+            --primary-hover: #0d9488;
+            --bg-sidebar: #0a2218; /* Fundo escuro lateral Indoor */
+            --text-main: #334155;
+            --text-light: #64748b;
+            --border-color: #e2e8f0;
+            --white: #ffffff;
+            --error: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; 
+            background-color: var(--white);
+        }
+
+        .split-layout {
+            display: flex;
+            height: 100%;
+            width: 100%;
+        }
+
+        .sidebar {
+            flex: 0 0 40%;
+            background-color: var(--bg-sidebar);
+            background-image: linear-gradient(135deg, #0a2218 0%, #1e293b 100%);
+            color: var(--white);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .sidebar-content img {
+            width: 120px;
+            margin-bottom: 25px;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+        }
+
+        .sidebar-content h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            line-height: 1.2;
+        }
+
+        .sidebar-content p {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            font-weight: 300;
+            max-width: 400px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .form-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto; 
+            padding: 40px 60px;
+            align-items: center; 
+            position: relative;
+        }
+
+        .form-wrapper {
+            max-width: 700px;
+            width: 100%;
+            margin: auto 0; 
+        }
+
+        .form-header-mobile {
+            display: none;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .form-header-mobile h2 {
+            font-size: 1.8rem;
+            color: var(--text-main);
+        }
+
+        h3 {
+            color: var(--text-main);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            margin-top: 25px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        h3:first-of-type {
+            margin-top: 0;
+        }
+
+        .cadastro-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px 20px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+
+        .form-group input {
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            outline: none;
+            background-color: #f8fafc;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary-color);
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+        }
+
+        .form-group-terms {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .form-group-terms input[type="checkbox"] {
+            margin-top: 3px;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: var(--primary-color);
+        }
+
+        .form-group-terms label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            line-height: 1.4;
+            cursor: pointer;
+        }
+
+        .form-group-terms a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .btn-submit {
+            grid-column: 1 / -1;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+            margin-top: 10px;
+            box-shadow: 0 4px 6px -1px rgba(20, 184, 166, 0.2);
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .auth-footer {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .auth-footer a {
+            color: var(--primary-color);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .form-feedback.error {
+            color: #b91c1c;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            grid-column: 1 / -1;
+            display: none;
+            text-align: center;
+        }
+        
+        .hidden { display: none !important; }
+        
+        #loading-feedback {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+        }
+        
+        #loading-feedback p {
+            color: var(--text-main);
+            font-weight: 500;
+            margin-top: 15px;
+        }
+        
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        @media (max-width: 900px) {
+            body { 
+                overflow: auto; 
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .split-layout {
+                flex-direction: column;
+                height: auto;
+                overflow: visible;
+            }
+            
+            .sidebar {
+                flex: none;
+                padding: 40px 20px 60px 20px;
+                min-height: auto;
+            }
+            
+            .sidebar-content img { width: 80px; margin-bottom: 15px; }
+            .sidebar-content h1 { font-size: 1.6rem; }
+            .sidebar-content p { display: none; }
+            
+            .form-container {
+                flex: none;
+                padding: 40px 20px;
+                background: white;
+                border-top-left-radius: 25px;
+                border-top-right-radius: 25px;
+                margin-top: -30px;
+                min-height: 60vh;
+                display: block; 
+                z-index: 2;
+            }
+            
+            .form-wrapper {
+                margin: 0 auto;
+            }
+            
+            .form-header-mobile { display: block; }
+
+            .cadastro-form-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="split-layout">
+        
+        <div class="sidebar">
+            <div class="sidebar-content">
+                <img src="https://setordearte.com.br/images/logo-redonda.svg" alt="Logo Setor de Arte">
+                <h1>Sistema<br>Indoor</h1>
+                <p>Cadastre-se para gerenciar seus terminais de mídia e artes exclusivas para seu painel digital.</p>
+            </div>
+        </div>
+
+        <div class="form-container">
+            <div id="form-wrapper" class="form-wrapper">
+                
+                <div class="auth-header form-header-mobile">
+                    <h2>Crie sua conta Indoor</h2>
+                </div>
+
+                <form id="cadastro-form" class="cadastro-form-grid">
+                    <div id="form-error-feedback" class="form-feedback error"></div>
+                    
+                    <h3 class="full-width">Dados da Empresa</h3>
+                    
+                    <div class="form-group full-width">
+                        <label for="nome_empresa">Nome da Empresa</label>
+                        <input type="text" id="nome_empresa" placeholder="Ex: Galeria Arte Moderna" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cnpj">CNPJ</label>
+                        <input type="text" id="cnpj" placeholder="00.000.000/0000-00" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="telefone_empresa">WhatsApp</label>
+                        <input type="tel" id="telefone_empresa" placeholder="(xx) xxxxx-xxxx" required>
+                    </div>
+
+                    <div class="form-group full-width" style="margin-top: 10px;">
+                        <label for="logo_arquivo">Logo da Empresa</label>
+                        <input type="file" id="logo_arquivo" accept="image/png, image/jpeg, image/jpg" style="padding: 10px; background-color: #f8fafc;">
+                        <p style="font-size: 0.75rem; color: #64748b; margin-top: 5px;">
+                            Formatos: PNG ou JPG. Usaremos para personalizar seu painel.
+                        </p>
+                    </div>
+
+                    <h3 class="full-width">Seu Acesso</h3>
+                    
+                    <div class="form-group full-width">
+                        <label for="nome_responsavel">Seu Nome Completo</label>
+                        <input type="text" id="nome_responsavel" placeholder="Nome e Sobrenome" required>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="email">E-mail de Login</label>
+                        <input type="email" id="email" placeholder="seu@email.com" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="senha">Criar Senha</label>
+                        <input type="password" id="senha" placeholder="Mínimo 6 caracteres" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirmar-senha">Confirmar Senha</label>
+                        <input type="password" id="confirmar-senha" placeholder="Repita a senha" required>
+                    </div>
+
+                    <div class="form-group-terms">
+                        <input type="checkbox" id="termos-aceite" name="termos" required>
+                        <label for="termos-aceite">
+                            Eu concordo com os <a href="https://setordearte.com.br/termos-de-uso/" target="_blank">Termos de Uso</a> e a <a href="https://setordearte.com.br/politica-de-privacidade/" target="_blank">Política de Privacidade</a>.
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Criar Conta Indoor</button>
+                </form>
+                   
+                <div class="auth-footer">
+                    <p>Já possui cadastro? <a href="login.html">Fazer Login</a></p>
+                </div>
+            </div>
+            
+            <div id="loading-feedback" class="feedback-container hidden">
+                <div class="spinner"></div>
+                <p>Configurando seu painel Indoor...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="cadastro-script.js"></script>
+</body>
+</html>
