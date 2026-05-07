@@ -5,7 +5,7 @@ const chatapp = require('../helpers/chatapp');
 
 const PROXIMA_ETAPA = {
     'EM EDIÇÃO': 'VEICULAR',
-    'VEICULAR': 'CONCLUÍDO'
+    'VEICULAR': 'VEICULANDO'
 };
 
 const MSGS_NOTIF = {

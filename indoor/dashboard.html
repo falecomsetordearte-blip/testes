@@ -49,6 +49,15 @@
                         </div>
                         <div class="in-kanban-items" id="col-veicular"></div>
                     </div>
+                    
+                    <!-- Coluna: Veiculando -->
+                    <div class="in-kanban-col">
+                        <div class="in-kanban-col-header veiculando">
+                            <span title="Airing"><i class="fas fa-play-circle" style="margin-right:6px;"></i> Veiculando</span>
+                            <span class="in-kanban-count" id="count-veiculando">0</span>
+                        </div>
+                        <div class="in-kanban-items" id="col-veiculando"></div>
+                    </div>
                 </div>
 
             </main>
@@ -67,7 +76,7 @@
 
             console.log('[Indoor-Dashboard] Carregando Kanban...');
 
-            ['col-aguardando','col-edicao','col-veicular'].forEach(id => {
+            ['col-aguardando','col-edicao','col-veicular','col-veiculando'].forEach(id => {
                 document.getElementById(id).innerHTML = '<div class="in-card-empty"><i class="fas fa-spinner fa-spin"></i></div>';
             });
 
@@ -87,12 +96,13 @@
         };
 
         function renderKanban(kanban) {
-            renderCol('col-aguardando', 'count-aguardando', kanban['AGUARDANDO PAGAMENTO'] || [], true, false);
-            renderCol('col-edicao', 'count-edicao', kanban['EM EDIÇÃO'] || [], false, true);
-            renderCol('col-veicular', 'count-veicular', kanban['VEICULAR'] || [], false, false);
+            renderCol('col-aguardando', 'count-aguardando', kanban['AGUARDANDO PAGAMENTO'] || [], true, false, false);
+            renderCol('col-edicao', 'count-edicao', kanban['EM EDIÇÃO'] || [], false, true, false);
+            renderCol('col-veicular', 'count-veicular', kanban['VEICULAR'] || [], false, false, true);
+            renderCol('col-veiculando', 'count-veiculando', kanban['VEICULANDO'] || [], false, false, false);
         }
 
-        function renderCol(colId, countId, pedidos, showProduzir, showVeicular) {
+        function renderCol(colId, countId, pedidos, showProduzir, showVeicular, showConcluir) {
             const col = document.getElementById(colId);
             document.getElementById(countId).textContent = pedidos.length;
 
@@ -128,6 +138,7 @@
                     <div class="in-card-actions">
                         ${showProduzir ? `<button class="in-btn-produzir" data-confirming="false" onclick="handleProduzir(${p.id}, this)"><i class="fas fa-rocket"></i> PRODUZIR</button>` : ''}
                         ${showVeicular ? `<button class="in-btn-produzir" style="background:#14b8a6; color:#fff;" onclick="moverParaVeicular(${p.id}, this)"><i class="fas fa-broadcast-tower"></i> VEICULAR</button>` : ''}
+                        ${showConcluir ? `<button class="in-btn-produzir" style="background:#10b981; color:#fff;" onclick="moverParaVeiculando(${p.id}, this)"><i class="fas fa-check-circle"></i> CONCLUIR</button>` : ''}
                         <button class="in-btn-card-del" onclick="excluirCard(${p.id})" title="Excluir"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 `;
@@ -179,6 +190,36 @@
                 window.indoorDialog({ type: 'alert', title: 'Erro', message: err.message });
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-broadcast-tower"></i> VEICULAR';
+            }
+        };
+
+        window.moverParaVeiculando = async function(pedidoId, btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Movendo...';
+
+            try {
+                const res = await fetch('/api/indoor/mover-etapa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionToken: localStorage.getItem('sessionToken'),
+                        id: pedidoId,
+                        etapaAtual: 'VEICULAR'
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok && data.success) {
+                    window.carregarDashboard();
+                } else {
+                    throw new Error(data.message || 'Erro ao mover pedido.');
+                }
+            } catch (err) {
+                console.error('[Indoor-Dashboard] Erro ao mover para veiculando:', err);
+                window.indoorDialog({ type: 'alert', title: 'Erro', message: err.message });
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> CONCLUIR';
             }
         };
 
