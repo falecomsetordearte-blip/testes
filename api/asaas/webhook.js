@@ -107,7 +107,6 @@ module.exports = async (req, res) => {
             console.log(`[WEBHOOK ASAAS] Ignorado: Evento não possui dados de pagamento ou não pertence a uma assinatura recorrente.`);
             return res.status(200).json({ received: true, message: 'Ignorado - Não é assinatura' });
         }
-        }
 
         const subId = event.payment.subscription;
         console.log(`[WEBHOOK ASAAS] ID da Assinatura (Subscription): ${subId}`);
