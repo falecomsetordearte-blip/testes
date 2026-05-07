@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Editor Master — Indoor</title>
+    <link rel="icon" href="/images/logo-fundo-claro-100x100.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/indoor/style.css">
+    <style>
+        .editor-container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+        .editor-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; }
+        .in-kanban-col { width: 100%; max-width: none; background: transparent; }
+        .in-kanban-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+        .badge-empresa { display: inline-block; background: #3b82f6; color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    </style>
+</head>
+<body style="background-color: #f1f5f9;">
+    <div class="editor-container">
+        <div class="editor-header">
+            <div class="in-page-title" style="margin:0;">
+                <h2><i class="fas fa-magic" style="color:#f59e0b;"></i> Painel Master de Edição</h2>
+            </div>
+            <div>
+                <button onclick="carregarPedidos()" class="in-btn-action" style="border:none; cursor:pointer; background:#cbd5e1; color:#334155;">
+                    <i class="fas fa-sync-alt"></i> Atualizar
+                </button>
+            </div>
+        </div>
+
+        <div class="in-kanban-col">
+            <div class="in-kanban-col-header edicao" style="margin-bottom:20px;">
+                <span><i class="fas fa-pencil-alt"></i> Fila Global de Edição (Todas as Empresas)</span>
+                <span class="in-kanban-count" id="count-edicao">0</span>
+            </div>
+            <div class="in-kanban-items" id="col-edicao">
+                <div class="in-card-empty" style="grid-column: 1 / -1;"><i class="fas fa-spinner fa-spin"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const FORMATO_ICON = { deitado: '📺', empo: '📱', quadrado: '⬛' };
+        const FORMATO_LABEL = { deitado: 'Deitado', empo: 'Em Pé', quadrado: 'Quadrado' };
+
+        async function carregarPedidos() {
+            document.getElementById('col-edicao').innerHTML = '<div class="in-card-empty" style="grid-column: 1 / -1;"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>';
+            try {
+                const res = await fetch('/api/indoor/admin-listar-edicao');
+                const data = await res.json();
+                renderCards(data.kanban['EM EDIÇÃO'] || []);
+            } catch (err) {
+                console.error('Erro:', err);
+            }
+        }
+
+        function renderCards(pedidos) {
+            const col = document.getElementById('col-edicao');
+            document.getElementById('count-edicao').textContent = pedidos.length;
+
+            if (pedidos.length === 0) {
+                col.innerHTML = '<div class="in-card-empty" style="grid-column: 1 / -1;"><i class="fas fa-glass-cheers"></i><br>Fila limpa! Nenhuma arte pendente.</div>';
+                return;
+            }
+
+            col.innerHTML = '';
+            pedidos.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'in-kanban-card';
+                card.style.position = 'relative';
+
+                const formatoIcon = FORMATO_ICON[p.formato] || '🎬';
+                const formatoLabel = FORMATO_LABEL[p.formato] || p.formato;
+                const duracao = p.duracao ? `${p.duracao}s` : '';
+
+                card.innerHTML = `
+                    <div class="badge-empresa"><i class="fas fa-building"></i> ${p.empresa_nome || 'Empresa'}</div>
+                    <div class="in-card-title">${p.titulo}</div>
+                    <div class="in-card-client"><i class="fas fa-user" style="color:#cbd5e1;"></i> Cliente: ${p.nome_cliente || '—'}</div>
+                    <div class="in-card-client"><i class="fab fa-whatsapp" style="color:#22c55e;"></i> Wpp: ${p.whatsapp || '—'}</div>
+                    
+                    <div class="in-card-meta" style="margin-top: 10px;">
+                        ${p.formato ? `<span>${formatoIcon} ${formatoLabel}</span>` : ''}
+                        ${duracao ? `<span>⏱ ${duracao}</span>` : ''}
+                    </div>
+                    
+                    ${p.briefing ? `<div style="margin-top:12px; padding:10px; background:#f8fafc; border-radius:6px; font-size:0.85rem; color:#475569; max-height:100px; overflow-y:auto; border:1px solid #e2e8f0; white-space: pre-wrap;"><strong style="color:#1e293b;"><i class="fas fa-align-left"></i> Briefing:</strong>\n${p.briefing}</div>` : ''}
+                    ${p.link_drive ? `<div style="margin-top:8px;"><a href="${p.link_drive}" target="_blank" style="color:#3b82f6; font-size:0.85rem; text-decoration:none;"><i class="fas fa-folder-open"></i> Acessar Drive</a></div>` : ''}
+                    ${p.link_blob ? `<div style="margin-top:4px;"><a href="${p.link_blob}" target="_blank" style="color:#3b82f6; font-size:0.85rem; text-decoration:none;"><i class="fas fa-paperclip"></i> Ver Arquivo Anexo</a></div>` : ''}
+                    
+                    <div class="in-card-actions" style="margin-top:15px; border-top:1px solid #e2e8f0; padding-top:15px;">
+                        <button class="in-btn-produzir" style="background:#f59e0b; color:#fff; width:100%; justify-content:center; display:flex;" onclick="aprovarArte(${p.id}, this)">
+                            <i class="fas fa-check-circle" style="margin-right:8px;"></i> APROVAR ARTE
+                        </button>
+                    </div>
+                `;
+                col.appendChild(card);
+            });
+        }
+
+        async function aprovarArte(pedidoId, btnElement) {
+            const linkDownload = prompt("Cole o Link de Download (Vercel, Drive, etc) do vídeo que você acabou de editar:");
+            if (!linkDownload || linkDownload.trim() === '') {
+                return; // Cancelou ou deixou vazio
+            }
+
+            const originalHtml = btnElement.innerHTML;
+            btnElement.disabled = true;
+            btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aprovando e Avisando Cliente...';
+
+            try {
+                const res = await fetch('/api/indoor/admin-aprovar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pedidoId, linkDownload: linkDownload.trim() })
+                });
+                
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    carregarPedidos();
+                } else {
+                    alert("Erro: " + data.message);
+                    btnElement.disabled = false;
+                    btnElement.innerHTML = originalHtml;
+                }
+            } catch (err) {
+                alert("Erro ao aprovar arte. Verifique sua conexão.");
+                btnElement.disabled = false;
+                btnElement.innerHTML = originalHtml;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', carregarPedidos);
+    </script>
+</body>
+</html>
