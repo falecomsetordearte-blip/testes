@@ -37,6 +37,139 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch(e) { console.error('[Indoor-Layout] Erro ao carregar header:', e); }
     }
 
+    // Injetar drawer de Novo Pedido em todas as páginas
+    if (!document.getElementById('np-overlay')) {
+        document.body.insertAdjacentHTML('beforeend', `
+            <div class="in-drawer-overlay" id="np-overlay" onclick="window.fecharDrawerNovoPedido && window.fecharDrawerNovoPedido()"></div>
+            <div class="in-drawer-panel" id="np-panel">
+                <div class="in-drawer-head">
+                    <h3><i class="fas fa-plus-circle" style="color:#14b8a6; margin-right:8px;"></i> Novo Pedido Indoor</h3>
+                    <button class="in-drawer-close" onclick="window.fecharDrawerNovoPedido && window.fecharDrawerNovoPedido()">×</button>
+                </div>
+                <div class="in-drawer-body">
+                    <p style="font-size:0.83rem;color:#94a3b8;margin-bottom:18px;">
+                        Após criar, o pedido entra automaticamente em <strong style="color:#f59e0b;">Em Edição</strong>.
+                    </p>
+                    <div id="np-feedback" class="in-feedback"></div>
+                    <form id="form-novo-pedido" autocomplete="off">
+                        <div class="in-form-group">
+                            <label for="np-titulo">Título do Pedido <span style="color:#ef4444;">*</span></label>
+                            <input type="text" id="np-titulo" placeholder="Ex: Banner Loja Centro — Maio/2025" required>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                            <div class="in-form-group">
+                                <label for="np-cliente">Nome do Cliente</label>
+                                <input type="text" id="np-cliente" placeholder="Ex: João Silva">
+                            </div>
+                            <div class="in-form-group">
+                                <label for="np-wpp">WhatsApp</label>
+                                <input type="text" id="np-wpp" placeholder="Ex: 11999998888">
+                            </div>
+                        </div>
+                        <div class="in-form-group">
+                            <label for="np-briefing">Briefing / Observações</label>
+                            <textarea id="np-briefing" placeholder="Tamanho, cores, texto, referências..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="in-drawer-footer">
+                    <button id="np-btn-submit" class="in-btn-primary">
+                        <i class="fas fa-paper-plane"></i> Criar Pedido
+                    </button>
+                </div>
+            </div>
+        `);
+
+        // Abrir drawer
+        window.abrirDrawerNovoPedido = function() {
+            console.log('[Indoor-Layout] Abrindo drawer de novo pedido.');
+            document.getElementById('form-novo-pedido').reset();
+            const fb = document.getElementById('np-feedback');
+            fb.className = 'in-feedback';
+            fb.textContent = '';
+            const btn = document.getElementById('np-btn-submit');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Criar Pedido';
+            document.getElementById('np-overlay').classList.add('active');
+            document.getElementById('np-panel').classList.add('active');
+            document.getElementById('np-titulo').focus();
+        };
+
+        // Fechar drawer
+        window.fecharDrawerNovoPedido = function() {
+            document.getElementById('np-overlay').classList.remove('active');
+            document.getElementById('np-panel').classList.remove('active');
+        };
+
+        // Submit do formulário
+        document.getElementById('np-btn-submit').addEventListener('click', async () => {
+            const titulo   = document.getElementById('np-titulo').value.trim();
+            const cliente  = document.getElementById('np-cliente').value.trim();
+            const wpp      = document.getElementById('np-wpp').value.trim();
+            const briefing = document.getElementById('np-briefing').value.trim();
+            const feedback = document.getElementById('np-feedback');
+            const btn      = document.getElementById('np-btn-submit');
+
+            feedback.className = 'in-feedback';
+            feedback.textContent = '';
+
+            if (!titulo) {
+                feedback.textContent = 'O título do pedido é obrigatório.';
+                feedback.className = 'in-feedback error';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando...';
+
+            console.log(`[Indoor-Layout] Criando pedido: "${titulo}" | ${cliente}`);
+
+            try {
+                const res = await fetch('/api/indoor/criar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionToken: localStorage.getItem('sessionToken'),
+                        titulo, nomeCliente: cliente, wppCliente: wpp, briefing
+                    })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    console.log(`[Indoor-Layout] Pedido #${data.dealId} criado com sucesso.`);
+                    feedback.textContent = `✅ Pedido #${data.dealId} criado! ${wpp ? 'Grupo WhatsApp sendo criado...' : ''}`;
+                    feedback.className = 'in-feedback success';
+                    btn.innerHTML = '<i class="fas fa-check"></i> Criado!';
+
+                    // Atualizar a lista da página se a função existir (painel-edicao)
+                    setTimeout(() => {
+                        window.fecharDrawerNovoPedido();
+                        if (typeof window.carregarPedidos === 'function') {
+                            window.carregarPedidos();
+                        } else if (typeof window.carregarDashboard === 'function') {
+                            window.carregarDashboard();
+                        }
+                    }, 1600);
+                } else {
+                    throw new Error(data.message || 'Erro ao criar pedido.');
+                }
+            } catch (err) {
+                console.error('[Indoor-Layout] Erro ao criar pedido:', err);
+                feedback.textContent = err.message;
+                feedback.className = 'in-feedback error';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Criar Pedido';
+            }
+        });
+
+        // Fechar com ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') window.fecharDrawerNovoPedido && window.fecharDrawerNovoPedido();
+        });
+
+        console.log('[Indoor-Layout] Drawer de novo pedido injetado.');
+    }
+
     // Preencher nome do usuário
     const greetingEl = document.getElementById('in-user-greeting');
     if (greetingEl) greetingEl.textContent = `Olá, ${userName}!`;
