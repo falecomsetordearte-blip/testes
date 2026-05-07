@@ -142,7 +142,7 @@ body {
 .in-btn-logout:hover { background: #fef2f2; color: #ef4444; border-color: #ef4444; }
 
 /* ── MAIN CONTENT ── */
-.indoor-main { padding: 28px; flex: 1; }
+.indoor-main { padding: 15px; flex: 1; }
 
 /* ── STAT CARDS ── */
 .in-stats-grid {
@@ -425,30 +425,21 @@ body {
 }
 .in-page-title h2 { font-size: 1.3rem; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 10px; }
 
-/* ── KANBAN (K-Design Horizontal Scroll) ── */
+/* ── KANBAN (K-Design Compacto) ── */
 .indoor-kanban {
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
-    overflow-x: auto;
-    padding-bottom: 24px;
-    /* Hide scrollbar for clean look but keep it functional */
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 transparent;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    align-items: start;
 }
-.indoor-kanban::-webkit-scrollbar { height: 8px; }
-.indoor-kanban::-webkit-scrollbar-track { background: transparent; }
-.indoor-kanban::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
 
 .in-kanban-col {
-    min-width: 320px;
-    max-width: 320px;
-    flex-shrink: 0;
     display: flex;
     flex-direction: column;
+    min-width: 0; /* Permite que a coluna encolha se necessário */
 }
 .in-kanban-col-header {
-    padding: 10px 4px 16px 4px;
+    padding: 8px 4px 10px 4px;
     display: flex; align-items: center; justify-content: space-between;
     font-weight: 700; font-size: 0.95rem;
     border: none;
@@ -523,8 +514,8 @@ body {
     font-size: 0.85rem; transition: all 0.2s ease;
 }
 .in-btn-card-del:hover { background: #fee2e2; color: #ef4444; transform: rotate(5deg); }
-.in-card-empty { text-align: center; padding: 30px 10px; color: #cbd5e1; font-size: 0.82rem; }
-.in-card-empty i { display: block; font-size: 1.5rem; margin-bottom: 8px; }
+.in-card-empty { text-align: center; padding: 15px 10px; color: #cbd5e1; font-size: 0.78rem; }
+.in-card-empty i { display: block; font-size: 1.1rem; margin-bottom: 5px; }
 
 /* ── DRAWER LARGO (para o formulário de novo pedido) ── */
 .in-drawer-wide { max-width: 560px !important; }
