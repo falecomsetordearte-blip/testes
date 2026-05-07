@@ -47,7 +47,9 @@ module.exports = async (req, res) => {
             ACABAMENTO: "A impressão terminou! Agora estamos nos acabamentos finais para deixar tudo perfeito.",
             EXPEDICAO: "Tudo pronto! Seu pedido está na nossa expedição aguardando retirada ou rota de entrega.",
             INSTALACAO_LOJA: "Tudo pronto! Seu pedido já está liberado e aguardando a instalação aqui na loja.",
-            INSTALACAO_EXTERNA: "Tudo pronto! Seu pedido já entrou na nossa rota para a instalação externa no seu local."
+            INSTALACAO_EXTERNA: "Tudo pronto! Seu pedido já entrou na nossa rota para a instalação externa no seu local.",
+            INDOOR_VEICULAR: "Olá [NOME]! 🎉\n\nSua arte está pronta e aprovada para veicular! Em breve nosso time vai entrar em contato com os próximos passos.",
+            INDOOR_CONCLUIDO: "Olá [NOME]! ✅\n\nSeu pedido foi concluído com sucesso. Obrigado pela confiança!"
         };
 
         const configs = await prisma.$queryRawUnsafe(`

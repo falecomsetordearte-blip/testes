@@ -42,7 +42,17 @@ module.exports = async (req, res) => {
 
         const impHoras = parseInt(prazoImpressao) || 24;
         const acaHoras = parseInt(prazoAcabamento) || 24;
-        const jsonMensagens = JSON.stringify(mensagens_etapas || {});
+        
+        // Buscar configuração atual para mesclar mensagens (evitar que o painel indoor apague as do main, ou vice versa)
+        const currentConfig = await prisma.$queryRawUnsafe(`SELECT mensagens_etapas FROM painel_configuracoes_sistema WHERE empresa_id = $1 LIMIT 1`, empresaId);
+        let mergedMsgs = req.body.mensagens_etapas || {};
+        if (currentConfig.length > 0) {
+            let dbMsgs = currentConfig[0].mensagens_etapas;
+            if (typeof dbMsgs === 'string') { try { dbMsgs = JSON.parse(dbMsgs); } catch(e) { dbMsgs = {}; } }
+            mergedMsgs = { ...(dbMsgs || {}), ...mergedMsgs };
+        }
+        
+        const jsonMensagens = JSON.stringify(mergedMsgs);
 
         const upsertConfig = await prisma.$executeRawUnsafe(`
             INSERT INTO painel_configuracoes_sistema (empresa_id, prazo_padrao_impressao, prazo_padrao_acabamento, mensagens_etapas, atualizado_em)
