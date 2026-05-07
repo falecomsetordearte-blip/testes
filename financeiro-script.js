@@ -1,6 +1,7 @@
-// /financeiro-script.js - VERSÃO ATUALIZADA (PAGO vs COBRAR SEPARADOS)
-
+// /financeiro-script.js - VERSÃO LOCAL COM DRAWER
 (function() {
+    console.log("[Financeiro] Script inicializado.");
+
     // --- 1. SEGURANÇA ---
     const sessionToken = localStorage.getItem('sessionToken');
     if (!sessionToken) {
@@ -8,12 +9,7 @@
         return;
     }
 
-    // --- 2. CONFIGURAÇÃO DOS IDs DO BITRIX ---
-    const STAGE_VERIFICAR = 'C17:UC_IKPW6X';
-    const STAGE_PAGO      = 'C17:UC_WFTT1A';
-    const STAGE_COBRAR    = 'C17:UC_G2024K'; // Novo ID separado
-
-    // --- 3. ELEMENTOS DO DOM ---
+    // --- 2. ELEMENTOS DO DOM ---
     const listBody = document.getElementById('financeiro-list-body');
     const paginationContainer = document.getElementById('pagination-container');
     const paginationInfo = document.getElementById('pagination-info-text');
@@ -22,15 +18,25 @@
     const btnBuscar = document.getElementById('btn-buscar');
     const nameFilterInput = document.getElementById('name-filter-input');
     const tabContainer = document.querySelector('.tab-buttons');
-    
-    // --- 4. ESTADO DA APLICAÇÃO ---
-    let currentPage = 0;
-    let totalPages = 1;
-    let currentStatusFilter = 'todos'; 
 
-    // --- 5. FUNÇÃO DE BUSCA ---
+    // Elementos da Gaveta
+    const drawer = document.getElementById('drawer');
+    const drawerOverlay = document.getElementById('drawer-overlay');
+    const drawerContent = document.getElementById('drawer-content');
+    const btnCloseDrawer = document.getElementById('btn-close-drawer');
+    const btnDrawerPago = document.getElementById('btn-drawer-pago');
+    const btnDrawerCobrar = document.getElementById('btn-drawer-cobrar');
+    
+    // --- 3. ESTADO DA APLICAÇÃO ---
+    let currentPage = 0;
+    let currentStatusFilter = 'todos'; 
+    let selectedPedidoId = null;
+    let pedidosCache = [];
+
+    // --- 4. FUNÇÃO DE BUSCA ---
     async function fetchFinancialDeals(page = 0) {
-        listBody.innerHTML = `<div class="loading-pedidos"><div class="spinner"></div><span>Carregando financeiro...</span></div>`;
+        console.log(`[Financeiro] Buscando pedidos... Filtro: ${currentStatusFilter}, Pagina: ${page}`);
+        listBody.innerHTML = `<div class="loading-pedidos"><div class="spinner"></div><span>Carregando financeiro local...</span></div>`;
         
         try {
             const response = await fetch('/api/getFinancialDeals', {
@@ -47,124 +53,116 @@
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || 'Erro ao buscar dados');
             
+            pedidosCache = data.deals;
             currentPage = data.pagination.currentPage;
-            totalPages = data.pagination.totalPages;
-
             renderDeals(data.deals);
             updatePagination(data.pagination);
 
+            console.log(`[Financeiro] ${data.deals.length} pedidos carregados.`);
         } catch (error) {
-            console.error(error);
+            console.error("[Financeiro] Erro no Fetch:", error);
             listBody.innerHTML = `<div class="loading-pedidos" style="color: red;">Erro: ${error.message}</div>`;
         }
     }
 
-    // --- 6. RENDERIZAÇÃO DA LISTA ---
+    // --- 5. RENDERIZAÇÃO DA LISTA ---
     function renderDeals(deals) {
         listBody.innerHTML = ''; 
 
         if (!deals || deals.length === 0) {
-            listBody.innerHTML = `<div class="loading-pedidos" style="padding: 20px;">Nenhum pedido encontrado nesta aba.</div>`;
+            listBody.innerHTML = `<div class="loading-pedidos" style="padding: 20px;">Nenhum pedido encontrado.</div>`;
             return;
         }
 
         deals.forEach(deal => {
-            let statusBadge = '';
-            let statusClass = '';
-            
-            // Define o Badge Visual
-            if (deal.STAGE_ID === STAGE_VERIFICAR) {
-                statusBadge = 'Verificar Pendência';
-                statusClass = 'status-analise'; // Amarelo/Laranja
-            } else if (deal.STAGE_ID === STAGE_PAGO) {
-                statusBadge = 'Pago';
-                statusClass = 'status-aprovado'; // Verde
-            } else if (deal.STAGE_ID === STAGE_COBRAR) {
-                statusBadge = 'Cobrar';
-                statusClass = 'status-cancelado'; // Vermelho
-            } else {
-                statusBadge = 'Outro';
-                statusClass = '';
-            }
-
-            const verifyLink = `https://www.visiva.com.br/admin/?imprimastore=pedidos/detalhes&id=${deal.TITLE}`;
-
-            // Lógica dos Radios:
-            // Se já for Pago, marca Pago. Se for Cobrar, marca Cobrar.
-            const isPago = deal.STAGE_ID === STAGE_PAGO;
-            const isCobrar = deal.STAGE_ID === STAGE_COBRAR;
-
-            // Se o pedido já saiu da pendência, mostramos apenas o status, ou permitimos alterar?
-            // Vou permitir alterar, mas mostrando o que está selecionado.
-            
-            const actionsHtml = `
-                <div class="financial-actions-group">
-                    <a href="${verifyLink}" target="_blank" class="btn-verificar">Ver Detalhes</a>
-                    <div class="radio-group" data-deal-id="${deal.ID}">
-                        <label>
-                            <input type="radio" name="status_${deal.ID}" value="PAGO" ${isPago ? 'checked' : ''}> 
-                            Pago
-                        </label>
-                        <label>
-                            <input type="radio" name="status_${deal.ID}" value="DEVEDOR" ${isCobrar ? 'checked' : ''}> 
-                            Cobrar
-                        </label>
-                    </div>
-                </div>
-            `;
+            const statusClass = deal.STAGE_ID === 'PAGO' ? 'status-aprovado' : (deal.STAGE_ID === 'COBRAR' ? 'status-cancelado' : 'status-analise');
+            const statusLabel = deal.STAGE_ID || 'PENDENTE';
 
             const item = document.createElement('div');
             item.className = 'pedido-item';
-            item.id = `deal-${deal.ID}`;
-            item.style.gridTemplateColumns = '1fr 4fr 2fr 1.5fr'; // Mantendo layout do CSS
+            item.style.gridTemplateColumns = '1fr 4fr 2fr 1.5fr';
+            item.onclick = () => openDrawer(deal.ID);
             
             item.innerHTML = `
                 <div class="col-id"><strong>#${deal.ID}</strong></div>
-                <div class="col-titulo">${deal.TITLE || 'Sem título'}</div>
-                <div class="col-status"><span class="status-badge ${statusClass}">${statusBadge}</span></div>
-                <div class="col-acoes" style="text-align: center;">${actionsHtml}</div>
+                <div class="col-titulo">${deal.TITLE}</div>
+                <div class="col-status"><span class="status-badge ${statusClass}">${statusLabel}</span></div>
+                <div class="col-acoes" style="text-align: center;"><button class="btn-verificar">Detalhes</button></div>
             `;
             listBody.appendChild(item);
         });
     }
 
-    // --- 7. ATUALIZAR STATUS (QUANDO CLICA NO RADIO) ---
-    async function updateStatus(dealId, acao) {
-        const itemRow = document.getElementById(`deal-${dealId}`);
-        if(itemRow) itemRow.style.opacity = '0.5'; // Feedback visual
+    // --- 6. GAVETA (DRAWER) ---
+    function openDrawer(pedidoId) {
+        console.log(`[Financeiro] Abrindo detalhes do pedido: ${pedidoId}`);
+        const pedido = pedidosCache.find(p => p.ID === pedidoId);
+        if (!pedido) return;
 
+        selectedPedidoId = pedidoId;
+        
+        drawerContent.innerHTML = `
+            <div class="detail-item">
+                <div class="detail-label">ID do Pedido</div>
+                <div class="detail-value">#${pedido.ID}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Título / Briefing</div>
+                <div class="detail-value">${pedido.TITLE}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Cliente</div>
+                <div class="detail-value">${pedido.CLIENTE || 'Não informado'}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Valor Restante</div>
+                <div class="detail-value">R$ ${parseFloat(pedido.OPPORTUNITY).toFixed(2)}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Etapa Atual</div>
+                <div class="detail-value">${pedido.ETAPA_ATUAL}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Briefing Completo</div>
+                <div class="detail-value" style="font-size: 0.9rem; white-space: pre-wrap;">${pedido.BRIEFING || 'Sem briefing detalhado.'}</div>
+            </div>
+        `;
+
+        drawer.classList.add('active');
+        drawerOverlay.style.display = 'block';
+    }
+
+    function closeDrawer() {
+        drawer.classList.remove('active');
+        drawerOverlay.style.display = 'none';
+        selectedPedidoId = null;
+    }
+
+    // --- 7. ATUALIZAR STATUS ---
+    async function updateStatus(acao) {
+        if (!selectedPedidoId) return;
+
+        console.log(`[Financeiro] Solicitando mudança para ${acao} no pedido ${selectedPedidoId}`);
+        
         try {
             const response = await fetch('/api/updateFinancialDealStatus', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     sessionToken: sessionToken,
-                    dealId: dealId,
-                    acao: acao // 'PAGO' ou 'DEVEDOR'
+                    dealId: selectedPedidoId,
+                    acao: acao
                 })
             });
             
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.message || 'Falha ao atualizar');
-            }
+            if (!response.ok) throw new Error('Falha ao atualizar status.');
 
-            // Sucesso: Removemos a linha da tela (pois o status mudou e pode sair do filtro atual)
-            // Se estiver na aba "Todos", poderíamos apenas atualizar o badge, mas recarregar é mais seguro para garantir consistência.
-            if(itemRow) {
-                itemRow.style.transition = 'opacity 0.5s, transform 0.5s';
-                itemRow.style.transform = 'translateX(50px)';
-                itemRow.style.opacity = '0';
-                setTimeout(() => {
-                    itemRow.remove();
-                    if (listBody.children.length === 0) fetchFinancialDeals(currentPage);
-                    else if (currentStatusFilter === 'todos') fetchFinancialDeals(currentPage); // Refresh para atualizar o badge se estiver em "Todos"
-                }, 500);
-            }
-
+            console.log(`[Financeiro] Status atualizado com sucesso: ${acao}`);
+            closeDrawer();
+            fetchFinancialDeals(currentPage);
         } catch (error) {
-            window.adminCustomDialog({ type: 'alert', title: 'Erro', message: 'Erro ao atualizar: ' + error.message });
-            if(itemRow) itemRow.style.opacity = '1';
+            console.error("[Financeiro] Erro ao atualizar:", error);
+            alert("Erro ao atualizar: " + error.message);
         }
     }
 
@@ -181,56 +179,41 @@
     }
 
     // --- 9. EVENT LISTENERS ---
-    
-    // Clique nas Abas
+    btnCloseDrawer.onclick = closeDrawer;
+    drawerOverlay.onclick = closeDrawer;
+    btnDrawerPago.onclick = () => updateStatus('PAGO');
+    btnDrawerCobrar.onclick = () => updateStatus('COBRAR');
+
     if (tabContainer) {
-        tabContainer.addEventListener('click', (e) => {
+        tabContainer.onclick = (e) => {
             const btn = e.target.closest('.tab-btn');
             if (!btn) return;
-            
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            
             currentStatusFilter = btn.dataset.tab;
             fetchFinancialDeals(0);
-        });
+        };
     }
 
-    // Clique nos Radios (Mudança de Status)
-    listBody.addEventListener('change', (e) => {
-        if (e.target.type === 'radio' && e.target.name.startsWith('status_')) {
-            const dealId = e.target.closest('.radio-group').dataset.dealId;
-            const valor = e.target.value; // 'PAGO' ou 'DEVEDOR'
-            
-            // Pequeno delay para a UI do radio atualizar antes da animação
-            setTimeout(() => {
-                window.adminCustomDialog({
-                    type: 'confirm',
-                    title: 'Atenção',
-                    message: `Confirmar mudança para ${valor}?`,
-                    onConfirm: () => updateStatus(dealId, valor),
-                    onCancel: () => fetchFinancialDeals(currentPage)
-                });
-            }, 50);
-        }
-    });
-
-    btnBuscar.addEventListener('click', () => fetchFinancialDeals(0));
-    btnPrev.addEventListener('click', () => fetchFinancialDeals(currentPage - 1));
-    btnNext.addEventListener('click', () => fetchFinancialDeals(currentPage + 1));
+    btnBuscar.onclick = () => fetchFinancialDeals(0);
+    btnPrev.onclick = () => fetchFinancialDeals(currentPage - 1);
+    btnNext.onclick = () => fetchFinancialDeals(currentPage + 1);
 
     // --- 10. INICIALIZAÇÃO ---
     document.addEventListener('DOMContentLoaded', () => {
-        // Configura os Data-Tabs corretos nos botões do HTML via JS
-        // (Isso evita que você precise editar o HTML manualmente se não quiser)
+        // Ajustar as abas no HTML para os novos filtros
         const tabs = document.querySelectorAll('.tab-btn');
-        if(tabs.length >= 4) {
+        if (tabs.length >= 3) {
             tabs[0].dataset.tab = 'todos';
-            tabs[1].dataset.tab = STAGE_VERIFICAR;
-            tabs[2].dataset.tab = STAGE_PAGO;
-            tabs[3].dataset.tab = STAGE_COBRAR;
+            tabs[1].textContent = 'Aguardando Pagamento';
+            tabs[1].dataset.tab = 'PENDENTE';
+            tabs[2].textContent = 'Pago';
+            tabs[2].dataset.tab = 'PAGO';
+            if(tabs[3]) {
+                tabs[3].textContent = 'Cobrar / Devedor';
+                tabs[3].dataset.tab = 'COBRAR';
+            }
         }
-        
         fetchFinancialDeals();
     });
-})();
+})();

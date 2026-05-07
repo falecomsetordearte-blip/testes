@@ -1,66 +1,47 @@
-// /api/updateFinancialDealStatus.js - COMPLETO
-
-const axios = require('axios');
-const BITRIX24_API_URL = process.env.BITRIX24_API_URL;
-
-// --- CONFIGURAÇÃO DOS DESTINOS ---
-const STAGE_PAGO   = 'C17:UC_WFTT1A';
-const STAGE_COBRAR = 'C17:UC_G2024K'; // ID Atualizado
+// /api/updateFinancialDealStatus.js - VERSÃO LOCAL (PRISMA)
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 module.exports = async (req, res) => {
-    res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+    if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
 
+    console.log("[Financeiro] Iniciando atualização de status...");
+
     try {
-        const { sessionToken, dealId, acao } = req.body; 
-        // acao esperamos: 'PAGO' ou 'DEVEDOR'
+        const { sessionToken, dealId, acao } = req.body; // acao: 'PAGO' ou 'COBRAR'
 
-        if (!sessionToken || !dealId || !acao) {
-            return res.status(400).json({ message: 'Dados incompletos.' });
+        if (!sessionToken || !dealId) {
+            return res.status(400).json({ message: 'Dados incompletos' });
         }
 
-        // 1. Validar Sessão
-        const userCheck = await axios.post(`${BITRIX24_API_URL}crm.contact.list.json`, {
-            filter: { '%UF_CRM_1751824225': sessionToken },
-            select: ['ID', 'COMPANY_ID']
-        });
-        const user = userCheck.data.result[0];
-        if (!user || !user.COMPANY_ID) {
-            return res.status(401).json({ message: 'Não autorizado' });
+        // 1. Validar Token e Empresa
+        const user = await prisma.$queryRawUnsafe(`
+            SELECT empresa_id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1
+        `, `%${sessionToken}%`);
+
+        if (!user || user.length === 0) {
+            return res.status(401).json({ message: 'Sessão inválida' });
         }
 
-        // 2. Verificar Posse do Deal (Segurança)
-        const dealCheck = await axios.post(`${BITRIX24_API_URL}crm.deal.get`, { id: dealId });
-        const deal = dealCheck.data.result;
-        
-        if (!deal) return res.status(404).json({ message: 'Pedido não encontrado.' });
-        
-        if (deal.COMPANY_ID != user.COMPANY_ID) {
-            return res.status(403).json({ message: 'Acesso negado. Pedido pertence a outra empresa.' });
-        }
+        const empresaId = user[0].empresa_id;
+        console.log(`[Financeiro] Atualizando pedido ${dealId} para status: ${acao} (Empresa: ${empresaId})`);
 
-        // 3. Definir Novo Estágio
-        let novoStageId = '';
-        
-        if (acao === 'PAGO') {
-            novoStageId = STAGE_PAGO;
-        } else if (acao === 'DEVEDOR') {
-            novoStageId = STAGE_COBRAR;
-        } else {
-            return res.status(400).json({ message: 'Ação inválida. Use PAGO ou DEVEDOR.' });
-        }
+        // 2. Atualizar o Status Financeiro no Pedido
+        // Usamos raw query para garantir compatibilidade se a model não estiver no schema.prisma
+        await prisma.$executeRawUnsafe(`
+            UPDATE pedidos 
+            SET status_financeiro = $1
+            WHERE id = $2 AND empresa_id = $3
+        `, acao, parseInt(dealId), empresaId);
 
-        console.log(`Movendo Deal ${dealId} para ${novoStageId} (Ação: ${acao})`);
+        console.log(`[Financeiro] Pedido ${dealId} atualizado com sucesso.`);
 
-        // 4. Atualizar Bitrix
-        await axios.post(`${BITRIX24_API_URL}crm.deal.update`, {
-            id: dealId,
-            fields: { 'STAGE_ID': novoStageId }
-        });
-
-        return res.status(200).json({ message: 'Status atualizado com sucesso!' });
+        return res.status(200).json({ message: 'Status atualizado com sucesso' });
 
     } catch (error) {
         console.error('Erro updateFinancialDealStatus:', error.response ? error.response.data : error.message);
