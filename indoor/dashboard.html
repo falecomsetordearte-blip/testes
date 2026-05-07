@@ -6,7 +6,7 @@
     <title>Dashboard Indoor — Setor de Arte</title>
     <link rel="icon" href="/images/logo-fundo-claro-100x100.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/indoor/style.css">
+    <link rel="stylesheet" href="/indoor/style.css?v=3">
 </head>
 <body>
     <div class="indoor-layout">
@@ -128,19 +128,17 @@
                         ${duracao ? `<span>⏱ ${duracao}</span>` : ''}
                     </div>
                     ${valor ? `<div class="in-card-price">${valor}</div>` : ''}
-                    ${p.link_video_aprovado ? `
-                        <div style="margin-top: 10px;">
-                            <a href="${p.link_video_aprovado}" target="_blank" class="in-btn-produzir" style="background:#3b82f6; color:#fff; text-decoration:none; display:flex; justify-content:center; width:100%; font-size: 0.85rem; padding: 8px;">
+                    <div class="in-card-actions">
+                        ${p.link_video_aprovado ? `
+                            <a href="${p.link_video_aprovado}" target="_blank" class="in-btn-produzir" style="background:#3b82f6; color:#fff; text-decoration:none;">
                                 <i class="fas fa-download" style="margin-right:6px;"></i> BAIXAR ARTE
                             </a>
-                        </div>
-                    ` : ''}
-                    <div class="in-card-actions">
+                        ` : ''}
                         ${showProduzir ? `<button class="in-btn-produzir" data-confirming="false" onclick="handleProduzir(${p.id}, this)"><i class="fas fa-rocket"></i> PRODUZIR</button>` : ''}
-                        ${showVeicular ? `<button class="in-btn-produzir" style="background:#14b8a6; color:#fff;" onclick="moverParaVeicular(${p.id}, this)"><i class="fas fa-broadcast-tower"></i> VEICULAR</button>` : ''}
+                        ${showVeicular ? `<button class="in-btn-produzir" style="background:#0ea5e9; color:#fff;" onclick="moverParaVeicular(${p.id}, this)"><i class="fas fa-broadcast-tower"></i> VEICULAR</button>` : ''}
                         ${showConcluir ? `<button class="in-btn-produzir" style="background:#10b981; color:#fff;" onclick="moverParaVeiculando(${p.id}, this)"><i class="fas fa-check-circle"></i> CONCLUIR</button>` : ''}
-                        <button class="in-btn-card-del" onclick="excluirCard(${p.id})" title="Excluir"><i class="fas fa-trash-alt"></i></button>
                     </div>
+                    <button class="in-btn-card-del" onclick="excluirCard(${p.id})" title="Excluir"><i class="fas fa-trash-alt"></i></button>
                 `;
                 col.appendChild(card);
             });

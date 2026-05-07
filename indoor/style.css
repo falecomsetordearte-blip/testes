@@ -425,82 +425,104 @@ body {
 }
 .in-page-title h2 { font-size: 1.3rem; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 10px; }
 
-/* ── KANBAN ── */
+/* ── KANBAN (K-Design Horizontal Scroll) ── */
 .indoor-kanban {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 18px;
-    align-items: start;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    overflow-x: auto;
+    padding-bottom: 24px;
+    /* Hide scrollbar for clean look but keep it functional */
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
 }
-@media (max-width: 1200px) { .indoor-kanban { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 768px) { .indoor-kanban { grid-template-columns: 1fr; } }
+.indoor-kanban::-webkit-scrollbar { height: 8px; }
+.indoor-kanban::-webkit-scrollbar-track { background: transparent; }
+.indoor-kanban::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
 
 .in-kanban-col {
-    background: #f8fafc;
-    border-radius: 14px;
-    border: 1px solid #e2e8f0;
-    overflow: hidden;
+    min-width: 320px;
+    max-width: 320px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
 }
 .in-kanban-col-header {
-    padding: 14px 16px;
+    padding: 10px 4px 16px 4px;
     display: flex; align-items: center; justify-content: space-between;
-    border-bottom: 1px solid #e2e8f0;
-    font-weight: 700; font-size: 0.85rem;
+    font-weight: 700; font-size: 0.95rem;
+    border: none;
+    background: transparent !important;
 }
-.in-kanban-col-header.aguardando { background: #fff7ed; color: #c2410c; border-bottom-color: #fed7aa; }
-.in-kanban-col-header.edicao { background: #fffbeb; color: #b45309; border-bottom-color: #fde68a; }
-.in-kanban-col-header.veicular { background: #ecfeff; color: #0e7490; border-bottom-color: #a5f3fc; }
-.in-kanban-col-header.veiculando { background: #f0fdf4; color: #15803d; border-bottom-color: #bbf7d0; }
+/* Colors just for the text/icons now, no backgrounds on headers */
+.in-kanban-col-header.aguardando { color: #f59e0b; }
+.in-kanban-col-header.edicao { color: #8b5cf6; }
+.in-kanban-col-header.veicular { color: #0ea5e9; }
+.in-kanban-col-header.veiculando { color: #10b981; }
+
 .in-kanban-count {
-    background: rgba(0,0,0,0.08);
-    border-radius: 20px; padding: 2px 9px; font-size: 0.75rem;
+    background: #e2e8f0; color: #475569;
+    border-radius: 20px; padding: 3px 10px; font-size: 0.72rem;
+    font-weight: 700;
 }
-.in-kanban-items { padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 100px; }
+.in-kanban-items { display: flex; flex-direction: column; gap: 14px; min-height: 100px; padding-bottom: 20px; }
 
 .in-kanban-card {
     background: #fff;
-    border-radius: 10px;
-    border: 1px solid #e2e8f0;
-    padding: 14px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    transition: 0.2s;
+    border-radius: 16px;
+    border: 1px solid rgba(226, 232, 240, 0.6);
+    padding: 18px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    transition: all 0.25s ease;
     position: relative;
 }
-.in-kanban-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-1px); }
+.in-kanban-card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.08); transform: translateY(-3px); }
 
-.in-card-title { font-weight: 700; color: #1e293b; font-size: 0.92rem; margin-bottom: 4px; padding-right: 30px; }
-.in-card-client { font-size: 0.82rem; color: #64748b; margin-bottom: 8px; }
+.in-card-title { font-weight: 800; color: #0f172a; font-size: 0.95rem; margin-bottom: 6px; padding-right: 32px; letter-spacing: -0.3px; }
+.in-card-client { font-size: 0.8rem; color: #64748b; margin-bottom: 12px; font-weight: 500; display:flex; align-items:center; gap:6px;}
+
 .in-card-meta {
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-    font-size: 0.75rem; color: #94a3b8; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    margin-bottom: 14px;
 }
-.in-card-meta span { display: flex; align-items: center; gap: 4px; }
+.in-card-meta span { 
+    display: flex; align-items: center; gap: 4px; 
+    background: #f1f5f9; color: #475569;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 600;
+}
+
 .in-card-price {
-    font-weight: 800; font-size: 0.95rem; color: var(--in-primary);
-    margin-bottom: 10px;
+    font-weight: 800; font-size: 1rem; color: var(--in-primary);
+    margin-bottom: 14px; letter-spacing: -0.3px;
 }
-.in-card-actions { display: flex; gap: 8px; }
+
+.in-card-actions { display: flex; gap: 8px; flex-direction: column; }
 .in-btn-produzir {
-    flex: 1; padding: 8px 10px;
+    width: 100%; padding: 10px 10px;
     background: var(--in-primary); color: #fff;
-    border: none; border-radius: 7px;
+    border: none; border-radius: 10px;
     font-weight: 700; font-size: 0.8rem;
     cursor: pointer; font-family: 'Poppins', sans-serif;
     display: flex; align-items: center; justify-content: center; gap: 6px;
-    transition: 0.2s;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 10px var(--in-primary-glow);
 }
-.in-btn-produzir:hover { background: var(--in-primary-dark); }
-.in-btn-produzir.confirm-state { background: #ef4444; }
-.in-btn-produzir:disabled { opacity: 0.6; cursor: not-allowed; }
+.in-btn-produzir:hover { background: var(--in-primary-dark); transform: translateY(-1px); box-shadow: 0 4px 14px var(--in-primary-glow); }
+.in-btn-produzir.confirm-state { background: #ef4444; box-shadow: 0 2px 10px rgba(239,68,68,0.2); }
+.in-btn-produzir:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
 .in-btn-card-del {
     position: absolute;
-    top: 14px;
-    right: 14px;
-    padding: 6px 8px; background: #fef2f2; color: #ef4444;
-    border: 1px solid #fecaca; border-radius: 7px; cursor: pointer;
-    font-size: 0.82rem; transition: 0.2s;
+    top: 16px;
+    right: 16px;
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; color: #cbd5e1;
+    border: none; border-radius: 50%; cursor: pointer;
+    font-size: 0.85rem; transition: all 0.2s ease;
 }
-.in-btn-card-del:hover { background: #ef4444; color: #fff; }
+.in-btn-card-del:hover { background: #fee2e2; color: #ef4444; transform: rotate(5deg); }
 .in-card-empty { text-align: center; padding: 30px 10px; color: #cbd5e1; font-size: 0.82rem; }
 .in-card-empty i { display: block; font-size: 1.5rem; margin-bottom: 8px; }
 
