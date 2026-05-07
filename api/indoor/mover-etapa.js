@@ -96,7 +96,7 @@ module.exports = async (req, res) => {
                 let template = '';
                 if (novaEtapa === 'VEICULAR') {
                     template = "Olá [NOME]! 🎉\n\nSua arte está pronta e aprovada para veicular! Em breve nosso time vai entrar em contato com os próximos passos.";
-                } else if (novaEtapa === 'CONCLUÍDO') {
+                } else if (novaEtapa === 'VEICULANDO') {
                     template = "Olá [NOME]! ✅\n\nSeu pedido foi concluído com sucesso. Obrigado pela confiança!";
                 }
 
@@ -105,7 +105,7 @@ module.exports = async (req, res) => {
                     if (typeof msgs === 'string') { try { msgs = JSON.parse(msgs); } catch(e) {} }
                     
                     if (novaEtapa === 'VEICULAR' && msgs && msgs.INDOOR_VEICULAR) template = msgs.INDOOR_VEICULAR;
-                    if (novaEtapa === 'CONCLUÍDO' && msgs && msgs.INDOOR_CONCLUIDO) template = msgs.INDOOR_CONCLUIDO;
+                    if (novaEtapa === 'VEICULANDO' && msgs && msgs.INDOOR_CONCLUIDO) template = msgs.INDOOR_CONCLUIDO;
                 }
 
                 if (template) {

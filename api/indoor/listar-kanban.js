@@ -35,7 +35,7 @@ module.exports = async (req, res) => {
                    etapa, valor_pago, created_at, asaas_payment_id
             FROM pedidos
             WHERE empresa_id = $1 AND tipo_sistema = 'indoor'
-              AND etapa IN ('AGUARDANDO PAGAMENTO', 'EM EDIÇÃO', 'VEICULAR')
+              AND etapa IN ('AGUARDANDO PAGAMENTO', 'EM EDIÇÃO', 'VEICULAR', 'VEICULANDO')
             ORDER BY id DESC
         `, empresaId);
 
@@ -44,7 +44,8 @@ module.exports = async (req, res) => {
         const kanban = {
             'AGUARDANDO PAGAMENTO': [],
             'EM EDIÇÃO': [],
-            'VEICULAR': []
+            'VEICULAR': [],
+            'VEICULANDO': []
         };
 
         pedidos.forEach(p => {

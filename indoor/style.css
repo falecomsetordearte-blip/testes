@@ -428,11 +428,12 @@ body {
 /* ── KANBAN ── */
 .indoor-kanban {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 18px;
     align-items: start;
 }
-@media (max-width: 900px) { .indoor-kanban { grid-template-columns: 1fr; } }
+@media (max-width: 1200px) { .indoor-kanban { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 768px) { .indoor-kanban { grid-template-columns: 1fr; } }
 
 .in-kanban-col {
     background: #f8fafc;
@@ -449,6 +450,7 @@ body {
 .in-kanban-col-header.aguardando { background: #fff7ed; color: #c2410c; border-bottom-color: #fed7aa; }
 .in-kanban-col-header.edicao { background: #fffbeb; color: #b45309; border-bottom-color: #fde68a; }
 .in-kanban-col-header.veicular { background: #ecfeff; color: #0e7490; border-bottom-color: #a5f3fc; }
+.in-kanban-col-header.veiculando { background: #f0fdf4; color: #15803d; border-bottom-color: #bbf7d0; }
 .in-kanban-count {
     background: rgba(0,0,0,0.08);
     border-radius: 20px; padding: 2px 9px; font-size: 0.75rem;
