@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Indoor — Setor de Arte</title>
+    <link rel="icon" href="/images/logo-fundo-claro-100x100.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/indoor/style.css">
+</head>
+<body>
+    <div class="indoor-layout">
+        <!-- Sidebar -->
+        <div id="indoor-sidebar-placeholder"></div>
+
+        <!-- Conteúdo -->
+        <div class="indoor-content-area">
+            <div id="indoor-header-placeholder"></div>
+
+            <main class="indoor-main">
+                <div class="in-page-title">
+                    <h2><i class="fas fa-tachometer-alt" style="color:#14b8a6;"></i> Dashboard</h2>
+                    <a href="/indoor/novo-pedido.html" class="in-btn-action">
+                        <i class="fas fa-plus"></i> Novo Pedido
+                    </a>
+                </div>
+
+                <!-- Cards de estatísticas -->
+                <div class="in-stats-grid">
+                    <div class="in-stat-card">
+                        <div class="in-stat-icon editing"><i class="fas fa-pencil-alt"></i></div>
+                        <div>
+                            <div class="in-stat-value" id="count-edicao">—</div>
+                            <div class="in-stat-label">Em Edição</div>
+                        </div>
+                    </div>
+                    <div class="in-stat-card">
+                        <div class="in-stat-icon veicular"><i class="fas fa-broadcast-tower"></i></div>
+                        <div>
+                            <div class="in-stat-value" id="count-veicular">—</div>
+                            <div class="in-stat-label">Veicular</div>
+                        </div>
+                    </div>
+                    <div class="in-stat-card">
+                        <div class="in-stat-icon total"><i class="fas fa-layer-group"></i></div>
+                        <div>
+                            <div class="in-stat-value" id="count-ativos">—</div>
+                            <div class="in-stat-label">Em Aberto</div>
+                        </div>
+                    </div>
+                    <div class="in-stat-card">
+                        <div class="in-stat-icon done"><i class="fas fa-check-double"></i></div>
+                        <div>
+                            <div class="in-stat-value" id="count-concluidos">—</div>
+                            <div class="in-stat-label">Concluídos</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pedidos Recentes -->
+                <div class="in-panel-card">
+                    <div class="in-panel-header">
+                        <h3><i class="fas fa-clock" style="color:#14b8a6;"></i> Pedidos Recentes</h3>
+                    </div>
+                    <div id="recentes-container">
+                        <div class="in-empty">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Carregando...</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="/indoor/layout.js"></script>
+    <script>
+        async function carregarDashboard() {
+            const token = localStorage.getItem('sessionToken');
+            if (!token) { window.location.href = '/indoor/login.html'; return; }
+
+            console.log('[Indoor-Dashboard] Carregando dados...');
+
+            try {
+                const res = await fetch('/api/indoor/dashboard', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken: token })
+                });
+
+                if (res.status === 401 || res.status === 403) {
+                    window.location.href = '/indoor/login.html';
+                    return;
+                }
+
+                const data = await res.json();
+                console.log('[Indoor-Dashboard] Dados recebidos:', data);
+
+                document.getElementById('count-edicao').textContent = data.counts.em_edicao;
+                document.getElementById('count-veicular').textContent = data.counts.veicular;
+                document.getElementById('count-ativos').textContent = data.counts.ativos;
+                document.getElementById('count-concluidos').textContent = data.counts.concluidos;
+
+                const container = document.getElementById('recentes-container');
+
+                if (!data.recentes || data.recentes.length === 0) {
+                    container.innerHTML = `<div class="in-empty"><i class="fas fa-inbox"></i><p>Nenhum pedido cadastrado ainda.</p></div>`;
+                    return;
+                }
+
+                const badgeClass = { 'EM EDIÇÃO': 'editing', 'VEICULAR': 'veicular', 'CONCLUÍDO': 'done' };
+                const badgeIcon  = { 'EM EDIÇÃO': 'fa-pencil-alt', 'VEICULAR': 'fa-broadcast-tower', 'CONCLUÍDO': 'fa-check-circle' };
+
+                container.innerHTML = `
+                    <table class="in-recent-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Título</th>
+                                <th>Cliente</th>
+                                <th>Etapa</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.recentes.map(p => {
+                                const etapa = p.etapa || 'EM EDIÇÃO';
+                                const bc = badgeClass[etapa] || 'editing';
+                                const bi = badgeIcon[etapa] || 'fa-pencil-alt';
+                                const data_fmt = new Date(p.created_at).toLocaleDateString('pt-BR');
+                                return `<tr>
+                                    <td style="color:#94a3b8;font-size:0.8rem;">#${p.id}</td>
+                                    <td style="font-weight:600;">${p.titulo || '—'}</td>
+                                    <td style="color:#64748b;">${p.nome_cliente || '—'}</td>
+                                    <td><span class="in-badge ${bc}"><i class="fas ${bi}"></i> ${etapa}</span></td>
+                                    <td style="color:#94a3b8;font-size:0.82rem;">${data_fmt}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+
+            } catch (err) {
+                console.error('[Indoor-Dashboard] Erro:', err);
+                document.getElementById('recentes-container').innerHTML = `<div class="in-empty" style="color:#ef4444;"><i class="fas fa-exclamation-circle"></i><p>Erro ao carregar dados.</p></div>`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', carregarDashboard);
+    </script>
+</body>
+</html>

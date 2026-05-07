@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Veicular — Indoor | Setor de Arte</title>
+    <link rel="icon" href="/images/logo-fundo-claro-100x100.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/indoor/style.css">
+</head>
+<body>
+    <div class="indoor-layout">
+        <div id="indoor-sidebar-placeholder"></div>
+        <div class="indoor-content-area">
+            <div id="indoor-header-placeholder"></div>
+            <main class="indoor-main">
+
+                <div class="in-page-title">
+                    <h2><i class="fas fa-broadcast-tower" style="color:#06b6d4;"></i> Veicular</h2>
+                    <a href="/indoor/novo-pedido.html" class="in-btn-action">
+                        <i class="fas fa-plus"></i> Novo Pedido
+                    </a>
+                </div>
+
+                <div class="in-panel-card">
+                    <div class="in-panel-header">
+                        <h3><i class="fas fa-list" style="color:#06b6d4;"></i> Pedidos prontos para veicular</h3>
+                        <input type="text" id="input-busca" class="in-search-input" placeholder="Buscar por título ou cliente...">
+                    </div>
+                    <div id="lista-pedidos">
+                        <div class="in-empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Drawer -->
+    <div class="in-drawer-overlay" id="drawer-overlay" onclick="fecharDrawer()"></div>
+    <div class="in-drawer-panel" id="drawer-panel">
+        <div class="in-drawer-head">
+            <h3 id="drawer-titulo">Detalhes do Pedido</h3>
+            <button class="in-drawer-close" onclick="fecharDrawer()">×</button>
+        </div>
+        <div class="in-drawer-body">
+            <span class="in-info-label">Cliente</span>
+            <div class="in-info-value" id="d-cliente">—</div>
+
+            <span class="in-info-label">WhatsApp</span>
+            <div class="in-info-value">
+                <span id="d-wpp">—</span>
+                <a id="d-wpp-link" href="#" target="_blank" style="margin-left:10px;color:#25D366;display:none;">
+                    <i class="fab fa-whatsapp"></i> Chamar
+                </a>
+            </div>
+
+            <span class="in-info-label">Briefing / Detalhes</span>
+            <div class="in-briefing-box" id="d-briefing">—</div>
+
+            <div style="margin-top:16px;">
+                <span class="in-info-label">Data de entrada</span>
+                <div class="in-info-value" id="d-data">—</div>
+            </div>
+        </div>
+        <div class="in-drawer-footer">
+            <button id="btn-concluir" class="in-btn-primary" data-confirming="false">
+                <i class="fas fa-check-circle"></i> MARCAR COMO CONCLUÍDO
+            </button>
+        </div>
+    </div>
+
+    <script src="/indoor/layout.js"></script>
+    <script>
+        let pedidoAtivo = null;
+        let debounce = null;
+
+        document.getElementById('input-busca').addEventListener('input', (e) => {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => carregarPedidos(e.target.value), 600);
+        });
+
+        async function carregarPedidos(query = '') {
+            const token = localStorage.getItem('sessionToken');
+            const lista = document.getElementById('lista-pedidos');
+            lista.innerHTML = '<div class="in-empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div>';
+
+            try {
+                const res = await fetch('/api/indoor/listar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken: token, etapa: 'VEICULAR', query })
+                });
+
+                if (res.status === 401 || res.status === 403) { window.location.href = '/indoor/login.html'; return; }
+
+                const data = await res.json();
+                console.log(`[Indoor-Veicular] ${data.deals.length} pedidos.`);
+
+                if (!data.deals || data.deals.length === 0) {
+                    lista.innerHTML = '<div class="in-empty"><i class="fas fa-inbox"></i><p>Nenhum pedido aguardando veiculação.</p></div>';
+                    return;
+                }
+
+                lista.innerHTML = '';
+                data.deals.forEach(p => {
+                    const item = document.createElement('div');
+                    item.className = 'in-list-item';
+                    item.innerHTML = `
+                        <div class="in-list-title">${p.titulo}</div>
+                        <div class="in-list-client"><i class="fas fa-user" style="color:#cbd5e1;margin-right:5px;"></i>${p.nome_cliente || '—'}</div>
+                        <div><span class="in-badge veicular"><i class="fas fa-broadcast-tower"></i> Veicular</span></div>
+                        <div style="text-align:right;color:#cbd5e1;"><i class="fas fa-chevron-right"></i></div>
+                    `;
+                    item.addEventListener('click', () => abrirDrawer(p));
+                    lista.appendChild(item);
+                });
+
+            } catch (err) {
+                console.error('[Indoor-Veicular] Erro:', err);
+                lista.innerHTML = '<div class="in-empty" style="color:#ef4444;"><i class="fas fa-exclamation-circle"></i><p>Erro ao carregar pedidos.</p></div>';
+            }
+        }
+
+        function abrirDrawer(p) {
+            pedidoAtivo = p;
+            document.getElementById('drawer-titulo').textContent = p.titulo;
+            document.getElementById('d-cliente').textContent = p.nome_cliente || '—';
+            document.getElementById('d-briefing').textContent = p.briefing || 'Sem briefing registrado.';
+            document.getElementById('d-data').textContent = p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '—';
+
+            const wpp = p.whatsapp || '';
+            document.getElementById('d-wpp').textContent = wpp || '—';
+            const wppLink = document.getElementById('d-wpp-link');
+            if (wpp && wpp.length > 5) {
+                wppLink.href = `https://wa.me/55${wpp.replace(/\D/g,'')}`;
+                wppLink.style.display = 'inline';
+            } else {
+                wppLink.style.display = 'none';
+            }
+
+            const btn = document.getElementById('btn-concluir');
+            btn.dataset.confirming = 'false';
+            btn.className = 'in-btn-primary';
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> MARCAR COMO CONCLUÍDO';
+            btn.disabled = false;
+            btn.onclick = () => handleConcluir(btn);
+
+            document.getElementById('drawer-overlay').classList.add('active');
+            document.getElementById('drawer-panel').classList.add('active');
+        }
+
+        function fecharDrawer() {
+            document.getElementById('drawer-overlay').classList.remove('active');
+            document.getElementById('drawer-panel').classList.remove('active');
+            pedidoAtivo = null;
+        }
+
+        function handleConcluir(btn) {
+            if (btn.dataset.confirming === 'true') {
+                concluirPedido(btn);
+            } else {
+                btn.dataset.confirming = 'true';
+                btn.className = 'in-btn-primary confirm';
+                btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> CLIQUE PARA CONFIRMAR';
+                setTimeout(() => {
+                    if (btn.dataset.confirming === 'true') {
+                        btn.dataset.confirming = 'false';
+                        btn.className = 'in-btn-primary';
+                        btn.innerHTML = '<i class="fas fa-check-circle"></i> MARCAR COMO CONCLUÍDO';
+                    }
+                }, 3000);
+            }
+        }
+
+        async function concluirPedido(btn) {
+            if (!pedidoAtivo) return;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+
+            try {
+                const res = await fetch('/api/indoor/mover-etapa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionToken: localStorage.getItem('sessionToken'),
+                        id: pedidoAtivo.id_interno,
+                        etapaAtual: 'VEICULAR'
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    console.log(`[Indoor-Veicular] Pedido ${pedidoAtivo.id_interno} concluído.`);
+                    fecharDrawer();
+                    carregarPedidos(document.getElementById('input-busca').value);
+                } else {
+                    window.indoorDialog({ type: 'alert', title: 'Erro', message: data.message || 'Erro ao concluir pedido.' });
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check-circle"></i> MARCAR COMO CONCLUÍDO';
+                }
+            } catch (err) {
+                console.error('[Indoor-Veicular] Erro:', err);
+                window.indoorDialog({ type: 'alert', title: 'Erro', message: 'Erro de conexão.' });
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> MARCAR COMO CONCLUÍDO';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => carregarPedidos());
+    </script>
+</body>
+</html>

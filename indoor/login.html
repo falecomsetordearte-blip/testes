@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — Indoor | Setor de Arte</title>
+    <link rel="icon" href="/images/logo-fundo-claro-100x100.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/indoor/style.css">
+</head>
+<body>
+    <div class="in-auth-page">
+        <div class="in-auth-card">
+            <div class="in-auth-logo">
+                <img src="/images/logo-fundo-claro-100x100.png" alt="Setor de Arte">
+                <div class="in-auth-badge">Indoor</div>
+            </div>
+            <h1 class="in-auth-title">Bem-vindo(a) de volta</h1>
+            <p class="in-auth-subtitle">Acesse o painel de comunicação visual indoor</p>
+
+            <div id="feedback" class="in-feedback"></div>
+
+            <form id="login-form">
+                <div class="in-form-group">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" placeholder="seu@email.com" required autocomplete="email">
+                </div>
+                <div class="in-form-group">
+                    <label for="senha">Senha</label>
+                    <input type="password" id="senha" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="in-btn-submit" id="btn-submit">
+                    <i class="fas fa-sign-in-alt"></i> Entrar
+                </button>
+            </form>
+
+            <p style="text-align:center; margin-top:20px; font-size:0.8rem; color:#94a3b8;">
+                <a href="/login.html" style="color:#14b8a6; text-decoration:none; font-weight:600;">
+                    <i class="fas fa-arrow-left"></i> Acessar o sistema principal
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Se já está logado, redireciona direto
+        if (localStorage.getItem('sessionToken')) {
+            window.location.href = '/indoor/dashboard.html';
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit');
+            const feedback = document.getElementById('feedback');
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
+            feedback.className = 'in-feedback';
+            feedback.textContent = '';
+
+            try {
+                const res = await fetch('/api/loginUser', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, senha })
+                });
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.message || 'Erro ao fazer login.');
+
+                localStorage.setItem('sessionToken', data.token);
+                localStorage.setItem('userName', data.userName);
+                if (data.permissoes) localStorage.setItem('userPermissoes', JSON.stringify(data.permissoes));
+
+                console.log('[Indoor-Login] Login realizado com sucesso. Redirecionando...');
+                window.location.href = '/indoor/dashboard.html';
+
+            } catch (err) {
+                feedback.textContent = err.message;
+                feedback.className = 'in-feedback error';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Entrar';
+            }
+        });
+    </script>
+</body>
+</html>

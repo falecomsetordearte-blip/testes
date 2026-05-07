@@ -6,6 +6,8 @@
     { "source": "/esqueci-senha", "destination": "/esqueci-senha.html" },
     { "source": "/redefinir-senha", "destination": "/redefinir-senha.html" },
     { "source": "/verificacao", "destination": "/ajuda-verificacao.html" },
+    { "source": "/indoor", "destination": "/indoor/dashboard.html" },
+    { "source": "/indoor/login", "destination": "/indoor/login.html" },
     { "source": "/", "destination": "/index.html" }
   ],
   "crons": [

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novo Pedido Indoor — Setor de Arte</title>
+    <link rel="icon" href="/images/logo-fundo-claro-100x100.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/indoor/style.css">
+</head>
+<body>
+    <div class="indoor-layout">
+        <div id="indoor-sidebar-placeholder"></div>
+        <div class="indoor-content-area">
+            <div id="indoor-header-placeholder"></div>
+            <main class="indoor-main">
+
+                <div class="in-page-title">
+                    <h2><i class="fas fa-plus-circle" style="color:#14b8a6;"></i> Novo Pedido Indoor</h2>
+                </div>
+
+                <div class="in-form-card">
+                    <h2 style="font-size:1rem; margin-bottom:20px; color:#64748b; font-weight:500;">
+                        Preencha os dados do pedido. Após criar, ele entrará automaticamente na etapa <strong style="color:#f59e0b;">Em Edição</strong>.
+                    </h2>
+
+                    <div id="feedback" class="in-feedback"></div>
+
+                    <form id="form-novo-pedido">
+                        <div class="in-form-group">
+                            <label for="titulo">Título do Pedido <span style="color:#ef4444;">*</span></label>
+                            <input type="text" id="titulo" placeholder="Ex: Banner Loja Centro — Maio 2025" required>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                            <div class="in-form-group">
+                                <label for="nomeCliente">Nome do Cliente</label>
+                                <input type="text" id="nomeCliente" placeholder="Ex: João Silva">
+                            </div>
+                            <div class="in-form-group">
+                                <label for="wppCliente">WhatsApp do Cliente</label>
+                                <input type="text" id="wppCliente" placeholder="Ex: 11999998888">
+                            </div>
+                        </div>
+
+                        <div class="in-form-group">
+                            <label for="briefing">Briefing / Observações</label>
+                            <textarea id="briefing" placeholder="Descreva os detalhes do pedido: tamanho, cores, texto, referências..."></textarea>
+                        </div>
+
+                        <div style="display:flex; gap:12px; margin-top:8px;">
+                            <a href="/indoor/dashboard.html" class="in-btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" id="btn-submit" class="in-btn-primary">
+                                <i class="fas fa-paper-plane"></i> Criar Pedido
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="/indoor/layout.js"></script>
+    <script>
+        document.getElementById('form-novo-pedido').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit');
+            const feedback = document.getElementById('feedback');
+            const titulo = document.getElementById('titulo').value.trim();
+            const nomeCliente = document.getElementById('nomeCliente').value.trim();
+            const wppCliente = document.getElementById('wppCliente').value.trim();
+            const briefing = document.getElementById('briefing').value.trim();
+
+            feedback.className = 'in-feedback';
+            feedback.textContent = '';
+
+            if (!titulo) {
+                feedback.textContent = 'O título do pedido é obrigatório.';
+                feedback.className = 'in-feedback error';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando pedido...';
+
+            console.log(`[Indoor-NovoPedido] Criando: "${titulo}" | Cliente: ${nomeCliente}`);
+
+            try {
+                const res = await fetch('/api/indoor/criar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionToken: localStorage.getItem('sessionToken'),
+                        titulo,
+                        nomeCliente,
+                        wppCliente,
+                        briefing
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    console.log(`[Indoor-NovoPedido] Pedido criado. ID: ${data.dealId}`);
+                    feedback.textContent = `Pedido #${data.dealId} criado com sucesso! ${wppCliente ? 'Grupo WhatsApp sendo criado...' : ''}`;
+                    feedback.className = 'in-feedback success';
+
+                    // Redireciona para o painel de edição após 1.8s
+                    setTimeout(() => {
+                        window.location.href = '/indoor/painel-edicao.html';
+                    }, 1800);
+
+                } else {
+                    throw new Error(data.message || 'Erro ao criar pedido.');
+                }
+
+            } catch (err) {
+                console.error('[Indoor-NovoPedido] Erro:', err);
+                feedback.textContent = err.message;
+                feedback.className = 'in-feedback error';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Criar Pedido';
+            }
+        });
+    </script>
+</body>
+</html>
