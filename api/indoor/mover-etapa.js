@@ -29,6 +29,22 @@ module.exports = async (req, res) => {
 
         console.log(`[INDOOR-MOVER] Pedido ${id} | Etapa atual: "${etapaAtual}"`);
 
+        // Caso especial: exclusão do card
+        if (etapaAtual === '_DELETE_') {
+            console.log(`[INDOOR-MOVER] Excluindo pedido ${id}...`);
+            let empresaIdDel = null;
+            const usersDel = await prisma.$queryRawUnsafe(`SELECT empresa_id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1`, `%${sessionToken}%`);
+            if (usersDel.length > 0) empresaIdDel = usersDel[0].empresa_id;
+            else {
+                const legDel = await prisma.$queryRawUnsafe(`SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`, `%${sessionToken}%`);
+                if (legDel.length > 0) empresaIdDel = legDel[0].id;
+            }
+            if (!empresaIdDel) return res.status(403).json({ message: 'Sessão inválida' });
+            await prisma.$executeRawUnsafe(`UPDATE pedidos SET etapa = 'CANCELADO', updated_at = NOW() WHERE id = $1 AND empresa_id = $2 AND tipo_sistema = 'indoor'`, parseInt(id), empresaIdDel);
+            console.log(`[INDOOR-MOVER] Pedido ${id} marcado como CANCELADO.`);
+            return res.status(200).json({ success: true, novaEtapa: 'CANCELADO' });
+        }
+
         const novaEtapa = PROXIMA_ETAPA[etapaAtual];
         if (!novaEtapa) {
             return res.status(400).json({ message: `Etapa "${etapaAtual}" não possui próxima etapa definida.` });
