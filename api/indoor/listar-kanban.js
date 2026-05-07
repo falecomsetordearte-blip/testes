@@ -66,6 +66,7 @@ module.exports = async (req, res) => {
                 briefing: extras.briefing || '',
                 link_drive: extras.linkDrive || '',
                 link_blob: extras.linkBlob || '',
+                link_video_aprovado: extras.linkVideoAprovado || '',
                 asaas_payment_id: p.asaas_payment_id,
                 created_at: p.created_at
             });
