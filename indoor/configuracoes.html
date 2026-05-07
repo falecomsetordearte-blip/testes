@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações — Indoor</title>
+    <link rel="icon" type="image/svg+xml" href="/images/logo-fundo-claro-100x100.png">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/indoor/style.css">
+    
+    <style>
+        .config-card {
+            background: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            border: 1px solid #e2e8f0;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .pedidos-header-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;}
+        .pedidos-header-bar h2 { margin: 0; font-size: 1.5rem; color:#1e293b; }
+
+        .msg-grid {
+            display: grid; grid-template-columns: 1fr; gap: 20px;
+            background: #f8fafc; padding: 25px; border-radius: 8px; border: 1px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+
+        .msg-item { display: flex; flex-direction: column; gap: 8px; }
+        .msg-item span { font-weight: 700; color: #334155; font-size: 0.9rem; text-transform: uppercase; }
+        
+        .form-control-text {
+            width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px;
+            font-family: inherit; font-size: 0.95rem; resize: vertical;
+        }
+        .form-control-text:focus { border-color: #14b8a6; outline: none; }
+
+        .msg-obs {
+            background: #eff6ff; color: #1e3a8a; padding: 15px; border-radius: 6px;
+            font-size: 0.9rem; margin-top: 10px; border-left: 4px solid #3b82f6;
+        }
+
+        #feedback-message { margin-top: 1rem; padding: 1rem; border-radius: 6px; display: none; font-weight: 500; }
+        #feedback-message.success { background-color: #dcfce7; color: #166534; display: block; }
+        #feedback-message.error { background-color: #fee2e2; color: #991b1b; display: block; }
+    </style>
+</head>
+<body>
+    <div class="indoor-layout">
+        <div id="indoor-sidebar-placeholder"></div>
+        <div class="indoor-content-area">
+            <div id="indoor-header-placeholder"></div>
+            
+            <main class="indoor-main" style="padding: 30px;">
+                <div class="pedidos-header-bar">
+                    <h2><i class="fas fa-cog" style="color:#14b8a6;"></i> Configurações de Mensagens</h2>
+                </div>
+
+                <div class="config-card">
+                    <p style="color:#64748b; margin-top:0; margin-bottom: 25px;">Personalize o texto que o cliente receberá no WhatsApp quando o pedido dele mudar de etapa no Kanban.</p>
+
+                    <form id="form-configuracoes">
+                        <div class="msg-grid">
+                            <div class="msg-item">
+                                <span><i class="fas fa-broadcast-tower" style="color:#14b8a6;"></i> VEICULAR (Arte Aprovada)</span>
+                                <textarea id="msg_veicular" class="form-control-text" rows="4" required></textarea>
+                            </div>
+                            
+                            <div class="msg-item" style="margin-top:15px;">
+                                <span><i class="fas fa-check-circle" style="color:#22c55e;"></i> CONCLUÍDO</span>
+                                <textarea id="msg_concluido" class="form-control-text" rows="4" required></textarea>
+                            </div>
+                            
+                            <div class="msg-obs">
+                                <i class="fa-solid fa-lightbulb"></i> <strong>Dica de Variáveis:</strong><br><br>
+                                Use <b>[NOME]</b> para exibir o nome do cliente na mensagem.<br>
+                                Use <b>[LINK]</b> na etapa "Veicular" para exibir o link de download da arte que o editor anexou.
+                            </div>
+                        </div>
+
+                        <div id="feedback-message"></div>
+
+                        <div style="margin-top: 20px;">
+                            <button type="submit" id="btn-salvar" style="background:#14b8a6; border:none; width:100%; padding:15px; border-radius:8px; color:#fff; font-weight:bold; cursor:pointer; font-size:1.05rem;">
+                                Salvar Mensagens
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/indoor/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarConfiguracoes();
+            document.getElementById('form-configuracoes').addEventListener('submit', salvarConfiguracoes);
+        });
+
+        function mostrarFeedback(mensagem, isErro = false) {
+            const fb = document.getElementById('feedback-message');
+            fb.textContent = mensagem;
+            fb.className = isErro ? 'error' : 'success';
+            setTimeout(() => { fb.className = ''; fb.style.display = 'none'; }, 4000);
+        }
+
+        async function carregarConfiguracoes() {
+            try {
+                const response = await fetch('/api/admin/config/get', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') })
+                });
+
+                if (!response.ok) throw new Error('Erro ao carregar configurações.');
+
+                const data = await response.json();
+                if (data.config) {
+                    const msgs = data.config.mensagens_etapas || {};
+                    document.getElementById('msg_veicular').value = msgs.INDOOR_VEICULAR || '';
+                    document.getElementById('msg_concluido').value = msgs.INDOOR_CONCLUIDO || '';
+                }
+            } catch (error) {
+                console.error("Erro carregando configurações:", error);
+            }
+        }
+
+        async function salvarConfiguracoes(e) {
+            e.preventDefault();
+
+            const btn = document.getElementById('btn-salvar');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+
+            const payload = {
+                sessionToken: localStorage.getItem('sessionToken'),
+                mensagens_etapas: {
+                    INDOOR_VEICULAR: document.getElementById('msg_veicular').value,
+                    INDOOR_CONCLUIDO: document.getElementById('msg_concluido').value
+                }
+            };
+
+            try {
+                const response = await fetch('/api/admin/config/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error('Falha ao salvar configurações.');
+                mostrarFeedback("Mensagens salvas com sucesso!");
+            } catch (error) {
+                mostrarFeedback(error.message, true);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Salvar Mensagens';
+            }
+        }
+    </script>
+</body>
+</html>

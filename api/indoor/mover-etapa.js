@@ -89,9 +89,30 @@ module.exports = async (req, res) => {
 
             if (pedidos.length > 0 && pedidos[0].chatapp_chat_notificacoes_id) {
                 const p = pedidos[0];
-                const msgFn = MSGS_NOTIF[novaEtapa];
-                if (msgFn) {
-                    const msg = msgFn(p.nome_cliente);
+                
+                // Buscar configuração da gráfica
+                const configs = await prisma.$queryRawUnsafe(`SELECT mensagens_etapas FROM painel_configuracoes_sistema WHERE empresa_id = $1 LIMIT 1`, empresaId);
+                
+                let template = '';
+                if (novaEtapa === 'VEICULAR') {
+                    template = "Olá [NOME]! 🎉\n\nSua arte está pronta e aprovada para veicular! Em breve nosso time vai entrar em contato com os próximos passos.";
+                } else if (novaEtapa === 'CONCLUÍDO') {
+                    template = "Olá [NOME]! ✅\n\nSeu pedido foi concluído com sucesso. Obrigado pela confiança!";
+                }
+
+                if (configs.length > 0 && configs[0].mensagens_etapas) {
+                    let msgs = configs[0].mensagens_etapas;
+                    if (typeof msgs === 'string') { try { msgs = JSON.parse(msgs); } catch(e) {} }
+                    
+                    if (novaEtapa === 'VEICULAR' && msgs && msgs.INDOOR_VEICULAR) template = msgs.INDOOR_VEICULAR;
+                    if (novaEtapa === 'CONCLUÍDO' && msgs && msgs.INDOOR_CONCLUIDO) template = msgs.INDOOR_CONCLUIDO;
+                }
+
+                if (template) {
+                    // Substituir NOME e tratar LINK caso tenha sobrado
+                    let msg = template.replace(/\[NOME\]/gi, p.nome_cliente || 'Cliente');
+                    msg = msg.replace(/\[LINK\]/gi, ''); // Aqui não tem link nativo do painel editor
+                    
                     await chatapp.enviarMensagemTexto(
                         p.chatapp_chat_notificacoes_id, msg, true, empresaId
                     );

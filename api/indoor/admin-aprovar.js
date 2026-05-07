@@ -42,7 +42,20 @@ module.exports = async (req, res) => {
 
         // Enviar WhatsApp (se houver grupo)
         if (p.chatapp_chat_notificacoes_id) {
-            const msg = `🎉 Olá ${p.nome_cliente || ''}! Sua arte está pronta e aprovada para veicular!\n\n📥 *Baixe o vídeo finalizado aqui:*\n${linkDownload}`;
+            
+            // Buscar mensagem customizada da gráfica
+            const configs = await prisma.$queryRawUnsafe(`SELECT mensagens_etapas FROM painel_configuracoes_sistema WHERE empresa_id = $1 LIMIT 1`, p.empresa_id);
+            let template = "Olá [NOME]! 🎉\n\nSua arte está pronta e aprovada para veicular!\n\n📥 *Baixe o vídeo finalizado aqui:*\n[LINK]";
+            
+            if (configs.length > 0 && configs[0].mensagens_etapas) {
+                let msgs = configs[0].mensagens_etapas;
+                if (typeof msgs === 'string') { try { msgs = JSON.parse(msgs); } catch(e) {} }
+                if (msgs && msgs.INDOOR_VEICULAR) template = msgs.INDOOR_VEICULAR;
+            }
+
+            // Trocar as variáveis mágicas
+            let msg = template.replace(/\[NOME\]/gi, p.nome_cliente || 'Cliente');
+            msg = msg.replace(/\[LINK\]/gi, linkDownload);
             
             try {
                 await chatapp.enviarMensagemTexto(p.chatapp_chat_notificacoes_id, msg, true, p.empresa_id);
