@@ -468,7 +468,7 @@ body {
 }
 .in-kanban-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-1px); }
 
-.in-card-title { font-weight: 700; color: #1e293b; font-size: 0.92rem; margin-bottom: 4px; }
+.in-card-title { font-weight: 700; color: #1e293b; font-size: 0.92rem; margin-bottom: 4px; padding-right: 30px; }
 .in-card-client { font-size: 0.82rem; color: #64748b; margin-bottom: 8px; }
 .in-card-meta {
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -493,7 +493,10 @@ body {
 .in-btn-produzir.confirm-state { background: #ef4444; }
 .in-btn-produzir:disabled { opacity: 0.6; cursor: not-allowed; }
 .in-btn-card-del {
-    padding: 8px 10px; background: #fef2f2; color: #ef4444;
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    padding: 6px 8px; background: #fef2f2; color: #ef4444;
     border: 1px solid #fecaca; border-radius: 7px; cursor: pointer;
     font-size: 0.82rem; transition: 0.2s;
 }
