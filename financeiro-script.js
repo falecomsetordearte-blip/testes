@@ -32,6 +32,7 @@
     let currentStatusFilter = 'todos'; 
     let selectedPedidoId = null;
     let pedidosCache = [];
+    let currentEmpresaId = null; // ID da empresa logada (VISIVA = 4)
 
     // --- 4. FUNÇÃO DE BUSCA ---
     async function fetchFinancialDeals(page = 0) {
@@ -54,11 +55,12 @@
             if (!response.ok) throw new Error(data.message || 'Erro ao buscar dados');
             
             pedidosCache = data.deals;
+            currentEmpresaId = data.empresaId || null;
             currentPage = data.pagination.currentPage;
             renderDeals(data.deals);
             updatePagination(data.pagination);
 
-            console.log(`[Financeiro] ${data.deals.length} pedidos carregados.`);
+            console.log(`[Financeiro] ${data.deals.length} pedidos carregados. Empresa ID: ${currentEmpresaId}`);
         } catch (error) {
             console.error("[Financeiro] Erro no Fetch:", error);
             listBody.innerHTML = `<div class="loading-pedidos" style="color: red;">Erro: ${error.message}</div>`;
@@ -101,6 +103,38 @@
 
         selectedPedidoId = pedidoId;
         
+        // Botão exclusivo VISIVA (empresa ID = 4)
+        const VISIVA_EMPRESA_ID = 4;
+        const btnVisivaHtml = currentEmpresaId === VISIVA_EMPRESA_ID ? `
+            <div class="detail-item" style="margin-top: 5px;">
+                <a 
+                    href="https://visiva.com.br/admin/?imprimastore=pedidos/detalhes&id=${pedido.TITLE}" 
+                    target="_blank"
+                    id="btn-visiva-admin"
+                    style="
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 8px;
+                        background: linear-gradient(135deg, #1a56db, #1e40af);
+                        color: white;
+                        text-decoration: none;
+                        padding: 10px 18px;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        font-size: 0.9rem;
+                        transition: opacity 0.2s;
+                    "
+                    onmouseover="this.style.opacity='0.85'"
+                    onmouseout="this.style.opacity='1'"
+                >
+                    <i class='fas fa-external-link-alt'></i>
+                    Ver Pedido no Admin VISIVA
+                </a>
+            </div>
+        ` : '';
+
+        console.log(`[Financeiro] Gaveta aberta. Empresa: ${currentEmpresaId}, É VISIVA: ${currentEmpresaId === VISIVA_EMPRESA_ID}`);
+
         drawerContent.innerHTML = `
             <div class="detail-item">
                 <div class="detail-label">ID do Pedido</div>
@@ -122,10 +156,7 @@
                 <div class="detail-label">Etapa Atual</div>
                 <div class="detail-value">${pedido.ETAPA_ATUAL}</div>
             </div>
-            <div class="detail-item">
-                <div class="detail-label">Briefing Completo</div>
-                <div class="detail-value" style="font-size: 0.9rem; white-space: pre-wrap;">${pedido.BRIEFING || 'Sem briefing detalhado.'}</div>
-            </div>
+            ${btnVisivaHtml}
         `;
 
         drawer.classList.add('active');

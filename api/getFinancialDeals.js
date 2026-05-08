@@ -72,13 +72,14 @@ module.exports = async (req, res) => {
         console.log(`[Financeiro] Busca concluída. Pedidos na página: ${pedidos.length}, Total no banco: ${total}`);
 
         return res.status(200).json({
+            empresaId: empresaId, // Enviamos para o frontend verificar se é VISIVA
             deals: pedidos.map(p => ({
                 ID: p.id,
                 TITLE: p.titulo || `Pedido #${p.id}`,
                 STAGE_ID: p.status_financeiro || 'PENDENTE',
                 OPPORTUNITY: p.valor_restante || 0,
                 CLIENTE: p.nome_cliente,
-                BRIEFING: "", // Removido por segurança
+                BRIEFING: "",
                 ETAPA_ATUAL: p.etapa
             })),
             pagination: {
@@ -87,6 +88,7 @@ module.exports = async (req, res) => {
                 totalItems: total
             }
         });
+
 
 
 
