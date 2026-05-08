@@ -43,7 +43,7 @@ module.exports = async (req, res) => {
             SELECT id, titulo, nome_cliente, status_financeiro, etapa, valor_pago, valor_restante
             FROM pedidos
             WHERE empresa_id = $1
-            AND (etapa = 'EXPEDIÇÃO' OR status_financeiro IS NOT NULL)
+            AND (etapa = 'EXPEDIÇÃO' OR status_financeiro IN ('PAGO', 'COBRAR'))
         `;
         const params = [empresaId];
 
@@ -65,7 +65,7 @@ module.exports = async (req, res) => {
         const pedidos = await prisma.$queryRawUnsafe(sql, ...params);
         
         // Contagem total para paginação
-        const countSql = `SELECT COUNT(*) as total FROM pedidos WHERE empresa_id = $1 AND (etapa = 'EXPEDIÇÃO' OR status_financeiro IS NOT NULL)`;
+        const countSql = `SELECT COUNT(*) as total FROM pedidos WHERE empresa_id = $1 AND (etapa = 'EXPEDIÇÃO' OR status_financeiro IN ('PAGO', 'COBRAR'))`;
         const totalResult = await prisma.$queryRawUnsafe(countSql, empresaId);
         const total = parseInt(totalResult[0].total || 0);
 
