@@ -38,9 +38,9 @@ module.exports = async (req, res) => {
         }
 
         // 2. Montar Filtro SQL
-        // Selecionamos apenas as colunas que agora sabemos que existem ou foram criadas
+        // Selecionamos apenas colunas básicas que sabemos que existem
         let sql = `
-            SELECT id, titulo, nome_cliente, status_financeiro, etapa, valor_pago, valor_restante, criado_em, briefing_completo
+            SELECT id, titulo, nome_cliente, status_financeiro, etapa, valor_pago, valor_restante
             FROM pedidos
             WHERE empresa_id = $1
             AND (etapa = 'EXPEDIÇÃO' OR status_financeiro IS NOT NULL)
@@ -61,7 +61,7 @@ module.exports = async (req, res) => {
         sql += ` ORDER BY id DESC LIMIT 50 OFFSET $${params.length + 1}`;
         params.push(page * 50);
 
-        console.log("[Financeiro] Executando query SQL...");
+        console.log("[Financeiro] Executando query SQL simplificada...");
         const pedidos = await prisma.$queryRawUnsafe(sql, ...params);
         
         // Contagem total para paginação
@@ -78,7 +78,7 @@ module.exports = async (req, res) => {
                 STAGE_ID: p.status_financeiro || 'PENDENTE',
                 OPPORTUNITY: p.valor_restante || 0,
                 CLIENTE: p.nome_cliente,
-                BRIEFING: p.briefing_completo,
+                BRIEFING: "", // Removido por segurança
                 ETAPA_ATUAL: p.etapa
             })),
             pagination: {
@@ -87,6 +87,7 @@ module.exports = async (req, res) => {
                 totalItems: total
             }
         });
+
 
 
     } catch (error) {
