@@ -1,10 +1,6 @@
 // /api/projetos/criar.js
 const { PrismaClient } = require('@prisma/client');
-const { PrismaNeon } = require('@prisma/adapter-neon');
-const { neonConfig, Pool } = require('@neondatabase/serverless');
-const ws = require('ws');
-
-neonConfig.webSocketConstructor = ws;
+const prisma = new PrismaClient();
 
 console.log('[Projetos/Criar] Módulo carregado.');
 
@@ -35,62 +31,62 @@ module.exports = async (req, res) => {
     const colunaValida = ['SEGUNDA', 'TERCA', 'QUARTA', 'QUINTA', 'SEXTA'];
     const colunaFinal = colunaValida.includes(coluna) ? coluna : 'SEGUNDA';
 
-    const pool = new Pool({ connectionString: process.env.POSTGRES_PRISMA_URL });
-    const adapter = new PrismaNeon(pool);
-    const prisma = new PrismaClient({ adapter });
-
     try {
-        // Valida sessão e obtém empresa
+        // Valida sessão
         console.log('[Projetos/Criar] Validando sessão...');
-        const empresa = await prisma.empresa.findFirst({
-            where: { session_tokens: { contains: sessionToken } },
-            select: { id: true, nome_fantasia: true }
-        });
+        let empresaId = null;
 
-        if (!empresa) {
-            console.warn('[Projetos/Criar] Sessão inválida ou empresa não encontrada.');
+        const users = await prisma.$queryRawUnsafe(
+            `SELECT empresa_id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1`,
+            `%${sessionToken}%`
+        );
+        if (users.length > 0) {
+            empresaId = users[0].empresa_id;
+        } else {
+            const legacy = await prisma.$queryRawUnsafe(
+                `SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`,
+                `%${sessionToken}%`
+            );
+            if (legacy.length > 0) empresaId = legacy[0].id;
+        }
+
+        if (!empresaId) {
+            console.warn('[Projetos/Criar] Sessão inválida.');
             return res.status(401).json({ message: 'Sessão inválida.' });
         }
 
-        console.log(`[Projetos/Criar] Empresa autenticada: ID ${empresa.id} - ${empresa.nome_fantasia}`);
-        console.log(`[Projetos/Criar] Criando projeto: "${titulo}" com ${tarefas.length} tarefa(s) na coluna ${colunaFinal}`);
+        console.log(`[Projetos/Criar] Empresa ID ${empresaId}. Criando projeto: "${titulo}" na coluna ${colunaFinal}`);
 
-        // Cria o projeto e as tarefas em transação
-        const novoProjeto = await prisma.$transaction(async (tx) => {
-            // Determina a ordem (último + 1)
-            const ultimoOrdem = await tx.$queryRaw`
-                SELECT COALESCE(MAX(ordem), 0) + 1 AS proxima_ordem
-                FROM kanban_projetos
-                WHERE empresa_id = ${empresa.id} AND coluna = ${colunaFinal}
-            `;
-            const ordem = Number(ultimoOrdem[0]?.proxima_ordem || 1);
+        // Calcula próxima ordem nessa coluna
+        const ordemResult = await prisma.$queryRawUnsafe(
+            `SELECT COALESCE(MAX(ordem), 0) + 1 AS proxima_ordem FROM kanban_projetos WHERE empresa_id = $1 AND coluna = $2`,
+            empresaId, colunaFinal
+        );
+        const ordem = Number(ordemResult[0]?.proxima_ordem || 1);
 
-            // Cria o projeto
-            const projeto = await tx.$queryRaw`
-                INSERT INTO kanban_projetos (empresa_id, titulo, coluna, ordem)
-                VALUES (${empresa.id}, ${titulo.trim()}, ${colunaFinal}, ${ordem})
-                RETURNING id, titulo, coluna, ordem, criado_em
-            `;
-            const projetoCriado = projeto[0];
+        // Cria o projeto
+        const projetoResult = await prisma.$queryRawUnsafe(
+            `INSERT INTO kanban_projetos (empresa_id, titulo, coluna, ordem) VALUES ($1, $2, $3, $4) RETURNING id, titulo, coluna, ordem, criado_em`,
+            empresaId, titulo.trim(), colunaFinal, ordem
+        );
+        const projetoCriado = projetoResult[0];
+        console.log(`[Projetos/Criar] Projeto #${projetoCriado.id} criado.`);
 
-            // Cria as tarefas vinculadas
-            const tarefasTexto = tarefas
-                .map(t => (typeof t === 'string' ? t.trim() : t.texto?.trim()))
-                .filter(t => t && t.length > 0);
+        // Cria as tarefas
+        const tarefasTexto = tarefas
+            .map(t => (typeof t === 'string' ? t.trim() : t.texto?.trim()))
+            .filter(t => t && t.length > 0);
 
-            for (let i = 0; i < tarefasTexto.length; i++) {
-                await tx.$queryRaw`
-                    INSERT INTO kanban_tarefas (projeto_id, texto, ordem)
-                    VALUES (${projetoCriado.id}, ${tarefasTexto[i]}, ${i})
-                `;
-            }
-
-            console.log(`[Projetos/Criar] Projeto #${projetoCriado.id} criado com ${tarefasTexto.length} tarefa(s).`);
-            return projetoCriado;
-        });
+        for (let i = 0; i < tarefasTexto.length; i++) {
+            await prisma.$queryRawUnsafe(
+                `INSERT INTO kanban_tarefas (projeto_id, texto, ordem) VALUES ($1, $2, $3)`,
+                projetoCriado.id, tarefasTexto[i], i
+            );
+        }
+        console.log(`[Projetos/Criar] ${tarefasTexto.length} tarefa(s) criadas para o projeto #${projetoCriado.id}.`);
 
         // Retorna projeto completo com tarefas
-        const projetoCompleto = await prisma.$queryRaw`
+        const projetoCompleto = await prisma.$queryRawUnsafe(`
             SELECT 
                 p.id, p.titulo, p.coluna, p.ordem, p.criado_em,
                 COALESCE(
@@ -102,9 +98,9 @@ module.exports = async (req, res) => {
                 ) AS tarefas
             FROM kanban_projetos p
             LEFT JOIN kanban_tarefas pt ON pt.projeto_id = p.id
-            WHERE p.id = ${novoProjeto.id}
+            WHERE p.id = $1
             GROUP BY p.id
-        `;
+        `, projetoCriado.id);
 
         return res.status(201).json({ 
             message: 'Projeto criado com sucesso!', 
@@ -115,6 +111,5 @@ module.exports = async (req, res) => {
         return res.status(500).json({ message: 'Erro interno ao criar projeto.', error: error.message });
     } finally {
         await prisma.$disconnect();
-        await pool.end();
     }
 };

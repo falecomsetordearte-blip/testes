@@ -1,10 +1,6 @@
 // /api/projetos/moverColuna.js
 const { PrismaClient } = require('@prisma/client');
-const { PrismaNeon } = require('@prisma/adapter-neon');
-const { neonConfig, Pool } = require('@neondatabase/serverless');
-const ws = require('ws');
-
-neonConfig.webSocketConstructor = ws;
+const prisma = new PrismaClient();
 
 console.log('[Projetos/MoverColuna] Módulo carregado.');
 
@@ -33,31 +29,38 @@ module.exports = async (req, res) => {
         return res.status(400).json({ message: `Coluna inválida. Use: ${colunaValida.join(', ')}` });
     }
 
-    const pool = new Pool({ connectionString: process.env.POSTGRES_PRISMA_URL });
-    const adapter = new PrismaNeon(pool);
-    const prisma = new PrismaClient({ adapter });
-
     try {
-        // Valida sessão e obtém empresa
+        // Valida sessão
         console.log('[Projetos/MoverColuna] Validando sessão...');
-        const empresa = await prisma.empresa.findFirst({
-            where: { session_tokens: { contains: sessionToken } },
-            select: { id: true }
-        });
+        let empresaId = null;
 
-        if (!empresa) {
+        const users = await prisma.$queryRawUnsafe(
+            `SELECT empresa_id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1`,
+            `%${sessionToken}%`
+        );
+        if (users.length > 0) {
+            empresaId = users[0].empresa_id;
+        } else {
+            const legacy = await prisma.$queryRawUnsafe(
+                `SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`,
+                `%${sessionToken}%`
+            );
+            if (legacy.length > 0) empresaId = legacy[0].id;
+        }
+
+        if (!empresaId) {
             console.warn('[Projetos/MoverColuna] Sessão inválida.');
             return res.status(401).json({ message: 'Sessão inválida.' });
         }
 
         // Verifica se o projeto pertence à empresa
-        const projetoExiste = await prisma.$queryRaw`
-            SELECT id, titulo, coluna FROM kanban_projetos
-            WHERE id = ${Number(projetoId)} AND empresa_id = ${empresa.id}
-        `;
+        const projetoExiste = await prisma.$queryRawUnsafe(
+            `SELECT id, titulo, coluna FROM kanban_projetos WHERE id = $1 AND empresa_id = $2`,
+            Number(projetoId), empresaId
+        );
 
         if (!projetoExiste || projetoExiste.length === 0) {
-            console.warn(`[Projetos/MoverColuna] Projeto #${projetoId} não encontrado ou não pertence à empresa.`);
+            console.warn(`[Projetos/MoverColuna] Projeto #${projetoId} não encontrado.`);
             return res.status(404).json({ message: 'Projeto não encontrado.' });
         }
 
@@ -65,19 +68,17 @@ module.exports = async (req, res) => {
         console.log(`[Projetos/MoverColuna] Movendo projeto #${projetoId} de "${colunaAnterior}" → "${novaColuna}"`);
 
         // Calcula nova ordem (final da coluna de destino)
-        const ultimaOrdem = await prisma.$queryRaw`
-            SELECT COALESCE(MAX(ordem), 0) + 1 AS proxima_ordem
-            FROM kanban_projetos
-            WHERE empresa_id = ${empresa.id} AND coluna = ${novaColuna} AND id != ${Number(projetoId)}
-        `;
-        const novaOrdem = Number(ultimaOrdem[0]?.proxima_ordem || 1);
+        const ordemResult = await prisma.$queryRawUnsafe(
+            `SELECT COALESCE(MAX(ordem), 0) + 1 AS proxima_ordem FROM kanban_projetos WHERE empresa_id = $1 AND coluna = $2 AND id != $3`,
+            empresaId, novaColuna, Number(projetoId)
+        );
+        const novaOrdem = Number(ordemResult[0]?.proxima_ordem || 1);
 
-        // Atualiza a coluna e a ordem
-        await prisma.$queryRaw`
-            UPDATE kanban_projetos
-            SET coluna = ${novaColuna}, ordem = ${novaOrdem}, atualizado_em = NOW()
-            WHERE id = ${Number(projetoId)} AND empresa_id = ${empresa.id}
-        `;
+        // Atualiza coluna e ordem
+        await prisma.$queryRawUnsafe(
+            `UPDATE kanban_projetos SET coluna = $1, ordem = $2, atualizado_em = NOW() WHERE id = $3 AND empresa_id = $4`,
+            novaColuna, novaOrdem, Number(projetoId), empresaId
+        );
 
         console.log(`[Projetos/MoverColuna] Projeto #${projetoId} movido com sucesso para "${novaColuna}".`);
         return res.status(200).json({ 
@@ -91,6 +92,5 @@ module.exports = async (req, res) => {
         return res.status(500).json({ message: 'Erro interno ao mover projeto.', error: error.message });
     } finally {
         await prisma.$disconnect();
-        await pool.end();
     }
 };

@@ -1,10 +1,6 @@
 // /api/projetos/listar.js
 const { PrismaClient } = require('@prisma/client');
-const { PrismaNeon } = require('@prisma/adapter-neon');
-const { neonConfig, Pool } = require('@neondatabase/serverless');
-const ws = require('ws');
-
-neonConfig.webSocketConstructor = ws;
+const prisma = new PrismaClient();
 
 console.log('[Projetos/Listar] Módulo carregado.');
 
@@ -22,27 +18,34 @@ module.exports = async (req, res) => {
         return res.status(401).json({ message: 'Token de sessão obrigatório.' });
     }
 
-    const pool = new Pool({ connectionString: process.env.POSTGRES_PRISMA_URL });
-    const adapter = new PrismaNeon(pool);
-    const prisma = new PrismaClient({ adapter });
-
     try {
-        // Valida sessão e obtém empresa
+        // Valida sessão — tenta painel_usuarios primeiro, depois empresas (legacy)
         console.log('[Projetos/Listar] Validando sessão...');
-        const empresa = await prisma.empresa.findFirst({
-            where: { session_tokens: { contains: sessionToken } },
-            select: { id: true, nome_fantasia: true }
-        });
+        let empresaId = null;
 
-        if (!empresa) {
-            console.warn('[Projetos/Listar] Sessão inválida ou empresa não encontrada.');
+        const users = await prisma.$queryRawUnsafe(
+            `SELECT empresa_id FROM painel_usuarios WHERE session_tokens LIKE $1 LIMIT 1`,
+            `%${sessionToken}%`
+        );
+        if (users.length > 0) {
+            empresaId = users[0].empresa_id;
+        } else {
+            const legacy = await prisma.$queryRawUnsafe(
+                `SELECT id FROM empresas WHERE session_tokens LIKE $1 LIMIT 1`,
+                `%${sessionToken}%`
+            );
+            if (legacy.length > 0) empresaId = legacy[0].id;
+        }
+
+        if (!empresaId) {
+            console.warn('[Projetos/Listar] Sessão inválida.');
             return res.status(401).json({ message: 'Sessão inválida.' });
         }
 
-        console.log(`[Projetos/Listar] Empresa autenticada: ID ${empresa.id} - ${empresa.nome_fantasia}`);
+        console.log(`[Projetos/Listar] Empresa autenticada: ID ${empresaId}`);
 
         // Busca todos os projetos com suas tarefas
-        const projetos = await prisma.$queryRaw`
+        const projetos = await prisma.$queryRawUnsafe(`
             SELECT 
                 p.id,
                 p.titulo,
@@ -63,10 +66,10 @@ module.exports = async (req, res) => {
                 ) AS tarefas
             FROM kanban_projetos p
             LEFT JOIN kanban_tarefas pt ON pt.projeto_id = p.id
-            WHERE p.empresa_id = ${empresa.id}
+            WHERE p.empresa_id = $1
             GROUP BY p.id
             ORDER BY p.coluna ASC, p.ordem ASC, p.id ASC
-        `;
+        `, empresaId);
 
         console.log(`[Projetos/Listar] Total de projetos encontrados: ${projetos.length}`);
 
@@ -76,6 +79,5 @@ module.exports = async (req, res) => {
         return res.status(500).json({ message: 'Erro interno ao listar projetos.', error: error.message });
     } finally {
         await prisma.$disconnect();
-        await pool.end();
     }
 };
