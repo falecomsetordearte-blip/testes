@@ -52,8 +52,8 @@ module.exports = async (req, res) => {
         // Verifica se a tarefa existe e pertence a um projeto da empresa
         const tarefaExiste = await prisma.$queryRaw`
             SELECT pt.id, pt.projeto_id, pt.texto, pt.concluida
-            FROM projeto_tarefas pt
-            INNER JOIN projetos p ON p.id = pt.projeto_id
+            FROM kanban_tarefas pt
+            INNER JOIN kanban_projetos p ON p.id = pt.projeto_id
             WHERE pt.id = ${Number(tarefaId)} AND p.empresa_id = ${empresa.id}
         `;
 
@@ -67,7 +67,7 @@ module.exports = async (req, res) => {
 
         // Atualiza o status da tarefa
         await prisma.$queryRaw`
-            UPDATE projeto_tarefas
+            UPDATE kanban_tarefas
             SET concluida = ${novoConcluida}
             WHERE id = ${Number(tarefaId)}
         `;
@@ -77,7 +77,7 @@ module.exports = async (req, res) => {
             SELECT 
                 COUNT(*) AS total,
                 COUNT(CASE WHEN concluida = true THEN 1 END) AS concluidas
-            FROM projeto_tarefas
+            FROM kanban_tarefas
             WHERE projeto_id = ${tarefaExiste[0].projeto_id}
         `;
 

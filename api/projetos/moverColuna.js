@@ -52,7 +52,7 @@ module.exports = async (req, res) => {
 
         // Verifica se o projeto pertence à empresa
         const projetoExiste = await prisma.$queryRaw`
-            SELECT id, titulo, coluna FROM projetos
+            SELECT id, titulo, coluna FROM kanban_projetos
             WHERE id = ${Number(projetoId)} AND empresa_id = ${empresa.id}
         `;
 
@@ -67,14 +67,14 @@ module.exports = async (req, res) => {
         // Calcula nova ordem (final da coluna de destino)
         const ultimaOrdem = await prisma.$queryRaw`
             SELECT COALESCE(MAX(ordem), 0) + 1 AS proxima_ordem
-            FROM projetos
+            FROM kanban_projetos
             WHERE empresa_id = ${empresa.id} AND coluna = ${novaColuna} AND id != ${Number(projetoId)}
         `;
         const novaOrdem = Number(ultimaOrdem[0]?.proxima_ordem || 1);
 
         // Atualiza a coluna e a ordem
         await prisma.$queryRaw`
-            UPDATE projetos
+            UPDATE kanban_projetos
             SET coluna = ${novaColuna}, ordem = ${novaOrdem}, atualizado_em = NOW()
             WHERE id = ${Number(projetoId)} AND empresa_id = ${empresa.id}
         `;
