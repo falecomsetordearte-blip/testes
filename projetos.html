@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projetos — Setor de Arte</title>
+    <meta name="description" content="Gerencie seus projetos em um quadro Kanban com prazo por dia da semana.">
+    <link rel="icon" type="image/png" href="/images/logo-fundo-claro-100x100.png">
+    <link rel="stylesheet" href="/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        /* ================================================
+           PÁGINA PROJETOS — ESTILOS KANBAN
+        ================================================ */
+
+        /* ---------- TOPO DA PÁGINA ---------- */
+        .projetos-topo {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .projetos-topo h2 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--texto-escuro, #1e293b);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 0;
+        }
+
+        .projetos-topo h2 i {
+            color: #4f46e5;
+        }
+
+        .btn-novo-projeto {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            color: #fff;
+            border: none;
+            padding: 11px 22px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+        }
+
+        .btn-novo-projeto:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.45);
+        }
+
+        .btn-novo-projeto:active {
+            transform: translateY(0);
+        }
+
+        /* ---------- KANBAN BOARD ---------- */
+        #kanban-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            align-items: start;
+            min-height: 70vh;
+        }
+
+        /* ---------- COLUNA ---------- */
+        .kanban-coluna {
+            background: var(--bg-card, #f8fafc);
+            border-radius: 16px;
+            border: 1.5px solid var(--borda, #e2e8f0);
+            overflow: hidden;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            transition: border-color 0.2s;
+        }
+
+        .kanban-coluna-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            color: #fff;
+        }
+
+        .kanban-coluna-titulo {
+            font-size: 0.88rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        .kanban-coluna-count {
+            background: rgba(255,255,255,0.25);
+            color: #fff;
+            font-size: 0.78rem;
+            font-weight: 700;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .kanban-cards-area {
+            padding: 12px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 80px;
+            transition: background 0.2s;
+        }
+
+        .kanban-cards-area.drag-over {
+            background: rgba(79, 70, 229, 0.07);
+            border-radius: 8px;
+        }
+
+        /* ---------- CARD ---------- */
+        .kanban-card {
+            background: #ffffff;
+            border: 1.5px solid var(--borda, #e2e8f0);
+            border-radius: 12px;
+            padding: 14px;
+            cursor: grab;
+            transition: box-shadow 0.2s, transform 0.15s, border-color 0.2s;
+            position: relative;
+        }
+
+        .kanban-card:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,0.10);
+            border-color: #a5b4fc;
+            transform: translateY(-2px);
+        }
+
+        .kanban-card.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+            transform: rotate(1.5deg) scale(1.03);
+            box-shadow: 0 12px 28px rgba(79,70,229,0.25);
+        }
+
+        .kanban-card-titulo {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--texto-escuro, #1e293b);
+            margin-bottom: 10px;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .kanban-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .kanban-card-tarefas {
+            font-size: 0.78rem;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .kanban-card-tarefas i {
+            color: #4f46e5;
+        }
+
+        /* ---------- BARRA DE PROGRESSO NO CARD ---------- */
+        .kanban-card-progresso-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .kanban-card-progresso-barra {
+            flex: 1;
+            height: 10px;
+            background: #e2e8f0;
+            border-radius: 99px;
+            overflow: hidden;
+        }
+
+        .kanban-card-progresso-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4f46e5, #6366f1);
+            border-radius: 99px;
+            transition: width 0.4s ease;
+        }
+
+        .kanban-card-progresso-pct {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #4f46e5;
+            min-width: 32px;
+            text-align: right;
+        }
+
+        /* ---------- VAZIO / LOADING / ERRO ---------- */
+        .kanban-vazio {
+            text-align: center;
+            padding: 24px 8px;
+            font-size: 0.82rem;
+            color: #94a3b8;
+            border: 2px dashed #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .kanban-loading {
+            text-align: center;
+            padding: 30px;
+            color: #94a3b8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+
+        .kanban-erro {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            color: #dc2626;
+            font-size: 1rem;
+        }
+
+        .kanban-erro i {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .btn-tentar-novamente {
+            margin-top: 16px;
+            padding: 10px 24px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* ================================================
+           OVERLAY GENÉRICO
+        ================================================ */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.65);
+            z-index: 10000;
+            display: none;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.ativo {
+            display: block;
+        }
+
+        /* ================================================
+           MODAL CRIAR PROJETO
+        ================================================ */
+        #modal-criar {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.96);
+            width: 94%;
+            max-width: 520px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+            z-index: 10001;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform 0.2s, opacity 0.2s;
+            opacity: 0;
+        }
+
+        #modal-criar.ativo {
+            display: flex;
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 22px 26px 18px;
+            border-bottom: 1.5px solid #f1f5f9;
+        }
+
+        .modal-header h3 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-header h3 i {
+            color: #4f46e5;
+        }
+
+        .modal-fechar-btn {
+            background: #f1f5f9;
+            border: none;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            font-size: 1.1rem;
+            cursor: pointer;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .modal-fechar-btn:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
+        .modal-body {
+            padding: 22px 26px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            max-height: 65vh;
+            overflow-y: auto;
+        }
+
+        .form-grupo {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-label {
+            font-size: 0.83rem;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-family: 'Poppins', sans-serif;
+            color: #1e293b;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        }
+
+        /* ---------- LISTA DE TAREFAS ---------- */
+        #lista-tarefas-criar {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tarefa-input-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tarefa-drag-icon {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            cursor: grab;
+        }
+
+        .tarefa-input-field {
+            flex: 1;
+            padding: 9px 12px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-family: 'Poppins', sans-serif;
+            color: #1e293b;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .tarefa-input-field:focus {
+            border-color: #4f46e5;
+        }
+
+        .tarefa-remover-btn {
+            background: #fee2e2;
+            border: none;
+            color: #dc2626;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 0.78rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .tarefa-remover-btn:hover {
+            background: #fecaca;
+        }
+
+        .btn-adicionar-tarefa {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.83rem;
+            font-weight: 600;
+            color: #4f46e5;
+            background: none;
+            border: 1.5px dashed #a5b4fc;
+            padding: 7px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            transition: background 0.2s, border-color 0.2s;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-adicionar-tarefa:hover {
+            background: #eef2ff;
+            border-color: #4f46e5;
+        }
+
+        .modal-footer {
+            padding: 16px 26px 22px;
+            border-top: 1.5px solid #f1f5f9;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-cancelar-modal {
+            padding: 10px 20px;
+            background: #f1f5f9;
+            color: #64748b;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            transition: background 0.2s;
+        }
+
+        .btn-cancelar-modal:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-salvar-projeto {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            transition: opacity 0.2s, transform 0.15s;
+            box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+        }
+
+        .btn-salvar-projeto:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(79,70,229,0.4);
+        }
+
+        .btn-salvar-projeto:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        /* ================================================
+           MODAL DETALHE DO PROJETO
+        ================================================ */
+        #modal-detalhe {
+            position: fixed;
+            top: 0;
+            right: -520px;
+            width: 460px;
+            max-width: 95vw;
+            height: 100%;
+            background: #fff;
+            box-shadow: -8px 0 40px rgba(0,0,0,0.15);
+            z-index: 10001;
+            display: flex;
+            flex-direction: column;
+            transition: right 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        #modal-detalhe.ativo {
+            right: 0;
+        }
+
+        .detalhe-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 28px 28px 20px;
+            border-bottom: 1.5px solid #f1f5f9;
+            gap: 12px;
+        }
+
+        #detalhe-titulo {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin: 0;
+            line-height: 1.4;
+            word-break: break-word;
+            flex: 1;
+        }
+
+        /* ---------- BARRA DE PROGRESSO NO MODAL ---------- */
+        .detalhe-progresso-section {
+            padding: 22px 28px;
+            border-bottom: 1.5px solid #f1f5f9;
+        }
+
+        .detalhe-progresso-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #detalhe-progresso-info {
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .detalhe-progresso-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .detalhe-progresso-barra {
+            flex: 1;
+            height: 18px;
+            background: #e2e8f0;
+            border-radius: 99px;
+            overflow: hidden;
+        }
+
+        #detalhe-progresso-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4f46e5, #818cf8);
+            border-radius: 99px;
+            transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.4s;
+        }
+
+        #detalhe-progresso-pct {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #4f46e5;
+            min-width: 48px;
+            text-align: right;
+        }
+
+        /* ---------- LISTA DE TAREFAS NO DETALHE ---------- */
+        .detalhe-tarefas-section {
+            flex: 1;
+            padding: 22px 28px;
+            overflow-y: auto;
+        }
+
+        .detalhe-tarefas-titulo {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 14px;
+        }
+
+        #detalhe-tarefas-lista {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .detalhe-tarefa-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 14px;
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .detalhe-tarefa-item:hover {
+            background: #f1f5f9;
+            border-color: #c7d2fe;
+        }
+
+        .detalhe-tarefa-item.concluida {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .detalhe-tarefa-checkbox {
+            width: 18px;
+            height: 18px;
+            accent-color: #4f46e5;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .detalhe-tarefa-texto {
+            font-size: 0.92rem;
+            color: #334155;
+            line-height: 1.5;
+            transition: color 0.2s, text-decoration 0.2s;
+        }
+
+        .detalhe-tarefa-item.concluida .detalhe-tarefa-texto {
+            text-decoration: line-through;
+            color: #94a3b8;
+        }
+
+        .detalhe-sem-tarefas {
+            text-align: center;
+            padding: 30px;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        /* ================================================
+           RESPONSIVO
+        ================================================ */
+        @media (max-width: 1100px) {
+            #kanban-board {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 700px) {
+            #kanban-board {
+                grid-template-columns: 1fr;
+            }
+
+            #modal-detalhe {
+                width: 100%;
+                right: -100%;
+            }
+        }
+
+        /* Dark Mode */
+        [data-theme="dark"] .kanban-coluna {
+            background: #1e293b;
+            border-color: #334155;
+        }
+
+        [data-theme="dark"] .kanban-card {
+            background: #0f172a;
+            border-color: #334155;
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .kanban-card-titulo {
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] #modal-criar,
+        [data-theme="dark"] #modal-detalhe {
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .modal-header h3,
+        [data-theme="dark"] #detalhe-titulo {
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .form-input,
+        [data-theme="dark"] .tarefa-input-field {
+            background: #0f172a;
+            border-color: #334155;
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .detalhe-tarefa-item {
+            background: #0f172a;
+            border-color: #334155;
+        }
+
+        [data-theme="dark"] .detalhe-tarefa-texto {
+            color: #cbd5e1;
+        }
+
+        [data-theme="dark"] .detalhe-progresso-barra,
+        [data-theme="dark"] .kanban-card-progresso-barra {
+            background: #334155;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================================
+         OVERLAYS
+    ============================================================ -->
+    <div id="overlay-modal-criar"  class="modal-overlay"></div>
+    <div id="overlay-modal-detalhe" class="modal-overlay"></div>
+
+    <!-- ============================================================
+         MODAL: CRIAR PROJETO
+    ============================================================ -->
+    <div id="modal-criar" role="dialog" aria-modal="true" aria-labelledby="modal-criar-titulo">
+        <div class="modal-header">
+            <h3 id="modal-criar-titulo">
+                <i class="fas fa-folder-plus"></i>
+                Novo Projeto
+            </h3>
+            <button class="modal-fechar-btn" id="btn-fechar-modal-criar" title="Fechar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="modal-body">
+            <!-- Título do Projeto -->
+            <div class="form-grupo">
+                <label class="form-label" for="input-titulo-projeto">Título do Projeto</label>
+                <input 
+                    type="text" 
+                    id="input-titulo-projeto" 
+                    class="form-input"
+                    placeholder="Ex: Campanha de Maio, Panfletos Loja X..."
+                    maxlength="255"
+                    autocomplete="off"
+                >
+            </div>
+
+            <!-- Tarefas -->
+            <div class="form-grupo">
+                <label class="form-label">Tarefas do Projeto</label>
+                <div id="lista-tarefas-criar"></div>
+                <button class="btn-adicionar-tarefa" id="btn-adicionar-tarefa" type="button">
+                    <i class="fas fa-plus"></i> Adicionar Tarefa
+                </button>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-cancelar-modal" id="btn-cancelar-criar">Cancelar</button>
+            <button class="btn-salvar-projeto" id="btn-salvar-projeto">
+                <i class="fas fa-check"></i> Criar Projeto
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL DETALHE (DRAWER LATERAL)
+    ============================================================ -->
+    <div id="modal-detalhe" role="dialog" aria-modal="true" aria-labelledby="detalhe-titulo">
+        <div class="detalhe-header">
+            <h2 id="detalhe-titulo">Título do Projeto</h2>
+            <button class="modal-fechar-btn" id="btn-fechar-modal-detalhe" title="Fechar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Barra de Progresso -->
+        <div class="detalhe-progresso-section">
+            <div class="detalhe-progresso-label">
+                <span><i class="fas fa-tasks" style="color:#4f46e5; margin-right:6px;"></i>Progresso</span>
+                <span id="detalhe-progresso-info">0 de 0 tarefas concluídas</span>
+            </div>
+            <div class="detalhe-progresso-wrap">
+                <div class="detalhe-progresso-barra">
+                    <div id="detalhe-progresso-fill" style="width: 0%"></div>
+                </div>
+                <span id="detalhe-progresso-pct">0%</span>
+            </div>
+        </div>
+
+        <!-- Tarefas -->
+        <div class="detalhe-tarefas-section">
+            <div class="detalhe-tarefas-titulo">
+                <i class="fas fa-list-check"></i> Lista de Tarefas
+            </div>
+            <div id="detalhe-tarefas-lista">
+                <!-- Preenchido pelo JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         LAYOUT PRINCIPAL
+    ============================================================ -->
+    <div class="app-layout-grid">
+
+        <!-- Sidebar injetada pelo layout.js -->
+        <div id="sidebar-placeholder"></div>
+
+        <!-- Wrapper do conteúdo rolável -->
+        <div class="app-content-wrapper">
+
+            <!-- Header injetado pelo layout.js -->
+            <div id="header-placeholder"></div>
+
+            <!-- Conteúdo principal -->
+            <main class="app-content">
+                <div class="container">
+
+                    <!-- Topo: Título + Botão -->
+                    <div class="projetos-topo">
+                        <h2>
+                            <i class="fas fa-tasks"></i>
+                            Projetos
+                        </h2>
+                        <button class="btn-novo-projeto" id="btn-novo-projeto">
+                            <i class="fas fa-plus"></i>
+                            Novo Projeto
+                        </button>
+                    </div>
+
+                    <!-- Board Kanban -->
+                    <div id="kanban-board">
+                        <!-- Colunas renderizadas pelo JS -->
+                    </div>
+
+                </div>
+            </main>
+
+            <!-- Footer injetado pelo layout.js -->
+            <div id="footer-placeholder"></div>
+
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="/layout.js"></script>
+    <script src="/projetos-script.js"></script>
+
+    <!-- Fix: o botão cancelar dentro do modal não está ligado ao fechar -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('btn-cancelar-criar')?.addEventListener('click', () => {
+                document.getElementById('modal-criar').classList.remove('ativo');
+                document.getElementById('overlay-modal-criar').classList.remove('ativo');
+            });
+        });
+    </script>
+
+</body>
+</html>
