@@ -67,7 +67,7 @@ module.exports = async (req, res) => {
         // Cria o projeto
         const dataInstalacaoFinal = dataInstalacao || null;
         const projetoResult = await prisma.$queryRawUnsafe(
-            `INSERT INTO kanban_projetos (empresa_id, titulo, coluna, ordem, data_instalacao) VALUES ($1, $2, $3, $4, $5) RETURNING id, titulo, coluna, ordem, criado_em, data_instalacao`,
+            `INSERT INTO kanban_projetos (empresa_id, titulo, coluna, ordem, data_instalacao) VALUES ($1, $2, $3, $4, $5::date) RETURNING id, titulo, coluna, ordem, criado_em, data_instalacao`,
             empresaId, titulo.trim(), colunaFinal, ordem, dataInstalacaoFinal
         );
         const projetoCriado = projetoResult[0];

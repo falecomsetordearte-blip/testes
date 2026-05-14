@@ -77,7 +77,7 @@ module.exports = async (req, res) => {
         // Atualiza título e data de instalação
         const dataInstalacaoFinal = dataInstalacao || null;
         await prisma.$queryRawUnsafe(
-            `UPDATE kanban_projetos SET titulo = $1, data_instalacao = $2, atualizado_em = NOW() WHERE id = $3 AND empresa_id = $4`,
+            `UPDATE kanban_projetos SET titulo = $1, data_instalacao = $2::date, atualizado_em = NOW() WHERE id = $3 AND empresa_id = $4`,
             titulo.trim(), dataInstalacaoFinal, Number(projetoId), empresaId
         );
 
