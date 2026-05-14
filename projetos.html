@@ -811,6 +811,94 @@
         [data-theme="dark"] .kanban-card-tarefa-texto {
             color: #cbd5e1;
         }
+
+        /* ---------- BOTÕES AÇÃO NO CARD (editar / deletar) ---------- */
+        .kanban-card-acoes {
+            display: flex;
+            gap: 6px;
+            justify-content: flex-end;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .btn-card-acao {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 7px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+        }
+
+        .btn-card-acao:active { transform: scale(0.96); }
+
+        .btn-card-editar {
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+        .btn-card-editar:hover { background: #e0e7ff; }
+
+        .btn-card-deletar {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .btn-card-deletar:hover { background: #fecaca; }
+
+        [data-theme="dark"] .kanban-card-acoes {
+            border-top-color: #334155;
+        }
+        [data-theme="dark"] .btn-card-editar {
+            background: #1e1b4b;
+            color: #a5b4fc;
+        }
+        [data-theme="dark"] .btn-card-deletar {
+            background: #450a0a;
+            color: #fca5a5;
+        }
+
+        /* ---------- MODAL EDITAR PROJETO ---------- */
+        #modal-editar {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.96);
+            width: 94%;
+            max-width: 520px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+            z-index: 10001;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform 0.2s, opacity 0.2s;
+            opacity: 0;
+        }
+        #modal-editar.ativo {
+            display: flex;
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+        [data-theme="dark"] #modal-editar {
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+        [data-theme="dark"] #modal-editar .modal-header h3,
+        [data-theme="dark"] #modal-editar .form-label {
+            color: #e2e8f0;
+        }
+        [data-theme="dark"] #modal-editar .form-input,
+        [data-theme="dark"] #modal-editar .tarefa-input-field {
+            background: #0f172a;
+            border-color: #334155;
+            color: #e2e8f0;
+        }
     </style>
 </head>
 <body>
@@ -818,8 +906,9 @@
     <!-- ============================================================
          OVERLAYS
     ============================================================ -->
-    <div id="overlay-modal-criar"  class="modal-overlay"></div>
+    <div id="overlay-modal-criar"   class="modal-overlay"></div>
     <div id="overlay-modal-detalhe" class="modal-overlay"></div>
+    <div id="overlay-modal-editar"  class="modal-overlay"></div>
 
     <!-- ============================================================
          MODAL: CRIAR PROJETO
@@ -863,6 +952,54 @@
             <button class="btn-cancelar-modal" id="btn-cancelar-criar">Cancelar</button>
             <button class="btn-salvar-projeto" id="btn-salvar-projeto">
                 <i class="fas fa-check"></i> Criar Projeto
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL: EDITAR PROJETO
+    ============================================================ -->
+    <div id="modal-editar" role="dialog" aria-modal="true" aria-labelledby="modal-editar-titulo">
+        <div class="modal-header">
+            <h3 id="modal-editar-titulo">
+                <i class="fas fa-pen"></i>
+                Editar Projeto
+            </h3>
+            <button class="modal-fechar-btn" id="btn-fechar-modal-editar" title="Fechar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="modal-body">
+            <input type="hidden" id="editar-projeto-id">
+
+            <!-- Título -->
+            <div class="form-grupo">
+                <label class="form-label" for="editar-titulo-projeto">Título do Projeto</label>
+                <input
+                    type="text"
+                    id="editar-titulo-projeto"
+                    class="form-input"
+                    placeholder="Título do projeto..."
+                    maxlength="255"
+                    autocomplete="off"
+                >
+            </div>
+
+            <!-- Tarefas -->
+            <div class="form-grupo">
+                <label class="form-label">Tarefas do Projeto</label>
+                <div id="lista-tarefas-editar"></div>
+                <button class="btn-adicionar-tarefa" id="btn-adicionar-tarefa-editar" type="button">
+                    <i class="fas fa-plus"></i> Adicionar Tarefa
+                </button>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-cancelar-modal" id="btn-cancelar-editar">Cancelar</button>
+            <button class="btn-salvar-projeto" id="btn-salvar-edicao">
+                <i class="fas fa-check"></i> Salvar Alterações
             </button>
         </div>
     </div>

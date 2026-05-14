@@ -54,11 +54,30 @@ function inicializarBotoes() {
     document.getElementById('btn-fechar-modal-detalhe')?.addEventListener('click', fecharModalDetalhe);
     document.getElementById('overlay-modal-detalhe')?.addEventListener('click', fecharModalDetalhe);
 
-    // Permitir Ctrl+Enter no campo de tarefa inline para adicionar mais
+    // Modal edição — fechar
+    document.getElementById('btn-fechar-modal-editar')?.addEventListener('click', fecharModalEdicao);
+    document.getElementById('btn-cancelar-editar')?.addEventListener('click', fecharModalEdicao);
+    document.getElementById('overlay-modal-editar')?.addEventListener('click', fecharModalEdicao);
+
+    // Modal edição — adicionar tarefa
+    document.getElementById('btn-adicionar-tarefa-editar')?.addEventListener('click', adicionarCampoTarefaEditar);
+
+    // Modal edição — salvar
+    document.getElementById('btn-salvar-edicao')?.addEventListener('click', salvarEdicao);
+
+    // Permitir Enter no campo de tarefa inline para adicionar mais (criação)
     document.getElementById('lista-tarefas-criar')?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             adicionarCampoTarefa();
+        }
+    });
+
+    // Permitir Enter no campo de tarefa inline para adicionar mais (edição)
+    document.getElementById('lista-tarefas-editar')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            adicionarCampoTarefaEditar();
         }
     });
 
@@ -212,6 +231,18 @@ function criarElementoCard(projeto) {
     card.innerHTML = `
         <div class="kanban-card-titulo">${escapeHtml(projeto.titulo)}</div>
         ${tarefasHtml}
+        <div class="kanban-card-acoes">
+            <button
+                class="btn-card-acao btn-card-editar"
+                title="Editar projeto"
+                onclick="event.stopPropagation(); abrirModalEdicao(${projeto.id})"
+            ><i class="fas fa-pen"></i> Editar</button>
+            <button
+                class="btn-card-acao btn-card-deletar"
+                title="Deletar projeto"
+                onclick="event.stopPropagation(); deletarProjeto(${projeto.id})"
+            ><i class="fas fa-trash"></i> Deletar</button>
+        </div>
     `;
 
     // Drag start
@@ -587,4 +618,178 @@ function mostrarErroGeral(msg) {
             <button onclick="carregarProjetos()" class="btn-tentar-novamente">Tentar novamente</button>
         </div>
     `;
+}
+
+// ============================================================
+// MODAL EDIÇÃO DE PROJETO
+// ============================================================
+function abrirModalEdicao(projetoId) {
+    const projeto = state.projetos.find(p => p.id === projetoId);
+    if (!projeto) {
+        console.warn(`[Projetos] Projeto #${projetoId} não encontrado para edição.`);
+        return;
+    }
+
+    console.log(`[Projetos] Abrindo modal de edição do projeto #${projetoId}: "${projeto.titulo}"`);
+
+    // Preenche campos
+    document.getElementById('editar-projeto-id').value = projetoId;
+    document.getElementById('editar-titulo-projeto').value = projeto.titulo;
+
+    // Preenche tarefas existentes
+    const lista = document.getElementById('lista-tarefas-editar');
+    lista.innerHTML = '';
+    (projeto.tarefas || []).forEach((t, i) => {
+        const item = document.createElement('div');
+        item.className = 'tarefa-input-item';
+        item.innerHTML = `
+            <i class="fas fa-grip-vertical tarefa-drag-icon"></i>
+            <input
+                type="text"
+                class="tarefa-input-field"
+                placeholder="Tarefa ${i + 1}..."
+                id="editar-tarefa-input-${i}"
+                value="${escapeHtml(t.texto)}"
+                autocomplete="off"
+            >
+            <button class="tarefa-remover-btn" title="Remover tarefa" onclick="this.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        lista.appendChild(item);
+    });
+
+    // Garante ao menos 1 campo se não houver tarefas
+    if ((projeto.tarefas || []).length === 0) adicionarCampoTarefaEditar();
+
+    document.getElementById('modal-editar').classList.add('ativo');
+    document.getElementById('overlay-modal-editar').classList.add('ativo');
+    document.getElementById('editar-titulo-projeto').focus();
+}
+
+function fecharModalEdicao() {
+    console.log('[Projetos] Fechando modal de edição.');
+    document.getElementById('modal-editar').classList.remove('ativo');
+    document.getElementById('overlay-modal-editar').classList.remove('ativo');
+}
+
+function adicionarCampoTarefaEditar() {
+    const lista = document.getElementById('lista-tarefas-editar');
+    const idx = lista.children.length;
+
+    const item = document.createElement('div');
+    item.className = 'tarefa-input-item';
+    item.innerHTML = `
+        <i class="fas fa-grip-vertical tarefa-drag-icon"></i>
+        <input
+            type="text"
+            class="tarefa-input-field"
+            placeholder="Descreva a tarefa ${idx + 1}..."
+            id="editar-tarefa-input-${idx}"
+            autocomplete="off"
+        >
+        <button class="tarefa-remover-btn" title="Remover tarefa" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+
+    lista.appendChild(item);
+    item.querySelector('input').focus();
+    console.log(`[Projetos] Campo de tarefa de edição ${idx + 1} adicionado.`);
+}
+
+async function salvarEdicao() {
+    const projetoId = Number(document.getElementById('editar-projeto-id').value);
+    const titulo = document.getElementById('editar-titulo-projeto').value.trim();
+    const inputs = document.querySelectorAll('#lista-tarefas-editar .tarefa-input-field');
+    const tarefas = Array.from(inputs)
+        .map(i => i.value.trim())
+        .filter(t => t.length > 0);
+
+    console.log(`[Projetos] Salvando edição do projeto #${projetoId}: "${titulo}" com ${tarefas.length} tarefa(s)`);
+
+    if (!titulo) {
+        alert('Por favor, informe o título do projeto.');
+        document.getElementById('editar-titulo-projeto').focus();
+        return;
+    }
+
+    if (tarefas.length === 0) {
+        alert('Adicione ao menos uma tarefa ao projeto.');
+        return;
+    }
+
+    const btn = document.getElementById('btn-salvar-edicao');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+
+    try {
+        const res = await fetch('/api/projetos/editar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionToken: state.sessionToken, projetoId, titulo, tarefas })
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || 'Erro ao editar projeto.');
+        }
+
+        const data = await res.json();
+        console.log(`[Projetos] Projeto #${projetoId} editado com sucesso.`);
+
+        // Atualiza estado local
+        const idx = state.projetos.findIndex(p => p.id === projetoId);
+        if (idx !== -1) state.projetos[idx] = data.projeto;
+
+        renderizarKanban();
+        fecharModalEdicao();
+    } catch (error) {
+        console.error('[Projetos] ERRO ao editar projeto:', error);
+        alert(`Erro ao salvar alterações: ${error.message}`);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Salvar Alterações';
+    }
+}
+
+// ============================================================
+// DELETAR PROJETO
+// ============================================================
+async function deletarProjeto(projetoId) {
+    const projeto = state.projetos.find(p => p.id === projetoId);
+    if (!projeto) return;
+
+    const confirmar = confirm(`Deletar o projeto "${projeto.titulo}"?\n\nEsta ação não pode ser desfeita.`);
+    if (!confirmar) {
+        console.log(`[Projetos] Deleção do projeto #${projetoId} cancelada pelo usuário.`);
+        return;
+    }
+
+    console.log(`[Projetos] Deletando projeto #${projetoId}: "${projeto.titulo}"`);
+
+    // Remove localmente de imediato (UI otimista)
+    state.projetos = state.projetos.filter(p => p.id !== projetoId);
+    renderizarKanban();
+
+    try {
+        const res = await fetch('/api/projetos/deletar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionToken: state.sessionToken, projetoId })
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || 'Erro ao deletar projeto.');
+        }
+
+        console.log(`[Projetos] Projeto #${projetoId} deletado com sucesso.`);
+    } catch (error) {
+        console.error('[Projetos] ERRO ao deletar projeto:', error);
+        // Reverte em caso de erro
+        state.projetos.push(projeto);
+        renderizarKanban();
+        alert(`Erro ao deletar projeto: ${error.message}`);
+    }
 }
