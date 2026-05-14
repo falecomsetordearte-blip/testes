@@ -11,11 +11,9 @@ const state = {
 };
 
 const COLUNAS = [
-    { id: 'SEGUNDA', label: 'Segunda-feira' },
-    { id: 'TERCA',   label: 'Terça-feira'  },
-    { id: 'QUARTA',  label: 'Quarta-feira' },
-    { id: 'QUINTA',  label: 'Quinta-feira' },
-    { id: 'SEXTA',   label: 'Sexta-feira'  },
+    { id: 'PRODUCAO', label: 'Produção',  icone: 'fa-cog'      },
+    { id: 'AGENDAR',  label: 'Agendar',   icone: 'fa-calendar' },
+    { id: 'INSTALAR', label: 'Instalar',  icone: 'fa-wrench'   },
 ];
 
 // ============================================================
@@ -228,8 +226,21 @@ function criarElementoCard(projeto) {
         </div>
     ` : '';
 
+    // Badge de data de instalação
+    let dataBadgeHtml = '';
+    if (projeto.data_instalacao) {
+        const urgencia = calcularUrgenciaData(projeto.data_instalacao);
+        dataBadgeHtml = `
+            <div class="kanban-card-data urgencia-${urgencia.classe}${urgencia.pulsar ? ' pulsar' : ''}">
+                <i class="fas fa-calendar-day"></i>
+                ${formatarData(projeto.data_instalacao)} &mdash; ${urgencia.label}
+            </div>
+        `;
+    }
+
     card.innerHTML = `
         <div class="kanban-card-titulo">${escapeHtml(projeto.titulo)}</div>
+        ${dataBadgeHtml}
         ${tarefasHtml}
         <div class="kanban-card-acoes">
             <button
@@ -319,6 +330,7 @@ function abrirModalCriacao() {
 
     // Limpa campos anteriores
     document.getElementById('input-titulo-projeto').value = '';
+    document.getElementById('input-data-instalacao').value = '';
     document.getElementById('lista-tarefas-criar').innerHTML = '';
     adicionarCampoTarefa(); // começa com 1 tarefa vazia
 }
@@ -356,6 +368,7 @@ function adicionarCampoTarefa() {
 
 async function salvarProjeto() {
     const titulo = document.getElementById('input-titulo-projeto').value.trim();
+    const dataInstalacao = document.getElementById('input-data-instalacao').value || null;
     const inputs = document.querySelectorAll('#lista-tarefas-criar .tarefa-input-field');
     const tarefas = Array.from(inputs)
         .map(i => i.value.trim())
@@ -386,7 +399,8 @@ async function salvarProjeto() {
                 sessionToken: state.sessionToken,
                 titulo,
                 tarefas,
-                coluna: 'SEGUNDA' // sempre começa na segunda
+                dataInstalacao,
+                coluna: 'PRODUCAO' // sempre começa em Produção
             })
         });
 
@@ -621,6 +635,33 @@ function mostrarErroGeral(msg) {
 }
 
 // ============================================================
+// URGÊNCIA DE DATA
+// ============================================================
+function calcularUrgenciaData(dataInstalacao) {
+    if (!dataInstalacao) return null;
+
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const data = new Date(String(dataInstalacao).substring(0, 10) + 'T00:00:00');
+    const dias = Math.round((data - hoje) / (1000 * 60 * 60 * 24));
+
+    console.log(`[Projetos] Urgência: ${dias} dias para instalação.`);
+
+    if (dias < 0)  return { classe: 'critica', label: 'Atrasado!',  pulsar: true  };
+    if (dias === 0) return { classe: 'critica', label: 'Hoje!',      pulsar: true  };
+    if (dias === 1) return { classe: 'urgente', label: 'Amanhã',    pulsar: false };
+    if (dias <= 3)  return { classe: 'alerta',  label: `${dias} dias`, pulsar: false };
+    if (dias <= 7)  return { classe: 'boa',     label: `${dias} dias`, pulsar: false };
+    return             { classe: 'ok',      label: `${dias} dias`, pulsar: false };
+}
+
+function formatarData(dataStr) {
+    if (!dataStr) return '';
+    const d = new Date(String(dataStr).substring(0, 10) + 'T00:00:00');
+    return d.toLocaleDateString('pt-BR');
+}
+
+// ============================================================
 // MODAL EDIÇÃO DE PROJETO
 // ============================================================
 function abrirModalEdicao(projetoId) {
@@ -635,6 +676,13 @@ function abrirModalEdicao(projetoId) {
     // Preenche campos
     document.getElementById('editar-projeto-id').value = projetoId;
     document.getElementById('editar-titulo-projeto').value = projeto.titulo;
+
+    // Preenche data de instalação
+    const dataRaw = projeto.data_instalacao
+        ? String(projeto.data_instalacao).substring(0, 10)
+        : '';
+    document.getElementById('editar-data-instalacao').value = dataRaw;
+    console.log(`[Projetos] Data de instalação pré-preenchida: ${dataRaw || 'vazia'}`);
 
     // Preenche tarefas existentes
     const lista = document.getElementById('lista-tarefas-editar');
@@ -701,6 +749,7 @@ function adicionarCampoTarefaEditar() {
 async function salvarEdicao() {
     const projetoId = Number(document.getElementById('editar-projeto-id').value);
     const titulo = document.getElementById('editar-titulo-projeto').value.trim();
+    const dataInstalacao = document.getElementById('editar-data-instalacao').value || null;
     const inputs = document.querySelectorAll('#lista-tarefas-editar .tarefa-input-field');
     const tarefas = Array.from(inputs)
         .map(i => i.value.trim())
@@ -727,7 +776,7 @@ async function salvarEdicao() {
         const res = await fetch('/api/projetos/editar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionToken: state.sessionToken, projetoId, titulo, tarefas })
+            body: JSON.stringify({ sessionToken: state.sessionToken, projetoId, titulo, tarefas, dataInstalacao })
         });
 
         if (!res.ok) {

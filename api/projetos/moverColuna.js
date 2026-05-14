@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
         return res.status(400).json({ message: 'projetoId e novaColuna são obrigatórios.' });
     }
 
-    const colunaValida = ['SEGUNDA', 'TERCA', 'QUARTA', 'QUINTA', 'SEXTA'];
+    const colunaValida = ['PRODUCAO', 'AGENDAR', 'INSTALAR'];
     if (!colunaValida.includes(novaColuna)) {
         console.warn(`[Projetos/MoverColuna] Coluna inválida: ${novaColuna}`);
         return res.status(400).json({ message: `Coluna inválida. Use: ${colunaValida.join(', ')}` });

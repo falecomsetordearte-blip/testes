@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
         return res.status(405).json({ message: 'Método não permitido.' });
     }
 
-    const { sessionToken, titulo, tarefas, coluna } = req.body;
+    const { sessionToken, titulo, tarefas, coluna, dataInstalacao } = req.body;
 
     if (!sessionToken) {
         console.warn('[Projetos/Criar] Token de sessão ausente.');
@@ -28,8 +28,8 @@ module.exports = async (req, res) => {
         return res.status(400).json({ message: 'Adicione ao menos uma tarefa ao projeto.' });
     }
 
-    const colunaValida = ['SEGUNDA', 'TERCA', 'QUARTA', 'QUINTA', 'SEXTA'];
-    const colunaFinal = colunaValida.includes(coluna) ? coluna : 'SEGUNDA';
+    const colunaValida = ['PRODUCAO', 'AGENDAR', 'INSTALAR'];
+    const colunaFinal = colunaValida.includes(coluna) ? coluna : 'PRODUCAO';
 
     try {
         // Valida sessão
@@ -55,7 +55,7 @@ module.exports = async (req, res) => {
             return res.status(401).json({ message: 'Sessão inválida.' });
         }
 
-        console.log(`[Projetos/Criar] Empresa ID ${empresaId}. Criando projeto: "${titulo}" na coluna ${colunaFinal}`);
+        console.log(`[Projetos/Criar] Empresa ID ${empresaId}. Criando projeto: "${titulo}" na coluna ${colunaFinal} | Data instalação: ${dataInstalacao || 'não informada'}`);
 
         // Calcula próxima ordem nessa coluna
         const ordemResult = await prisma.$queryRawUnsafe(
@@ -65,9 +65,10 @@ module.exports = async (req, res) => {
         const ordem = Number(ordemResult[0]?.proxima_ordem || 1);
 
         // Cria o projeto
+        const dataInstalacaoFinal = dataInstalacao || null;
         const projetoResult = await prisma.$queryRawUnsafe(
-            `INSERT INTO kanban_projetos (empresa_id, titulo, coluna, ordem) VALUES ($1, $2, $3, $4) RETURNING id, titulo, coluna, ordem, criado_em`,
-            empresaId, titulo.trim(), colunaFinal, ordem
+            `INSERT INTO kanban_projetos (empresa_id, titulo, coluna, ordem, data_instalacao) VALUES ($1, $2, $3, $4, $5) RETURNING id, titulo, coluna, ordem, criado_em, data_instalacao`,
+            empresaId, titulo.trim(), colunaFinal, ordem, dataInstalacaoFinal
         );
         const projetoCriado = projetoResult[0];
         console.log(`[Projetos/Criar] Projeto #${projetoCriado.id} criado.`);

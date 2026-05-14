@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
         return res.status(405).json({ message: 'Método não permitido.' });
     }
 
-    const { sessionToken, projetoId, titulo, tarefas } = req.body;
+    const { sessionToken, projetoId, titulo, tarefas, dataInstalacao } = req.body;
 
     if (!sessionToken) {
         console.warn('[Projetos/Editar] Token de sessão ausente.');
@@ -74,10 +74,11 @@ module.exports = async (req, res) => {
 
         console.log(`[Projetos/Editar] Atualizando projeto #${projetoId}: "${titulo}" com ${tarefasTexto.length} tarefa(s).`);
 
-        // Atualiza título
+        // Atualiza título e data de instalação
+        const dataInstalacaoFinal = dataInstalacao || null;
         await prisma.$queryRawUnsafe(
-            `UPDATE kanban_projetos SET titulo = $1, atualizado_em = NOW() WHERE id = $2 AND empresa_id = $3`,
-            titulo.trim(), Number(projetoId), empresaId
+            `UPDATE kanban_projetos SET titulo = $1, data_instalacao = $2, atualizado_em = NOW() WHERE id = $3 AND empresa_id = $4`,
+            titulo.trim(), dataInstalacaoFinal, Number(projetoId), empresaId
         );
 
         // Deleta tarefas antigas e recria (estratégia mais simples e segura)
@@ -98,7 +99,7 @@ module.exports = async (req, res) => {
         // Retorna projeto completo atualizado
         const projetoAtualizado = await prisma.$queryRawUnsafe(`
             SELECT
-                p.id, p.titulo, p.coluna, p.ordem, p.criado_em, p.atualizado_em,
+                p.id, p.titulo, p.coluna, p.ordem, p.data_instalacao, p.criado_em, p.atualizado_em,
                 COALESCE(
                     json_agg(
                         json_build_object('id', pt.id, 'texto', pt.texto, 'concluida', pt.concluida, 'ordem', pt.ordem)

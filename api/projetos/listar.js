@@ -51,6 +51,7 @@ module.exports = async (req, res) => {
                 p.titulo,
                 p.coluna,
                 p.ordem,
+                p.data_instalacao,
                 p.criado_em,
                 p.atualizado_em,
                 COALESCE(

@@ -68,8 +68,8 @@
         /* ---------- KANBAN BOARD ---------- */
         #kanban-board {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 16px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
             align-items: start;
             min-height: 70vh;
         }
@@ -91,8 +91,17 @@
             align-items: center;
             justify-content: space-between;
             padding: 14px 16px;
-            background: linear-gradient(135deg, #4f46e5, #6366f1);
             color: #fff;
+        }
+
+        .kanban-coluna[data-coluna="PRODUCAO"] .kanban-coluna-header {
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+        }
+        .kanban-coluna[data-coluna="AGENDAR"] .kanban-coluna-header {
+            background: linear-gradient(135deg, #d97706, #f59e0b);
+        }
+        .kanban-coluna[data-coluna="INSTALAR"] .kanban-coluna-header {
+            background: linear-gradient(135deg, #059669, #10b981);
         }
 
         .kanban-coluna-titulo {
@@ -685,7 +694,7 @@
         ================================================ */
         @media (max-width: 1100px) {
             #kanban-board {
-                grid-template-columns: repeat(3, 1fr);
+                grid-template-columns: repeat(2, 1fr);
             }
         }
 
@@ -811,6 +820,32 @@
         [data-theme="dark"] .kanban-card-tarefa-texto {
             color: #cbd5e1;
         }
+
+        /* ---------- BADGE DATA DE INSTALAÇÃO ---------- */
+        .kanban-card-data {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 99px;
+            border: 1.5px solid currentColor;
+            margin-bottom: 8px;
+            background: transparent;
+        }
+
+        .kanban-card-data.urgencia-ok      { color: #10b981; border-color: #10b981; background: #f0fdf4; }
+        .kanban-card-data.urgencia-boa     { color: #65a30d; border-color: #84cc16; background: #f7fee7; }
+        .kanban-card-data.urgencia-alerta  { color: #d97706; border-color: #f59e0b; background: #fffbeb; }
+        .kanban-card-data.urgencia-urgente { color: #ea580c; border-color: #f97316; background: #fff7ed; }
+        .kanban-card-data.urgencia-critica { color: #dc2626; border-color: #ef4444; background: #fef2f2; }
+
+        @keyframes pulsar {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.55; }
+        }
+        .kanban-card-data.pulsar { animation: pulsar 1.2s ease-in-out infinite; }
 
         /* ---------- BOTÕES AÇÃO NO CARD (editar / deletar) ---------- */
         .kanban-card-acoes {
@@ -938,6 +973,16 @@
                 >
             </div>
 
+            <!-- Data de Instalação -->
+            <div class="form-grupo">
+                <label class="form-label" for="input-data-instalacao">Data de Instalação <span style="color:#94a3b8;font-weight:400;">(opcional)</span></label>
+                <input
+                    type="date"
+                    id="input-data-instalacao"
+                    class="form-input"
+                >
+            </div>
+
             <!-- Tarefas -->
             <div class="form-grupo">
                 <label class="form-label">Tarefas do Projeto</label>
@@ -983,6 +1028,16 @@
                     placeholder="Título do projeto..."
                     maxlength="255"
                     autocomplete="off"
+                >
+            </div>
+
+            <!-- Data de Instalação -->
+            <div class="form-grupo">
+                <label class="form-label" for="editar-data-instalacao">Data de Instalação <span style="color:#94a3b8;font-weight:400;">(opcional)</span></label>
+                <input
+                    type="date"
+                    id="editar-data-instalacao"
+                    class="form-input"
                 >
             </div>
 
