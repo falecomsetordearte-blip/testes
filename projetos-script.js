@@ -186,20 +186,32 @@ function criarElementoCard(projeto) {
     card.dataset.id = projeto.id;
     card.draggable = true;
 
-    card.innerHTML = `
-        <div class="kanban-card-titulo">${escapeHtml(projeto.titulo)}</div>
-        <div class="kanban-card-meta">
-            <span class="kanban-card-tarefas">
-                <i class="fas fa-check-square"></i> ${concluidas}/${total} tarefas
-            </span>
+    // Monta lista de tarefas inline
+    const tarefasHtml = total > 0 ? `
+        <div class="kanban-card-tarefas-lista">
+            ${projeto.tarefas.map(t => `
+                <label class="kanban-card-tarefa-item ${t.concluida ? 'concluida' : ''}" data-tarefa-id="${t.id}">
+                    <input
+                        type="checkbox"
+                        class="kanban-card-tarefa-check"
+                        ${t.concluida ? 'checked' : ''}
+                        onchange="event.stopPropagation(); toggleTarefa(${t.id}, this.checked, ${projeto.id})"
+                    >
+                    <span class="kanban-card-tarefa-texto">${escapeHtml(t.texto)}</span>
+                </label>
+            `).join('')}
         </div>
-        ${total > 0 ? `
         <div class="kanban-card-progresso-wrap">
             <div class="kanban-card-progresso-barra">
                 <div class="kanban-card-progresso-fill" style="width: ${percentual}%"></div>
             </div>
             <span class="kanban-card-progresso-pct">${percentual}%</span>
-        </div>` : ''}
+        </div>
+    ` : '';
+
+    card.innerHTML = `
+        <div class="kanban-card-titulo">${escapeHtml(projeto.titulo)}</div>
+        ${tarefasHtml}
     `;
 
     // Drag start
@@ -217,9 +229,10 @@ function criarElementoCard(projeto) {
         document.querySelectorAll('.kanban-cards-area').forEach(a => a.classList.remove('drag-over'));
     });
 
-    // Clique abre modal de detalhe
-    card.addEventListener('click', () => {
-        if (state.draggingId !== null) return; // evita abrir durante drag
+    // Clique no título (fora das tarefas) abre modal de detalhe
+    card.addEventListener('click', (e) => {
+        if (state.draggingId !== null) return;
+        if (e.target.closest('.kanban-card-tarefas-lista')) return; // checkboxes não abrem modal
         abrirModalDetalhe(projeto.id);
     });
 
@@ -445,25 +458,30 @@ function renderizarTarefasDetalhe(projeto) {
 // ============================================================
 // TOGGLE TAREFA (API)
 // ============================================================
-async function toggleTarefa(tarefaId, concluida) {
+async function toggleTarefa(tarefaId, concluida, projetoIdOverride) {
     console.log(`[Projetos] Toggle tarefa #${tarefaId} → concluida: ${concluida}`);
 
-    // Atualiza estado local imediatamente (UI otimista)
-    const projetoId = Number(document.getElementById('modal-detalhe')?.dataset.projetoId);
+    // Busca o projeto — usa override (chamada do card inline) ou o modal aberto
+    const projetoId = projetoIdOverride != null
+        ? Number(projetoIdOverride)
+        : Number(document.getElementById('modal-detalhe')?.dataset.projetoId);
     const projeto = state.projetos.find(p => p.id === projetoId);
-    
+
     if (projeto) {
         const tarefa = projeto.tarefas.find(t => t.id === tarefaId);
         if (tarefa) tarefa.concluida = concluida;
-        atualizarBarraProgresso(projeto);
 
-        // Atualiza o label da tarefa visualmente
-        const label = document.querySelector(`[data-tarefa-id="${tarefaId}"]`);
-        if (label) {
-            label.classList.toggle('concluida', concluida);
+        // Atualiza modal se estiver aberto para este projeto
+        const modalEl = document.getElementById('modal-detalhe');
+        const modalAberto = modalEl?.classList.contains('ativo');
+        const modalProjetoId = Number(modalEl?.dataset.projetoId);
+        if (modalAberto && modalProjetoId === projetoId) {
+            atualizarBarraProgresso(projeto);
+            const labelModal = document.querySelector(`#detalhe-tarefas-lista [data-tarefa-id="${tarefaId}"]`);
+            if (labelModal) labelModal.classList.toggle('concluida', concluida);
         }
 
-        // Atualiza o card no board
+        // Atualiza o card no board (tarefas + barra)
         atualizarCardNoBoard(projeto);
     }
 
@@ -487,8 +505,13 @@ async function toggleTarefa(tarefaId, concluida) {
         if (projeto) {
             const tarefa = projeto.tarefas.find(t => t.id === tarefaId);
             if (tarefa) tarefa.concluida = !concluida;
-            atualizarBarraProgresso(projeto);
             atualizarCardNoBoard(projeto);
+            const modalEl = document.getElementById('modal-detalhe');
+            if (modalEl?.classList.contains('ativo') && Number(modalEl.dataset.projetoId) === projetoId) {
+                atualizarBarraProgresso(projeto);
+                const labelModal = document.querySelector(`#detalhe-tarefas-lista [data-tarefa-id="${tarefaId}"]`);
+                if (labelModal) labelModal.classList.toggle('concluida', !concluida);
+            }
         }
         alert('Erro ao atualizar a tarefa. Tente novamente.');
     }
@@ -502,13 +525,22 @@ function atualizarCardNoBoard(projeto) {
     const concluidas = projeto.tarefas?.filter(t => t.concluida).length || 0;
     const percentual = total > 0 ? Math.round((concluidas / total) * 100) : 0;
 
-    const metaEl  = card.querySelector('.kanban-card-tarefas');
-    const fillEl  = card.querySelector('.kanban-card-progresso-fill');
-    const pctEl   = card.querySelector('.kanban-card-progresso-pct');
+    // Atualiza barra de progresso
+    const fillEl = card.querySelector('.kanban-card-progresso-fill');
+    const pctEl  = card.querySelector('.kanban-card-progresso-pct');
+    if (fillEl) fillEl.style.width = `${percentual}%`;
+    if (pctEl)  pctEl.textContent  = `${percentual}%`;
 
-    if (metaEl)  metaEl.innerHTML  = `<i class="fas fa-check-square"></i> ${concluidas}/${total} tarefas`;
-    if (fillEl)  fillEl.style.width = `${percentual}%`;
-    if (pctEl)   pctEl.textContent  = `${percentual}%`;
+    // Atualiza estado visual de cada tarefa inline
+    projeto.tarefas?.forEach(t => {
+        const label = card.querySelector(`.kanban-card-tarefa-item[data-tarefa-id="${t.id}"]`);
+        if (!label) return;
+        label.classList.toggle('concluida', t.concluida);
+        const check = label.querySelector('.kanban-card-tarefa-check');
+        if (check) check.checked = t.concluida;
+    });
+
+    console.log(`[Projetos] Card #${projeto.id} atualizado no board: ${percentual}% (${concluidas}/${total})`);
 }
 
 // ============================================================

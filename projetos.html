@@ -747,6 +747,70 @@
         [data-theme="dark"] .kanban-card-progresso-barra {
             background: #334155;
         }
+
+        /* ---------- TAREFAS INLINE NO CARD ---------- */
+        .kanban-card-tarefas-lista {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .kanban-card-tarefa-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: background 0.15s;
+            user-select: none;
+        }
+
+        .kanban-card-tarefa-item:hover {
+            background: #f1f5f9;
+        }
+
+        .kanban-card-tarefa-item.concluida {
+            opacity: 0.65;
+        }
+
+        .kanban-card-tarefa-check {
+            width: 15px;
+            height: 15px;
+            accent-color: #4f46e5;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-top: 3px;
+        }
+
+        .kanban-card-tarefa-texto {
+            font-size: 0.82rem;
+            color: #334155;
+            line-height: 1.45;
+            transition: color 0.2s, text-decoration 0.2s;
+        }
+
+        .kanban-card-tarefa-item.concluida .kanban-card-tarefa-texto {
+            text-decoration: line-through;
+            color: #94a3b8;
+        }
+
+        .kanban-card-titulo {
+            cursor: pointer;
+        }
+
+        .kanban-card-titulo:hover {
+            color: #4f46e5;
+        }
+
+        [data-theme="dark"] .kanban-card-tarefa-item:hover {
+            background: #1e293b;
+        }
+
+        [data-theme="dark"] .kanban-card-tarefa-texto {
+            color: #cbd5e1;
+        }
     </style>
 </head>
 <body>
