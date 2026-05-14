@@ -116,21 +116,35 @@ async function carregarProjetos() {
 // RENDERIZAR KANBAN
 // ============================================================
 function renderizarKanban() {
-    console.log('[Projetos] Renderizando Kanban...');
+    console.log('[Projetos] Renderizando cards...');
     const board = document.getElementById('kanban-board');
     if (!board) return;
-
     board.innerHTML = '';
 
-    COLUNAS.forEach(col => {
-        const projetosDaColuna = state.projetos.filter(p => p.coluna === col.id);
-        console.log(`[Projetos] Coluna ${col.label}: ${projetosDaColuna.length} projeto(s).`);
+    const ordenados = ordenarPorData(state.projetos);
+    console.log(`[Projetos] ${ordenados.length} projeto(s) ordenados por data.`);
 
-        const colEl = criarElementoColuna(col, projetosDaColuna);
-        board.appendChild(colEl);
+    if (ordenados.length === 0) {
+        board.innerHTML = `<div class="kanban-vazio" style="padding:48px;text-align:center;grid-column:1/-1">
+            <i class="fas fa-folder-open" style="font-size:2rem;display:block;margin-bottom:12px;color:#c7d2fe;"></i>
+            Nenhum projeto cadastrado.
+        </div>`;
+        return;
+    }
+
+    ordenados.forEach(projeto => board.appendChild(criarElementoCard(projeto)));
+    console.log('[Projetos] Cards renderizados.');
+}
+
+function ordenarPorData(projetos) {
+    return [...projetos].sort((a, b) => {
+        const da = a.data_instalacao ? new Date(String(a.data_instalacao).substring(0, 10) + 'T00:00:00') : null;
+        const db = b.data_instalacao ? new Date(String(b.data_instalacao).substring(0, 10) + 'T00:00:00') : null;
+        if (da && db) return da - db;
+        if (da) return -1; // com data vem primeiro
+        if (db) return 1;  // sem data vai por último
+        return a.id - b.id;
     });
-
-    console.log('[Projetos] Kanban renderizado.');
 }
 
 function criarElementoColuna(col, projetos) {
@@ -226,55 +240,38 @@ function criarElementoCard(projeto) {
         </div>
     ` : '';
 
+    const ESTAGIO = {
+        PRODUCAO: { label: 'Produção', icone: 'fa-cog',      cls: 'estagio-producao' },
+        AGENDAR:  { label: 'Agendar',   icone: 'fa-calendar', cls: 'estagio-agendar'  },
+        INSTALAR: { label: 'Instalar',  icone: 'fa-wrench',   cls: 'estagio-instalar' },
+    };
+    const est = ESTAGIO[projeto.coluna] || ESTAGIO.PRODUCAO;
+    const estagioBadge = `<div class="kanban-card-estagio ${est.cls}"><i class="fas ${est.icone}"></i> ${est.label}</div>`;
+
     // Badge de data de instalação
     let dataBadgeHtml = '';
     if (projeto.data_instalacao) {
         const urgencia = calcularUrgenciaData(projeto.data_instalacao);
-        dataBadgeHtml = `
-            <div class="kanban-card-data urgencia-${urgencia.classe}${urgencia.pulsar ? ' pulsar' : ''}">
-                <i class="fas fa-calendar-day"></i>
-                ${formatarData(projeto.data_instalacao)} &mdash; ${urgencia.label}
-            </div>
-        `;
+        dataBadgeHtml = `<div class="kanban-card-data urgencia-${urgencia.classe}${urgencia.pulsar ? ' pulsar' : ''}">
+            <i class="fas fa-calendar-day"></i> ${formatarData(projeto.data_instalacao)} &mdash; ${urgencia.label}
+        </div>`;
     }
 
     card.innerHTML = `
+        ${estagioBadge}
         <div class="kanban-card-titulo">${escapeHtml(projeto.titulo)}</div>
         ${dataBadgeHtml}
         ${tarefasHtml}
         <div class="kanban-card-acoes">
-            <button
-                class="btn-card-acao btn-card-editar"
-                title="Editar projeto"
-                onclick="event.stopPropagation(); abrirModalEdicao(${projeto.id})"
-            ><i class="fas fa-pen"></i> Editar</button>
-            <button
-                class="btn-card-acao btn-card-deletar"
-                title="Deletar projeto"
-                onclick="event.stopPropagation(); deletarProjeto(${projeto.id})"
-            ><i class="fas fa-trash"></i> Deletar</button>
+            <button class="btn-card-acao btn-card-editar" onclick="event.stopPropagation(); abrirModalEdicao(${projeto.id})"><i class="fas fa-pen"></i> Editar</button>
+            <button class="btn-card-acao btn-card-deletar" onclick="event.stopPropagation(); deletarProjeto(${projeto.id})"><i class="fas fa-trash"></i> Deletar</button>
         </div>
     `;
 
-    // Drag start
-    card.addEventListener('dragstart', (e) => {
-        state.draggingId = projeto.id;
-        e.dataTransfer.setData('projetoId', projeto.id);
-        e.dataTransfer.setData('colunaOrigem', projeto.coluna);
-        card.classList.add('dragging');
-        console.log(`[Projetos] Drag start: projeto #${projeto.id} (${projeto.coluna})`);
-    });
-
-    card.addEventListener('dragend', () => {
-        card.classList.remove('dragging');
-        state.draggingId = null;
-        document.querySelectorAll('.kanban-cards-area').forEach(a => a.classList.remove('drag-over'));
-    });
-
-    // Clique no título (fora das tarefas) abre modal de detalhe
+    // Clique no card (fora de tarefas e botões) abre modal de detalhe
     card.addEventListener('click', (e) => {
-        if (state.draggingId !== null) return;
-        if (e.target.closest('.kanban-card-tarefas-lista')) return; // checkboxes não abrem modal
+        if (e.target.closest('.kanban-card-tarefas-lista')) return;
+        if (e.target.closest('.kanban-card-acoes')) return;
         abrirModalDetalhe(projeto.id);
     });
 
@@ -400,7 +397,7 @@ async function salvarProjeto() {
                 titulo,
                 tarefas,
                 dataInstalacao,
-                coluna: 'PRODUCAO' // sempre começa em Produção
+                coluna: document.getElementById('input-coluna-projeto')?.value || 'PRODUCAO'
             })
         });
 
@@ -604,21 +601,8 @@ function escapeHtml(str) {
 function mostrarLoadingColunas(show) {
     const board = document.getElementById('kanban-board');
     if (!board) return;
-
     if (show) {
-        board.innerHTML = COLUNAS.map(col => `
-            <div class="kanban-coluna">
-                <div class="kanban-coluna-header">
-                    <span class="kanban-coluna-titulo">${col.label}</span>
-                </div>
-                <div class="kanban-cards-area">
-                    <div class="kanban-loading">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <span>Carregando...</span>
-                    </div>
-                </div>
-            </div>
-        `).join('');
+        board.innerHTML = `<div class="kanban-loading">Carregando...</div>`;
     }
 }
 
@@ -677,12 +661,15 @@ function abrirModalEdicao(projetoId) {
     document.getElementById('editar-projeto-id').value = projetoId;
     document.getElementById('editar-titulo-projeto').value = projeto.titulo;
 
+    // Preenche estágio
+    const selectEstagio = document.getElementById('editar-coluna-projeto');
+    if (selectEstagio) selectEstagio.value = projeto.coluna || 'PRODUCAO';
+    
     // Preenche data de instalação
     const dataRaw = projeto.data_instalacao
         ? String(projeto.data_instalacao).substring(0, 10)
         : '';
     document.getElementById('editar-data-instalacao').value = dataRaw;
-    console.log(`[Projetos] Data de instalação pré-preenchida: ${dataRaw || 'vazia'}`);
 
     // Preenche tarefas existentes
     const lista = document.getElementById('lista-tarefas-editar');
@@ -776,7 +763,14 @@ async function salvarEdicao() {
         const res = await fetch('/api/projetos/editar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionToken: state.sessionToken, projetoId, titulo, tarefas, dataInstalacao })
+            body: JSON.stringify({
+                sessionToken: state.sessionToken,
+                projetoId,
+                titulo,
+                tarefas,
+                dataInstalacao,
+                coluna: document.getElementById('editar-coluna-projeto')?.value || 'PRODUCAO'
+            })
         });
 
         if (!res.ok) {

@@ -68,10 +68,10 @@
         /* ---------- KANBAN BOARD ---------- */
         #kanban-board {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 18px;
             align-items: start;
-            min-height: 70vh;
+            min-height: 40vh;
         }
 
         /* ---------- COLUNA ---------- */
@@ -821,6 +821,41 @@
             color: #cbd5e1;
         }
 
+        /* ---------- BADGE ESTÁGIO NO CARD ---------- */
+        .kanban-card-estagio {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 99px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .kanban-card-estagio.estagio-producao { background: #eef2ff; color: #4f46e5; }
+        .kanban-card-estagio.estagio-agendar  { background: #fffbeb; color: #d97706; }
+        .kanban-card-estagio.estagio-instalar { background: #f0fdf4; color: #059669; }
+
+        /* Select dentro do modal */
+        .form-select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-family: 'Poppins', sans-serif;
+            color: #1e293b;
+            outline: none;
+            background: #fff;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+        .form-select:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.12); }
+        [data-theme="dark"] .form-select { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+
         /* ---------- BADGE DATA DE INSTALAÇÃO ---------- */
         .kanban-card-data {
             display: inline-flex;
@@ -973,14 +1008,20 @@
                 >
             </div>
 
+            <!-- Estágio -->
+            <div class="form-grupo">
+                <label class="form-label" for="input-coluna-projeto">Estágio</label>
+                <select id="input-coluna-projeto" class="form-select">
+                    <option value="PRODUCAO">⚙️ Produção</option>
+                    <option value="AGENDAR">📅 Agendar</option>
+                    <option value="INSTALAR">🔧 Instalar</option>
+                </select>
+            </div>
+
             <!-- Data de Instalação -->
             <div class="form-grupo">
                 <label class="form-label" for="input-data-instalacao">Data de Instalação <span style="color:#94a3b8;font-weight:400;">(opcional)</span></label>
-                <input
-                    type="date"
-                    id="input-data-instalacao"
-                    class="form-input"
-                >
+                <input type="date" id="input-data-instalacao" class="form-input">
             </div>
 
             <!-- Tarefas -->
@@ -1031,14 +1072,20 @@
                 >
             </div>
 
+            <!-- Estágio -->
+            <div class="form-grupo">
+                <label class="form-label" for="editar-coluna-projeto">Estágio</label>
+                <select id="editar-coluna-projeto" class="form-select">
+                    <option value="PRODUCAO">⚙️ Produção</option>
+                    <option value="AGENDAR">📅 Agendar</option>
+                    <option value="INSTALAR">🔧 Instalar</option>
+                </select>
+            </div>
+
             <!-- Data de Instalação -->
             <div class="form-grupo">
                 <label class="form-label" for="editar-data-instalacao">Data de Instalação <span style="color:#94a3b8;font-weight:400;">(opcional)</span></label>
-                <input
-                    type="date"
-                    id="editar-data-instalacao"
-                    class="form-input"
-                >
+                <input type="date" id="editar-data-instalacao" class="form-input">
             </div>
 
             <!-- Tarefas -->

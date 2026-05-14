@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
         return res.status(405).json({ message: 'Método não permitido.' });
     }
 
-    const { sessionToken, projetoId, titulo, tarefas, dataInstalacao } = req.body;
+    const { sessionToken, projetoId, titulo, tarefas, dataInstalacao, coluna } = req.body;
 
     if (!sessionToken) {
         console.warn('[Projetos/Editar] Token de sessão ausente.');
@@ -74,12 +74,20 @@ module.exports = async (req, res) => {
 
         console.log(`[Projetos/Editar] Atualizando projeto #${projetoId}: "${titulo}" com ${tarefasTexto.length} tarefa(s).`);
 
-        // Atualiza título e data de instalação
+        const colunaValida = ['PRODUCAO', 'AGENDAR', 'INSTALAR'];
+        const colunaFinal = colunaValida.includes(coluna) ? coluna : null;
+
+        // Atualiza título, estágio e data de instalação
         const dataInstalacaoFinal = dataInstalacao || null;
-        await prisma.$queryRawUnsafe(
-            `UPDATE kanban_projetos SET titulo = $1, data_instalacao = $2::date, atualizado_em = NOW() WHERE id = $3 AND empresa_id = $4`,
-            titulo.trim(), dataInstalacaoFinal, Number(projetoId), empresaId
-        );
+        const updateQuery = colunaFinal
+            ? `UPDATE kanban_projetos SET titulo = $1, coluna = $2, data_instalacao = $3::date, atualizado_em = NOW() WHERE id = $4 AND empresa_id = $5`
+            : `UPDATE kanban_projetos SET titulo = $1, data_instalacao = $2::date, atualizado_em = NOW() WHERE id = $3 AND empresa_id = $4`;
+        const updateParams = colunaFinal
+            ? [titulo.trim(), colunaFinal, dataInstalacaoFinal, Number(projetoId), empresaId]
+            : [titulo.trim(), dataInstalacaoFinal, Number(projetoId), empresaId];
+
+        await prisma.$queryRawUnsafe(updateQuery, ...updateParams);
+        console.log(`[Projetos/Editar] título="${titulo}" estágio=${colunaFinal||'(sem alteração)'} data=${dataInstalacao||'null'}`);
 
         // Deleta tarefas antigas e recria (estratégia mais simples e segura)
         await prisma.$queryRawUnsafe(
