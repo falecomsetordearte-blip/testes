@@ -493,22 +493,46 @@ window.produzirCardDireto = function (cardId, btnElement, event) {
 
 window.confirmarExclusaoCard = function (cardId, event) {
     if (event) event.stopPropagation();
-    window.adminCustomDialog({
-        type: 'confirm',
-        title: 'Excluir Card',
-        message: "Deseja realmente excluir este card permanentemente?",
-        onConfirm: async () => {
-            try {
-                const res = await fetch('/api/crm/deleteCard', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: cardId })
-                });
-                if (res.ok) { showToast("Card excluído!", "success"); carregarKanban(); carregarMetasCRM(); }
-                else { showToast("Erro ao excluir.", "error"); }
-            } catch (err) { showToast("Erro de conexão.", "error"); }
+    console.log(`[DEBUG] Clicou para excluir o card CRM ID: ${cardId}`);
+    
+    const execDelete = async () => {
+        console.log(`[DEBUG] Confirmou exclusão do card CRM ID: ${cardId}`);
+        try {
+            const res = await fetch('/api/crm/deleteCard', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), cardId: cardId })
+            });
+            if (res.ok) { 
+                console.log(`[DEBUG] Card CRM ID: ${cardId} excluído com sucesso.`);
+                if (typeof showToast === 'function') showToast("Card excluído!", "success"); 
+                else alert("Card excluído com sucesso!");
+                carregarKanban(); 
+                carregarMetasCRM(); 
+            } else { 
+                console.error(`[DEBUG] Erro da API ao excluir o card CRM ID: ${cardId}`);
+                if (typeof showToast === 'function') showToast("Erro ao excluir.", "error"); 
+                else alert("Erro ao excluir o card.");
+            }
+        } catch (err) { 
+            console.error(`[DEBUG] Erro de rede ao tentar excluir o card CRM ID: ${cardId}`, err);
+            if (typeof showToast === 'function') showToast("Erro de conexão.", "error"); 
+            else alert("Erro de conexão ao tentar excluir.");
         }
-    });
+    };
+
+    if (typeof window.adminCustomDialog === 'function') {
+        window.adminCustomDialog({
+            type: 'confirm',
+            title: 'Excluir Card',
+            message: "Deseja realmente excluir este card permanentemente?",
+            onConfirm: execDelete
+        });
+    } else {
+        if (confirm("Deseja realmente excluir este card permanentemente?")) {
+            execDelete();
+        }
+    }
 };
 
 document.getElementById('form-crm').addEventListener('submit', async (e) => {
