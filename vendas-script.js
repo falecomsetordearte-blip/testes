@@ -68,9 +68,13 @@
             const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(deal.OPPORTUNITY) || 0);
             const isAdmin = localStorage.getItem('userPermissoes')?.includes('"admin"');
             const adminHtml = isAdmin ? `<div class="btn-master-icon" onclick="event.stopPropagation(); if(window.abrirAdminModal) window.abrirAdminModal('${deal.ID}')" title="Ações Forçadas do Mestre (BD)"><i class="fas fa-ellipsis-v"></i></div>` : '';
+            
+            // Adicionado ícone de lixeira
+            const trashHtml = isAdmin ? `<button class="btn-card-delete" data-deal-id="${deal.ID}" style="position: absolute; top: 8px; left: 8px; background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 1rem; z-index: 50;"><i class="fas fa-trash-alt"></i></button>` : '';
 
             return `
                 <div class="kanban-card" data-deal-id="${deal.ID}" style="position: relative;">
+                    ${trashHtml}
                     ${adminHtml}
                     <div class="card-title">${deal.TITLE}</div>
                     <div class="card-contact">${deal.CONTACT_NAME}</div>
@@ -181,6 +185,44 @@
                 const columnKey = event.target.dataset.column;
                 fetchAndRenderDeals(columnKey, true);
             }
+            
+            // Listener para o botão de excluir (lixeira)
+            if (event.target.closest('.btn-card-delete')) {
+                const button = event.target.closest('.btn-card-delete');
+                const dealId = button.dataset.dealId;
+                console.log(`[DEBUG] Clicou na lixeira do card ID: ${dealId}`);
+                
+                window.adminCustomDialog({
+                    type: 'confirm',
+                    title: 'Excluir Pedido',
+                    message: `Tem certeza que deseja excluir permanentemente o pedido #${dealId} da tela de Vendas?`,
+                    onConfirm: async () => {
+                        console.log(`[DEBUG] Confirmou exclusão do card ID: ${dealId}`);
+                        try {
+                            const res = await fetch('/api/admin/deleteDeal', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ sessionToken: sessionToken, dealId: dealId })
+                            });
+                            
+                            if (!res.ok) {
+                                const errData = await res.json();
+                                throw new Error(errData.message || 'Erro ao excluir no servidor.');
+                            }
+                            
+                            console.log(`[DEBUG] Card ID: ${dealId} excluído com sucesso do servidor.`);
+                            const cardElement = button.closest('.kanban-card');
+                            if(cardElement) cardElement.remove();
+                            
+                            window.adminCustomDialog({ type: 'alert', title: 'Sucesso', message: 'Pedido excluído com sucesso!' });
+                        } catch (e) {
+                            console.error(`[DEBUG] Erro ao excluir card ID: ${dealId} - `, e);
+                            window.adminCustomDialog({ type: 'alert', title: 'Erro', message: `Erro ao excluir: ${e.message}` });
+                        }
+                    }
+                });
+            }
+
             if (event.target.classList.contains('card-button-produzir')) {
                 const dealId = event.target.dataset.dealId;
                 window.adminCustomDialog({
