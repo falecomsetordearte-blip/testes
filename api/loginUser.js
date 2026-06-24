@@ -92,6 +92,9 @@ module.exports = async (req, res) => {
             permissoesFinal = typeof usuario.permissoes === 'string'
                 ? JSON.parse(usuario.permissoes)
                 : usuario.permissoes;
+        } else if (!isNovoUsuario) {
+            // O titular/criador da conta (tabela empresas) deve ter permissão total (admin)
+            permissoesFinal = ["admin"];
         }
 
         return res.status(200).json({
