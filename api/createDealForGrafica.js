@@ -14,13 +14,14 @@ module.exports = async (req, res) => {
     console.log("--- [DEBUG] INICIANDO REQUISIÇÃO DE PEDIDO ---");
 
     try {
-        const { sessionToken, arte, supervisaoWpp, valorDesigner, tipoEntrega, notificarCliente, ...formData } = req.body;
+        const { sessionToken, arte, supervisaoWpp, valorDesigner, tipoEntrega, notificarCliente, dataEntrega, ...formData } = req.body;
 
         // Log para ver se o token está chegando do frontend
         console.log(`[DEBUG] Token Recebido: "${sessionToken ? sessionToken.substring(0, 15) + '...' : 'NULL'}"`);
 
         // Log para investigar TODAS as variáveis que o frontend está mandando
         console.log(`[DEBUG] Dados brutos recebidos (formData):`, JSON.stringify(formData));
+        console.log(`[DEBUG] Data de entrega recebida do CRM: "${dataEntrega || 'nenhuma — prazo padrão das configurações será usado'}"`);
 
         // 1. Identificar Empresa
         const empresas = await prisma.$queryRawUnsafe(
@@ -59,6 +60,20 @@ module.exports = async (req, res) => {
         // Se não vier especificado, o padrão é SIM (true)
         const deveNotificar = notificarCliente !== false;
 
+        // Resolve data de entrega: usa a fornecida pelo vendedor se válida, senão NULL (impressão usará prazo padrão)
+        let dataEntregaFinal = null;
+        if (dataEntrega) {
+            const dtParsed = new Date(dataEntrega);
+            if (!isNaN(dtParsed.getTime())) {
+                // Garante que a hora seja o fim do dia (23:59) para não causar problemas de fuso
+                dtParsed.setHours(23, 59, 0, 0);
+                dataEntregaFinal = dtParsed;
+                console.log(`[DEBUG] Data de entrega válida. Será salva no pedido: ${dataEntregaFinal.toISOString()}`);
+            } else {
+                console.warn(`[DEBUG] Data de entrega inválida recebida: "${dataEntrega}". Ignorando — prazo padrão será usado.`);
+            }
+        }
+
         console.log(`[DEBUG] Etapa Destino: ${etapaDestino} | Valor Designer: ${valorParaSalvar} | Deve Notificar: ${deveNotificar}`);
 
         // 3. Inserir Pedido no Banco
@@ -67,9 +82,9 @@ module.exports = async (req, res) => {
             INSERT INTO pedidos (
                 empresa_id, titulo, nome_cliente, whatsapp_cliente, 
                 servico, tipo_arte, briefing_completo, etapa, 
-                valor_designer, link_arquivo_impressao, notificar_cliente, created_at, bitrix_deal_id
+                valor_designer, link_arquivo_impressao, notificar_cliente, data_entrega, created_at, bitrix_deal_id
             ) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), 0)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), 0)
             RETURNING id
         `,
             empresa.id,
@@ -82,11 +97,12 @@ module.exports = async (req, res) => {
             etapaDestino,
             valorParaSalvar,
             linkParaAnexo, // Usamos a variável normalizada aqui também
-            deveNotificar
+            deveNotificar,
+            dataEntregaFinal  // NULL se não informada → sistema de impressão usará prazo padrão das configurações
         );
 
         const newPedidoId = insertResult[0].id;
-        console.log(`[OK] Pedido salvo com Sucesso! ID: ${newPedidoId}`);
+        console.log(`[OK] Pedido salvo com Sucesso! ID: ${newPedidoId} | data_entrega: ${dataEntregaFinal ? dataEntregaFinal.toISOString() : 'NULL (prazo padrão será aplicado na impressão)'}`);
 
         // --- 3.5. [NOVO] Gatilho de Marketing: Cadastrar/Atualizar Cliente ---
         if (formData.wppCliente) {

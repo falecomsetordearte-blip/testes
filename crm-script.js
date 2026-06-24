@@ -431,6 +431,10 @@ window.produzirCardDireto = function (cardId, btnElement, event) {
         const chkNotificar = document.getElementById('notificar-cliente');
         const notificarCliente = chkNotificar ? chkNotificar.checked : true;
 
+        // Lê a data de entrega salva no briefing_json do card
+        const dataEntregaCard = extras.data_entrega || null;
+        console.log(`[DEBUG] produzirCardDireto — dataEntrega lida do card: "${dataEntregaCard || 'nenhuma (usará prazo padrão das configurações)'}"`);
+
         const payload = {
             sessionToken: localStorage.getItem('sessionToken'),
             titulo: card.titulo_automatico,
@@ -445,7 +449,8 @@ window.produzirCardDireto = function (cardId, btnElement, event) {
             valorDesigner: extras.valor_designer,
             formato: extras.formato,
             cdrVersao: extras.cdr_versao,
-            notificarCliente: notificarCliente
+            notificarCliente: notificarCliente,
+            dataEntrega: dataEntregaCard  // Passa a data de entrega para o backend
         };
 
         if (cardElementHTML) cardElementHTML.classList.add('card-is-loading');
@@ -562,6 +567,9 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
         if (desc) mats.push({ descricao: desc, detalhes: d.querySelector('.mat-det').value });
     });
 
+    const dataEntregaInput = document.getElementById('crm-data-entrega').value;
+    console.log(`[DEBUG] Data de entrega informada no form: "${dataEntregaInput || 'nenhuma'}"`); 
+
     const payload = {
         sessionToken: localStorage.getItem('sessionToken'),
         id: document.getElementById('card-id-db').value,
@@ -581,7 +589,8 @@ document.getElementById('form-crm').addEventListener('submit', async (e) => {
             supervisao_wpp: document.getElementById('pedido-supervisao').value,
             valor_designer: document.getElementById('valor-designer').value,
             formato: document.getElementById('pedido-formato').value,
-            cdr_versao: document.getElementById('cdr-versao').value
+            cdr_versao: document.getElementById('cdr-versao').value,
+            data_entrega: dataEntregaInput || null  // Salva a data de entrega no briefing_json
         })
     };
 
@@ -632,6 +641,10 @@ window.abrirPanelEdicao = function (card) {
     if (extras.valor_designer) document.getElementById('valor-designer').value = extras.valor_designer;
     if (extras.formato) document.getElementById('pedido-formato').value = extras.formato;
     if (extras.cdr_versao) document.getElementById('cdr-versao').value = extras.cdr_versao;
+    // Popula data de entrega se o card já tiver uma salva
+    const campoDataEntrega = document.getElementById('crm-data-entrega');
+    if (campoDataEntrega) campoDataEntrega.value = extras.data_entrega || '';
+    console.log(`[DEBUG] Data de entrega carregada no painel de edição: "${extras.data_entrega || 'nenhuma'}"`);
 
     const matContainer = document.getElementById('materiais-container');
     matContainer.innerHTML = '';
