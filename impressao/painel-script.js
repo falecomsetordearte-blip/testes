@@ -210,8 +210,11 @@
                     carregarPedidosDeImpressao();
                 });
 
+                const materiaisFiltrados = filters.materiais || [];
+                window.todosMateriais = materiaisFiltrados; // Salva para usar no modal
+
                 materialFilterEl.innerHTML = `<option value="">Todos os Materiais</option>`;
-                filters.materiais.forEach(option => { materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
+                materiaisFiltrados.forEach(option => { materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`; });
                 
                 if (savedMaterial) materialFilterEl.value = savedMaterial;
 
@@ -246,6 +249,7 @@
                 currentLocalCompanyId = data.localCompanyId || 0;
 
                 organizarPedidosNasColunas(allDealsData);
+                renderMateriaisBoard(allDealsData);
             } catch (error) {
                 console.error("Erro ao carregar pedidos de impressão:", error);
                 document.querySelectorAll('.column-cards').forEach(col => col.innerHTML = '<div style="text-align:center;color:#ccc;padding:10px;">Erro ao carregar</div>');
@@ -284,11 +288,122 @@
             });
 
             document.querySelectorAll('.column-cards').forEach(col => {
-                if (col.innerHTML === '') col.innerHTML = '<div style="text-align:center; padding:15px; color:#ccc; font-size:0.85rem;">Vazio</div>';
+                // Se for a coluna do Kanban padrão (não as de materiais, que podem estar vazias tbm, mas a gente trata lá)
+                if (col.id && col.id.startsWith('cards-') && col.innerHTML === '') {
+                    col.innerHTML = '<div style="text-align:center; padding:15px; color:#ccc; font-size:0.85rem;">Vazio</div>';
+                }
             });
         }
         
-        function createCardHtml(deal) {
+        function renderMateriaisBoard(deals) {
+            const boardMateriais = document.getElementById('board-materiais');
+            if (!boardMateriais) return;
+
+            const materiais = window.todosMateriais || [];
+            
+            // Cria estrutura base das colunas
+            let html = '';
+            
+            // Coluna "Sem Material"
+            html += `
+                <div class="kanban-column" style="background: transparent;">
+                    <div class="column-header" style="background-color: #95a5a6; color: white;">SEM MATERIAL</div>
+                    <div class="column-cards" id="mat-col-sem" data-mat-id="sem" ondragover="handleDragOverCard(event)" ondrop="handleDropCard(event, 'sem')"></div>
+                </div>
+            `;
+            
+            // Colunas para cada material
+            materiais.forEach(mat => {
+                html += `
+                    <div class="kanban-column" style="background: transparent;">
+                        <div class="column-header" style="background-color: #34495e; color: white;">${mat.value}</div>
+                        <div class="column-cards" id="mat-col-${mat.id}" data-mat-id="${mat.id}" ondragover="handleDragOverCard(event)" ondrop="handleDropCard(event, '${mat.id}')"></div>
+                    </div>
+                `;
+            });
+            
+            boardMateriais.innerHTML = html;
+
+            // Popula as colunas
+            deals.forEach(deal => {
+                const mats = deal.materiais_ids || [];
+                if (mats.length === 0) {
+                    const col = document.getElementById('mat-col-sem');
+                    if (col) col.innerHTML += createCardHtml(deal, true, 'sem');
+                } else {
+                    mats.forEach(matId => {
+                        const col = document.getElementById(`mat-col-${matId}`);
+                        if (col) col.innerHTML += createCardHtml(deal, true, matId);
+                    });
+                }
+            });
+
+            // Tratamento de colunas vazias
+            boardMateriais.querySelectorAll('.column-cards').forEach(col => {
+                if (col.innerHTML === '') col.innerHTML = '<div style="text-align:center; padding:15px; color:#ccc; font-size:0.85rem;">Vazio</div>';
+            });
+        }
+
+        // Global function for drag events
+        window.handleDragStartCard = function(e, dealId, sourceMatId) {
+            e.dataTransfer.setData('dealId', dealId);
+            e.dataTransfer.setData('sourceMatId', sourceMatId);
+        };
+        window.handleDragOverCard = function(e) {
+            e.preventDefault();
+        };
+        window.handleDropCard = async function(e, targetMatId) {
+            e.preventDefault();
+            const dealId = e.dataTransfer.getData('dealId');
+            const sourceMatId = e.dataTransfer.getData('sourceMatId');
+            
+            if (!dealId || !sourceMatId) return;
+            if (sourceMatId === targetMatId) return; // Não fez nada
+
+            const deal = allDealsData.find(d => String(d.ID) === String(dealId));
+            if (!deal) return;
+
+            let currentMats = deal.materiais_ids || [];
+            
+            // Remove o sourceMatId (se não for "sem")
+            if (sourceMatId !== 'sem') {
+                currentMats = currentMats.filter(id => String(id) !== String(sourceMatId));
+            }
+            
+            // Adiciona o targetMatId (se não for "sem" e ainda não existir)
+            if (targetMatId !== 'sem') {
+                const numTarget = Number(targetMatId);
+                if (!currentMats.includes(numTarget)) {
+                    currentMats.push(numTarget);
+                }
+            } else {
+                // Se moveu para "sem material", remove o source, e se sobrar nada, fica vazio.
+                // Mas geralmente quem arrasta para "sem" quer limpar. Vamos apenas deixar a remoção atuar.
+            }
+
+            // Atualiza memória
+            deal.materiais_ids = currentMats;
+            
+            // Re-renderiza o board
+            renderMateriaisBoard(allDealsData);
+
+            // Salva no banco
+            try {
+                const sessionToken = localStorage.getItem('sessionToken');
+                const res = await fetch('/api/impressao/savePedidoMateriais', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken, dealId, materiaisIds: currentMats })
+                });
+                if (!res.ok) throw new Error('Erro ao mover material');
+                showToast('Material atualizado!', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+                // Poderia reverter a memória aqui se necessário
+            }
+        };
+        
+        function createCardHtml(deal, isMaterialBoard = false, sourceMatId = null) {
             const nomeCliente = deal[NOME_CLIENTE_FIELD] || 'Cliente não informado';
             const statusId = deal[STATUS_IMPRESSAO_FIELD];
             const statusInfo = STATUS_MAP[statusId] || {};
@@ -304,8 +419,10 @@
             const isAdmin = localStorage.getItem('userPermissoes')?.includes('"admin"');
             const adminHtml = isAdmin ? `<div class="btn-master-icon" onclick="event.stopPropagation(); if(window.abrirAdminModal) window.abrirAdminModal('${deal.ID}')" title="Ações Forçadas do Mestre (BD)"><i class="fas fa-ellipsis-v"></i></div>` : '';
 
+            const dragAttrs = isMaterialBoard ? `draggable="true" ondragstart="handleDragStartCard(event, '${deal.ID}', '${sourceMatId}')"` : '';
+
             return `
-                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}" style="position: relative;">
+                <div class="kanban-card ${statusInfo.classe ? 'status-' + statusInfo.classe : ''}" data-deal-id-card="${deal.ID}" style="position: relative;" ${dragAttrs}>
                     ${adminHtml}
                     <div class="card-id">${displayId}</div>
                     <div class="card-client-name">${nomeCliente}</div>
@@ -379,7 +496,7 @@
                             <div class="info-item"><span>Medidas:</span>${medidasHtml}</div>
                         </div>
 
-                        <div class="card-detalhe" style="margin-top: 15px;">
+                        <div class="card-detalhe" style="margin-top: 0;">
                             <h4><i class="fa-solid fa-print"></i> Impressoras do Pedido</h4>
                             <div style="display: flex; gap: 8px; margin-top: 10px;">
                                 <select id="select-add-impressora" style="flex-grow: 1; padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.85rem;">
@@ -395,6 +512,22 @@
                             </div>
                         </div>
 
+                        <div class="card-detalhe" style="margin-top: 0;">
+                            <h4><i class="fa-solid fa-layer-group"></i> Materiais do Pedido</h4>
+                            <div style="display: flex; gap: 8px; margin-top: 10px;">
+                                <select id="select-add-material" style="flex-grow: 1; padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.85rem;">
+                                    <option value="">+ Vincular Material...</option>
+                                    ${(window.todosMateriais || []).map(mat => `<option value="${mat.id}">${mat.value}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div id="tags-materiais-container" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;">
+                                ${(deal.materiais_ids || []).map(id => {
+                                    const mat = (window.todosMateriais || []).find(m => String(m.id) === String(id));
+                                    return mat ? `<span class="material-tag" data-id="${mat.id}" style="background: #e8f4fd; padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; border: 1px solid #b3d9f5;">${mat.value} <i class="fa-solid fa-circle-xmark remove-mat-tag" style="cursor:pointer; color: #e74c3c;"></i></span>` : '';
+                                }).join('')}
+                            </div>
+                        </div>
+
                         <div class="card-detalhe">
                             <h4>Ações</h4>
                             ${actionsHtml}
@@ -405,6 +538,7 @@
             modal.classList.add('active');
             attachStatusStepListeners(deal.ID);
             attachModalImpressorasListeners(deal.ID);
+            attachModalMateriaisListeners(deal.ID);
         }
 
         function attachModalImpressorasListeners(dealId) {
@@ -464,6 +598,69 @@
                 container.addEventListener('click', async (e) => {
                     if (e.target.classList.contains('remove-tag')) {
                         e.target.closest('.impressora-tag').remove();
+                        await salvarNoBanco();
+                    }
+                });
+            }
+        }
+
+        function attachModalMateriaisListeners(dealId) {
+            const select = document.getElementById('select-add-material');
+            const container = document.getElementById('tags-materiais-container');
+
+            const salvarNoBanco = async () => {
+                const ids = [];
+                container.querySelectorAll('.material-tag').forEach(span => {
+                    ids.push(Number(span.getAttribute('data-id')));
+                });
+
+                try {
+                    const res = await fetch('/api/impressao/savePedidoMateriais', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sessionToken, dealId, materiaisIds: ids })
+                    });
+                    if (!res.ok) throw new Error('Erro ao salvar materiais');
+
+                    const dealMem = allDealsData.find(d => d.ID == dealId);
+                    if (dealMem) dealMem.materiais_ids = ids;
+
+                    showToast('Materiais atualizados!', 'success');
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            };
+
+            if (select) {
+                select.addEventListener('change', async () => {
+                    const idSelected = select.value;
+                    const nomeSelected = select.options[select.selectedIndex]?.text;
+                    if (!idSelected) return;
+
+                    let exists = false;
+                    container.querySelectorAll('.material-tag').forEach(span => {
+                        if (span.getAttribute('data-id') === idSelected) exists = true;
+                    });
+
+                    if (!exists) {
+                        const span = document.createElement('span');
+                        span.className = 'material-tag';
+                        span.setAttribute('data-id', idSelected);
+                        span.style.cssText = 'background: #e8f4fd; padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; border: 1px solid #b3d9f5;';
+                        span.innerHTML = `${nomeSelected} <i class="fa-solid fa-circle-xmark remove-mat-tag" style="cursor:pointer; color: #e74c3c;"></i>`;
+                        container.appendChild(span);
+
+                        await salvarNoBanco();
+                    }
+
+                    select.value = '';
+                });
+            }
+
+            if (container) {
+                container.addEventListener('click', async (e) => {
+                    if (e.target.classList.contains('remove-mat-tag')) {
+                        e.target.closest('.material-tag').remove();
                         await salvarNoBanco();
                     }
                 });
@@ -553,10 +750,49 @@
                 if (dealId) openDetailsModal(dealId);
             }
         });
-        
+
+        // Board de materiais também precisa abrir modal
+        const boardMateriais = document.getElementById('board-materiais');
+        if (boardMateriais) {
+            boardMateriais.addEventListener('click', (event) => {
+                const card = event.target.closest('.kanban-card');
+                if (card) {
+                    const dealId = card.dataset.dealIdCard;
+                    if (dealId) openDetailsModal(dealId);
+                }
+            });
+        }
+
+        // Toggles de Visão
+        const btnViewPrazo = document.getElementById('btn-view-prazo');
+        const btnViewMaterial = document.getElementById('btn-view-material');
+        const boardPrazo = document.querySelector('.kanban-board:not(#board-materiais)');
+
+        if (btnViewPrazo && btnViewMaterial) {
+            btnViewPrazo.addEventListener('click', () => {
+                boardPrazo.classList.remove('hidden'); boardPrazo.style.display = 'flex';
+                boardMateriais.classList.add('hidden'); boardMateriais.style.display = 'none';
+                btnViewPrazo.classList.add('active'); btnViewPrazo.style.background = '#4a90e2'; btnViewPrazo.style.color = 'white';
+                btnViewMaterial.classList.remove('active'); btnViewMaterial.style.background = 'transparent'; btnViewMaterial.style.color = '#7f8c8d';
+                localStorage.setItem('viewModeImpressao', 'prazo');
+            });
+            btnViewMaterial.addEventListener('click', () => {
+                boardPrazo.classList.add('hidden'); boardPrazo.style.display = 'none';
+                boardMateriais.classList.remove('hidden'); boardMateriais.style.display = 'flex';
+                btnViewMaterial.classList.add('active'); btnViewMaterial.style.background = '#4a90e2'; btnViewMaterial.style.color = 'white';
+                btnViewPrazo.classList.remove('active'); btnViewPrazo.style.background = 'transparent'; btnViewPrazo.style.color = '#7f8c8d';
+                localStorage.setItem('viewModeImpressao', 'material');
+            });
+        }
+
         async function init() {
             await carregarOpcoesDeFiltro();
             await carregarPedidosDeImpressao();
+
+            const savedView = localStorage.getItem('viewModeImpressao');
+            if (savedView === 'material' && btnViewMaterial) {
+                btnViewMaterial.click();
+            }
         }
         init();
     });

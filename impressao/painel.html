@@ -27,7 +27,13 @@
             <!-- Conteúdo específico desta página (Kanban) -->
             <main class="main-kanban app-content" style="padding: 0;">
                 <div class="kanban-header">
-                    <h1>Painel de Impressão</h1>
+                    <div style="display: flex; align-items: center; gap: 20px;">
+                        <h1 style="margin:0;">Painel de Impressão</h1>
+                        <div class="view-switcher" style="display: flex; gap: 5px; background: #fff; padding: 5px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                            <button id="btn-view-prazo" class="active" style="border: none; background: #4a90e2; color: white; padding: 8px 15px; cursor: pointer; border-radius: 6px; font-weight: 600;">Por Prazo</button>
+                            <button id="btn-view-material" style="border: none; background: transparent; color: #7f8c8d; padding: 8px 15px; cursor: pointer; border-radius: 6px; font-weight: 600;">Por Material</button>
+                        </div>
+                    </div>
                     <div class="filtros-pedidos">
                         <select id="impressora-filter">
                             <option value="">Todas as Impressoras</option>
@@ -77,6 +83,10 @@
                         </div>
                         <div class="column-cards" id="cards-SEM_DATA"></div>
                     </div>
+                </div>
+
+                <div class="kanban-board hidden" id="board-materiais" style="display: none;">
+                    <!-- Colunas de Materiais serão injetadas aqui pelo JS -->
                 </div>
             </main>
 

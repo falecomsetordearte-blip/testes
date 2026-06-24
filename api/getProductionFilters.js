@@ -29,19 +29,8 @@ module.exports = async (req, res) => {
             `, empresaId);
         }
 
-        // Se não houver materiais cadastrados, usar os defaults para não quebrar sistemas antigos
-        const materialOptions = materiaisLocais.length > 0 ? materiaisLocais : [
-            { id: '101', value: 'Adesivo Brilho' },
-            { id: '102', value: 'Adesivo Fosco' },
-            { id: '103', value: 'Adesivo Perfurado' },
-            { id: '104', value: 'Lona 440g' },
-            { id: '105', value: 'Lona 280g' },
-            { id: '106', value: 'Banner' },
-            { id: '107', value: 'Placa PS' },
-            { id: '108', value: 'Backdrop' },
-            { id: '109', value: 'Papel Fotográfico' },
-            { id: '110', value: 'Vinil de Recorte' }
-        ];
+        // Apenas materiais cadastrados pela empresa no banco — sem fallback hardcoded
+        const materialOptions = materiaisLocais;
 
         const tipoEntregaOptions = [
             { id: '201', value: 'Retirada no Balcão' },
