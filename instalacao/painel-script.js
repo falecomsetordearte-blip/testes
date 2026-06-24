@@ -695,11 +695,13 @@
         btnViewKanban.addEventListener('click', () => {
             boardKanban.classList.remove('hidden'); boardCalendar.classList.add('hidden');
             btnViewKanban.classList.add('active'); btnViewCalendar.classList.remove('active');
+            localStorage.setItem('viewModeInstExterna', 'kanban');
         });
         btnViewCalendar.addEventListener('click', () => {
             boardKanban.classList.add('hidden'); boardCalendar.classList.remove('hidden');
             btnViewKanban.classList.remove('active'); btnViewCalendar.classList.add('active');
             renderCalendar();
+            localStorage.setItem('viewModeInstExterna', 'calendar');
         });
 
         // Fechar modais
@@ -710,6 +712,11 @@
         });
 
         // Init
+        const savedView = localStorage.getItem('viewModeInstExterna');
+        if (savedView === 'calendar') {
+            // Usa o click para aproveitar toda a lógica de hide/show e render
+            btnViewCalendar.click();
+        }
         loadAllData();
     });
 })();

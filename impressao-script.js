@@ -42,8 +42,11 @@
                     }
                 });
 
+                const materiaisFiltrados = filters.materiais || [];
+                window.todosMateriais = materiaisFiltrados;
+
                 materialFilterEl.innerHTML = '<option value="">Todos os Materiais</option>';
-                filters.materiais.forEach(option => {
+                materiaisFiltrados.forEach(option => {
                     materialFilterEl.innerHTML += `<option value="${option.id}">${option.value}</option>`;
                 });
             } catch (error) {
@@ -190,6 +193,41 @@
                 </div>
             `;
 
+            // AREA DE MATERIAIS DO PEDIDO MULTI-SELECT
+            let tagsMateriaisHtml = '';
+            const materiaisSelecionados = deal.materiais_ids || []; // Array de IDs
+            if (window.todosMateriais) {
+                window.todosMateriais.forEach(mat => {
+                    if (materiaisSelecionados.includes(String(mat.id)) || materiaisSelecionados.includes(Number(mat.id))) {
+                        tagsMateriaisHtml += `<span class="material-tag" data-id="${mat.id}" style="background: #e2e8f0; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 5px;">${mat.value} <i class="fa-solid fa-xmark remove-mat-tag" style="cursor:pointer; color: #e74c3c;"></i></span>`;
+                    }
+                });
+            }
+
+            let optMateriaisHtml = '';
+            if (window.todosMateriais) {
+                window.todosMateriais.forEach(mat => {
+                    optMateriaisHtml += `<option value="${mat.id}">${mat.value}</option>`;
+                });
+            }
+
+            let materiaisHtml = `
+                <div class="card-detalhe" style="margin-top: 15px;">
+                    <h3><i class="fa-solid fa-layer-group"></i> Materiais do Pedido</h3>
+                    <div style="display: flex; gap: 8px; margin-top: 10px;">
+                        <select id="select-add-material" style="flex-grow: 1; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+                            <option value="">Selecione para adicionar...</option>
+                            ${optMateriaisHtml}
+                        </select>
+                        <button id="btn-add-material-tag" class="btn-acao" style="padding: 6px 12px;"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                    <div id="tags-materiais-container" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;">
+                        ${tagsMateriaisHtml}
+                    </div>
+                    <button id="btn-salvar-materiais" class="btn-acao btn-salvar-tags" style="margin-top: 10px; width: 100%; display: none; background: #27ae60;">Salvar Materiais</button>
+                </div>
+            `;
+
             let verificarHtml = '';
             if (isFinalizado) {
                 const isVerificado = stageId === "C17:WON" || stageId.includes("C19");
@@ -259,6 +297,7 @@
                             <div id="modal-verificar-box" style="margin-top: 15px;">${verificarHtml}</div>
                         </div>
                         ${impressorasHtml}
+                        ${materiaisHtml}
                         ${adminHtml}
                     </div>
                 </div>
@@ -267,6 +306,7 @@
             modal.classList.add('active');
             attachModalEventListeners(deal);
             attachModalImpressorasListeners(deal.ID);
+            attachModalMateriaisListeners(deal.ID);
         }
 
         function attachModalImpressorasListeners(dealId) {
@@ -352,6 +392,94 @@
                         window.adminCustomDialog({ type: 'alert', title: 'Erro', message: err.message });
                         btnSalvar.disabled = false;
                         btnSalvar.textContent = 'Salvar Impressoras';
+                    }
+                });
+            }
+        }
+
+        function attachModalMateriaisListeners(dealId) {
+            const btnAdd = document.getElementById('btn-add-material-tag');
+            const select = document.getElementById('select-add-material');
+            const container = document.getElementById('tags-materiais-container');
+            const btnSalvar = document.getElementById('btn-salvar-materiais');
+
+            let tagsAlteradas = false;
+
+            function verificarAlteracoes() {
+                tagsAlteradas = true;
+                btnSalvar.style.display = 'block';
+            }
+
+            if (btnAdd) {
+                btnAdd.addEventListener('click', () => {
+                    const idSelected = select.value;
+                    const nomeSelected = select.options[select.selectedIndex]?.text;
+                    
+                    if (!idSelected) return;
+
+                    // Verifica se já existe
+                    let exists = false;
+                    container.querySelectorAll('.material-tag').forEach(span => {
+                        if (span.getAttribute('data-id') === idSelected) exists = true;
+                    });
+                    if (exists) return;
+
+                    const span = document.createElement('span');
+                    span.className = 'material-tag';
+                    span.setAttribute('data-id', idSelected);
+                    span.style.cssText = 'background: #e2e8f0; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 5px;';
+                    span.innerHTML = `${nomeSelected} <i class="fa-solid fa-xmark remove-mat-tag" style="cursor:pointer; color: #e74c3c;"></i>`;
+                    container.appendChild(span);
+
+                    select.value = '';
+                    verificarAlteracoes();
+                });
+            }
+
+            if (container) {
+                container.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('remove-mat-tag')) {
+                        e.target.closest('.material-tag').remove();
+                        verificarAlteracoes();
+                    }
+                });
+            }
+
+            if (btnSalvar) {
+                btnSalvar.addEventListener('click', async () => {
+                    btnSalvar.disabled = true;
+                    btnSalvar.textContent = 'Gravando...';
+
+                    const ids = [];
+                    container.querySelectorAll('.material-tag').forEach(span => {
+                        ids.push(Number(span.getAttribute('data-id')));
+                    });
+
+                    try {
+                        const res = await fetch('/api/impressao/savePedidoMateriais', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ sessionToken, dealId, materiaisIds: ids })
+                        });
+                        if (!res.ok) throw new Error('Erro ao salvar materiais');
+
+                        btnSalvar.textContent = 'Salvo!';
+                        btnSalvar.style.background = '#2ecc71';
+                        setTimeout(() => {
+                            btnSalvar.style.display = 'none';
+                            btnSalvar.style.background = '#27ae60';
+                            btnSalvar.textContent = 'Salvar Materiais';
+                            btnSalvar.disabled = false;
+                        }, 2000);
+                        
+                        // Atualiza dado local na memoria
+                        const dealMem = allDealsData.find(d => d.ID == dealId);
+                        if (dealMem) dealMem.materiais_ids = ids;
+                        
+                    } catch (err) {
+                        window.adminCustomDialog({ type: 'alert', title: 'Erro', message: err.message });
+                        btnSalvar.disabled = false;
+                        btnSalvar.textContent = 'Salvar Materiais';
                     }
                 });
             }

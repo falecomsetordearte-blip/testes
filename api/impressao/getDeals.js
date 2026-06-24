@@ -29,11 +29,11 @@ module.exports = async (req, res) => {
 
         if (!empresaId) return res.status(401).json({ message: 'Sessão inválida.' });
 
-        // Query com campos específicos corrigida para ler link_arquivo_impressao
+        // Query com campos específicos corrigida para ler link_arquivo_impressao e materiais_ids
         let querySql = `
             SELECT id, titulo, etapa, status_impressao, nome_cliente, 
                    whatsapp_cliente, link_arquivo_impressao, link_layout, data_entrega, briefing_completo,
-                   impressoras_ids
+                   impressoras_ids, materiais_ids
             FROM pedidos /* cache-bust-v4-port */
             WHERE empresa_id = $1 
             AND etapa = 'IMPRESSÃO'
@@ -45,10 +45,18 @@ module.exports = async (req, res) => {
         let pedidosFiltrados = pedidos;
 
         if (impressoraFilter && impressoraFilter !== 'cadastrar') {
-            pedidosFiltrados = pedidos.filter(p => {
+            pedidosFiltrados = pedidosFiltrados.filter(p => {
                 const ids = p.impressoras_ids || [];
                 // Compatibilidade com array de string ou number vindo do JSONB
                 return ids.map(String).includes(String(impressoraFilter));
+            });
+        }
+
+        if (materialFilter && materialFilter !== 'cadastrar') {
+            pedidosFiltrados = pedidosFiltrados.filter(p => {
+                const ids = p.materiais_ids || [];
+                // Compatibilidade com array de string ou number vindo do JSONB
+                return ids.map(String).includes(String(materialFilter));
             });
         }
 

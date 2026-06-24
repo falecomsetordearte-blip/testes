@@ -326,6 +326,29 @@
                                     <!-- As impressoras aparecerão aqui -->
                                 </ul>
                             </div>
+                            </div>
+                        </div>
+
+                        <!-- PAINEL DE MATERIAIS - RECURSO PREMIUM -->
+                        <div id="feature-materiais" class="admin-panel full-width-panel" style="position:relative; margin-bottom: 2rem;">
+                            <div class="panel-toolbar">
+                                <h3><i class="fa-solid fa-layer-group" style="color:#2980b9;"></i> Cadastro de Materiais</h3>
+                            </div>
+                            <p class="help-text" style="margin-bottom: 20px;">Cadastre os materiais de impressão (ex: Adesivo Fosco, Lona 440g) para vinculá-los aos pedidos.</p>
+                            
+                            <div class="form-group" style="display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap;">
+                                <div style="flex-grow: 1; min-width: 150px;">
+                                    <input type="text" id="novo_material_nome" class="form-control-text" placeholder="Nome do Material..." style="width: 100%; box-sizing: border-box;">
+                                </div>
+                                <button type="button" class="btn-primary" id="btn-add-material" style="padding: 0.8rem 1.2rem; font-size: 0.9rem; background: #2980b9;">
+                                    <i class="fa-solid fa-plus"></i> Adicionar
+                                </button>
+                            </div>
+                            <div id="materiais-feedback"></div>
+
+                            <ul class="printer-list" id="lista-materiais">
+                                <!-- Os materiais aparecerão aqui -->
+                            </ul>
                         </div>
 
                         <!-- PAINEL DE LINHA PRÓPRIA (UPSELL) -->
@@ -442,6 +465,15 @@
                         descricao: 'Cadastre suas impressoras e vincule-as aos seus pedidos para organização avançada da produção.'
                     }
                 );
+
+                window.PlanManager.bloquear(
+                    'feature-materiais',
+                    'cadastro-materiais',
+                    {
+                        titulo: 'Gerenciamento de Materiais — Plano PRO',
+                        descricao: 'Cadastre seus materiais de impressão personalizados e vincule-os aos seus pedidos.'
+                    }
+                );
             }
         };
 
@@ -518,6 +550,7 @@
             }
 
             carregarImpressoras();
+            carregarMateriais();
         }
 
         async function carregarImpressoras() {
@@ -622,6 +655,116 @@
                 });
                 if (res.ok) {
                     carregarImpressoras();
+                } else {
+                    throw new Error("Falha ao deletar.");
+                }
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        async function carregarMateriais() {
+            try {
+                const response = await fetch('/api/admin/config/materiais/list', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    renderizarMateriais(data.materiais || []);
+                }
+            } catch (error) {
+                console.error("Erro ao listar materiais", error);
+            }
+        }
+
+        function renderizarMateriais(materiais) {
+            const lista = document.getElementById('lista-materiais');
+            lista.innerHTML = '';
+            
+            if (materiais.length === 0) {
+                lista.innerHTML = '<li class="printer-item" style="justify-content:center; color:#94a3b8;">Nenhum material cadastrado.</li>';
+                return;
+            }
+
+            materiais.forEach(mat => {
+                const li = document.createElement('li');
+                li.className = 'printer-item';
+                li.innerHTML = `
+                    <span>${mat.nome}</span>
+                    <button type="button" class="btn-delete-material" title="Excluir Material" data-id="${mat.id}">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                `;
+                lista.appendChild(li);
+            });
+
+            document.querySelectorAll('.btn-delete-material').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    deletarMaterial(this.getAttribute('data-id'));
+                });
+            });
+        }
+
+        document.getElementById('btn-add-material').addEventListener('click', async () => {
+            const input = document.getElementById('novo_material_nome');
+            const nome = input.value.trim();
+            const btn = document.getElementById('btn-add-material');
+            
+            if (!nome) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+            try {
+                const res = await fetch('/api/admin/config/materiais/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), nome })
+                });
+
+                if (!res.ok) throw new Error("Erro ao criar material.");
+                
+                input.value = '';
+                await carregarMateriais();
+            } catch (error) {
+                const fb = document.getElementById('materiais-feedback');
+                fb.textContent = error.message;
+                fb.style.color = '#e74c3c';
+                fb.style.display = 'block';
+                setTimeout(() => fb.style.display = 'none', 3000);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-plus"></i> Adicionar';
+            }
+        });
+
+        async function deletarMaterial(id) {
+            if (window.adminCustomDialog) {
+                window.adminCustomDialog({
+                    type: 'confirm',
+                    title: 'Excluir Material',
+                    message: 'Tem certeza que deseja remover este material?',
+                    onConfirm: async () => {
+                        executarDelecaoMaterial(id);
+                    }
+                });
+            } else if (confirm('Tem certeza que deseja remover este material?')) {
+                executarDelecaoMaterial(id);
+            }
+        }
+
+        async function executarDelecaoMaterial(id) {
+            try {
+                const res = await fetch('/api/admin/config/materiais/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken'), materialId: id })
+                });
+                if (res.ok) {
+                    carregarMateriais();
                 } else {
                     throw new Error("Falha ao deletar.");
                 }

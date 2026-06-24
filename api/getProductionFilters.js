@@ -21,8 +21,16 @@ module.exports = async (req, res) => {
             }
         }
 
-        // MATERIAIS PADRÃO (Previamente vindos do Bitrix, agora 100% locais)
-        const materialOptions = [
+        let materiaisLocais = [];
+        if (empresaId) {
+            materiaisLocais = await prisma.$queryRawUnsafe(`
+                SELECT id, nome as value FROM materiais 
+                WHERE empresa_id = $1 AND ativo = true ORDER BY nome ASC
+            `, empresaId);
+        }
+
+        // Se não houver materiais cadastrados, usar os defaults para não quebrar sistemas antigos
+        const materialOptions = materiaisLocais.length > 0 ? materiaisLocais : [
             { id: '101', value: 'Adesivo Brilho' },
             { id: '102', value: 'Adesivo Fosco' },
             { id: '103', value: 'Adesivo Perfurado' },
