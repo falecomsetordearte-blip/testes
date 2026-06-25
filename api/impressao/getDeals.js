@@ -99,7 +99,8 @@ module.exports = async (req, res) => {
                 'UF_CRM_1764124589418': p.link_layout || '',
                 'UF_CRM_1757794109': dataEntregaAtual, // Retorna a nova data para o front
                 'UF_CRM_1738249371': p.briefing_completo,
-                'impressoras_ids': p.impressoras_ids || []
+                'impressoras_ids': p.impressoras_ids || [],
+                'materiais_ids': p.materiais_ids || []
             });
         }
 
